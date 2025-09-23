@@ -1,0 +1,3 @@
+[submodule "src/api/definition"]
+	path = src/api/definition
+	url = https://github.com/EnFlexIT/RestAPIs

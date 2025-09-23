@@ -1,0 +1,12 @@
+{
+  "login": "Login",
+  "settings": "Settings",
+  "general": "General",
+  "systemInformation": "System Informations",
+  "home": "Home",
+  "info": "Info",
+  "cpu": "Cpu",
+  "executionState": "Mode of Execution",
+  "changePassword": "Change password",
+  "privacy": "Privacy"
+}

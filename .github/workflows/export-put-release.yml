@@ -1,0 +1,53 @@
+# This is a basic workflow that is manually triggered
+
+name: Export Put Release
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallele
+jobs:
+  # This workflow contains a single job called "greet"
+  install:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Runs a single command using the runners shell
+      - name: Clone
+        uses: actions/checkout@v4
+      - name: Setup
+        uses: actions/setup-node@v4
+      - name: Install Repository
+        run: npm ci
+      - name: Set version
+        id: version-selector
+        run: echo "version=$(grep version package.json | cut -d"\"" -f 4 | head -n1)" >> "$GITHUB_OUTPUT"
+      - name: Set time
+        id: time-selector
+        run: echo "time=$(date +%4Y%m%d-%H%M)" >> "$GITHUB_OUTPUT"
+      - name: Export
+        run: npx expo export -p web
+      - name: Package
+        env:
+          name: emsPortal_${{steps.version-selector.outputs.version}}_${{steps.time-selector.outputs.time}}
+        run: cd dist && zip -r ../$name.zip .
+      - name: Put
+        env:
+          url: ${{ secrets.FTP_UPLOAD_URL }}
+          user: ${{ secrets.FTP_USER }}
+          pwd: ${{ secrets.FTP_PSWD }}
+          name: emsPortal_${{steps.version-selector.outputs.version}}_${{steps.time-selector.outputs.time}}
+        run:  printf "open $url\nuser $user $pwd\ncd emsPortal\nput $name.zip\nexit" | ftp -n
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        # env:
+        #   version: ${{steps.version-selector.outputs.version}}
+        #   name: emsPortal_${{steps.version-selector.outputs.version}}_${{steps.time-selector.outputs.time}}
+        with:
+          files: |
+            emsPortal_${{steps.version-selector.outputs.version}}_${{steps.time-selector.outputs.time}}.zip
+          tag_name: v${{steps.version-selector.outputs.version}}
+

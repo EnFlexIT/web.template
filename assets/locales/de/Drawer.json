@@ -1,0 +1,12 @@
+{
+  "login": "Anmelden",
+  "settings": "Einstellungen",
+  "general": "Allgemein",
+  "systemInformation": "System Informationen",
+  "home": "Zuhause",
+  "info": "Info",
+  "cpu": "Cpu",
+  "executionState": "Ausführungsmodus",
+  "changePassword": "Passwort ändern",
+  "privacy": "Datenschutz"
+}

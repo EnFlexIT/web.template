@@ -1,0 +1,16 @@
+{
+    "username_placeholder": "Benutzername",
+    "password_placeholder": "Passwort",
+    "submit": "Bestätigen",
+    "login": "Anmelden",
+    "advanced_options": "Erweiterte Einstellungen",
+    "ip_adress": "IP-Adresse",
+    "language": "Sprache",
+    "color-scheme": "Farbschema",
+    "lng": "Sprache",
+    "colorscheme": "Farbschema",
+    "system": "System",
+    "user": "Nutzer ",
+    "light": "Hell",
+    "dark": "Dunkel"
+}
