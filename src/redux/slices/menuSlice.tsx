@@ -8,7 +8,7 @@ import { ComponentClass, FunctionComponent, ReactNode } from 'react';
 import { SettingsScreen } from '../../screens/Settings';
 import { MenuItem as ApiMenuItem } from '../../api/implementation/Dynamic-Content-Api';
 import { UnauthenticatedSettings } from '../../screens/settings/Unauthenticated-Settings';
-import { setLanguage } from './languageSlice';
+import { internalSetLanguage, setLanguage } from './languageSlice';
 
 interface BaseMenuItem<P = {}> {
     menuID: number,
@@ -241,9 +241,9 @@ export const menuSlice = createSlice({
                 state.menu = rawListToTrees(state.rawMenu)
                 state.activeMenuId = 1
             })
-        // .addCase(setLanguage, (state, action) => {
+            .addCase(internalSetLanguage, (state, action) => {
 
-        // })
+            })
     },
 })
 

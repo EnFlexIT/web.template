@@ -53,7 +53,7 @@ export const setLanguage = createAsyncThunk(
     }
 )
 
-export const { } = languageSlice.actions
+export const { internalSetLanguage } = languageSlice.actions
 
 export const selectLanguage = (state: RootState) => state.language
 
