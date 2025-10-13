@@ -33,6 +33,7 @@
     "@tiptap/react": "^3.4.2",
     "@tiptap/starter-kit": "^3.4.2",
     "axios": "^1.11.0",
+    "enflex.it-graph": "^0.1.1",
     "expo": "^53.0.22",
     "expo-blur": "~14.1.5",
     "expo-document-picker": "~13.1.6",
