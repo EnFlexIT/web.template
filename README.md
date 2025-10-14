@@ -17,7 +17,6 @@
 
 ## <a id="About">About</a>
 
-This repository is the result of a two year effort.
 Its codebase acts as a template for succeeding EnFlex.IT applications and already implements features such as:
 - Theming
 - Authentication with an Agent.Workbench via jwt and openidconnect
