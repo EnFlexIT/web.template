@@ -1,40 +1,35 @@
 # web.template
 
-## introduction
+## Table of Contents
+- [About](#About)
+- [Motivation](#Motivation)
+- [Working with this Repository](#Working-with-this-Repository)
+  - [Requirements](#Requirements-Template)
+  - [Setting up](#Setup-Template)
+- [Creating a new EnFlex.IT Project which is based on this template](#Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template)
+  - [Requirements](#Requirements-Project)
+  - [Setting up](#Setup-Project)
+  - [Workflow](#Intended-Workflow)
+- [Project Structure](#Project-Structure)
+<!--- [Styling](#styling)-->
+<!--- [Api](#api)-->
+<!--- [Data Management](#redux)-->
 
-This repository is the result of a two year effort. It is meant as a template for any succeeding EnFlex.IT Application.
+## <a id="About">About</a>
 
-## setup
+This repository is the result of a two year effort.
+Its codebase acts as a template for succeeding EnFlex.IT applications and already implements features such as:
+- Theming
+- Authentication with an Agent.Workbench via jwt and openidconnect
+- Dynamic content
+- Dynamic menues
 
-this section describes the process of creating a new project that is based on this template.
-
-### dependencies
-
-- node.js (tested and working with lts Jod)
-- npm
-- git
-
-### creating a new project
-
-By clicking on the green “Use this template” button in the upper right corner of the GitHub interface, you can create a new repository that is based on this repository.
-This new repository already includes all of the files this repository has plus its remote `origin` was set to the url of the new repository.
-Pull the new repository to any location on your computer and start a terminal in that location.
-To then enable the intended [workflow](/web.Template/workflow), please run `scripts/init.sh`, which creates a new branch with the name 'template' whose origin points to this repository.
-Finally, install all of the dependencies with `npm install`.
-
-After that, you are all set up and ready to go.
-In the future, if there is an update to this template repository, pull the changes to the 'template' branch which was created by 'scripts/init.sh' and then merge the changes with your master branch.
-
-### testing the template
-
-You can also view the template locally by first cloning the repository and then running `npm install` in the root directory of the project. If all dependencies are installed successfully, you can start the Expo development environment by running `npx expo` in your terminal. This will launch the project and allow you to run it on your device.
-
-## workflow
+## <a id="Motivation">Motivation</a>
 
 At some point while developing, we wanted to split our code into different packages.
 We tried so for some time and came to the conclusion that packaging our code and especially maintaining those packages comes with its own kind of challenges and is really time consuming too.
 We felt that the extra effort was not worth the gain and so we ended up moving all the code back into one repo again.
-Still, we want to reuse what code we already have, across multiple projects.
+Still, we wanted to reuse what code we already have across multiple projects.
 So we arrived at the following solution:
 This repository is the basis for all EnFlex.IT applications.
 If you wish to create a new EnFlex.IT application, you need to do so by instantiating this template.
@@ -42,7 +37,75 @@ This new project must then have a 'template' branch whose origin points to this 
 By doing so, you can pull any changes related to this repository into your local 'template' branch and then merge these changes with your local 'master' branch.
 In the end, all of the framework code lives in this repository and all of the project specific code lives in its specific repository and we do not package any code (god bless)
 
-## Project Structure
+## <a id="Working-with-this-Repository">Working with this Repository</a>
+
+In its current state, this repository is not just a template you can use to create new projects but also a standalone project that can be developed and run.
+this section explains how to setup and run this specific respository locally.
+
+### <a id="Requirements-Template">Requirements</a>
+
+In Order to download, initialize and run the code, you need the following software:
+- git
+- npm
+- node.js (tested and working with lts Jod)
+
+Git hardly needs any explanation I would assume. Get it [here](https://git-scm.com/downloads).
+Both npm and Node.js come bundled together. Node.js is the runtime environment for javascript outside of the browser and npm is javascript's dedicated package manager.
+You could compare Node.js with the jre and npm with maven.
+Get both executables by following the official instructions [here](https://nodejs.org/en/download).
+
+After you have successfully installed the software above and set it up in such a way that you can work with it (e.g. setting the $PATH environment variable) we can continue to set up this repository locally.
+
+### <a id="Setup-Template">Setting up</a>
+
+First `git clone` this Repository to any desired location on your computer. I will refer to this location by $ROOT.
+
+Next, open up a Terminal and navigate to $ROOT. This is usually done with `cd $ROOT`.
+Once $ROOT is your working directory, we need to install all of the project's dependencies. This can be done with `npm install`.
+We now have all of the code and its dependencies installed locally.
+
+Finally, start the 'compiler' with `npx expo`.
+
+You should now see the interface of the metro bundler. this is the piece of software that takes all of our code and bundles it. Further, it serves this bundled code on a local webbrowser.
+So we can e.g. visit http://localhost:8080 (this is the default url where metro serves our code and could differ in your case. consult the metro interface if you suspect a different url) and metro should start compiling our code.
+Once its done, the webpage gets rendered and you can start developing.
+If you make any changes to the codebase, metro should pick up on that, recompile everything and hot reload the webpage.
+
+## <a id="Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template">Creating a new EnFlex.IT Project which is based on this template</a>
+
+this section describes how to create a new project $MY_PROJECT that is based on this template, set up your environment so you can develop $MY_PROJECT locally and configure the intended workflow to keep $MY_PROJECT up to date with this template.
+
+### <a id="Requirements-Project">Requirements</a>
+
+Any new project you want to be able to run inherently needs to be able to run the code present in this template.
+Therefore, check [here](#Requirements-Template) for the requirements of the template and come back once you are done.
+
+After you have successfully met all requirements descibed by the template, we can start to create a new project that is based on this template.
+
+### <a id="Setup-Project">Setting up</a>
+
+First, you want to click on the green "Use this template" button in the upper right corner of the Github interface to create a new github repository that is based on this template.
+
+After you have hit "Create repository", it should take only a few seconds and then you are greeted with a new repository.
+This new repository already includes all of the files this repository has plus its remote `origin` was set to the url of the new repository.
+
+Next - as your new project is merely a clone of the template at this point - follow all of the steps described [here](#Setup-Template) to finish the setup and come back once you are done.
+
+You should now be able to run the code and visit the webpage.
+
+The only thing that is missing now is to set up the [intended workflow](#Intended-Workflow) and then you can start developing.
+
+## <a id="Intended-Workflow">Intended Workflow</a>
+
+Wether you have just created a new project that is based on this template or you have pulled an exisiting project that is based on this template, to now be able to sync this template with your project, please run `scripts/init.sh`.
+This little helper script does two things:
+- It adds a new origin `template` to your project that is pointing to this template
+- It creates a new branch whose upstream is the newly created `template` origin.
+
+Now, If there is a change to this template, first pull your local `template` branch to include the newest changes and then merge `template` with your `master` branch.
+this way your project is always up to date with this template, but all of the framework code lives in this repo and all of the project specific code lives in the project specific repository.
+
+## <a id="Project-Structure">Project Structure</a>
 
 ```
 .
