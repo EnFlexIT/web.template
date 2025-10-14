@@ -34,7 +34,7 @@ This repository is the basis for all EnFlex.IT applications.
 If you wish to create a new EnFlex.IT application, you need to do so by instantiating this template.
 This new project must then have a 'template' branch whose origin points to this repository.
 By doing so, you can pull any changes related to this repository into your local 'template' branch and then merge these changes with your local 'master' branch.
-In the end, all of the framework code lives in this repository and all of the project specific code lives in its specific repository and we do not package any code (god bless)
+In the end, all of the framework code lives in this repository and all of the project specific code lives in its specific repository and we do not package any code.
 
 ## <a id="Working-with-this-Repository">Working with this Repository</a>
 
