@@ -573,7 +573,7 @@ export function LoginScreen() {
                   </Picker>
                 </View>
                 <View>
-                  <ThemedText>IP:</ThemedText>
+                  <ThemedText>{t("ip_adress")}</ThemedText>
                   <StylisticTextInput
                     value={ipField}
                     style={[styles.border, styles.padding]}
