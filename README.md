@@ -70,7 +70,7 @@ So we can e.g. visit http://localhost:8080 (this is the default url where metro 
 Once its done, the webpage gets rendered and you can start developing.
 If you make any changes to the codebase, metro should pick up on that, recompile everything and hot reload the webpage.
 
-## <a id="Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template">Creating a new EnFlex.IT Project which is based on this template</a>
+## <a id="Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template">Creating a new EnFlex.IT Project that is based on this template</a>
 
 this section describes how to create a new project $MY_PROJECT that is based on this template, set up your environment so you can develop $MY_PROJECT locally and configure the intended workflow to keep $MY_PROJECT up to date with this template.
 
