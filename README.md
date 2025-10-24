@@ -151,3 +151,28 @@ this way your project is always up to date with this template, but all of the fr
 - `src/hooks` - any custom react hook
 - `src/redux` - all code that belongs to the redux library.
 - `src/screens` - this folder stores all React Components that are used as screens. Screens are those components that make up the entirety of the screen.
+
+
+## <a id="Styling">Styling</a>
+This section discusses how to change the project-wide styling information to modify the look of the entire application as well as how to style individual elements.
+You should be familiar with the principles of React, namely what components are and how they play a key-role in programming with react to understand this section.
+If you are not up to speed, you can read up on components [here](https://react.dev/learn/your-first-component).
+
+### <a id="Unistyles">History</a>
+Originally, we used a really simple setup for styling:
+We had a `<ThemeProvider />`, which was just a `<Context.Provider />`, sit at the top of the DOM hierarchy.
+Its value would be the result of a `useState` function call.
+If anybody down the hierarchy now wanted to update the theme, they would get the 'setTheme' function via 'useContext' and call it to rerender the whole application.
+Any styles that were defined, were functions of type `Theme -> StyleSheet`, such that inside of a component you could call `const styles = stylesF(theme);` and therefore make StyleSheets dependent on Themes.
+
+This approached worked wonderfully but had two minor downsides: If you wanted to use any style inside of a component, you always had to first call `useTheme` to retrieve the theme and then call `stylesF(theme)` to actually construct the StyleSheet.
+We later introduced `useThematicallyDependentStyle(stylesF)` which reduced the boilerplate to a single function call but could not elimnate it.
+Secondely, if you had any conditional styles, they would not be nice to implement. You would need a state variable to track the boolean and then use a ternary operator in conjunction with two `on` and `off` styles to implement the desired "conditional" style.
+Namely the fact that you had to introduce two styles to implement one conditional style quickly made StyleSheet declarations unreadable and cluttered.
+E.g. say we want to implement a button which should change its textcolor and backgroundcolor on hover. Further we want it to have padding and a bigger fontsize regardless of the state in which its in.
+For this to work, we now need the following styles: `[container, containerHover, containerNotHover, text, textHover, textNotHover]`.
+It is easy to see that any non-trivial component suffers from this approach.
+
+To fix the issues stated above, we introduced and have ever since been successfully working with unistyles as our styling solution.
+
+### <a id="Unistyles">Unistyles</a>
