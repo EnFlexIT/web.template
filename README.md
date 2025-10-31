@@ -11,9 +11,15 @@
   - [Setting up](#Setup-Project)
   - [Workflow](#Intended-Workflow)
 - [Project Structure](#Project-Structure)
-<!--- [Styling](#styling)-->
-<!--- [Api](#api)-->
-<!--- [Data Management](#redux)-->
+- [Styling](#styling)
+    - [History](#stylingHistory)
+    - [How to style](#HowToStyle)
+    - [How to include new values into the theme](#ExpandingTheTheme)
+    - [How themeing is implemented](#HowItIsActuallyImplemented)
+    - [unistyles vs legacy](#UnistylesVSLegacy)
+- [Deployment](#deployment)
+- [Api](#api)
+- [Data Management](#redux)
 
 ## <a id="About">About</a>
 
@@ -147,26 +153,26 @@ this way your project is always up to date with this template, but all of the fr
 - `src/components` - stores all react native components
 - `src/components/dynamic` - includes the components to render AbstractSiteContent and its related editor
 - `src/richtexteditor` - includes all neccessary components to make the richtexteditor work.
-- `src/stylistic` & `src/themed` - has components that are automatically styled according to the theme. See [styling]('google.com') for more information
+- `src/stylistic` & `src/themed` - has components that are automatically styled according to the theme. See [styling](#styling) for more information
 - `src/hooks` - any custom react hook
 - `src/redux` - all code that belongs to the redux library.
 - `src/screens` - this folder stores all React Components that are used as screens. Screens are those components that make up the entirety of the screen.
 
 
 ## <a id="Styling">Styling</a>
-This section discusses how to change the project-wide styling information to modify the look of the entire application as well as how to style individual elements.
+This section discusses how to change the project-wide styling information to modify the look of the entire application - so called themes - as well as how to style individual elements.
 You should be familiar with the principles of React, namely what components are and how they play a key-role in programming with react to understand this section.
 If you are not up to speed, you can read up on components [here](https://react.dev/learn/your-first-component).
 
-### <a id="Unistyles">History</a>
+### <a id="stylingHistory">History</a>
 Originally, we used a really simple setup for styling:
 We had a `<ThemeProvider />`, which was just a `<Context.Provider />`, sit at the top of the DOM hierarchy.
 Its value would be the result of a `useState` function call.
-If anybody down the hierarchy now wanted to update the theme, they would get the 'setTheme' function via 'useContext' and call it to rerender the whole application.
-Any styles that were defined, were functions of type `Theme -> StyleSheet`, such that inside of a component you could call `const styles = stylesF(theme);` and therefore make StyleSheets dependent on Themes.
+If anybody down the hierarchy now wanted to update the theme, they would get the `setTheme` function via `useContext` and call it to rerender the whole application.
+Any StyleSheet `stylesF` that was defined, was actually a function of type `Theme -> StyleSheet`, such that inside of a component you could first accquire the Theme and then call `const styles = stylesF(theme);` to therefore make StyleSheets dependent on Themes.
 
 This approached worked wonderfully but had two minor downsides: If you wanted to use any style inside of a component, you always had to first call `useTheme` to retrieve the theme and then call `stylesF(theme)` to actually construct the StyleSheet.
-We later introduced `useThematicallyDependentStyle(stylesF)` which reduced the boilerplate to a single function call but could not elimnate it.
+We later introduced `useThematicallyDependentStyle(stylesF)` which reduced the boilerplate to a single function call.\
 Secondely, if you had any conditional styles, they would not be nice to implement. You would need a state variable to track the boolean and then use a ternary operator in conjunction with two `on` and `off` styles to implement the desired "conditional" style.
 Namely the fact that you had to introduce two styles to implement one conditional style quickly made StyleSheet declarations unreadable and cluttered.
 E.g. say we want to implement a button which should change its textcolor and backgroundcolor on hover. Further we want it to have padding and a bigger fontsize regardless of the state in which its in.
@@ -175,4 +181,102 @@ It is easy to see that any non-trivial component suffers from this approach.
 
 To fix the issues stated above, we introduced and have ever since been successfully working with unistyles as our styling solution.
 
-### <a id="Unistyles">Unistyles</a>
+See [this](#UnistylesVSLegacy) section to how the unistyles approach compares to the legacy approach.
+
+### <a id="HowToStyle">How to style</a>
+The styling information of this application is split into two categories.
+
+First we have all styling that impacts how something looks.
+That could be textcolor, backgroundcolor, cardcolor, fontsize, fontFamily, etc...
+
+Secondely we have all styling that impacts where something is located.
+e.g. padding, margin, flexDirection, align-properties.
+
+The first category is defined and can be changed at the theme-level.
+This means that any of the properties previously mentioned are defined on a per-theme basis in the `DarkTheme` and `LightTheme` objects.
+See `src/styles/*theme.tsx`.
+
+The second category is defined on a per-component basis.
+This means that if you'd like to change e.g. the margin between items inside of the header, you would have to look into `src/components/Header.tsx`
+
+There may be inconsistency of course but this is how we tried to do it across the application.
+
+Further, we use the library `unistyles` for styling.
+Refer to [their Documentation](https://www.unistyl.es/) to see whats possible.
+
+### <a id="ExpandingTheTheme">How to include new values into the theme</a>
+It may happen that our theme type does not capture some project wide styling property that would be great to have.
+
+e.g. Background Color specifically for the Sidebar.
+
+To expand the themes by these properties, simply add the properties to the javascript object and the type dynamically gets updated.
+
+e.g. to include the previously mentioned backgroundcolor, one could add:
+```ts
+// src/styles/darkTheme.tsx
+import { fonts } from "./fonts";
+
+export const darkTheme = {
+    dark: true,
+    colors: {
+        // ...
+        backgroundColorForSidebar: 'darkblue',
+    },
+    // ....
+} as const
+
+import { fonts } from "./fonts";
+
+export const lightTheme = {
+    dark: false,
+    colors: {
+      // ..
+      backgroundColorForSidebar: 'red' // <-- Important that the properties have the same name. Otherwise the automatic type deduction does not work
+    },
+    // ....
+} as const
+```
+
+### <a id="HowItIsActuallyImplemented">How it is actually implemented</a>
+
+To answer the question of how this styling information is actually processed and used at a project wide scope, you just have to look at `src/components/themed/*` and `src/components/stylistic/*`.
+
+Components inside of the `themed` folder implement the theme-based colors.
+They use a StyleSheet that depends on unistyle's theme to get their respective fontColor, backgroundColor, etc.
+If unistyle's theme ever changes, the components detect this change and adjust their colors, which in turn adjusts the project wide look.
+
+Components inside of the `stylistic` folder build upon the themed components and implement all the other information. e.g. fontSize, fontFamily.
+
+Thus, we have a collection of "prestyled" (stylistic) components e.g. `<H1 />`, `<H2 />`, `<StylisticTextInput />` that match their appearance to the current theme at all times and all use the same underlying basic components.
+
+### <a id="UnistylesVSLegacy">Unistyles vs Legacy</a>
+
+With unistyles there is almost no difference in syntax when it comes to defining styles.
+The Legacy and unistyles approach define styles like so:
+```ts
+const stylesF = createThematicallyDependentStyle((theme) => ({
+  // ...
+}))
+
+const styles = StyleSheet.create((theme) => ({
+  // ...
+}))
+```
+
+The two big advantages of unistyles over the legacy approach (at least for me) were:
+
+- You can access defined styles directly (with `styles.class`), instead of always having to first call `const styles = useThematicallyDependentStyles(stylesF)`
+- You can more easily define variants of styles. See the unistyles documentation for that.
+
+Besides those changes, we also removed the provider (as it was no longer necessary) and instead include `unistyles.ts` inside of `index.tsx` which then calls `StyleSheet.configure`
+
+## <a id="Deployment">Deployment</a>
+
+this section describes how to actually build the application such that it can be deployed to a webserver.
+
+For now, we have only built the application for web.
+This can be done via `npx expo export -p web`.
+
+After the command ran successfully, theres now a dist folder containg all the relevant files.
+
+As of writing this, I do not know how to deploy for mobile. Good Luck.
