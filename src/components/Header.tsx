@@ -27,6 +27,7 @@ import { useState } from "react";
 import { MenuItem } from "../redux/slices/menuSlice";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "./themed/ThemedText";
+import { useDrawerStatus } from "@react-navigation/drawer";
 
 interface HeaderEntryProps {
   node: MenuItem;
@@ -104,6 +105,9 @@ export function Header({
 
   const linkTo = useLinkTo();
 
+  const drawerStatus = useDrawerStatus();
+  const isDrawerOpen = drawerStatus === "open";
+
   return (
     <View style={styles.container}>
       {/* Left Header */}
@@ -142,7 +146,7 @@ export function Header({
         </View>
       </View>
       {/* Right Header */}
-      <ToolBox isLoggedIn={isLoggedIn} />
+      {!isDrawerOpen && <ToolBox isLoggedIn={isLoggedIn} />}
     </View>
   );
 }
