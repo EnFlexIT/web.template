@@ -26,6 +26,7 @@ import { useLinkTo } from "@react-navigation/native";
 import { useState } from "react";
 import { MenuItem } from "../redux/slices/menuSlice";
 import { useTranslation } from "react-i18next";
+import { ThemedText } from "./themed/ThemedText";
 
 interface HeaderEntryProps {
   node: MenuItem;
@@ -109,13 +110,14 @@ export function Header({
       <View>
         <View style={[styles.leftHeaderContainer]}>
           {!isWide && (
-            <View>
+            <View style={styles.navButtonContainer}>
               <Pressable
+                style={styles.navButton}
                 onPress={() => {
                   navigation.toggleDrawer();
                 }}
               >
-                ☰
+                <ThemedText>☰</ThemedText>
               </Pressable>
             </View>
           )}
@@ -181,4 +183,8 @@ const styles = StyleSheet.create((theme) => ({
   noSelect: {
     userSelect: "none",
   },
+  navButtonContainer: {
+    width: theme.info.screenMargin / 2,
+  },
+  navButton: { position: "absolute", top: 10 },
 }));
