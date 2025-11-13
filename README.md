@@ -137,6 +137,8 @@ To be able to use this action, simply do as follows:
 - After sucessfully setting all required secrets, go to: Actions > Export Put Release > Run Workflow and run the workflow.
   This will build the project and upload the build artifact to the ftp server.
 
+Any `.zip` build artifact that is exported this way follows this naming convention: $name_$version_$timeAndDate where the name is equal to the repository secret, the version number is equal to the version number that is specified in `package.json` and the timeAndDate are equal to the time and date of the build server. 
+
 ## <a id="Project-Structure">Project Structure</a>
 
 ```
