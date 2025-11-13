@@ -20,7 +20,6 @@
     - [How to include new values into the theme](#ExpandingTheTheme)
     - [How themeing is implemented](#HowItIsActuallyImplemented)
     - [unistyles vs legacy](#UnistylesVSLegacy)
-- [Deployment](#deployment)
 - [Api](#api)
 - [Data Management](#redux)
 
@@ -297,3 +296,19 @@ The two big advantages of unistyles over the legacy approach (at least for me) w
 - You can more easily define variants of styles. See the unistyles documentation for that.
 
 Besides those changes, we also removed the provider (as it was no longer necessary) and instead include `unistyles.ts` inside of `index.tsx` which then calls `StyleSheet.configure`
+
+### <a id="api"> Working with the Agent.Workbench API </a>
+A fundamental task of developing a project for the web group is to work with the api that Agent.Workbench provides.
+
+All OpenAPI specification can be found [here](https://github.com/EnFlexIT/RestAPIs).
+For actually working with the api, this project and any project derived from this include a git submodule under `src/api/definiton` that is linked to the actual api specifications.
+Further, this project includes the [@openapitools/openapi-generator-cli](https://www.npmjs.com/package/@openapitools/openapi-generator-cli) dependency which allows us to generate code from an openapi specification.
+
+So the usual workflow would go something like this:
+- An Api is specified inside of [RestAPIs Repo](https://github.com/EnFlexIT/RestAPIs)
+- You pull the api by updating the git submodule inside of your respective project
+- You use `openapi-generator-cli` to generate an implementation of the api.
+
+This way, the need to write boilerplate to interface with apis is eliminated and the generated boilerplate 100% fullfills our agreement (assuming the generator is correctly implemented)
+
+`package.json` already provided two scripts: `AWB-RestAPI` and `AWB-RestAPI` which build their respective api as well as `api` which just calls the two scripts consecutevly.
