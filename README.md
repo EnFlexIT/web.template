@@ -10,6 +10,9 @@
   - [Requirements](#Requirements-Project)
   - [Setting up](#Setup-Project)
   - [Workflow](#Intended-Workflow)
+  - [Build and Deployment](#BuildingAndDeploying)
+    - [Manually](#BuildingAndDeployingManually)
+    - [Automatically](#BuildingAndDeployingAutomatically)
 - [Project Structure](#Project-Structure)
 - [Styling](#styling)
     - [History](#stylingHistory)
@@ -109,6 +112,31 @@ This little helper script does two things:
 
 Now, If there is a change to this template, first pull your local `template` branch to include the newest changes and then merge `template` with your `master` branch.
 this way your project is always up to date with this template, but all of the framework code lives in this repo and all of the project specific code lives in the project specific repository.
+
+## <a id="BuildingAndDeploying">Building and Deployment</a>
+
+If you wish to build and deploy your app, after you have sucessfully instantiated a new project and made development, you have two choices:
+- Either build and deploy manually
+- Or do it automatically via a provided script
+
+### <a id="BuildingAndDeployingManually">Manually</a>
+If you wish to build and deploy your project in a manual way such that you have full control, you can run the following command: `npx expo export -p web`.
+This command packages all of your source code with the metro bundler and outputs an `index.html` alongside all of the assets inside of `/dist`.
+You can now serve the app via e.g. nginx.
+
+Note that this only works for web. If you wish to deploy the app to any mobile device you need to do your own research as we have not done this as of writing this document.
+
+### <a id="BuildingAndDeployingAutomatically">Automatically</a>
+If you wish to build and deploy your app automatically such that it integrates with e.g. agent.workbench, we have provided the github action `Export Put Release` under `.github/workflows/export-put-release.yml`.
+To be able to use this action, simply do as follows:
+- Go to Repository Settings > Secrets and Variables > Actions > Repository secrets > New Repository Secret and add the following secrets:
+  - FTP_UPLOAD_URL - the url of the ftp server that is used to upload the build artifact
+  - FTP_USER - the ftp user for the server
+  - FTP_PWSD - the password of the user
+  - PROJECT_NAME - the name that is used to bundle the build artifact. `$PROJECT_NAME.zip`
+  - PROJECT_PATH - the relative path from the root of the ftp server where the `.zip` will be put. Be aware that the directories must already be available.
+- After sucessfully setting all required secrets, go to: Actions > Export Put Release > Run Workflow and run the workflow.
+  This will build the project and upload the build artifact to the ftp server.
 
 ## <a id="Project-Structure">Project Structure</a>
 
@@ -269,14 +297,3 @@ The two big advantages of unistyles over the legacy approach (at least for me) w
 - You can more easily define variants of styles. See the unistyles documentation for that.
 
 Besides those changes, we also removed the provider (as it was no longer necessary) and instead include `unistyles.ts` inside of `index.tsx` which then calls `StyleSheet.configure`
-
-## <a id="Deployment">Deployment</a>
-
-this section describes how to actually build the application such that it can be deployed to a webserver.
-
-For now, we have only built the application for web.
-This can be done via `npx expo export -p web`.
-
-After the command ran successfully, theres now a dist folder containg all the relevant files.
-
-As of writing this, I do not know how to deploy for mobile. Good Luck.
