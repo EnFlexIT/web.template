@@ -141,12 +141,13 @@ export function Header({
             ])
             .slice(0, -1)}
         </View>
+
         <View>
           <Breadcrumb />
         </View>
       </View>
       {/* Right Header */}
-      {!isDrawerOpen && <ToolBox isLoggedIn={isLoggedIn} />}
+      {!isWide && <ToolBox isLoggedIn={isLoggedIn} />}
     </View>
   );
 }
