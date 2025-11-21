@@ -470,7 +470,7 @@ export function LoginScreen() {
       }
       case "oidc": {
         console.warn(
-          "login has been called while the authenticationMethod=oidc. this should never be the case and needs investigation"
+          "login has been called while the authenticationMethod=oidc. this should never be the case and needs investigation",
         );
         break;
       }
@@ -499,7 +499,14 @@ export function LoginScreen() {
               ref={passwordFieldRef}
               style={[styles.border, styles.padding]}
               placeholder={t("password_placeholder")}
-              onSubmitEditing={() => loginButtonRef.current?.focus()}
+              onSubmitEditing={() => {
+                // If username is not empty and password is not empty, instead of focusing login button, just login directly
+                if (username && password) {
+                  login();
+                } else {
+                  loginButtonRef.current?.focus();
+                }
+              }}
               textContentType="password"
               secureTextEntry
               onChangeText={setPassword}
@@ -539,7 +546,7 @@ export function LoginScreen() {
                       dispatch(
                         setLanguage({
                           language: itemValue,
-                        })
+                        }),
                       )
                     }
                   >
@@ -563,7 +570,7 @@ export function LoginScreen() {
                                 ? theme.val.theme
                                 : itemValue,
                           },
-                        })
+                        }),
                       );
                     }}
                   >
