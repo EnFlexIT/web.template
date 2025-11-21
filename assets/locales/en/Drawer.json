@@ -8,5 +8,6 @@
   "cpu": "Cpu",
   "executionState": "Mode of Execution",
   "changePassword": "Change password",
-  "privacy": "Privacy"
+  "privacy": "Privacy",
+  "privacysettings": "Privacy Settings"
 }

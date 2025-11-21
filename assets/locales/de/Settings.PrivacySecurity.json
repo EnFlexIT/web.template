@@ -1,4 +1,13 @@
 {
     "privacy_settings_title": "Datenschutz Einstellungen",
-    "privacy_settings_description": "Passe deine Datenschutzeinstellungen im Nachhinein an!"
+    "privacy_settings_description": "Passe deine Datenschutzeinstellungen im Nachhinein an, indem du auf die Felder drückst, die du verändern möchtest!",
+    "accepted": "Akzeptiert",
+    "not_accepted": "Nicht akzeptiert",
+    "comfort": "Komfort",
+    "mandatory": "Notwendig",
+    "personalised": "Personalisierung",
+    "statistics": "Statistik",
+    "apply": "Bestätigen",
+    "cancel": "Rückgängig"
+
 }

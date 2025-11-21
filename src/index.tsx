@@ -113,7 +113,7 @@ function RootStack() {
                   enumerable: true,
                 }),
               {},
-              rawMenu
+              rawMenu,
             ),
             Login: "/login",
           },

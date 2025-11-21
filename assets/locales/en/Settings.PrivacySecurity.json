@@ -1,4 +1,13 @@
 {
     "privacy_settings_title": "Privacy Settings",
-    "privacy_settings_description": "Adjust your data permissions in retrospect!"
+    "privacy_settings_description": "Adjust your data permissions in retrospect, by pressing the fields you would like to change!",
+    "accepted": "Accepted",
+    "not_accepted": "Not accepted",
+    "comfort": "Comfort",
+    "mandatory": "Mandatory",
+    "personalised": "Personalised",
+    "statistics": "Statistics",
+    "apply": "Apply",
+    "cancel": "Cancel"
+
 }
