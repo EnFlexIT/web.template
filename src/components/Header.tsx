@@ -147,7 +147,7 @@ export function Header({
         </View>
       </View>
       {/* Right Header */}
-      {!isWide && <ToolBox isLoggedIn={isLoggedIn} />}
+      {isWide && <ToolBox isLoggedIn={isLoggedIn} />}
     </View>
   );
 }
