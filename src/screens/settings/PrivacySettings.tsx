@@ -51,7 +51,7 @@ export function PrivacySettings() {
   const { t } = useTranslation(["Settings.PrivacySecurity"]);
 
   return (
-    <Screen style={[styles.container]}>
+    <Screen style={[{ maxWidth: 1400 }]}>
       <ThemedText>{t("privacy_settings_description")}</ThemedText>
       <Table
         data={Object.entries(localDataPermissions)
@@ -98,6 +98,7 @@ export function PrivacySettings() {
 const styles = StyleSheet.create((theme) => ({
   container: {
     gap: 10,
+    maxWidth: 300,
   },
   buttonContainer: {
     padding: 5,

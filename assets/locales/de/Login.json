@@ -12,5 +12,9 @@
     "system": "System",
     "user": "Nutzer ",
     "light": "Hell",
-    "dark": "Dunkel"
+    "dark": "Dunkel",
+    "successful": "Anmeldung erfolgreich",
+    "loading": "Anmeldung läuft",
+    "failed": "Anmeldung fehlgeschlagen",
+    "unableToFindServer": "Kein Server gefunden"
 }

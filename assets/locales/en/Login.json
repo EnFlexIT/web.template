@@ -12,5 +12,9 @@
     "system": "System",
     "user": "User",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "successful": "Login successful",
+    "loading": "Login loading",
+    "failed": "Login failed",
+    "unableToFindServer": "Unable to find server"
 }
