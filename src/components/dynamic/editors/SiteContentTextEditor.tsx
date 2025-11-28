@@ -71,15 +71,16 @@ export function SiteContentTextEditor({
           }}
           style={[styles.editorContentContainer]}
         >
-          <ThemedView
+          <div
             style={{
               flex: 1,
               width: "99.5%",
               marginLeft: 3,
             }}
+            className="texteditor"
           >
             <EditorContent editor={editor} />
-          </ThemedView>
+          </div>
         </Pressable>
         <ThemedView style={[styles.textEditorButtonsContainer]}>
           <CancelButton setVisible={setVisible} />
@@ -87,10 +88,10 @@ export function SiteContentTextEditor({
         </ThemedView>
         <style>
           {`
-    .ProseMirror p {
-      margin: 0;
-    }
-  `}
+          div.texteditor .ProseMirror p {
+            margin-top: 0;
+          }
+          `}
         </style>
       </ThemedView>
     );
