@@ -527,28 +527,28 @@ export function LoginScreen() {
               onChangeText={setPassword}
               value={password}
             />
-            <Pressable
-              ref={loginButtonRef}
-              style={[styles.border, styles.padding, styles.loginContainer]}
-              onHoverIn={() => setHighlight(true)}
-              onHoverOut={() => setHighlight(false)}
-              onFocus={() => setHighlight(true)}
-              onPress={
-                isPointingToServer
-                  ? () => {
-                      setHighlight(false);
-                      login();
-                      setLoginRequestIssued(true);
-                    }
-                  : undefined
-              }
-            >
-              {isPointingToServer ? (
+            {isPointingToServer ? (
+              <Pressable
+                ref={loginButtonRef}
+                style={[styles.border, styles.padding, styles.loginContainer]}
+                onHoverIn={() => setHighlight(true)}
+                onHoverOut={() => setHighlight(false)}
+                onFocus={() => setHighlight(true)}
+                onPress={() => {
+                  setHighlight(false);
+                  login();
+                  setLoginRequestIssued(true);
+                }}
+              >
                 <Text style={[styles.login]}>{t("login")}</Text>
-              ) : (
+              </Pressable>
+            ) : (
+              <View
+                style={[styles.border, styles.padding, styles.loginContainer]}
+              >
                 <Text style={[styles.login]}>{t("unableToFindServer")}</Text>
-              )}
-            </Pressable>
+              </View>
+            )}
           </View>
           <View style={[styles.lowerHalf]}>
             <Pressable
