@@ -52,7 +52,7 @@ export function SiteContentTextEditor({
     },
     editorProps: {
       attributes: {
-        style: `color: ${theme.colors.text}; width: 100%; height: 100%; position: absolute`,
+        style: `color: ${theme.colors.text}; width: 100%; height: 100%; `,
       },
     },
   });
@@ -74,8 +74,10 @@ export function SiteContentTextEditor({
           <div
             style={{
               flex: 1,
-              width: "99.5%",
-              marginLeft: 3,
+              display: "block",
+              overflow: "hidden",
+              overflowY: "auto",
+              overflowX: "hidden",
             }}
             className="texteditor"
           >
@@ -88,8 +90,20 @@ export function SiteContentTextEditor({
         </ThemedView>
         <style>
           {`
+          .texteditor .ProseMirror {
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+          }
+
           div.texteditor .ProseMirror p {
             margin-top: 0;
+            height: 100%;
+          }
+
+          .ProseMirror-focused {
+            outline: none;
           }
           `}
         </style>
