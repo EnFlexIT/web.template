@@ -9,6 +9,7 @@ import { SiteContentProperties } from "./SiteContentProperties"
 import { View } from "react-native"
 import { AbstractSiteContentEditor } from "../editors/AbstractSiteContentEditor"
 
+
 interface AbstractSiteContentProps {
     abstractSiteContent: AbstractSiteContentType
 }
@@ -52,4 +53,5 @@ export function AbstractSiteContent({ abstractSiteContent }: AbstractSiteContent
     } else {
         return undefined
     }
+    
 }

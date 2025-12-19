@@ -10,7 +10,7 @@ import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Conten
 import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-Settings";
 import { internalSetLanguage, setLanguage } from "./languageSlice";
 import { PrivacySettings } from "../../screens/settings/PrivacySettings";
-
+import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
@@ -258,6 +258,12 @@ export const menuSlice = createSlice({
             parentID: 3003,
             Screen: PrivacySettings,
           },
+          {
+          caption: "Database Connections & Settings",
+           menuID: 3010,
+           parentID: 3003, // Settings
+           Screen: DatabaseConnectionsSettings,
+},
         ];
 
         state.menu = rawListToTrees(state.rawMenu);

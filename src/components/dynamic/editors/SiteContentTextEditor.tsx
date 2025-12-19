@@ -1,18 +1,21 @@
 import { Pressable, View } from "react-native";
-import { ThemedView } from "../../themed/ThemedView";
-import { ThemedText } from "../../themed/ThemedText";
+
 import React, { Dispatch, Fragment, SetStateAction, useState } from "react";
 import {
   AbstractSiteContent as AbstractSiteContentType,
   SiteContentText,
 } from "../../../api/implementation/Dynamic-Content-Api";
-// import { createThematicallyDependentStyle, useThematicallyDependentStyle, useTheme } from "enflex.it-core";
+//Editor
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+//Elemnte
 import { ConfirmButton } from "./ConfirmButton";
 import { CancelButton } from "./CancelButton";
 import { Bar } from "../../richtexteditor/ui/bar";
+//StyleSheet
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { ThemedView } from "../../themed/ThemedView";
+import { ThemedText } from "../../themed/ThemedText";
 
 interface SiteContentTextEditorProps {
   siteContentText: SiteContentText;

@@ -12,7 +12,6 @@ import { useAppSelector } from "./hooks/useAppSelector";
 import { initializeLanguage } from "./redux/slices/languageSlice";
 import { initializeTheme } from "./redux/slices/themeSlice";
 import { store } from "./redux/store";
-import { LoadingScreen } from "./screens/LoadingScreen";
 import { LoginScreen } from "./screens/Login";
 import { selectIsLoggedIn, initializeApi } from "./redux/slices/apiSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
@@ -93,7 +92,7 @@ function RootStack() {
           primary: theme.colors.primary,
           text: theme.colors.text,
         },
-        dark: theme.dark,
+        dark: false,
         fonts: theme.fonts,
       }}
       linking={{

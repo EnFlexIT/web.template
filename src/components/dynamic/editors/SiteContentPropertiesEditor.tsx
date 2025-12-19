@@ -1,13 +1,15 @@
 import { ViewStyle } from "react-native";
+import React, { Dispatch, SetStateAction, useState } from "react";
+//Dynamic-Content-Api
+import { AbstractSiteContent as AbstractSiteContentType, SiteContentProperties, PropertyEntry } from "../../../api/implementation/Dynamic-Content-Api";
+//Elemente
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+
+//Style
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { ThemedText } from "../../themed/ThemedText";
 import { ThemedTextInput } from "../../themed/ThemedTextInput";
 import { ThemedView } from "../../themed/ThemedView";
-import React, { Dispatch, SetStateAction, useState } from "react";
-import { AbstractSiteContent as AbstractSiteContentType, SiteContentProperties, PropertyEntry } from "../../../api/implementation/Dynamic-Content-Api";
-// import { createThematicallyDependentStyle, useThematicallyDependentStyle, useTheme } from "enflex.it-core";
-import { CancelButton } from "./CancelButton";
-import { ConfirmButton } from "./ConfirmButton";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 interface PropertyEntryKeyProps {
     propertyEntry: PropertyEntry,
@@ -196,10 +198,19 @@ export function SiteContentPropertiesEditor({ setContent, setVisible, siteConten
                     }
                 </ThemedView>
             </ThemedView>
-            <ThemedView style={[styles.siteContentPropertiesEditorButtonsContainer, {}]}>
-                <CancelButton setVisible={setVisible} />
-                <ConfirmButton confirm={confirmProperties} setVisible={setVisible} />
-            </ThemedView>
+            <ThemedView style={styles.siteContentPropertiesEditorButtonsContainer}>
+         <ActionButton
+          label="Cancel"
+          onPress={() => setVisible(false)}/>
+
+         <ActionButton
+         label="Confirm"
+         variant="primary"
+         onPress={async () => {
+            await confirmProperties();
+            setVisible(false);}} />
+           </ThemedView>
+
         </ThemedView>
     )
 }
