@@ -4,8 +4,8 @@ import themeReducer from "./slices/themeSlice";
 import apiReducer from "./slices/apiSlice";
 import dataPermissionsReducer from "./slices/dataPermissionsSlice";
 import menuReducer from "./slices/menuSlice";
-import organizationsReducer from "./slices/organizationsSlice";
 import readySlice from "./slices/readySlice";
+import { OrganizationsData } from "./slices/organizationsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,7 +14,7 @@ export const store = configureStore({
     api: apiReducer,
     dataPermissions: dataPermissionsReducer,
     menu: menuReducer,
-    organizations: organizationsReducer,
+    organizations: OrganizationsData.slice.reducer,
     ready: readySlice,
   },
 });

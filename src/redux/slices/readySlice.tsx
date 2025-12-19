@@ -7,7 +7,7 @@ export interface ReadyState {
   ready: boolean;
 }
 
-const initialState: ReadyState = { ready: true };
+const initialState: ReadyState = { ready: false };
 
 export const readySlice = createSlice({
   name: "ready",

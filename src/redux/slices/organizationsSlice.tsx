@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Data } from "./Data";
 
-const key = "organizations" as const;
-
+/** Type defintion for what an Organization is */
 interface Organization {
   cookie_preference: string;
   last_jwt: string;
@@ -11,39 +11,61 @@ interface Organization {
   last_successful_connection: string;
 }
 
+/** Type Definition for Redux state */
 export interface OrganizationsState {
   organizations: Record<string, Organization>;
   current_organization?: string;
 }
 
+/** Async Storage key to store OrganizationsState */
+const key = "organizations" as const;
+
+/** Initial State thats provided to redux */
 const initialState: OrganizationsState = {
   organizations: {},
 };
 
-const defaultOrganizations: OrganizationsState = {
-  ...initialState,
-};
-
-export const initializeOrganizations = createAsyncThunk(
+/** Thunk to initialize redux state */
+const initializeState = createAsyncThunk(
   "organizations/initialize",
-  async () => {
-    const storedOrganizations = await AsyncStorage.getItem(key);
-    if (storedOrganizations) {
-      try {
-        return (
-          (JSON.parse(storedOrganizations) as OrganizationsState) ??
-          defaultOrganizations
-        );
-      } catch (exception) {
-        return defaultOrganizations;
+  async function () {
+    const storedVal = await readData();
+    if (storedVal) {
+      const val = parseData(storedVal);
+      if (val) {
+        return val;
+      } else {
+        return initialState;
       }
+    } else {
+      return initialState;
     }
-    return defaultOrganizations;
   },
 );
 
-export const organizationsSlice = createSlice({
-  name: "organizations",
+function parseData(data: string): OrganizationsState | null {
+  try {
+    /** We typically would also check if the parsed object actually has all fields that are required by a OrganizationsState object */
+    return JSON.parse(data);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function readData(): Promise<string | null> {
+  return await AsyncStorage.getItem(key);
+}
+
+function writeData(data: string): void {
+  AsyncStorage.setItem(key, data);
+}
+
+function stringifyData(data: OrganizationsState): string {
+  return JSON.stringify(data);
+}
+
+const slice = createSlice({
+  name: "organization",
   initialState,
   reducers: {
     addOrganization: (
@@ -62,7 +84,7 @@ export const organizationsSlice = createSlice({
     },
   },
   extraReducers(builder) {
-    builder.addCase(initializeOrganizations.fulfilled, (state, { payload }) => {
+    builder.addCase(initializeState.fulfilled, (state, { payload }) => {
       /* As always, immer just does not work with simple assignment, we instead copy inner elements */
       state.organizations = payload.organizations;
       state.current_organization = payload.current_organization;
@@ -71,9 +93,27 @@ export const organizationsSlice = createSlice({
   },
 });
 
+export const OrganizationsData = {
+  slice: slice,
+
+  initializeState: initializeState,
+
+  parseData: parseData,
+
+  readData: readData,
+
+  writeData: writeData,
+
+  stringifyData: stringifyData,
+
+  initialState: initialState,
+
+  id: "organizations",
+
+  dependencies: [],
+} satisfies Data<OrganizationsState>;
+
 export const selectOrganizations = (state: RootState) => state.organizations;
 
 export const { addOrganization, setCurrentOrganization } =
-  organizationsSlice.actions;
-
-export default organizationsSlice.reducer;
+  OrganizationsData.slice.actions;

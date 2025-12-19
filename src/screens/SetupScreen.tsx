@@ -14,6 +14,8 @@ import {
 import { useAppSelector } from "../hooks/useAppSelector";
 import { setIp } from "../redux/slices/apiSlice";
 import { setReady } from "../redux/slices/readySlice";
+import { foldl } from "../util/func";
+import { AdminsApi, Configuration } from "../api/implementation/AWB-RestAPI";
 
 interface AddServerButtonProps {
   active?: boolean;
@@ -109,28 +111,106 @@ function AddServerModal({ isVisibile, setIsVisible }: AddServerModalProps) {
 
   const dispatch = useAppDispatch();
 
+  const [ipAdressStatus, setIpAdressValid] = useState<
+    "dirty" | "valid" | "unvalid"
+  >("dirty");
+
+  const table = [
+    [
+      <ThemedText>Name: </ThemedText>,
+      <ThemedTextInput
+        value={serverName}
+        onChangeText={setServerName}
+        style={styles.border}
+      />,
+    ],
+    [
+      <ThemedText>Ip-Adress: </ThemedText>,
+      <ThemedTextInput
+        value={ipAdress}
+        onChangeText={(text) => {
+          setIpAdressValid("dirty");
+          setIpAdress(text);
+        }}
+        style={[styles.border]}
+      />,
+      ipAdressStatus === "dirty" ? (
+        <Pressable
+          onPress={(event) => {
+            async function f() {
+              try {
+                if (ipAdress) {
+                  const api = new AdminsApi({
+                    isJsonMime: new Configuration().isJsonMime,
+                    basePath: ipAdress,
+                  });
+
+                  const request = await api.infoGet();
+
+                  if (request.status === 200) {
+                    setIpAdressValid("valid");
+                  } else {
+                    setIpAdressValid("unvalid");
+                  }
+                }
+              } catch (e) {
+                setIpAdressValid("unvalid");
+              }
+            }
+            f();
+          }}
+        >
+          <ThemedText>Check Validity</ThemedText>
+        </Pressable>
+      ) : ipAdressStatus === "valid" ? (
+        <ThemedAntDesign name="check" />
+      ) : (
+        <ThemedAntDesign name="close" style={[{ color: "red" }]} />
+      ),
+    ],
+  ];
+  const longestRow = foldl(
+    (acc, curr) => (curr > acc ? curr : acc),
+    0,
+    table.map((val) => val.length),
+  );
+
   return (
     <Modal visible={isVisibile} onRequestClose={() => setIsVisible(false)}>
       <ThemedView style={[styles.modalContainer]}>
         <ThemedView style={[styles.modalWidget, styles.border]}>
-          <View style={[styles.inputContainer]}>
-            <ThemedText>Name: </ThemedText>
-            <ThemedTextInput
-              value={serverName}
-              onChangeText={setServerName}
-              style={styles.border}
-            />
-          </View>
-          <View style={[styles.inputContainer]}>
-            <ThemedText>Ip-Adress: </ThemedText>
-            <ThemedTextInput
-              value={ipAdress}
-              onChangeText={setIpAdress}
-              style={styles.border}
-            />
+          <View
+            style={{
+              gap: 10,
+            }}
+          >
+            {table.map((row, rowIdx) => {
+              return (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                  key={rowIdx}
+                >
+                  {row.map((column, columnIdx) => (
+                    <View
+                      key={columnIdx}
+                      style={{ width: `${(1 / longestRow) * 100}%` }}
+                    >
+                      {column}
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
           </View>
           <AddServerButton
-            active={!(serverName === "" || ipAdress === "")}
+            active={
+              !(serverName === "" || ipAdress === "") &&
+              ipAdressStatus === "valid"
+            }
             onPress={() => {
               setIsVisible(false);
               dispatch(
