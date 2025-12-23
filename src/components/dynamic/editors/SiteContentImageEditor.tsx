@@ -1,169 +1,148 @@
 import { Image as ImageJSX, View } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
-//Dynamic-Content-Api
+
+// Dynamic-Content-Api
 import {
-    AbstractSiteContent as AbstractSiteContentType,
-    SiteContentImage
+  AbstractSiteContent as AbstractSiteContentType,
+  SiteContentImage,
 } from "../../../api/implementation/Dynamic-Content-Api";
-//picker
+
+// Picker
 import * as DocumentPicker from "expo-document-picker";
-//Elmente 
-import { CancelButton } from "./CancelButton";
-import { ConfirmButton } from "./ConfirmButton";
-import { UploadButton } from "./UploadButton";
+
+// UI Elements
 import { XButton } from "./XButton";
-//StyleSheet
+import { ActionButton } from "../../ui-elements/ActionButton";
+
+// Styling
 import { StyleSheet } from "react-native-unistyles";
 import { ThemedView } from "../../themed/ThemedView";
 
-
 interface SiteContentImageEditorProps {
-    siteContentImage: SiteContentImage;
-    setContent: Dispatch<React.SetStateAction<AbstractSiteContentType>>;
-    setVisible: Dispatch<SetStateAction<boolean>>;
+  siteContentImage: SiteContentImage;
+  setContent: Dispatch<React.SetStateAction<AbstractSiteContentType>>;
+  setVisible: Dispatch<SetStateAction<boolean>>;
 }
 
 export function SiteContentImageEditor({
-    siteContentImage: content,
-    setVisible,
-    setContent,
+  siteContentImage: content,
+  setVisible,
+  setContent,
 }: SiteContentImageEditorProps) {
-    const [image, setImage] = useState<HTMLImageElement | undefined>(undefined);
+  const [image, setImage] = useState<HTMLImageElement | undefined>(undefined);
 
-    async function chooseImage() {
-        const l = await DocumentPicker.getDocumentAsync({
-            type: content.mimeType
-        });
+  async function chooseImage() {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: content.mimeType,
+    });
 
-        try {
-            if (!l.canceled && l.assets) {
-                const [asset] = l.assets;
-                const img = new Image();
-                img.onload = function () {
-                    setImage(img);
-                };
-                img.src = asset.uri;
-            }
-        } catch (e) {
-            console.error(`Error while trying to pick image`);
-            console.error(e);
-        }
+    try {
+      if (!result.canceled && result.assets) {
+        const [asset] = result.assets;
+        const img = new Image();
+        img.onload = () => setImage(img);
+        img.src = asset.uri;
+      }
+    } catch (e) {
+      console.error("Error while trying to pick image", e);
     }
+  }
 
-    async function confirmImage() {
-        if (image) {
-            console.log(image.src);
-            /* Regex parsing */
-            const regex =
-                /^\s*data:(?<media_type>(?<mime_type>[a-z\-]+\/[a-z\-\+]+)(?<params>(;[a-z\-]+\=[a-z\-]+)*))?(?<encoding>;base64)?,(?<data>[a-z0-9\!\$\&\'\,\(\)\*\+\,\;\=\-\.\_\~\:\@\/\?\%\s]*\s*)$/i;
+  async function confirmImage() {
+    if (!image) return;
 
-            const result = regex.exec(image.src);
-            if (result && result.groups) {
-                setContent({
-                    dataInB64: result.groups.data,
-                    editable: content.editable,
-                    mimeType: content.mimeType,
-                    uniqueContentID: content.uniqueContentID,
-                    updatePeriodInSeconds: content.updatePeriodInSeconds,
-                    AbstractSiteContentType: "SiteContentImage"
-                } as SiteContentImage);
+    const regex =
+      /^\s*data:(?<media_type>(?<mime_type>[a-z\-]+\/[a-z\-\+]+)(?<params>(;[a-z\-]+\=[a-z\-]+)*))?(?<encoding>;base64)?,(?<data>[a-z0-9\!\$\&\'\,\(\)\*\+\,\;\=\-\.\_\~\:\@\/\?\%\s]*\s*)$/i;
 
-                setVisible(false);
-            }
-        }
+    const result = regex.exec(image.src);
+
+    if (result?.groups?.data) {
+      setContent({
+        dataInB64: result.groups.data,
+        editable: content.editable,
+        mimeType: content.mimeType,
+        uniqueContentID: content.uniqueContentID,
+        updatePeriodInSeconds: content.updatePeriodInSeconds,
+        AbstractSiteContentType: "SiteContentImage",
+      } as SiteContentImage);
+
+      setVisible(false);
     }
+  }
 
-    /* -------------------------
-       RENDER BEREICH
-    --------------------------*/
+  /* -------------------------
+     RENDER
+  --------------------------*/
 
-    // Wenn bereits ein Bild ausgewählt wurde
-    if (image) {
-        return (
-            <ThemedView style={[styles.imageEditorContainer]}>
-
-               
-                <View style={styles.closeButtonContainer}>
-                    <XButton onPress={() => setVisible(false)} />
-                </View>
-
-                <ImageJSX
-                    style={{ width: image.width, height: image.height }}
-                    source={{ uri: image.src }}
-                />
-
-                <ThemedView style={[styles.imageEditorButtonsContainer]}>
-                    <CancelButton setVisible={setVisible} />
-                    <ConfirmButton setVisible={setVisible} confirm={confirmImage} />
-                </ThemedView>
-            </ThemedView>
-        );
-    }
-
-    // Wenn NOCH kein Bild ausgewählt wurde
+  // ✅ Bild wurde ausgewählt
+  if (image) {
     return (
-        <ThemedView style={[styles.imageEditorContainer]}>
+      <ThemedView style={styles.imageEditorContainer}>
+        <View style={styles.closeButtonContainer}>
+          <XButton onPress={() => setVisible(false)} />
+        </View>
 
-            {/*Blur X Button */}
-            <View style={styles.closeButtonContainer}>
-               <XButton onPress={() => setVisible(false)} />
-            </View>
+        <ImageJSX
+          style={{ width: image.width, height: image.height }}
+          source={{ uri: image.src }}
+        />
 
-            <UploadButton onPress={chooseImage} />
+        <ThemedView style={styles.imageEditorButtonsContainer}>
+          <ActionButton
+            label="Abbrechen"
+            variant="secondary"
+            onPress={() => setVisible(false)}
+          />
 
+          <ActionButton
+            label="Bestätigen"
+            variant="primary"
+            onPress={confirmImage}
+          />
         </ThemedView>
+      </ThemedView>
     );
-}
+  }
 
+  // ✅ Noch kein Bild → Upload über ActionButton mit Icon
+  return (
+    <ThemedView style={styles.imageEditorContainer}>
+      <View style={styles.closeButtonContainer}>
+        <XButton onPress={() => setVisible(false)} />
+      </View>
+
+      <ActionButton
+        icon="upload"
+        iconSize={60}
+        onPress={chooseImage}
+      />
+    </ThemedView>
+  );
+}
 
 /* -------------------------
    STYLES
 --------------------------*/
-const styles = StyleSheet.create((theme) => ({
-    imageEditorContainer: {
-        padding: 5,
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
+const styles = StyleSheet.create({
+  imageEditorContainer: {
+    padding: 5,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-    /*  Glas-X */
-    closeButtonContainer: {
-        position: "absolute",
-        top: 10,
-        right: 10,
-        zIndex: 999,
-    },
+  closeButtonContainer: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 999,
+  },
 
-    closeButtonBlur: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        overflow: "hidden",
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 5, // Android shadow
-    },
-
-    closeButtonPressable: {
-        width: "100%",
-        height: "100%",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-
-    imageEditorButtonsContainer: {
-        alignSelf: "stretch",
-        flexDirection: "row",
-        marginTop: 20,
-        gap: "10%",
-        justifyContent: "center",
-    },
-
-    confirmContainer: {},
-    confirmText: {},
-}));
+  imageEditorButtonsContainer: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    marginTop: 20,
+    gap: "10%",
+    justifyContent: "center",
+  },
+});

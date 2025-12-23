@@ -1,16 +1,16 @@
-<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><element><id>UMLClass</id><coordinates><x>1760</x><y>190</y><w>110</w><h>60</h></coordinates><panel_attributes>lw=2
-api</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1000</x><y>190</y><w>440</w><h>50</h></coordinates><panel_attributes>lw=2
-components</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>980</x><y>640</y><w>110</w><h>70</h></coordinates><panel_attributes>lw=2
+<diagram program="umletino" version="15.1"><zoom_level>11</zoom_level><element><id>UMLClass</id><coordinates><x>1925</x><y>198</y><w>121</w><h>66</h></coordinates><panel_attributes>lw=2
+api</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1089</x><y>198</y><w>484</w><h>55</h></coordinates><panel_attributes>lw=2
+components</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1067</x><y>693</y><w>121</w><h>77</h></coordinates><panel_attributes>lw=2
 hooks
 -
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1640</x><y>120</y><w>110</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1793</x><y>121</y><w>121</w><h>66</h></coordinates><panel_attributes>lw=2
 redux
 -
-slices</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1200</x><y>1070</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+slices</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1309</x><y>1166</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 screens
 --
-dynamic</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1760</x><y>240</y><w>130</w><h>160</h></coordinates><panel_attributes>lt=-&gt;&gt;
-sync call</panel_attributes><additional_attributes>10;140;60;140;60;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1610</x><y>360</y><w>160</w><h>100</h></coordinates><panel_attributes>lw=2
+dynamic</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1925</x><y>253</y><w>143</w><h>176</h></coordinates><panel_attributes>lt=-&gt;&gt;
+sync call</panel_attributes><additional_attributes>10;140;60;140;60;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1760</x><y>385</y><w>176</w><h>110</h></coordinates><panel_attributes>lw=2
 Apislices
 -
 
@@ -18,20 +18,20 @@ isIpPointingToServer()
 export  interface ApiState{}
 export initializeApi{}
 login()
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1710</x><y>170</y><w>30</w><h>210</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;190;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1040</x><y>1120</y><w>230</w><h>140</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;120;10;30;210;30;210;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1400</x><y>1240</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1870</x><y>176</y><w>33</w><h>231</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;190;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1133</x><y>1221</y><w>253</w><h>154</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;120;10;30;210;30;210;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1529</x><y>1353</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 settings
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1000</x><y>1240</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1089</x><y>1353</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 dynamic-content
 
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1250</x><y>1120</y><w>260</w><h>140</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>240;120;240;30;10;30;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1560</x><y>290</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1364</x><y>1221</y><w>286</w><h>154</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>240;120;240;30;10;30;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1705</x><y>308</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 dataPermissionsSlice
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1050</x><y>770</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1144</x><y>836</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 dynamic
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1270</x><y>230</y><w>30</w><h>860</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;840;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1020</x><y>230</y><w>40</w><h>430</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;410;20;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1110</x><y>230</y><w>40</w><h>560</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;540;20;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1040</x><y>900</y><w>200</w><h>150</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1386</x><y>242</y><w>33</w><h>946</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;840;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1111</x><y>242</y><w>44</w><h>473</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;410;20;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1210</x><y>242</y><w>44</w><h>616</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;540;20;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1133</x><y>979</y><w>220</w><h>165</h></coordinates><panel_attributes>lw=2
 editors
 --
 AbstractSiteContentEditor : tsx
@@ -40,7 +40,7 @@ ConfirmButton : tsx
 SiteContentImageEditor: tsx
 SiteContentPropertiesEditor:tsx
 SiteContentTextEditor:tsx
-UploadButton:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>850</x><y>930</y><w>160</w><h>150</h></coordinates><panel_attributes>lw=2
+UploadButton:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>924</x><y>1012</y><w>176</w><h>165</h></coordinates><panel_attributes>lw=2
 content
 --
 AbstractSiteContent: tsx
@@ -48,83 +48,83 @@ SiteChart : tsx
 SiteContentImage : tsx
 SiteContentList : tsx
 SiteContentProperties : tsx
-SiteContentText : tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>920</x><y>820</y><w>160</w><h>130</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;110;10;50;140;50;140;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1140</x><y>820</y><w>50</w><h>100</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;80;10;40;30;40;30;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>590</x><y>670</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+SiteContentText : tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1001</x><y>891</y><w>176</w><h>143</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;110;10;50;140;50;140;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1243</x><y>891</y><w>55</w><h>110</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;80;10;40;30;40;30;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>638</x><y>726</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 richtexteditor
 --
 
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>600</x><y>900</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>649</x><y>979</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 icons
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>650</x><y>210</y><w>370</w><h>480</h></coordinates><panel_attributes>lt=&lt;-
-m1=0..n</panel_attributes><additional_attributes>10;460;20;10;350;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>770</x><y>810</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>704</x><y>220</y><w>407</w><h>528</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..n</panel_attributes><additional_attributes>10;460;20;10;350;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>836</x><y>880</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 stylistic
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>450</x><y>720</y><w>170</w><h>110</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;90;10;70;150;70;150;10</additional_attributes></element><element><id>Relation</id><coordinates><x>840</x><y>230</y><w>190</w><h>600</h></coordinates><panel_attributes>lt=&lt;-
-group=group-0</panel_attributes><additional_attributes>10;580;10;200;170;200;170;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>450</x><y>810</y><w>130</w><h>70</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>484</x><y>781</y><w>187</w><h>121</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;90;10;70;150;70;150;10</additional_attributes></element><element><id>Relation</id><coordinates><x>913</x><y>242</y><w>209</w><h>660</h></coordinates><panel_attributes>lt=&lt;-
+group=group-0</panel_attributes><additional_attributes>10;580;10;200;170;200;170;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>484</x><y>880</y><w>143</w><h>77</h></coordinates><panel_attributes>lw=2
 ui
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>650</x><y>720</y><w>30</w><h>200</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;180;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>930</y><w>220</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>704</x><y>781</y><w>33</w><h>220</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;180;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1012</y><w>242</w><h>66</h></coordinates><panel_attributes>lw=2
 Header
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>990</y><w>220</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1078</y><w>242</w><h>66</h></coordinates><panel_attributes>lw=2
 LanguageSwitcher
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>1050</y><w>220</w><h>80</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1144</y><w>242</w><h>88</h></coordinates><panel_attributes>lw=2
 Logo
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>870</y><w>220</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>946</y><w>242</w><h>66</h></coordinates><panel_attributes>lw=2
 DataPermissionsDialog
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>150</x><y>180</y><w>870</w><h>710</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;690;10;10;850;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>1130</y><w>220</w><h>80</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>154</x><y>187</y><w>957</w><h>781</h></coordinates><panel_attributes>lt=&lt;&lt;&lt;&lt;-</panel_attributes><additional_attributes>10;690;10;10;850;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1232</y><w>242</w><h>88</h></coordinates><panel_attributes>lw=2
 Navigation
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>1210</y><w>220</w><h>80</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1320</y><w>242</w><h>88</h></coordinates><panel_attributes>lw=2
 Screen
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>1290</y><w>220</w><h>80</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1408</y><w>242</w><h>88</h></coordinates><panel_attributes>lw=2
 Table
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>60</x><y>1370</y><w>220</w><h>80</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>55</x><y>1496</y><w>242</w><h>88</h></coordinates><panel_attributes>lw=2
 ToolBox
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1450</x><y>190</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1584</x><y>198</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 hooks
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2370</x><y>250</y><w>130</w><h>60</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2596</x><y>264</y><w>143</w><h>66</h></coordinates><panel_attributes>lw=2
 hooks
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2030</x><y>320</y><w>30</w><h>190</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;170;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1630</x><y>170</y><w>70</w><h>140</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;120;10;50;50;50;50;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1950</x><y>200</y><w>130</w><h>130</h></coordinates><panel_attributes>lw=2
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2222</x><y>341</y><w>33</w><h>209</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;170;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1782</x><y>176</y><w>77</w><h>154</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;120;10;50;50;50;50;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2134</x><y>209</y><w>143</w><h>143</h></coordinates><panel_attributes>lw=2
 screens
 --
 DynamicScreen :tsx
 Home:tsx
 LoadingScreen:tsx
 Login:tsx
-Settings:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1890</x><y>320</y><w>110</w><h>270</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;250;10;60;90;60;90;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1830</x><y>570</y><w>160</w><h>100</h></coordinates><panel_attributes>lw=2
+Settings:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2068</x><y>341</y><w>121</w><h>297</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>10;250;10;60;90;60;90;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2002</x><y>616</y><w>176</w><h>110</h></coordinates><panel_attributes>lw=2
 dynamic-content
 -
 
 Image:tsx
 Properties:tsx
-Text:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>10</x><y>10</y><w>2060</w><h>1210</h></coordinates><panel_attributes>lt=-
+Text:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>0</x><y>0</y><w>2266</w><h>1331</h></coordinates><panel_attributes>lt=-
 m1=4
 m2=1
-&lt; teaches to</panel_attributes><additional_attributes>2030;190;2030;30;20;20;10;1180;50;1180</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2030</x><y>490</y><w>160</w><h>100</h></coordinates><panel_attributes>lw=2
+&lt; teaches to</panel_attributes><additional_attributes>2030;190;2030;30;20;20;10;1180;50;1180</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2222</x><y>528</y><w>176</w><h>110</h></coordinates><panel_attributes>lw=2
 settings
 -
 
 PrivacySettings
-Unauthenticated-Settings</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2250</x><y>610</y><w>160</w><h>160</h></coordinates><panel_attributes>lw=2
+Unauthenticated-Settings</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>2464</x><y>660</y><w>176</w><h>176</h></coordinates><panel_attributes>lw=2
 styles
 -
 
 charttheme:js
 darkTheme:ts
 fonts:ts
-lightTheme:ts</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2070</x><y>310</y><w>300</w><h>320</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>280;300;280;10;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2130</x><y>880</y><w>160</w><h>100</h></coordinates><panel_attributes>lw=2
+lightTheme:ts</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2266</x><y>330</y><w>330</w><h>352</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>280;300;280;10;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>2332</x><y>957</y><w>176</w><h>110</h></coordinates><panel_attributes>lw=2
 util
 -
 
 func:tsx
 isAbstractSiteContent:tsx
-Text:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2070</x><y>260</y><w>150</w><h>640</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>130;620;130;10;10;10</additional_attributes></element></diagram>
+Text:tsx</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>2266</x><y>275</y><w>165</w><h>704</h></coordinates><panel_attributes>lt=&lt;&lt;-</panel_attributes><additional_attributes>130;620;130;10;10;10</additional_attributes></element></diagram>
