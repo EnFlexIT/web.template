@@ -9,5 +9,7 @@
   "executionState": "Ausführungsmodus",
   "changePassword": "Passwort ändern",
   "privacy": "Datenschutz",
-  "privacysettings": "Privatsphäre"
+  "privacysettings": "Privatsphäre",
+    "databaseConnectionsAndSettings": "Datenbankverbindungen & Einstellungen"
+
 }

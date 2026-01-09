@@ -27,6 +27,7 @@ import {
 import { foldl } from "./util/func";
 import { MenuItem } from "./redux/slices/menuSlice";
 import { DynamicScreen } from "./screens/DynamicScreen";
+import SettingsTest from "./testes/SettingsTest";
 
 const Drawer = createDrawerNavigator();
 
@@ -216,6 +217,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <RootStack />
+      {/* <SettingsTest /> */}
     </Provider>
   );
 }

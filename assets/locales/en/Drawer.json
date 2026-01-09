@@ -9,5 +9,7 @@
   "executionState": "Mode of Execution",
   "changePassword": "Change password",
   "privacy": "Privacy",
-  "privacysettings": "Privacy Settings"
+  "privacysettings": "Privacy Settings",
+  "databaseConnectionsAndSettings": "databaseConnectionsAndSettings"
+
 }
