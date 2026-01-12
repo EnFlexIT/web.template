@@ -11,6 +11,7 @@ import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-
 import { internalSetLanguage, setLanguage } from "./languageSlice";
 import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
+import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
@@ -259,11 +260,17 @@ export const menuSlice = createSlice({
             Screen: PrivacySettings,
           },
           {
-          caption: "Database Connections & Settings",
-           menuID: 3010,
-           parentID: 3003, // Settings
-           Screen: DatabaseConnectionsSettings,
-},
+            caption: "databaseConnectionsAndSettings",
+            menuID: 3010,
+            parentID: 3003,
+            Screen: DatabaseConnectionsSettings,
+          },
+          {
+            caption: "devHome",
+            menuID: 3011,
+            parentID: 1, // oder ohne parentID als eigener Root
+            Screen: DevHomeScreen,
+          },
         ];
 
         state.menu = rawListToTrees(state.rawMenu);

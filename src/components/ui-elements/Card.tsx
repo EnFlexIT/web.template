@@ -1,12 +1,14 @@
-import React, { ReactNode, useState } from "react";
+// src/components/ui-elements/Card/Card.tsx
+import React, { ReactNode, useMemo, useState } from "react";
 import { Pressable, ViewStyle, StyleProp } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import { ThemedView } from "../themed/ThemedView";
 
+type CardPadding = "none" | "sm" | "md" | "lg";
+
 interface CardProps {
   children: ReactNode;
-
   onPress?: () => void;
 
   /** optional: eigene Styles */
@@ -16,7 +18,17 @@ interface CardProps {
   /** optional: UI Verhalten */
   hoverBorderHighlight?: boolean; // default true
   disabled?: boolean; // default false
+
+  /** ✅ padding variants */
+  padding?: CardPadding; // default "md"
 }
+
+const PADDING_MAP: Record<CardPadding, number> = {
+  none: 0,
+  sm: 12,
+  md: 16,
+  lg: 20,
+};
 
 export function Card({
   children,
@@ -25,6 +37,7 @@ export function Card({
   contentStyle,
   hoverBorderHighlight = true,
   disabled = false,
+  padding = "md",
 }: CardProps) {
   const [over, setOver] = useState(false);
   const { theme } = useUnistyles();
@@ -39,6 +52,8 @@ export function Card({
 
   const isPressable = !!onPress && !disabled;
 
+  const paddingValue = useMemo(() => PADDING_MAP[padding], [padding]);
+
   return (
     <ThemedView style={[styles.card, { backgroundColor, borderColor }, style]}>
       <Pressable
@@ -48,8 +63,8 @@ export function Card({
         onHoverOut={() => setOver(false)}
         style={({ pressed }) => [
           styles.pressable,
+          { padding: paddingValue, opacity: pressed ? 0.88 : 1 },
           contentStyle,
-          { opacity: pressed ? 0.88 : 1 },
         ]}
       >
         {children}
@@ -65,6 +80,6 @@ const styles = StyleSheet.create(() => ({
     overflow: "hidden",
   },
   pressable: {
-    padding: 16,
+    
   },
 }));
