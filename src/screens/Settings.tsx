@@ -4,7 +4,7 @@ import { Card } from "../components/ui-elements/Card";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import { useLinkTo } from "@react-navigation/native";
-
+import { SmallStat } from "../components/ui-elements/SmallStat";
 export function SettingsScreen() {
   const linkTo = useLinkTo();
   const { theme } = useUnistyles();
@@ -18,32 +18,32 @@ export function SettingsScreen() {
       {/* Header */}
       <View style={{ gap: 6 }}>
         <Text style={{ fontSize: 22, fontWeight: "600" }}>Settings</Text>
-        <Text style={{ fontSize: 14, opacity: 0.7 }}>
-          Configure system behaviour and upcoming features.
-        </Text>
+       
       </View>
 
       {/* Cards */}
-      <View style={{ gap: 12 }}>
-        <Card onPress={() => linkTo("/3010")} contentStyle={styles.cardContent}>
+      <View style={{ gap: 12, flexDirection: "row" }}>
+        
+        <Card  
+        padding="sm" 
+         onPress={() => linkTo("/3010")} contentStyle={styles.cardContent}
+         >
           <Text style={styles.title}>Database Connections & Settings</Text>
-          <Text style={[styles.description, { color: descriptionColor }]}>
-            Configure database system, connection parameters and credentials.
-          </Text>
+          
         </Card>
 
-        <Card contentStyle={styles.cardContent}>
-          <Text style={styles.title}>Operating Mode</Text>
-          <Text style={[styles.description, { color: descriptionColor }]}>
-            Configure server and runtime behaviour.
-          </Text>
+          <Card 
+          padding="sm"
+          onPress={() => linkTo("/3004")} contentStyle={styles.cardContent}>
+          <Text style={styles.title}>Allgmein</Text>
+          
         </Card>
 
-        <Card contentStyle={styles.cardContent}>
-          <Text style={styles.title}>Feature Handling</Text>
-          <Text style={[styles.description, { color: descriptionColor }]}>
-            Enable or disable system features.
-          </Text>
+        <Card 
+        padding="sm"
+        onPress={() => linkTo("/3005")} contentStyle={styles.cardContent}>
+          <Text style={styles.title}>Privacy</Text>
+         
         </Card>
       </View>
     </View>
