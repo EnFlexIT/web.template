@@ -1,4 +1,8 @@
-import { createSlice, isPlainObject, PayloadAction } from "@reduxjs/toolkit";
+// src/redux/slices/apiSlice.ts
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
+
 import { RootState } from "../store";
 import {
   AdminsApi,
@@ -11,42 +15,130 @@ import {
   Configuration as DynamicContentApiConfiguration,
   DefaultApi,
 } from "../../api/implementation/Dynamic-Content-Api";
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { jwtDecode } from "jwt-decode";
-import { initializeMenu } from "./menuSlice";
-import { Platform } from "react-native";
 
-const defaultAuthenticationMethod = "jwt";
+import { initializeMenu } from "./menuSlice";
+
 const ipKey = "ip" as const;
-const defaultIp: string = __DEV__
-  ? process.env.EXPO_PUBLIC_DEFAULT_DEV_IP
-  : process.env.EXPO_PUBLIC_DEFAULT_PROD_IP;
-const defaultJwt = null;
 const jwtKey = "jwt" as const;
 
-async function isIpPointingToServer(ip: string) {
+const defaultAuthenticationMethod: "jwt" | "oidc" = "jwt";
+
+const defaultIp: string = __DEV__
+  ? (process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8081")
+  : (process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "");
+
+const defaultJwt: string | null = null;
+
+function normalizeBaseUrl(url: string) {
+  // removes trailing slash
+  return url.replace(/\/+$/, "");
+}
+
+function makeRestConf(params: {
+  baseUrl: string;
+  jwt: string | null;
+  authenticationMethod: "jwt" | "oidc";
+}): RestApiConfiguration {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
+  const isJsonMime = new RestApiConfiguration().isJsonMime;
+
+  // only set auth header if we really have a token
+  const headers =
+    params.authenticationMethod === "jwt" && params.jwt
+      ? { Authorization: `Bearer ${params.jwt}` }
+      : undefined;
+
+  return {
+    isJsonMime,
+    basePath: `${baseUrl}/api`,
+    baseOptions: headers ? { headers } : undefined,
+  };
+}
+
+function makeDynamicConf(params: {
+  baseUrl: string;
+  jwt: string | null;
+  authenticationMethod: "jwt" | "oidc";
+}): DynamicContentApiConfiguration {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
+  const isJsonMime = new DynamicContentApiConfiguration().isJsonMime;
+
+  const headers =
+    params.authenticationMethod === "jwt" && params.jwt
+      ? { Authorization: `Bearer ${params.jwt}` }
+      : undefined;
+
+  return {
+    isJsonMime,
+    basePath: `${baseUrl}/dc`,
+    baseOptions: headers ? { headers } : undefined,
+  };
+}
+
+function buildApis(params: {
+  baseUrl: string;
+  jwt: string | null;
+  authenticationMethod: "jwt" | "oidc";
+}) {
+  const restConf = makeRestConf(params);
+  const dcConf = makeDynamicConf(params);
+
+  return {
+    awb_rest_api: {
+      adminsApi: new AdminsApi(restConf),
+      userApi: new UserApi(restConf),
+      infoApi: new InfoApi(restConf),
+      doActionApi: new DoActionApi(restConf),
+    },
+    dynamic_content_api: {
+      defaultApi: new DefaultApi(dcConf),
+    },
+  };
+}
+
+async function detectAuthenticationMethod(baseUrl: string): Promise<{
+  isPointingToServer: boolean;
+  authenticationMethod: "jwt" | "oidc";
+}> {
+  const base = normalizeBaseUrl(baseUrl);
+
   const infoApi = new InfoApi({
     isJsonMime: new RestApiConfiguration().isJsonMime,
-    basePath: `${ip}/api`,
+    basePath: `${base}/api`,
   });
 
-  const { data, status } = await infoApi.getAppSettings();
+  try {
+    const { data, status } = await infoApi.getAppSettings();
 
-  switch (status) {
-    case 200: {
-      const authenticationMethodPointer = data.propertyEntries.find(
-        ({ key }) => key === "_ServerWideSecurityConfiguration",
+    if (status !== 200) {
+      return { isPointingToServer: false, authenticationMethod: "jwt" };
+    }
+
+    const entries = Array.isArray((data as any)?.propertyEntries)
+      ? (data as any).propertyEntries
+      : [];
+
+    const authPointer = entries.find(
+      (e: any) => e?.key === "_ServerWideSecurityConfiguration",
+    );
+
+    if (!authPointer?.value) {
+      // server reachable, but field missing -> treat as server true,
+      // keep jwt as default to avoid falling back to DefaultApi() without config
+      console.warn(
+        `api init: server responded 200 on ${base} but missing _ServerWideSecurityConfiguration`,
       );
-      if (authenticationMethodPointer) {
-        return true;
-      } else {
-        return false;
-      }
+      return { isPointingToServer: true, authenticationMethod: "jwt" };
     }
-    default: {
-      return false;
+
+    if (authPointer.value === "OIDCSecurityHandler") {
+      return { isPointingToServer: true, authenticationMethod: "oidc" };
     }
+
+    // default
+    return { isPointingToServer: true, authenticationMethod: "jwt" };
+  } catch {
+    return { isPointingToServer: false, authenticationMethod: "jwt" };
   }
 }
 
@@ -70,227 +162,88 @@ export interface ApiState {
 export const initializeApi = createAsyncThunk(
   "api/initialize",
   async (): Promise<ApiState> => {
-    /**
-     * Firstly we fetch the ip that is stored. This ip should be pointing to an awb server
-     */
-    const ip = (await AsyncStorage.getItem(ipKey)) ?? defaultIp;
+    const storedIp = await AsyncStorage.getItem(ipKey);
+    const storedJwt = await AsyncStorage.getItem(jwtKey);
 
-    /**
-     * Secondely we get the jwt token
-     */
-    const jwt = (await AsyncStorage.getItem(jwtKey)) ?? defaultJwt;
+    const ip = normalizeBaseUrl(storedIp ?? defaultIp);
+    const jwt = (storedJwt ?? defaultJwt) as string | null;
 
-    /**
-     * Then we instantiate an infoApi.
-     * We will use this api object to query some information about the server with which we are going to interact with
-     */
-    const infoApi = new InfoApi({
-      isJsonMime: new RestApiConfiguration().isJsonMime,
-      basePath: `${ip}/api`,
-    });
+    const { isPointingToServer, authenticationMethod } =
+      await detectAuthenticationMethod(ip);
 
-    /**
-     * We will try calling the api now
-     */
-    try {
-      const { data, status } = await infoApi.getAppSettings();
+    const apis = buildApis({ baseUrl: ip, jwt, authenticationMethod });
 
-      /**
-       * We can now switch over wether the call succeeded or failed
-       */
-      switch (status) {
-        case 200: {
-          /**
-           * Next we are goin to check what security handler the awb server uses
-           */
-          const authenticationMethodPointer = data.propertyEntries.find(
-            ({ key }) => key === "_ServerWideSecurityConfiguration",
-          );
+    const isLoggedIn =
+      authenticationMethod === "jwt"
+        ? jwt
+          ? (jwtDecode(jwt).exp ?? 0) * 1000 > Date.now()
+          : false
+        : false; // for oidc you likely have a different check; keep false here
 
-          /**
-           * We have to validate that the reponse actually contains the field we are looking for
-           */
-          if (authenticationMethodPointer) {
-            const { value: authenticationMethod } = authenticationMethodPointer;
+    // persist ip/jwt so web stays consistent
+    await AsyncStorage.setItem(ipKey, ip);
+    if (jwt) await AsyncStorage.setItem(jwtKey, jwt);
+    else await AsyncStorage.removeItem(jwtKey);
 
-            switch (authenticationMethod) {
-              case "JwtSingleUserSecurityHandler": {
-                /**
-                 * Check if the given jwt's expiration date is greater than the current time
-                 * if not, return isLoggedIn = false
-                 * We multiply by 1000 because Christian's time is missing three decimal points.
-                 */
-                const isLoggedIn = jwt
-                  ? (jwtDecode(jwt).exp ?? 0) * 1000 > Date.now()
-                  : false;
+    return {
+      ...apis,
+      authenticationMethod,
+      ip,
+      jwt,
+      isLoggedIn,
+      isPointingToServer,
+    };
+  },
+);
 
-                const rest_api_conf: RestApiConfiguration = {
-                  isJsonMime: new RestApiConfiguration().isJsonMime,
-                  basePath: `${ip}/api`,
-                  baseOptions: { headers: { Authorization: `Bearer ${jwt}` } },
-                };
+export const setIpAsync = createAsyncThunk(
+  "api/setIpAsync",
+  async (rawIp: string, thunkAPI) => {
+    const ip = normalizeBaseUrl(rawIp);
 
-                const restAPI = {
-                  adminsApi: new AdminsApi(rest_api_conf),
-                  userApi: new UserApi(rest_api_conf),
-                  infoApi: new InfoApi(rest_api_conf),
-                  doActionApi: new DoActionApi(rest_api_conf),
-                };
+    // keep current jwt for header building
+    const state = thunkAPI.getState() as RootState;
+    const jwt = state.api.jwt;
 
-                const dynamic_content_api_conf: DynamicContentApiConfiguration =
-                  {
-                    isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-                    basePath: `${ip}/dc`,
-                    baseOptions: {
-                      headers: { Authorization: `Bearer ${jwt}` },
-                    },
-                  };
+    const { isPointingToServer, authenticationMethod } =
+      await detectAuthenticationMethod(ip);
 
-                const dynamicContentApi = {
-                  defaultApi: new DefaultApi(dynamic_content_api_conf),
-                };
+    await AsyncStorage.setItem(ipKey, ip);
 
-                return {
-                  authenticationMethod: "jwt",
-                  awb_rest_api: restAPI,
-                  dynamic_content_api: dynamicContentApi,
-                  ip: ip,
-                  isLoggedIn: isLoggedIn,
-                  isPointingToServer: true,
-                  jwt: jwt,
-                };
-              }
-              case "OIDCSecurityHandler": {
-                const rest_api_conf: RestApiConfiguration = {
-                  isJsonMime: new RestApiConfiguration().isJsonMime,
-                  basePath: `${ip}/api`,
-                };
+    thunkAPI.dispatch(
+      setIpLocal({
+        ip,
+        isPointingToServer,
+        authenticationMethod,
+        jwt,
+      }),
+    );
 
-                const restAPI = {
-                  adminsApi: new AdminsApi(rest_api_conf),
-                  userApi: new UserApi(rest_api_conf),
-                  infoApi: new InfoApi(rest_api_conf),
-                  doActionApi: new DoActionApi(rest_api_conf),
-                };
-
-                const dynamic_content_api_conf: DynamicContentApiConfiguration =
-                  {
-                    isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-                    basePath: `${ip}/dc`,
-                  };
-
-                const dynamicContentApi = {
-                  defaultApi: new DefaultApi(dynamic_content_api_conf),
-                };
-
-                const isLoggedInPointer = data.propertyEntries.find(
-                  ({ key }) => key === "_Authenticated",
-                );
-
-                return {
-                  authenticationMethod: "oidc",
-                  awb_rest_api: restAPI,
-                  dynamic_content_api: dynamicContentApi,
-                  ip: ip,
-                  isLoggedIn: isLoggedInPointer
-                    ? isLoggedInPointer.value === "true"
-                    : false,
-                  isPointingToServer: true,
-                  jwt: jwt,
-                };
-              }
-            }
-          } else {
-            /**
-             * In this case we could call the info Api but the reponse did not include any information about the security handler
-             * that the server uses. we therefore cannot query any more information and return
-             */
-            console.warn(
-              `api initialization could find server on ${ip} which responded with 200 on getAppSettings() call but there was no _ServerWideSecurityConfiguration field in response`,
-            );
-            return {
-              authenticationMethod: "jwt",
-              awb_rest_api: {
-                adminsApi: new AdminsApi(),
-                doActionApi: new DoActionApi(),
-                infoApi: new InfoApi(),
-                userApi: new UserApi(),
-              },
-              dynamic_content_api: {
-                defaultApi: new DefaultApi(),
-              },
-              ip: ip,
-              isLoggedIn: false,
-              isPointingToServer: false,
-              jwt: jwt,
-            };
-          }
-        }
-        default: {
-          return {
-            authenticationMethod: "jwt",
-            awb_rest_api: {
-              adminsApi: new AdminsApi(),
-              doActionApi: new DoActionApi(),
-              infoApi: new InfoApi(),
-              userApi: new UserApi(),
-            },
-            dynamic_content_api: {
-              defaultApi: new DefaultApi(),
-            },
-            ip: ip,
-            isLoggedIn: false,
-            isPointingToServer: false,
-            jwt: jwt,
-          };
-        }
-      }
-    } catch (exception) {
-      /**
-       * If the api call failed, we can be certain that we cannot reach an awb server at the provided ip.
-       * we therefore return a configuration that represents a false state
-       */
-      console.log("no server");
-      return {
-        authenticationMethod: "jwt",
-        awb_rest_api: {
-          adminsApi: new AdminsApi(),
-          doActionApi: new DoActionApi(),
-          infoApi: new InfoApi(),
-          userApi: new UserApi(),
-        },
-        dynamic_content_api: {
-          defaultApi: new DefaultApi(),
-        },
-        ip: ip,
-        isLoggedIn: false,
-        isPointingToServer: false,
-        jwt: jwt,
-      };
-    }
+    return { ip, isPointingToServer, authenticationMethod };
   },
 );
 
 export const login = createAsyncThunk(
   "api/login",
   async (jwt: string, thunkAPI) => {
-    await thunkAPI.dispatch(setJwt(jwt));
+    thunkAPI.dispatch(setJwtLocal(jwt));
+    await AsyncStorage.setItem(jwtKey, jwt);
+
+    // Menü erst NACH jwt setzen laden
     await thunkAPI.dispatch(initializeMenu());
   },
 );
 
-const initialState: ApiState = {
-  awb_rest_api: {
-    adminsApi: new AdminsApi(),
-    userApi: new UserApi(),
-    infoApi: new InfoApi(),
-    doActionApi: new DoActionApi(),
-  },
-  dynamic_content_api: {
-    defaultApi: new DefaultApi(),
-  },
+const initialApis = buildApis({
+  baseUrl: defaultIp,
+  jwt: defaultJwt,
   authenticationMethod: defaultAuthenticationMethod,
-  ip: defaultIp,
+});
+
+const initialState: ApiState = {
+  ...initialApis,
+  authenticationMethod: defaultAuthenticationMethod,
+  ip: normalizeBaseUrl(defaultIp),
   jwt: defaultJwt,
   isLoggedIn: false,
   isPointingToServer: false,
@@ -300,198 +253,76 @@ export const apiSlice = createSlice({
   name: "api",
   initialState,
   reducers: {
-    setIp: function (state, action: PayloadAction<string>) {
-      let rest_api_conf: RestApiConfiguration;
-      let dynamic_content_api_conf: DynamicContentApiConfiguration;
-
-      switch (state.authenticationMethod) {
-        case "jwt":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${action.payload}/api`,
-            baseOptions: { headers: { Authorization: `Bearer ${state.jwt}` } },
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${action.payload}/dc`,
-            baseOptions: { headers: { Authorization: `Bearer ${state.jwt}` } },
-          };
-          break;
-        case "oidc":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${action.payload}/api`,
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${action.payload}/dc`,
-          };
-          break;
-      }
-
-      const restAPI = {
-        adminsApi: new AdminsApi(rest_api_conf),
-        userApi: new UserApi(rest_api_conf),
-        infoApi: new InfoApi(rest_api_conf),
-        doActionApi: new DoActionApi(rest_api_conf),
-      };
-
-      const dynamicContentApi = {
-        defaultApi: new DefaultApi(dynamic_content_api_conf),
-      };
-
-      state.awb_rest_api = restAPI;
-      state.dynamic_content_api = dynamicContentApi;
-      state.ip = action.payload;
-      isIpPointingToServer(action.payload).then(
-        (is) => (state.isPointingToServer = is),
-      );
-      AsyncStorage.setItem(ipKey, action.payload);
-
-      // if (Platform.OS === "web") {
-      //   window.location.reload();
-      // }
-    },
-    setAuthenticationMethod: function (
+    // internal only: used by setIpAsync
+    setIpLocal: (
       state,
-      action: PayloadAction<"jwt" | "oidc">,
-    ) {
-      let rest_api_conf: RestApiConfiguration;
-      let dynamic_content_api_conf: DynamicContentApiConfiguration;
+      action: PayloadAction<{
+        ip: string;
+        jwt: string | null;
+        isPointingToServer: boolean;
+        authenticationMethod: "jwt" | "oidc";
+      }>,
+    ) => {
+      state.ip = action.payload.ip;
+      state.isPointingToServer = action.payload.isPointingToServer;
+      state.authenticationMethod = action.payload.authenticationMethod;
 
-      switch (action.payload) {
-        case "jwt":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/api`,
-            baseOptions: { headers: { Authorization: `Bearer ${state.jwt}` } },
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/dc`,
-            baseOptions: { headers: { Authorization: `Bearer ${state.jwt}` } },
-          };
-          break;
+      const apis = buildApis({
+        baseUrl: action.payload.ip,
+        jwt: action.payload.jwt,
+        authenticationMethod: action.payload.authenticationMethod,
+      });
 
-        case "oidc":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/api`,
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/dc`,
-          };
-          break;
-      }
-      const restAPI = {
-        adminsApi: new AdminsApi(rest_api_conf),
-        userApi: new UserApi(rest_api_conf),
-        infoApi: new InfoApi(rest_api_conf),
-        doActionApi: new DoActionApi(rest_api_conf),
-      };
-      const dynamicContentApi = {
-        defaultApi: new DefaultApi(dynamic_content_api_conf),
-      };
-      state.authenticationMethod = action.payload;
-      state.awb_rest_api = restAPI;
-      state.dynamic_content_api = dynamicContentApi;
+      state.awb_rest_api = apis.awb_rest_api;
+      state.dynamic_content_api = apis.dynamic_content_api;
     },
-    setJwt: function (state, action: PayloadAction<string | null>) {
-      let rest_api_conf: RestApiConfiguration;
-      let dynamic_content_api_conf: DynamicContentApiConfiguration;
 
-      switch (state.authenticationMethod) {
-        case "jwt":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/api`,
-            baseOptions: {
-              headers: { Authorization: `Bearer ${action.payload}` },
-            },
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/dc`,
-            baseOptions: {
-              headers: { Authorization: `Bearer ${action.payload}` },
-            },
-          };
-          break;
-        case "oidc":
-          rest_api_conf = {
-            isJsonMime: new RestApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/api`,
-          };
-          dynamic_content_api_conf = {
-            isJsonMime: new DynamicContentApiConfiguration().isJsonMime,
-            basePath: `${state.ip}/dc`,
-          };
-          break;
-      }
-      const restAPI = {
-        adminsApi: new AdminsApi(rest_api_conf),
-        userApi: new UserApi(rest_api_conf),
-        infoApi: new InfoApi(rest_api_conf),
-        doActionApi: new DoActionApi(rest_api_conf),
-      };
-
-      const dynamicContentApi = {
-        defaultApi: new DefaultApi(dynamic_content_api_conf),
-      };
-
-      state.awb_rest_api = restAPI;
-      state.dynamic_content_api = dynamicContentApi;
+    setJwtLocal: (state, action: PayloadAction<string | null>) => {
       state.jwt = action.payload;
-      if (action.payload) {
-        AsyncStorage.setItem(jwtKey, action.payload);
-      } else {
-        AsyncStorage.removeItem(jwtKey);
-      }
+
+      const apis = buildApis({
+        baseUrl: state.ip,
+        jwt: action.payload,
+        authenticationMethod: state.authenticationMethod,
+      });
+
+      state.awb_rest_api = apis.awb_rest_api;
+      state.dynamic_content_api = apis.dynamic_content_api;
     },
-    logout: function (state) {
+
+    logout: (state) => {
       state.isLoggedIn = false;
-      switch (state.authenticationMethod) {
-        case "jwt": {
-          AsyncStorage.removeItem(jwtKey);
-        }
-      }
+      state.jwt = null;
+      AsyncStorage.removeItem(jwtKey);
+
+      const apis = buildApis({
+        baseUrl: state.ip,
+        jwt: null,
+        authenticationMethod: state.authenticationMethod,
+      });
+
+      state.awb_rest_api = apis.awb_rest_api;
+      state.dynamic_content_api = apis.dynamic_content_api;
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(initializeApi.fulfilled, (state, action) => {
-        // console.log("started")
-        state.authenticationMethod = action.payload.authenticationMethod;
+    builder.addCase(initializeApi.fulfilled, (state, action) => {
+      state.authenticationMethod = action.payload.authenticationMethod;
+      state.awb_rest_api = action.payload.awb_rest_api;
+      state.dynamic_content_api = action.payload.dynamic_content_api;
+      state.ip = action.payload.ip;
+      state.isLoggedIn = action.payload.isLoggedIn;
+      state.isPointingToServer = action.payload.isPointingToServer;
+      state.jwt = action.payload.jwt;
+    });
 
-        state.awb_rest_api = action.payload.awb_rest_api;
-
-        state.dynamic_content_api = action.payload.dynamic_content_api;
-
-        state.ip = action.payload.ip;
-        AsyncStorage.setItem(ipKey, action.payload.ip);
-
-        state.isLoggedIn = action.payload.isLoggedIn;
-
-        state.isPointingToServer = action.payload.isPointingToServer;
-
-        state.jwt = action.payload.jwt;
-        if (action.payload.jwt) {
-          AsyncStorage.setItem(jwtKey, action.payload.jwt);
-        } else {
-          AsyncStorage.removeItem(jwtKey);
-        }
-
-        // console.log("finished")
-      })
-      .addCase(login.fulfilled, (state, action) => {
-        state.isLoggedIn = true;
-      });
+    builder.addCase(login.fulfilled, (state) => {
+      state.isLoggedIn = true;
+    });
   },
 });
 
-export const { setIp, setAuthenticationMethod, setJwt, logout } =
-  apiSlice.actions;
+export const { setIpLocal, setJwtLocal, logout } = apiSlice.actions;
 
 export const selectApi = (state: RootState) => state.api;
 export const selectJwt = (state: RootState) => state.api.jwt;

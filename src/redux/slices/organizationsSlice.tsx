@@ -117,3 +117,4 @@ export const selectOrganizations = (state: RootState) => state.organizations;
 
 export const { addOrganization, setCurrentOrganization } =
   OrganizationsData.slice.actions;
+export { initializeState as initializeOrganizations };
