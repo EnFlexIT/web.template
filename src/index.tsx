@@ -28,6 +28,14 @@ import { foldl } from "./util/func";
 import { MenuItem } from "./redux/slices/menuSlice";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import SettingsTest from "./testes/SettingsTest";
+import { ThemedText } from "./components/themed/ThemedText";
+import { ThemedView } from "./components/themed/ThemedView";
+import { SetupScreen } from "./screens/SetupScreen";
+import {
+  initializeOrganizations,
+  selectOrganizations,
+} from "./redux/slices/organizationsSlice";
+import { selectReady } from "./redux/slices/readySlice";
 
 const Drawer = createDrawerNavigator();
 
@@ -50,6 +58,7 @@ function RootStack() {
         dispatch(initializeTheme()),
         dispatch(initializeApi()),
         dispatch(initializeDataPermissions()),
+        dispatch(initializeOrganizations()),
       ]);
       await dispatch(initializeMenu());
       const id = Number(window.location.pathname.split("/").at(1));
@@ -64,6 +73,11 @@ function RootStack() {
   const isWide = useIsWide();
 
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
+
+  const { ready } = useAppSelector(selectReady);
+  const { organizations, current_organization } =
+    useAppSelector(selectOrganizations);
+  const isReady = current_organization && ready;
 
   const navigationMenu = menu.find((node) => hasId(node, activeMenuId))!;
   /**
@@ -168,34 +182,48 @@ function RootStack() {
           /**
            * If User is Logged in, render the Screens that correspond to a logged in experience
            */
-          isLoggedIn ? (
-            <Drawer.Group>
-              {rawMenu.map((node, i) => (
-                <Drawer.Screen
-                  key={i}
-                  name={node.menuID!.toString()}
-                  children={function () {
-                    return node.Screen ? (
-                      <node.Screen />
-                    ) : (
-                      <DynamicScreen node={node} />
-                    );
-                  }}
-                  options={{
-                    title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
-                  }}
-                />
-              ))}
-            </Drawer.Group>
-          ) : (
-            /**
-             * If User is not logged in, render the log-in screen
-             */
-            <Drawer.Group
+          isReady ? (
+            isLoggedIn ? (
+              <Drawer.Group>
+                {rawMenu.map((node, i) => (
+                  <Drawer.Screen
+                    key={i}
+                    name={node.menuID!.toString()}
+                    children={function () {
+                      return node.Screen ? (
+                        <node.Screen />
+                      ) : (
+                        <DynamicScreen node={node} />
+                      );
+                    }}
+                    options={{
+                      title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
+                    }}
+                  />
+                ))}
+              </Drawer.Group>
+            ) : (
               /**
-               * For the Login Screen we would like to give the impression, that it is the entire application and there is nothing more to it
-               * we achieve this by disabling the drawer by disabling the swipe gesture and setting the drawer style to "none", effectively hiding the drawer.
+               * If User is not logged in, render the log-in screen
                */
+              <Drawer.Group
+                /**
+                 * For the Login Screen we would like to give the impression, that it is the entire application and there is nothing more to it
+                 * we achieve this by disabling the drawer by disabling the swipe gesture and setting the drawer style to "none", effectively hiding the drawer.
+                 */
+                screenOptions={{
+                  swipeEnabled: false,
+                  drawerStyle: {
+                    display: "none",
+                  },
+                  headerShown: false,
+                }}
+              >
+                <Drawer.Screen name="Login" component={LoginScreen} />
+              </Drawer.Group>
+            )
+          ) : (
+            <Drawer.Group
               screenOptions={{
                 swipeEnabled: false,
                 drawerStyle: {
@@ -204,7 +232,7 @@ function RootStack() {
                 headerShown: false,
               }}
             >
-              <Drawer.Screen name="Login" component={LoginScreen} />
+              <Drawer.Screen name="Setup" component={SetupScreen} />
             </Drawer.Group>
           )
         }

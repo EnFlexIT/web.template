@@ -40,6 +40,7 @@ import { selectLanguage, setLanguage } from "../redux/slices/languageSlice";
 import { selectTheme, setTheme } from "../redux/slices/themeSlice";
 import { Picker } from "@react-native-picker/picker";
 import { initializeMenu } from "../redux/slices/menuSlice";
+import { setReady } from "../redux/slices/readySlice";
 
 // import { View, ViewProps, TextInput, Pressable, Platform } from 'react-native';
 // import { PropsWithChildren, ReactNode, useRef, useState } from 'react';
@@ -604,17 +605,11 @@ export function LoginScreen() {
                   </Picker>
                 </View>
                 <View>
-                  <ThemedText>{t("ip_adress")}</ThemedText>
-                  <StylisticTextInput
-                    value={ipField}
-                    style={[styles.border, styles.padding]}
-                    onChangeText={async function (text) {
-                      setIpField(text);
-                    }}
-                    onSubmitEditing={function ({ nativeEvent: { text } }) {
-                      dispatch(setIp(text));
-                    }}
-                  />
+                  <Pressable
+                    onPress={() => dispatch(setReady({ ready: false }))}
+                  >
+                    <ThemedText>Change Organizations</ThemedText>
+                  </Pressable>
                 </View>
               </ScrollView>
             )}

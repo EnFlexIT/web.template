@@ -13,14 +13,11 @@ import { StyleSheet } from "react-native-unistyles";
  * @public
  */
 export function ThemedText(props: TextProps) {
-
-  return (
-    <Text {...props} style={[styles.text, props.style]} />
-  );
+  return <Text {...props} style={[styles.text, props.style]} />;
 }
 
-const styles = StyleSheet.create(theme => ({
+const styles = StyleSheet.create((theme) => ({
   text: {
-    color: theme.colors.text
-  }
-}))
+    color: theme.colors.text,
+  },
+}));

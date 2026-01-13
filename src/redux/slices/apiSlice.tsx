@@ -348,9 +348,9 @@ export const apiSlice = createSlice({
       );
       AsyncStorage.setItem(ipKey, action.payload);
 
-      if (Platform.OS === "web") {
-        window.location.reload();
-      }
+      // if (Platform.OS === "web") {
+      //   window.location.reload();
+      // }
     },
     setAuthenticationMethod: function (
       state,

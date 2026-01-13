@@ -1,6 +1,6 @@
 import { Picker } from "@react-native-picker/picker";
 import { useTranslation } from "react-i18next";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet, UnistylesRuntime } from "react-native-unistyles";
 import { Screen } from "../../components/Screen";
 import { useAppSelector } from "../../hooks/useAppSelector";
@@ -17,6 +17,7 @@ import { StylisticTextInput } from "../../components/stylistic/StylisticTextInpu
 import { selectIp, setIp } from "../../redux/slices/apiSlice";
 import { useState } from "react";
 import { useRoute } from "@react-navigation/native";
+import { setReady } from "../../redux/slices/readySlice";
 
 export function UnauthenticatedSettings() {
   const { t } = useTranslation(["Settings.Unauthenticated"]);
@@ -43,7 +44,7 @@ export function UnauthenticatedSettings() {
               dispatch(
                 setLanguage({
                   language: itemValue,
-                })
+                }),
               )
             }
           >
@@ -62,7 +63,7 @@ export function UnauthenticatedSettings() {
                     adaptive: itemValue === "system" ? true : false,
                     theme: itemValue === "system" ? theme.val.theme : itemValue,
                   },
-                })
+                }),
               );
             }}
           >
@@ -71,18 +72,10 @@ export function UnauthenticatedSettings() {
             <Picker.Item label={t("dark")} value="dark" />
           </Picker>
         </View>
-        <View style={[styles.ip]}>
-          <ThemedText>IP:</ThemedText>
-          <StylisticTextInput
-            value={ipField}
-            style={[styles.border, styles.padding]}
-            onChangeText={async function (text) {
-              setIpField(text);
-            }}
-            onSubmitEditing={function ({ nativeEvent: { text } }) {
-              dispatch(setIp(text));
-            }}
-          />
+        <View>
+          <Pressable onPress={() => dispatch(setReady({ ready: false }))}>
+            <ThemedText>Switch Organization</ThemedText>
+          </Pressable>
         </View>
       </ScrollView>
     </Screen>
