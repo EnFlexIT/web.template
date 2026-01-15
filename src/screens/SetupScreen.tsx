@@ -1,7 +1,7 @@
 import { ThemedView } from "../components/themed/ThemedView";
 import { ThemedText } from "../components/themed/ThemedText";
 import { StyleSheet } from "react-native-unistyles";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { ThemedAntDesign } from "../components/themed/ThemedAntDesign";
 import { ThemedTextInput } from "../components/themed/ThemedTextInput";
@@ -12,10 +12,28 @@ import {
   setCurrentOrganization,
 } from "../redux/slices/organizationsSlice";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { setIp } from "../redux/slices/apiSlice";
+//import { setIpLocal } from "../redux/slices/apiSlice";
 import { setReady } from "../redux/slices/readySlice";
 import { foldl } from "../util/func";
-import { AdminsApi, Configuration } from "../api/implementation/AWB-RestAPI";
+
+// ✅ WICHTIG: so wie in deinem apiSlice
+import {
+  Configuration as RestApiConfiguration,
+  InfoApi,
+} from "../api/implementation/AWB-RestAPI";
+
+function normalizeBaseUrl(input: string) {
+  const trimmed = input.trim();
+
+  // erlaubt Eingabe ohne http(s)
+  const withProtocol =
+    trimmed.startsWith("http://") || trimmed.startsWith("https://")
+      ? trimmed
+      : `http://${trimmed}`;
+
+  // trailing slash entfernen
+  return withProtocol.replace(/\/+$/, "");
+}
 
 interface AddServerButtonProps {
   active?: boolean;
@@ -25,7 +43,7 @@ function AddServerButton({ active, onPress }: AddServerButtonProps) {
   const [over, setOver] = useState(false);
   styles.useVariants({ over: over, active: active ?? true });
 
-  return (active ?? true) ? (
+  return active ?? true ? (
     <Pressable
       onHoverIn={() => setOver(true)}
       onHoverOut={() => setOver(false)}
@@ -61,10 +79,11 @@ function ServerEntry({ name, ip }: ServerEntryProps) {
     <Pressable
       onHoverIn={() => setOver(true)}
       onHoverOut={() => setOver(false)}
-      onPress={function () {
+      onPress={() => {
         dispatch(setReady({ ready: true }));
-        dispatch(setCurrentOrganization({ name: name }));
-        dispatch(setIp(ip));
+        dispatch(setCurrentOrganization({ name }));
+       // dispatch(setIpLocal( ip ));
+
       }}
     >
       <ThemedView style={[styles.serverEntryContainer, styles.border]}>
@@ -85,16 +104,15 @@ export function SetupScreen() {
         isVisibile={isModalVisible}
         setIsVisible={setIsModalVisible}
       />
+
       <ThemedView style={[styles.widget]}>
-        {Object.entries(organizations).map(([serverName, serverInfo], idx) => {
-          return (
-            <ServerEntry
-              ip={serverInfo.ip_adress}
-              name={serverName}
-              key={idx}
-            />
-          );
-        })}
+        {Object.entries(organizations).map(([serverName, serverInfo], idx) => (
+          <ServerEntry
+            ip={serverInfo.ip_adress}
+            name={serverName}
+            key={idx}
+          />
+        ))}
         <AddServerButton onPress={() => setIsModalVisible(true)} />
       </ThemedView>
     </ThemedView>
@@ -105,124 +123,137 @@ interface AddServerModalProps {
   isVisibile: boolean;
   setIsVisible: (_: boolean) => void;
 }
+
 function AddServerModal({ isVisibile, setIsVisible }: AddServerModalProps) {
   const [serverName, setServerName] = useState("");
   const [ipAdress, setIpAdress] = useState("");
-
   const dispatch = useAppDispatch();
 
   const [ipAdressStatus, setIpAdressValid] = useState<
     "dirty" | "valid" | "unvalid"
   >("dirty");
 
-  const table = [
-    [
-      <ThemedText>Name: </ThemedText>,
-      <ThemedTextInput
-        value={serverName}
-        onChangeText={setServerName}
-        style={styles.border}
-      />,
-    ],
-    [
-      <ThemedText>Ip-Adress: </ThemedText>,
-      <ThemedTextInput
-        value={ipAdress}
-        onChangeText={(text) => {
-          setIpAdressValid("dirty");
-          setIpAdress(text);
-        }}
-        style={[styles.border]}
-      />,
-      ipAdressStatus === "dirty" ? (
-        <Pressable
-          onPress={(event) => {
-            async function f() {
-              try {
-                if (ipAdress) {
-                  const api = new AdminsApi({
-                    isJsonMime: new Configuration().isJsonMime,
-                    basePath: ipAdress,
-                  });
+  async function checkServerValidity() {
+    try {
+      if (!ipAdress.trim()) {
+        setIpAdressValid("unvalid");
+        return;
+      }
 
-                  const request = await api.infoGet();
+      const baseUrl = normalizeBaseUrl(ipAdress);
 
-                  if (request.status === 200) {
-                    setIpAdressValid("valid");
-                  } else {
-                    setIpAdressValid("unvalid");
-                  }
-                }
-              } catch (e) {
-                setIpAdressValid("unvalid");
-              }
-            }
-            f();
+      // ✅ check genau wie apiSlice: `${ip}/api`
+      const infoApi = new InfoApi({
+        isJsonMime: new RestApiConfiguration().isJsonMime,
+        basePath: `${baseUrl}/api`,
+      });
+
+      const res = await infoApi.getAppSettings();
+
+      if (res.status === 200) {
+        setIpAdressValid("valid");
+      } else {
+        setIpAdressValid("unvalid");
+      }
+    } catch (e) {
+      setIpAdressValid("unvalid");
+    }
+  }
+
+  const table = useMemo(() => {
+    return [
+      [
+        <ThemedText key="n-label">Name:</ThemedText>,
+        <ThemedTextInput
+          key="n-input"
+          value={serverName}
+          onChangeText={setServerName}
+          style={styles.border}
+        />,
+      ],
+      [
+        <ThemedText key="ip-label">Ip-Adress:</ThemedText>,
+        <ThemedTextInput
+          key="ip-input"
+          value={ipAdress}
+          onChangeText={(text) => {
+            setIpAdressValid("dirty");
+            setIpAdress(text);
           }}
-        >
-          <ThemedText>Check Validity</ThemedText>
-        </Pressable>
-      ) : ipAdressStatus === "valid" ? (
-        <ThemedAntDesign name="check" />
-      ) : (
-        <ThemedAntDesign name="close" style={[{ color: "red" }]} />
-      ),
-    ],
-  ];
+          style={[styles.border]}
+        />,
+        ipAdressStatus === "dirty" ? (
+          <Pressable key="ip-check" onPress={checkServerValidity}>
+            <ThemedText>Check Validity</ThemedText>
+          </Pressable>
+        ) : ipAdressStatus === "valid" ? (
+          <ThemedAntDesign key="ip-ok" name="check" />
+        ) : (
+          <ThemedAntDesign
+            key="ip-bad"
+            name="close"
+            style={[{ color: "red" }]}
+          />
+        ),
+      ],
+    ];
+  }, [serverName, ipAdress, ipAdressStatus]);
+
   const longestRow = foldl(
     (acc, curr) => (curr > acc ? curr : acc),
     0,
-    table.map((val) => val.length),
+    table.map((val) => val.length)
   );
+
+  const canAdd =
+    serverName.trim() !== "" &&
+    ipAdress.trim() !== "" &&
+    ipAdressStatus === "valid";
 
   return (
     <Modal visible={isVisibile} onRequestClose={() => setIsVisible(false)}>
       <ThemedView style={[styles.modalContainer]}>
         <ThemedView style={[styles.modalWidget, styles.border]}>
-          <View
-            style={{
-              gap: 10,
-            }}
-          >
-            {table.map((row, rowIdx) => {
-              return (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                  key={rowIdx}
-                >
-                  {row.map((column, columnIdx) => (
-                    <View
-                      key={columnIdx}
-                      style={{ width: `${(1 / longestRow) * 100}%` }}
-                    >
-                      {column}
-                    </View>
-                  ))}
-                </View>
-              );
-            })}
+          <View style={{ gap: 10 }}>
+            {table.map((row, rowIdx) => (
+              <View
+                key={rowIdx}
+                style={{
+                  flexDirection: "row",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                {row.map((column, columnIdx) => (
+                  <View
+                    key={columnIdx}
+                    style={{ width: `${(1 / longestRow) * 100}%` }}
+                  >
+                    {column}
+                  </View>
+                ))}
+              </View>
+            ))}
           </View>
+
           <AddServerButton
-            active={
-              !(serverName === "" || ipAdress === "") &&
-              ipAdressStatus === "valid"
-            }
+            active={canAdd}
             onPress={() => {
+              if (!canAdd) return;
+
+              const baseUrl = normalizeBaseUrl(ipAdress);
+
               setIsVisible(false);
               dispatch(
                 addOrganization({
                   name: serverName,
                   organization: {
                     cookie_preference: "",
-                    ip_adress: ipAdress,
+                    ip_adress: baseUrl, // ✅ normalisiert speichern
                     last_jwt: "",
                     last_successful_connection: "",
                   },
-                }),
+                })
               );
             }}
           />
@@ -236,12 +267,6 @@ const styles = StyleSheet.create((theme) => ({
   border: {
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    // backgroundColor: "red",
-    justifyContent: "space-between",
-    gap: 15,
   },
   modalWidget: {
     gap: 20,
@@ -269,7 +294,6 @@ const styles = StyleSheet.create((theme) => ({
     minWidth: 200,
   },
   addServerButtonContainer: {
-    // backgroundColor: "red",
     backgroundColor: theme.colors.card,
     padding: 5,
     flexDirection: "row",

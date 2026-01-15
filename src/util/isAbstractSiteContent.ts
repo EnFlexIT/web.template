@@ -9,43 +9,48 @@ import {
   SiteContentTimeSeriesChart,
 } from "../api/implementation/Dynamic-Content-Api";
 
+function hasType(content: AbstractSiteContent | null | undefined): content is AbstractSiteContent {
+  return !!content && typeof (content as any).AbstractSiteContentType === "string";
+}
+
 export function isSiteContentText(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentText {
-  return (content as any).AbstractSiteContentType === "SiteContentText";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentText";
 }
 
 export function isSiteContentImage(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentImage {
-  return (content as any).AbstractSiteContentType === "SiteContentImage";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentImage";
 }
 
 export function isSiteContentProperties(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentProperties {
-  return (content as any).AbstractSiteContentType === "SiteContentProperties";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentProperties";
 }
+
 export function isSiteContentPieChart(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentPieChart {
-  return (content as any).AbstractSiteContentType === "SiteContentPieChart";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentPieChart";
 }
 
 export function isSiteContentTimeSeriesChart(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentTimeSeriesChart {
-  return (content as any).AbstractSiteContentType === "SiteContentPieChart";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentTimeSeriesChart";
 }
 
 export function isSiteContentBarChart(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentBarChart {
-  return (content as any).AbstractSiteContentType === "SiteContentPieChart";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentBarChart";
 }
 
 export function isSiteContentLineChart(
-  content: AbstractSiteContent
+  content: AbstractSiteContent | null | undefined
 ): content is SiteContentLineChart {
-  return (content as any).AbstractSiteContentType === "SiteContentPieChart";
+  return hasType(content) && (content as any).AbstractSiteContentType === "SiteContentLineChart";
 }

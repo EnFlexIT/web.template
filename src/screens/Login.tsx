@@ -29,10 +29,9 @@ import { useAppDispatch } from "../hooks/useAppDispatch";
 import {
   selectApi,
   selectAuthenticationMethod,
-  setJwt,
   login as reduxLogin,
   selectIp,
-  setIp,
+
 } from "../redux/slices/apiSlice";
 import { ThemedAntDesign } from "../components/themed/ThemedAntDesign";
 import { ThemedText } from "../components/themed/ThemedText";
