@@ -2,7 +2,7 @@ import './unistyles'
 import './i18n'
 import '@expo/metro-runtime'
 import { registerRootComponent } from 'expo';
-
+import { bootstrapAppMode } from './src/bootstrap/appBootstrap';
 import App from './src';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);

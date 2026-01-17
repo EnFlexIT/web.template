@@ -68,7 +68,7 @@ function RenderTime({ content }: { content: SiteContentTimeSeriesChart }) {
 }
 
 /* -------------------------
-   ✅ RENDER: BAR (Variante B)
+    RENDER: BAR (Variante B)
    - width dynamisch via onLayout
    - funktioniert sauber im Web + Mobile
 --------------------------*/

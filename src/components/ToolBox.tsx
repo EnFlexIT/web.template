@@ -1,74 +1,81 @@
-import AntDesign_ from '@expo/vector-icons/AntDesign';
-import { useAppSelector } from "../hooks/useAppSelector";
-import { logout, selectApi } from "../redux/slices/apiSlice";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import AntDesign_ from "@expo/vector-icons/AntDesign";
+import Feather_ from "@expo/vector-icons/Feather";
 import { View } from "react-native";
-import Feather_ from '@expo/vector-icons/Feather';
-import { selectTheme, setTheme } from "../redux/slices/themeSlice";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+
 import { useAppDispatch } from "../hooks/useAppDispatch";
+import { useAppSelector } from "../hooks/useAppSelector";
+import { logout } from "../redux/slices/apiSlice";
+import { selectTheme, setTheme } from "../redux/slices/themeSlice";
+import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 
-const Feather = withUnistyles(Feather_)
-const AntDesign = withUnistyles(AntDesign_)
+const Feather = withUnistyles(Feather_);
+const AntDesign = withUnistyles(AntDesign_);
 
-function LogoutButton() {
-
-    const dispatch = useAppDispatch()
-
-    return <AntDesign
-        onPress={() => {
-            dispatch(logout())
-        }}
-        name="logout"
-        size={24}
-        style={[styles.color]}
-    />
-}
+type ToolBoxProps = {
+  isLoggedIn: boolean;
+  isBaseMode?: boolean;
+};
 
 function ColorSwitcher() {
+  const { val: { theme } } = useAppSelector(selectTheme);
+  const dispatch = useAppDispatch();
 
-    const { val: { theme } } = useAppSelector(selectTheme)
-    const dispatch = useAppDispatch()
-
-    return <Feather
-        onPress={() => dispatch(setTheme({
+  return (
+    <Feather
+      onPress={() =>
+        dispatch(
+          setTheme({
             val: {
-                adaptive: false,
-                theme: theme === "dark" ? "light" : "dark"
-            }
-        }))}
-        name={theme === "dark" ? "moon" : "sun"}
-        size={24}
-        style={[styles.color]}
+              adaptive: false,
+              theme: theme === "dark" ? "light" : "dark",
+            },
+          }),
+        )
+      }
+      name={theme === "dark" ? "moon" : "sun"}
+      size={24}
+      style={[styles.color]}
     />
+  );
 }
 
-/**
- * The Drawer conditionally renders this component and because it uses `useAppSelector` this counts as a conditional hook and the app crashes.
- * we therefore need to pass the hook value from higher up.
- * 
- * unfortunate 
- */
-interface ToolBoxProps {
-    isLoggedIn: boolean
-}
-export function ToolBox({ isLoggedIn }: ToolBoxProps) {
-    return (
-        <View style={[styles.toolBoxContainer]}>
-            <ColorSwitcher />
-            {/* You can only log out, if you are logged in  */}
-            {isLoggedIn && <LogoutButton />}
-        </View>
-    )
+export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
+  const dispatch = useAppDispatch();
+  const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
+
+  const showLogout =
+    isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
+
+  return (
+    <View style={[styles.toolBoxContainer]}>
+      <ColorSwitcher />
+
+      {showLogout ? (
+        <AntDesign
+          onPress={() => {
+            if (isLoggedIn) {
+              dispatch(logout());
+            } else {
+              dispatch(logoutBaseMode());
+            }
+          }}
+          name="logout"
+          size={24}
+          style={[styles.color]}
+        />
+      ) : null}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create((theme) => ({
-    toolBoxContainer: {
-        // padding: 12,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 20,
-    },
-    color: {
-        color: theme.colors.text
-    }
-}))
+  toolBoxContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 20,
+  },
+  color: {
+    color: theme.colors.text,
+  },
+}));

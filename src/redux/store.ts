@@ -6,6 +6,7 @@ import dataPermissionsReducer from "./slices/dataPermissionsSlice";
 import menuReducer from "./slices/menuSlice";
 import readySlice from "./slices/readySlice";
 import { OrganizationsData } from "./slices/organizationsSlice";
+import baseModeReducer from "./slices/baseModeSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,8 @@ export const store = configureStore({
     menu: menuReducer,
     organizations: OrganizationsData.slice.reducer,
     ready: readySlice,
+    baseMode: baseModeReducer,
+
   },
 });
 

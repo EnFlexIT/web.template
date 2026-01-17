@@ -21,7 +21,9 @@ import { initializeMenu } from "./menuSlice";
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
 
-const defaultAuthenticationMethod: "jwt" | "oidc" = "jwt";
+type AuthMethod = "jwt" | "oidc";
+
+const defaultAuthenticationMethod: AuthMethod = "jwt";
 
 const defaultIp: string = __DEV__
   ? (process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8081")
@@ -30,19 +32,17 @@ const defaultIp: string = __DEV__
 const defaultJwt: string | null = null;
 
 function normalizeBaseUrl(url: string) {
-  // removes trailing slash
-  return url.replace(/\/+$/, "");
+  return (url ?? "").trim().replace(/\/+$/, "");
 }
 
 function makeRestConf(params: {
   baseUrl: string;
   jwt: string | null;
-  authenticationMethod: "jwt" | "oidc";
+  authenticationMethod: AuthMethod;
 }): RestApiConfiguration {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
   const isJsonMime = new RestApiConfiguration().isJsonMime;
 
-  // only set auth header if we really have a token
   const headers =
     params.authenticationMethod === "jwt" && params.jwt
       ? { Authorization: `Bearer ${params.jwt}` }
@@ -58,7 +58,7 @@ function makeRestConf(params: {
 function makeDynamicConf(params: {
   baseUrl: string;
   jwt: string | null;
-  authenticationMethod: "jwt" | "oidc";
+  authenticationMethod: AuthMethod;
 }): DynamicContentApiConfiguration {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
   const isJsonMime = new DynamicContentApiConfiguration().isJsonMime;
@@ -78,7 +78,7 @@ function makeDynamicConf(params: {
 function buildApis(params: {
   baseUrl: string;
   jwt: string | null;
-  authenticationMethod: "jwt" | "oidc";
+  authenticationMethod: AuthMethod;
 }) {
   const restConf = makeRestConf(params);
   const dcConf = makeDynamicConf(params);
@@ -96,9 +96,16 @@ function buildApis(params: {
   };
 }
 
-async function detectAuthenticationMethod(baseUrl: string): Promise<{
+/**
+ *  Detects:
+ * - isPointingToServer: server reachable (200)
+ * - authenticationMethod: jwt vs oidc via _ServerWideSecurityConfiguration
+ * - isBaseMode: _Authenticated === false  (device/base runtime BEFORE user login)
+ */
+async function detectServerAndMode(baseUrl: string): Promise<{
   isPointingToServer: boolean;
-  authenticationMethod: "jwt" | "oidc";
+  authenticationMethod: AuthMethod;
+  isBaseMode: boolean;
 }> {
   const base = normalizeBaseUrl(baseUrl);
 
@@ -108,37 +115,58 @@ async function detectAuthenticationMethod(baseUrl: string): Promise<{
   });
 
   try {
+    // calls: GET {base}/api/app/settings/get
     const { data, status } = await infoApi.getAppSettings();
 
     if (status !== 200) {
-      return { isPointingToServer: false, authenticationMethod: "jwt" };
+      return {
+        isPointingToServer: false,
+        authenticationMethod: "jwt",
+        isBaseMode: false,
+      };
     }
 
     const entries = Array.isArray((data as any)?.propertyEntries)
       ? (data as any).propertyEntries
       : [];
 
-    const authPointer = entries.find(
+    const authCfg = entries.find(
       (e: any) => e?.key === "_ServerWideSecurityConfiguration",
-    );
+    )?.value;
 
-    if (!authPointer?.value) {
-      // server reachable, but field missing -> treat as server true,
-      // keep jwt as default to avoid falling back to DefaultApi() without config
-      console.warn(
-        `api init: server responded 200 on ${base} but missing _ServerWideSecurityConfiguration`,
-      );
-      return { isPointingToServer: true, authenticationMethod: "jwt" };
-    }
+    const authenticatedRaw = entries.find((e: any) => e?.key === "_Authenticated")
+      ?.value;
 
-    if (authPointer.value === "OIDCSecurityHandler") {
-      return { isPointingToServer: true, authenticationMethod: "oidc" };
-    }
+    // _Authenticated comes often as "false"/"true" strings
+    const authenticated =
+      typeof authenticatedRaw === "boolean"
+        ? authenticatedRaw
+        : String(authenticatedRaw).toLowerCase() === "true";
 
-    // default
-    return { isPointingToServer: true, authenticationMethod: "jwt" };
+    const authenticationMethod: AuthMethod =
+      authCfg === "OIDCSecurityHandler" ? "oidc" : "jwt";
+
+    //  BaseMode = device reports NOT authenticated (pre-login mode)
+    const isBaseMode = authenticated === false;
+
+    return { isPointingToServer: true, authenticationMethod, isBaseMode };
+  } catch (err) {
+    return {
+      isPointingToServer: false,
+      authenticationMethod: "jwt",
+      isBaseMode: false,
+    };
+  }
+}
+
+function isJwtStillValid(jwt: string | null) {
+  if (!jwt) return false;
+  try {
+    const decoded: any = jwtDecode(jwt);
+    const expMs = (decoded?.exp ?? 0) * 1000;
+    return expMs > Date.now();
   } catch {
-    return { isPointingToServer: false, authenticationMethod: "jwt" };
+    return false;
   }
 }
 
@@ -152,11 +180,19 @@ export interface ApiState {
   dynamic_content_api: {
     defaultApi: DefaultApi;
   };
-  authenticationMethod: "oidc" | "jwt";
+
+  authenticationMethod: AuthMethod;
   ip: string;
   jwt: string | null;
+
   isLoggedIn: boolean;
   isPointingToServer: boolean;
+
+  /**
+   *  BaseMode: device was detected (server reachable) and _Authenticated=false
+   * => show Base/Admin mode entry BEFORE normal employee login.
+   */
+  isBaseMode: boolean;
 }
 
 export const initializeApi = createAsyncThunk(
@@ -168,22 +204,28 @@ export const initializeApi = createAsyncThunk(
     const ip = normalizeBaseUrl(storedIp ?? defaultIp);
     const jwt = (storedJwt ?? defaultJwt) as string | null;
 
-    const { isPointingToServer, authenticationMethod } =
-      await detectAuthenticationMethod(ip);
+    const { isPointingToServer, authenticationMethod, isBaseMode } =
+      await detectServerAndMode(ip);
 
+    // Important: Build API clients with whatever we currently have (jwt may be null)
     const apis = buildApis({ baseUrl: ip, jwt, authenticationMethod });
 
+    //  logged-in only if JWT exists and valid (OIDC handled separately; keep false here)
     const isLoggedIn =
-      authenticationMethod === "jwt"
-        ? jwt
-          ? (jwtDecode(jwt).exp ?? 0) * 1000 > Date.now()
-          : false
-        : false; // for oidc you likely have a different check; keep false here
+      authenticationMethod === "jwt" ? isJwtStillValid(jwt) : false;
 
-    // persist ip/jwt so web stays consistent
+    // persist ip / jwt
     await AsyncStorage.setItem(ipKey, ip);
     if (jwt) await AsyncStorage.setItem(jwtKey, jwt);
     else await AsyncStorage.removeItem(jwtKey);
+
+    //  Menu init strategy:
+    // - If BaseMode: load menu WITHOUT login (server/device admin pages etc.)
+    // - If LoggedIn: load menu normally (needs Authorization)
+    // If your DC menu endpoint requires auth, BaseMode should point to an endpoint that is public on device.
+    // We'll still try to init menu in both cases; if it errors, your menuSlice should fallback to static menu.
+    // (We'll adjust menuSlice next.)
+    // Note: We do not dispatch here to avoid circular deps; RootStack should call initializeMenu after initApi.
 
     return {
       ...apis,
@@ -192,6 +234,7 @@ export const initializeApi = createAsyncThunk(
       jwt,
       isLoggedIn,
       isPointingToServer,
+      isBaseMode,
     };
   },
 );
@@ -201,25 +244,25 @@ export const setIpAsync = createAsyncThunk(
   async (rawIp: string, thunkAPI) => {
     const ip = normalizeBaseUrl(rawIp);
 
-    // keep current jwt for header building
     const state = thunkAPI.getState() as RootState;
     const jwt = state.api.jwt;
 
-    const { isPointingToServer, authenticationMethod } =
-      await detectAuthenticationMethod(ip);
+    const { isPointingToServer, authenticationMethod, isBaseMode } =
+      await detectServerAndMode(ip);
 
     await AsyncStorage.setItem(ipKey, ip);
 
     thunkAPI.dispatch(
-      setIpLocal({
+      setConnectionLocal({
         ip,
+        jwt,
         isPointingToServer,
         authenticationMethod,
-        jwt,
+        isBaseMode,
       }),
     );
 
-    return { ip, isPointingToServer, authenticationMethod };
+    return { ip, isPointingToServer, authenticationMethod, isBaseMode };
   },
 );
 
@@ -229,7 +272,7 @@ export const login = createAsyncThunk(
     thunkAPI.dispatch(setJwtLocal(jwt));
     await AsyncStorage.setItem(jwtKey, jwt);
 
-    // Menü erst NACH jwt setzen laden
+    // Menu after JWT exists
     await thunkAPI.dispatch(initializeMenu());
   },
 );
@@ -247,25 +290,31 @@ const initialState: ApiState = {
   jwt: defaultJwt,
   isLoggedIn: false,
   isPointingToServer: false,
+  isBaseMode: false,
 };
 
 export const apiSlice = createSlice({
   name: "api",
   initialState,
   reducers: {
-    // internal only: used by setIpAsync
-    setIpLocal: (
+    /**
+     *  replaces  old setIpLocal
+     * sets ip + connection flags and rebuilds API clients
+     */
+    setConnectionLocal: (
       state,
       action: PayloadAction<{
         ip: string;
         jwt: string | null;
         isPointingToServer: boolean;
-        authenticationMethod: "jwt" | "oidc";
+        authenticationMethod: AuthMethod;
+        isBaseMode: boolean;
       }>,
     ) => {
       state.ip = action.payload.ip;
       state.isPointingToServer = action.payload.isPointingToServer;
       state.authenticationMethod = action.payload.authenticationMethod;
+      state.isBaseMode = action.payload.isBaseMode;
 
       const apis = buildApis({
         baseUrl: action.payload.ip,
@@ -288,6 +337,11 @@ export const apiSlice = createSlice({
 
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
+
+      state.isLoggedIn =
+        state.authenticationMethod === "jwt"
+          ? isJwtStillValid(action.payload)
+          : false;
     },
 
     logout: (state) => {
@@ -310,10 +364,13 @@ export const apiSlice = createSlice({
       state.authenticationMethod = action.payload.authenticationMethod;
       state.awb_rest_api = action.payload.awb_rest_api;
       state.dynamic_content_api = action.payload.dynamic_content_api;
+
       state.ip = action.payload.ip;
+      state.jwt = action.payload.jwt;
+
       state.isLoggedIn = action.payload.isLoggedIn;
       state.isPointingToServer = action.payload.isPointingToServer;
-      state.jwt = action.payload.jwt;
+      state.isBaseMode = action.payload.isBaseMode;
     });
 
     builder.addCase(login.fulfilled, (state) => {
@@ -322,13 +379,17 @@ export const apiSlice = createSlice({
   },
 });
 
-export const { setIpLocal, setJwtLocal, logout } = apiSlice.actions;
+export const { setConnectionLocal, setJwtLocal, logout } = apiSlice.actions;
 
 export const selectApi = (state: RootState) => state.api;
 export const selectJwt = (state: RootState) => state.api.jwt;
 export const selectIp = (state: RootState) => state.api.ip;
 export const selectAuthenticationMethod = (state: RootState) =>
   state.api.authenticationMethod;
+
 export const selectIsLoggedIn = (state: RootState) => state.api.isLoggedIn;
+export const selectIsPointingToServer = (state: RootState) =>
+  state.api.isPointingToServer;
+export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
 
 export default apiSlice.reducer;

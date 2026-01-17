@@ -1,23 +1,17 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState, store } from "../store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import i18next from "i18next";
+import { RootState } from "../store";
 import { foldl } from "../../util/func";
-import { PathConfigMap } from "@react-navigation/native";
-import { ComponentClass, FunctionComponent, ReactNode } from "react";
-import { SettingsScreen } from "../../screens/Settings";
+
 import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Content-Api";
-import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-Settings";
-import { internalSetLanguage, setLanguage } from "./languageSlice";
-import { PrivacySettings } from "../../screens/settings/PrivacySettings";
-import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
-import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
+import { internalSetLanguage } from "./languageSlice";
+import { getStaticMenu } from "../slices/staticMenu";
+
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
   position?: number;
   caption: string;
-  Screen?: ComponentClass<P> | FunctionComponent<P>;
+  Screen?: any; // Screen ist nur für static items gesetzt
 }
 
 interface DynamicMenuItem extends BaseMenuItem {
@@ -27,7 +21,7 @@ interface DynamicMenuItem extends BaseMenuItem {
 
 interface StaticMenuItem<P> extends BaseMenuItem<P> {
   position?: number;
-  Screen: ComponentClass<P> | FunctionComponent<P>;
+  Screen: any;
 }
 
 export type MenuItem<P = {}> = DynamicMenuItem | StaticMenuItem<P>;
@@ -44,142 +38,72 @@ export interface MenuState {
   activeMenuId: number;
 }
 
-/**
- * adds the given node to the list of children of the node that is uniquely identified by the parentId inside of the tree
- *
- * If the parentId is not present in the tree, the tree is not modified
- *
- * @param tree The tree to which the node should be added
- * @param parentId the parentId that uniquely identifies one node of the tree to whose children the node will be added
- * @param node the node that will be added
- */
 function addNodeToTree(tree: MenuTree, node: MenuNode): MenuTree {
-  /**
-   * Either the currently considered node is the one with the looked for parentId
-   */
   if (tree.val.menuID === node.val.parentID) {
-    /**
-     * Then we simply return the value and add the node to the children
-     */
-    return {
-      val: tree.val,
-      children: [...tree.children, node],
-    };
-  } else {
-  /**
-   * If not, we return the value and try to add the node to any of the current children.
-   */
-    return {
-      val: tree.val,
-      children: tree.children.map((child) => addNodeToTree(child, node)),
-    };
+    return { val: tree.val, children: [...tree.children, node] };
   }
+  return {
+    val: tree.val,
+    children: tree.children.map((child) => addNodeToTree(child, node)),
+  };
 }
 
-/**
- * @param listOfNodes list of all menuItems
- * @param id the id that should be looked for
- * @returns the depth of an item to its root
- */
 export function getDepthFromList(listOfNodes: MenuItem[], id: number): number {
   const r = listOfNodes.find(({ menuID }) => menuID === id);
-  if (r) {
-    /**
-     * If parentId === undefined, then we are at the root -> the headmenu
-     */
-    if (!r.parentID) {
-      return 0;
-    } else {
-      return 1 + getDepthFromList(listOfNodes, r.parentID!);
-    }
-  } else {
-    return Number.POSITIVE_INFINITY;
-  }
+  if (!r) return Number.POSITIVE_INFINITY;
+  if (!r.parentID) return 0;
+  return 1 + getDepthFromList(listOfNodes, r.parentID);
 }
 
-/**
- * Given a list of nodes that internally represent a tree, we convert that to an actual tree
- *
- * @param xs List of Nodes that should be converted to a tree
- * @returns tree with same semantic as the list
- */
 export function rawListToTrees(xs: MenuItem[]): MenuTree[] {
-  /**
-   * Then we sort the array by depth of nodes (relative to the tree structure that the array represents)
-   * We do this so we can be sure that for every element, assuming it has a parent, the parent element was
-   *  already added to the tree
-   */
   const sortedXs = xs.toSorted(
-    (a, b) => getDepthFromList(xs, a.menuID!) - getDepthFromList(xs, b.menuID!),
+    (a, b) => getDepthFromList(xs, a.menuID) - getDepthFromList(xs, b.menuID),
   );
 
-  /**
-   * We then construct the tree by:
-   *  1) Adding all the head menues at the root of the array
-   *  2) adding all the submenues onto their respective menue.
-   */
   return foldl<MenuTree[], MenuItem>(
     (acc, curr) =>
       !curr.parentID
         ? [...acc, { val: curr, children: [] }]
-        : acc.map((node) =>
-            addNodeToTree(node, {
-              children: [],
-              val: curr,
-            }),
-          ),
+        : acc.map((node) => addNodeToTree(node, { children: [], val: curr })),
     [],
     sortedXs,
   );
 }
 
 /**
- * Return the list of ids making up the path to the desired id inside of the tree
- * @param xs the raw list of menuItems
- * @param xId the id to construct the path for
- * @returns path leading to the id, or undefined if there is no path up to the root
+ * wieder rein, weil Header/Breadcrumb es braucht
+ * Pfad von Root -> id
  */
 export function getIdPath(xs: MenuItem[], xId: number): undefined | number[] {
   const node = xs.find(({ menuID }) => menuID === xId);
+  if (!node) return undefined;
 
-  if (node) {
-    if (node.parentID) {
-      const rest = getIdPath(xs, node.parentID);
-      if (rest) {
-        return [...rest, xId];
-      } else {
-        return undefined;
-      }
-    } else {
-      return [xId];
-    }
-  } else {
-    return undefined;
+  if (node.parentID) {
+    const rest = getIdPath(xs, node.parentID);
+    return rest ? [...rest, xId] : undefined;
   }
+  return [xId];
 }
 
-/**
- * Header Guard that tells you wether or not a provided MenuItem is Dynamic or not
- */
-export function isDynamicMenuItem<P>(
-  node: MenuItem<P>,
-): node is DynamicMenuItem {
+export function isDynamicMenuItem<P>(node: MenuItem<P>): node is DynamicMenuItem {
   return node.Screen === undefined;
 }
 
-/**
- * Header Guard that tells you wether or not a provided MenuItem is Static or not
- */
-export function isStaticMenuItem<P>(
-  node: MenuItem<P>,
-): node is StaticMenuItem<P> {
-  return !isDynamicMenuItem(node);
+export function hasId(tree: MenuTree, id: number): boolean {
+  return (
+    tree.val.menuID === id ||
+    foldl<boolean, MenuNode>(
+      (acc, curr) => acc || hasId(curr, id),
+      false,
+      tree.children,
+    )
+  );
 }
 
 const initialState: MenuState = {
   menu: [],
   rawMenu: [],
-  activeMenuId: 1,
+  activeMenuId: 3003, // settings default
 };
 
 export const initializeMenu = createAsyncThunk<MenuItem[]>(
@@ -188,13 +112,13 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
     const state = thunkAPI.getState() as RootState;
     const lang = state.language.language;
 
-    // if (state.api.isPointingToServer && state.api.isLoggedIn) {
-    const response =
-      await state.api.dynamic_content_api.defaultApi.menuGet(lang);
+    //  Nur dynamisches Menü holen, wenn JWT-login aktiv ist
+    if (!state.api.isPointingToServer) return [];
 
-    /**
-     * First we unfortunately have to cast the type due to missmatch
-     */
+    const canLoadDynamicMenu = state.api.isLoggedIn === true;
+    if (!canLoadDynamicMenu) return [];
+
+    const response = await state.api.dynamic_content_api.defaultApi.menuGet(lang);
     const data = response.data as ApiMenuItem[];
 
     return data.map((node) => ({
@@ -208,7 +132,7 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
 );
 
 export const updateMenu = createAsyncThunk(
-  "menu/initialize",
+  "menu/update",
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const id = state.menu.activeMenuId;
@@ -218,19 +142,8 @@ export const updateMenu = createAsyncThunk(
   },
 );
 
-export function hasId(tree: MenuTree, id: number): boolean {
-  return (
-    tree.val.menuID === id ||
-    foldl<boolean, MenuNode>(
-      (acc, curr) => acc || hasId(curr, id),
-      false,
-      tree.children,
-    )
-  );
-}
-
 export const menuSlice = createSlice({
-  name: "lng",
+  name: "menu",
   initialState,
   reducers: {
     setActiveMenuId: (state, action: PayloadAction<number>) => {
@@ -238,50 +151,28 @@ export const menuSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(initializeMenu.fulfilled, (state, action) => {
-        state.rawMenu = [
-          ...action.payload,
-          {
-            caption: "settings",
-            menuID: 3003,
-            Screen: SettingsScreen,
-          },
-          {
-            caption: "general",
-            menuID: 3004,
-            parentID: 3003,
-            Screen: UnauthenticatedSettings,
-          },
-          {
-            caption: "privacysettings",
-            menuID: 3005,
-            parentID: 3003,
-            Screen: PrivacySettings,
-          },
-          {
-            caption: "databaseConnectionsAndSettings",
-            menuID: 3010,
-            parentID: 3003,
-            Screen: DatabaseConnectionsSettings,
-          },
-          {
-            caption: "devHome",
-            menuID: 3011,
-            parentID: 1, // oder ohne parentID als eigener Root
-            Screen: DevHomeScreen,
-          },
-        ];
+    builder.addCase(initializeMenu.fulfilled, (state, action) => {
+      const staticMenu = getStaticMenu();
 
-        state.menu = rawListToTrees(state.rawMenu);
-        state.activeMenuId = 1;
-      })
-      .addCase(internalSetLanguage, (state, action) => {});
+      //  dynamic + static
+      state.rawMenu = [...action.payload, ...staticMenu];
+
+      state.menu = rawListToTrees(state.rawMenu);
+
+      //  activeMenuId muss existieren
+      const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
+      if (!stillValid) {
+        state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
+      }
+    });
+
+    builder.addCase(internalSetLanguage, () => {
+      // optional
+    });
   },
 });
 
 export const { setActiveMenuId } = menuSlice.actions;
-
 export const selectMenu = (state: RootState) => state.menu;
 
 export default menuSlice.reducer;
