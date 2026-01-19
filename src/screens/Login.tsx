@@ -48,6 +48,8 @@ export function LoginScreen() {
   const dispatch = useAppDispatch();
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const { isPointingToServer } = useAppSelector(selectApi);
+type ThemeName = "light" | "dark";
+type ThemePickerValue = "system" | "light" | "dark";
 
   styles.useVariants({
     highlight: highlight,
@@ -198,29 +200,26 @@ export function LoginScreen() {
                   </Picker>
                 </View>
                 <View>
-                  <ThemedText>{t("color-scheme")}:</ThemedText>
-                  <Picker
-                    selectedValue={
-                      theme.val.adaptive ? "system" : theme.val.theme
-                    }
-                    onValueChange={(itemValue) => {
-                      dispatch(
-                        setTheme({
-                          val: {
-                            adaptive: itemValue === "system" ? true : false,
-                            theme:
-                              itemValue === "system"
-                                ? theme.val.theme
-                                : itemValue,
-                          },
-                        }),
-                      );
-                    }}
-                  >
-                    <Picker.Item label={t("system")} value="system" />
-                    <Picker.Item label={t("light")} value="light" />
-                    <Picker.Item label={t("dark")} value="dark" />
-                  </Picker>
+                        <ThemedText>{t("color-scheme")}:</ThemedText>
+         <Picker
+  selectedValue={(theme.val.adaptive ? "system" : theme.val.theme) as ThemePickerValue}
+  onValueChange={(itemValue) => {
+    const value = itemValue as ThemePickerValue;
+
+    dispatch(
+      setTheme({
+        val: {
+          adaptive: value === "system",
+          theme: value === "system" ? theme.val.theme : value, // <- value ist hier "light" | "dark"
+        },
+      }),
+    );
+  }}
+>
+  <Picker.Item label={t("system")} value="system" />
+  <Picker.Item label={t("light")} value="light" />
+  <Picker.Item label={t("dark")} value="dark" />
+</Picker>
                 </View>
                 <View>
                   <Pressable
