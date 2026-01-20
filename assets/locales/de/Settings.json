@@ -1,0 +1,18 @@
+{
+  "title": "Einstellungen",
+  "subtitle": "Verwalte Sprache, Darstellung und mehr.",
+  "cards": {
+    "db": {
+      "title": "Datenbank",
+      "description": "Verbindungen & Einstellungen"
+    },
+    "general": {
+      "title": "Allgemein",
+      "description": "Grundlegende App-Optionen"
+    },
+    "privacy": {
+      "title": "Datenschutz",
+      "description": "Sicherheit & Privatsphäre"
+    }
+  }
+}

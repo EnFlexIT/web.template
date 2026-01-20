@@ -14,7 +14,7 @@ import {
 import { ThemedText } from "../../components/themed/ThemedText";
 import { ThemedTextInput } from "../../components/themed/ThemedTextInput";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
-import { selectIp, setIp } from "../../redux/slices/apiSlice";
+import { selectIp } from "../../redux/slices/apiSlice";
 import { useState } from "react";
 import { useRoute } from "@react-navigation/native";
 import { setReady } from "../../redux/slices/readySlice";

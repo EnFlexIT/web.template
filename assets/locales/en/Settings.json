@@ -1,0 +1,18 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage app options, privacy and connections.",
+  "cards": {
+    "db": {
+      "title": "Database & Connections",
+      "description": "Check server/IP, auth and integrations."
+    },
+    "general": {
+      "title": "General",
+      "description": "Language, theme and basic app settings."
+    },
+    "privacy": {
+      "title": "Privacy",
+      "description": "Manage permissions and privacy options."
+    }
+  }
+}

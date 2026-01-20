@@ -11,6 +11,7 @@ const resources = {
         'Settings.Unauthenticated': require('./assets/locales/en/Settings.Unauthenticated.json'),
         Home: require('./assets/locales/en/Home.json'),
         DataPermissions: require('./assets/locales/en/DataPermission.json'),
+        Settings: require('./assets/locales/en/Settings.json'),
     },
     de: {
         Login: require('./assets/locales/de/Login.json'),
@@ -20,6 +21,7 @@ const resources = {
         'Settings.Unauthenticated': require('./assets/locales/de/Settings.Unauthenticated.json'),
         Home: require('./assets/locales/de/Home.json'),
         DataPermissions: require('./assets/locales/de/DataPermission.json'),
+        Settings: require('./assets/locales/de/Settings.json'),
     },
 };
 
