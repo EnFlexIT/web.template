@@ -121,7 +121,7 @@ export function LoginScreen() {
           <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
         </View>
 
-        {/* Current Server/IP badge */}
+       
        
 
         {/* Inputs */}
@@ -188,6 +188,23 @@ export function LoginScreen() {
 
           {!folded && (
             <ScrollView contentContainerStyle={[styles.advancedItemsContainer]}>
+               {/* Change Organization / Server */}
+          <Pressable  onPress={() => setOrgModalOpen(true)}>
+                  {/* Current Server/IP badge */}
+               <View  style={[ styles.serverBadge,styles.border, { backgroundColor: theme.colors.card, gap: 1  },  ]} >
+                    <View style={{ flex: 1, gap: 1 }}>
+                        <Text style={{ fontWeight: "700" }}>{t("currentServer")}</Text>
+                        <Text style={[mutedTextStyle]} numberOfLines={1}>
+                          {selectedBaseUrl || "-"}
+                        </Text>
+                    </View>
+                    <View style={[styles.statusPill, styles.border]}>
+                        <Text style={{ fontSize: 12, fontWeight: "700" }}>
+                          {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
+                        </Text>
+                     </View>
+               </View>
+         </Pressable>
               {/* Language */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("lng")}:</ThemedText>
@@ -229,32 +246,7 @@ export function LoginScreen() {
                 </Picker>
               </View>
 
-              {/* Change Organization / Server */}
-               <Pressable  onPress={() => setOrgModalOpen(true)}>
-               <View
-          style={[
-            styles.serverBadge,
-            styles.border,
-            { backgroundColor: theme.colors.card },
-          ]}
-        >
-          {/* currentServer */}
-         
-          <View style={{ flex: 1, gap: 6 }}>
-            <Text style={{ fontWeight: "700" }}>{t("currentServer")}</Text>
-            <Text style={[mutedTextStyle]} numberOfLines={1}>
-              {selectedBaseUrl || "-"}
-            </Text>
-          </View>
-          
-
-          <View style={[styles.statusPill, styles.border]}>
-            <Text style={{ fontSize: 12, fontWeight: "700" }}>
-              {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
-            </Text>
-          </View>
-        </View>
-                </Pressable>
+             
               
             </ScrollView>
           )}
