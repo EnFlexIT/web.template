@@ -1,20 +1,39 @@
 {
-    "username_placeholder": "Username",
-    "password_placeholder": "Password",
-    "submit": "Submit",
-    "login": "Login",
-    "advanced_options": "Advanced Options",
-    "ip_adress": "IP-Adress",
-    "language": "Language",
-    "color-scheme": "Color Scheme",
-    "lng": "Language",
-    "colorscheme": "Colorscheme",
-    "system": "System",
-    "user": "User",
-    "light": "Light",
-    "dark": "Dark",
-    "successful": "Login successful",
-    "loading": "Login loading",
-    "failed": "Login failed",
-    "unableToFindServer": "Unable to find server"
+  "username_placeholder": "Username",
+  "password_placeholder": "Password",
+  "login": "Login",
+  "unableToFindServer": "Server not reachable",
+
+  "advanced_options": "Advanced options",
+  "lng": "Language",
+  "color-scheme": "Color scheme",
+  "system": "System",
+  "light": "Light",
+  "dark": "Dark",
+
+  "currentServer": "Current server",
+  "serverReachable": "Online",
+  "serverNotReachable": "Offline",
+
+  "changeOrganization": "Change organization / server",
+  "changeOrganizationsQuick": "Switch organization",
+  "savedServers": "Saved servers",
+  "useServer": "Use server",
+
+  "addServer": "Add new server",
+  "serverLabel": "Name (e.g. Localhost)",
+  "serverUrl": "URL (e.g. http://localhost:8081)",
+  "saveAndUse": "Save & use",
+  "close": "Close",
+
+  "loading": "Loading…",
+  "successful": "Success",
+  "failed": "Failed",
+  "errors": {
+    "serverUrlRequired": "Server URL is required.",
+    "serverUrlInvalid": "Please enter a valid URL starting with http:// or https://.",
+    "serverNameExists": "This server name already exists. Please choose another one.",
+    "serverUrlExists": "This server URL already exists. Please choose another one.",
+    "serverNotReachable": "Server is not reachable. Please use a different one."
+  }
 }

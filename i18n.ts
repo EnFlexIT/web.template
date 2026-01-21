@@ -12,6 +12,7 @@ const resources = {
         Home: require('./assets/locales/en/Home.json'),
         DataPermissions: require('./assets/locales/en/DataPermission.json'),
         Settings: require('./assets/locales/en/Settings.json'),
+        DevHome: require('./assets/locales/en/DevHome.json'),
     },
     de: {
         Login: require('./assets/locales/de/Login.json'),
@@ -22,6 +23,7 @@ const resources = {
         Home: require('./assets/locales/de/Home.json'),
         DataPermissions: require('./assets/locales/de/DataPermission.json'),
         Settings: require('./assets/locales/de/Settings.json'),
+        DevHome: require('./assets/locales/de/DevHome.json'),
     },
 };
 

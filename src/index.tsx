@@ -23,22 +23,25 @@ import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations, selectOrganizations } from "./redux/slices/organizationsSlice";
 import { selectReady } from "./redux/slices/readySlice";
 
-import { LoginScreen } from "./screens/Login";
-import { BaseModeLoginScreen } from "./screens/BaseModeLoginScreen";
-import { SetupScreen } from "./screens/SetupScreen";
+import { LoginScreen } from "./screens/login/Login";
+//import { LoginScreen } from "./screens/login/LoginScreen";
+
 
 import { hasId, initializeMenu, selectMenu, setActiveMenuId, MenuItem } from "./redux/slices/menuSlice";
 import { foldl } from "./util/func";
 import { DynamicScreen } from "./screens/DynamicScreen";
+import { initializeServers } from "./redux/slices/serverSlice";
 
 const Drawer = createDrawerNavigator();
 
 function RootStack() {
   const { theme } = useUnistyles();
   const dispatch = useAppDispatch();
+  dispatch(initializeServers())
+
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const isBaseMode = useAppSelector(selectIsBaseMode);
+
 
   const [isLoading, setIsLoading] = useState(true);
   const isWide = useIsWide();
@@ -144,42 +147,30 @@ function RootStack() {
           </View>
         )}
       >
-        {isReady ? (
-          isLoggedIn ? (
-           <Drawer.Group>
-        {rawMenu.map((node, i) => (
-          <Drawer.Screen
-            key={i}
-            name={node.menuID!.toString()}
-            children={function () {
-              return node.Screen ? <node.Screen /> : <DynamicScreen node={node} />;
-            }}
-            options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
-          />
-        ))}
-      </Drawer.Group>
-          ) : (
-            <Drawer.Group
-              screenOptions={{
-                swipeEnabled: false,
-                drawerStyle: { display: "none" },
-                headerShown: false,
-              }}
-            >
-             <Drawer.Screen name="Login" component={LoginScreen} />
-      </Drawer.Group>
-          )
-        ) : (
-            <Drawer.Group
+      {
+  isLoggedIn ? (
+    <Drawer.Group>
+      {rawMenu.map((node, i) => (
+        <Drawer.Screen
+          key={i}
+          name={node.menuID!.toString()}
+          children={() => (node.Screen ? <node.Screen /> : <DynamicScreen node={node} />)}
+          options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
+        />
+      ))}
+    </Drawer.Group>
+  ) : (
+    <Drawer.Group
       screenOptions={{
         swipeEnabled: false,
         drawerStyle: { display: "none" },
         headerShown: false,
       }}
     >
-            <Drawer.Screen name="Setup" component={SetupScreen} />
-          </Drawer.Group>
-        )}
+      <Drawer.Screen name="Login" component={LoginScreen} />
+    </Drawer.Group>
+  )
+}
       </Drawer.Navigator>
     </NavigationContainer>
   );

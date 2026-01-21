@@ -5,7 +5,8 @@ export type IconName =
   | "close"
   | "check"
   | "delete"
-  | "edit";
+  | "edit"
+  | "setting";
 
 interface IconProps {
   name: IconName;
