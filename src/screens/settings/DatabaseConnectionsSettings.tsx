@@ -1,28 +1,27 @@
 import { View, Pressable } from "react-native";
-import { Text } from "../../components/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 import { useState } from "react";
 import { useUnistyles } from "react-native-unistyles";
 import { GeneralSettingsTab } from "./database/GeneralSettingsTab";
 import { FactorySettingsTab } from "./database/FactorySettingsTab";
 import { DerbyNetworkServerTab } from "./database/DerbyNetworkServerTab";
-
+import { H4 } from "../../components/stylistic/H4";
+import { H2 } from "../../components/stylistic/H2";
 type TabKey = "general" | "factory" | "derby";
 
 export function DatabaseConnectionsSettings() {
-  const { theme } = useUnistyles();
   const [activeTab, setActiveTab] = useState<TabKey>("general");
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>
+      <View >
+        <H2 >
           Database Connections & Settings
-        </Text>
-        <Text style={styles.subtitle}>
+        </H2>
+        <H4 >
           Configure database system and runtime behaviour.
-        </Text>
+        </H4>
       </View>
 
       {/* Tabs */}
@@ -77,14 +76,14 @@ function Tab({
         },
       ]}
     >
-      <Text
+      <H4 
         style={{
           fontWeight: active ? "600" : "400",
           color: active ? theme.colors.highlight : theme.colors.text,
         }}
       >
         {label}
-      </Text>
+      </H4>
     </Pressable>
   );
 }
@@ -94,18 +93,13 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     padding: 24,
     gap: 24,
+    width: theme.info.maxContentWidth 
   },
   header: {
     gap: 6,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-  },
-  subtitle: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
+ 
+ 
   tabs: {
     flexDirection: "row",
     gap: 24,

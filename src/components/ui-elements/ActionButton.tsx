@@ -70,7 +70,7 @@ export function ActionButton({
 const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
-    borderRadius: 6,
+   
     paddingVertical: 10,
     paddingHorizontal: 16,
     flexDirection: "row",

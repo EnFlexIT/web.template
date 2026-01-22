@@ -1,8 +1,9 @@
 import { View, TextInput } from "react-native";
-import { Text } from "../../../components/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import { useMemo, useState } from "react";
+import { H2 } from "../../../components/stylistic/H2";
+import { H4 } from "../../../components/stylistic/H4";
 //ui-elements
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
@@ -54,19 +55,15 @@ export function GeneralSettingsTab() {
         label="Use settings below for every database connection"
       />
 
-      {/* Section */}
-      <Text style={styles.sectionTitle}>
-        Database Settings
-      </Text>
 
       {/* Database system */}
-      <Row label="Database System">
+      <H2 >Database System</H2>
         <Dropdown
           value={dbSystem}
           options={DATABASE_SYSTEMS}
           onChange={setDbSystem}
         />
-      </Row>
+      
 
       {/* Database */}
       <Field label="Database">
@@ -147,9 +144,9 @@ function Field({
 }) {
   return (
     <View style={{ gap: 6 }}>
-      <Text style={{ opacity: 0.8 }}>
+      <H4 style={{ opacity: 0.8 }}>
         {label}
-      </Text>
+      </H4>
       {children}
     </View>
   );
@@ -164,7 +161,7 @@ function Row({
 }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
+      <H4 >{label}</H4>
       {children}
     </View>
   );
@@ -172,25 +169,16 @@ function Row({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
-    maxWidth: 720,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
+    gap: 16, },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
-  label: {
-    minWidth: 150,
-    fontWeight: "600",
-  },
+
   input: {
     borderWidth: 1,
-    borderRadius: 6,
     padding: 10,
   },
   buttons: {

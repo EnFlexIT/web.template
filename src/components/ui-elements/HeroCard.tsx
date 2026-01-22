@@ -97,7 +97,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignSelf: "flex-start",
@@ -119,7 +119,7 @@ const styles = StyleSheet.create((theme) => ({
   imagePlaceholder: {
     width: 130,
     height: 80,
-    borderRadius: 14,
+   
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: "center",

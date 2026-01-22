@@ -1,10 +1,10 @@
 import { View } from "react-native";
-import { Text } from "../../../components/stylistic/Text";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { TextInput } from "../../../components/ui-elements/TextInput";
 import { useState } from "react";
-
+import { H4 } from "../../../components/stylistic/H4";
+import { H2 } from "../../../components/stylistic/H2";
 export function FactorySettingsTab() {
     //  (später API/Redux)
     const [useGlobalSettings, setUseGlobalSettings] = useState(true);
@@ -19,15 +19,6 @@ export function FactorySettingsTab() {
     return (
         <View style={{ gap: 24, paddingTop: 16 }}>
 
-            {/* Header */}
-            <View style={{ gap: 4 }}>
-                <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                    Individual Database Connections & Settings
-                </Text>
-                <Text style={{ opacity: 0.7 }}>
-                    Configure database settings for a specific factory.
-                </Text>
-            </View>
 
             {/* Global toggle */}
             <Checkbox
@@ -55,9 +46,9 @@ export function FactorySettingsTab() {
             {/* Database settings box */}
             <View style={{ gap: 12 }}>
 
-                <Text style={{ fontWeight: "600" }}>
+                <H2 >
                     Database Settings
-                </Text>
+                </H2>
 
                 <TextInput
                     label="Database"

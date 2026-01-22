@@ -1,5 +1,4 @@
 import { View, Modal, Pressable } from "react-native";
-import { Text } from "../../../components/stylistic/Text";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { TextInput } from "../../../components/ui-elements/TextInput";
@@ -7,7 +6,8 @@ import { useState } from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { ThemedView } from "../../../components/themed/ThemedView";
 import { useUnistyles } from "react-native-unistyles";
-
+import { H4 } from "../../../components/stylistic/H4";
+import { H2 } from "../../../components/stylistic/H2";
 export function DerbyNetworkServerTab() {
     const { theme } = useUnistyles();
 
@@ -27,7 +27,7 @@ export function DerbyNetworkServerTab() {
     ];
 
     return (
-        <View style={{ gap: 24, paddingTop: 16 }}>
+        <View style={{ gap: 24, paddingTop: 16 ,width: theme.info.maxContentWidth }}>
 
             <Checkbox
                 label="Start a Derby database server that is accessible via network"
@@ -37,7 +37,7 @@ export function DerbyNetworkServerTab() {
 
             {/* Host + Edit */}
             <View style={{ gap: 6 }}>
-                <Text>Host or IP</Text>
+                <H4>Host or IP</H4>
 
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <View style={{ flex: 1 }}>
@@ -108,16 +108,16 @@ export function DerbyNetworkServerTab() {
                             style={{
                                 width: 420,
                                 padding: 16,
-                                borderRadius: 8,
+                               
                                 gap: 12,
                                 backgroundColor: theme.colors.card,
                                 borderColor: theme.colors.border,
                                 borderWidth: 1,
                             }}
                         >
-                            <Text style={{ fontWeight: "600" }}>
+                            <H2 >
                                 Select IP Address
-                            </Text>
+                            </H2>
 {ipAddresses.map((ip, index) => (
     <Pressable
         key={index}
@@ -126,7 +126,7 @@ export function DerbyNetworkServerTab() {
             setShowIpSelector(false);
         }}
     >
-        <Text>{ip}</Text>
+        <H4>{ip}</H4>
     </Pressable>
 ))}
 

@@ -16,6 +16,9 @@ import { addServer, selectServer } from "../../redux/slices/serverSlice";
 
 import { checkServerReachable, normalizeBaseUrl, normalizeName } from "./serverCheck";
 import { styles, modalStyles } from "./styles";
+import { H2 } from "../../components/stylistic/H2";
+import{H3} from "../../components/stylistic/H3";
+import { H4 } from "../../components/stylistic/H4";
 
 type Props = {
   visible: boolean;
@@ -137,17 +140,19 @@ export function ServerModal({
             { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
           ]}
         >
-          <Text style={{ fontWeight: "800", fontSize: 16 }}>
+          <H2>
             {t("changeOrganization")}
-          </Text>
+          </H2>
 
           {/* Saved servers */}
           <View style={{ gap: 6 }}>
-            <ThemedText>{t("savedServers")}</ThemedText>
+            <H4>{t("savedServers")}</H4>
 
             <Picker
               selectedValue={selectedServerId}
               onValueChange={(id) => dispatch(selectServer(id))}
+              style={{ height: 25 }}
+
             >
               {servers.map((s) => (
                 <Picker.Item
@@ -162,7 +167,7 @@ export function ServerModal({
               style={[styles.border, styles.padding, styles.loginContainer]}
               onPress={handleUseSelectedServer}
             >
-              <Text style={styles.login}>{t("useServer")}</Text>
+              <H4>{t("useServer")}</H4>
             </Pressable>
           </View>
 
@@ -223,7 +228,7 @@ export function ServerModal({
               {serverSaveBusy ? (
                 <ActivityIndicator />
               ) : (
-                <Text style={styles.login}>{t("saveAndUse")}</Text>
+                <H4>{t("saveAndUse")}</H4>
               )}
             </Pressable>
           </View>

@@ -26,7 +26,7 @@ export function ChartCard({ title, subtitle, children }: ChartCardProps) {
 const styles = StyleSheet.create((theme) => ({
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: 16,
+   
     padding: 16,
     gap: 12,
   },

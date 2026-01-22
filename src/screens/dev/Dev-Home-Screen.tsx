@@ -23,7 +23,6 @@ import { useTranslation } from "react-i18next";
 // Typ
 import type { SiteContentBarChart } from "../../api/implementation/Dynamic-Content-Api";
 
-// OPTIONAL: wenn du isSiteContentBarChart debuggen willst (nur wenn existiert)
 
 
 export function DevHomeScreen() {
@@ -221,6 +220,7 @@ const styles = StyleSheet.create((theme) => ({
     padding: 16,
     gap: 12,
     backgroundColor: theme.colors.background,
+    width:theme.info.maxContentWidth,
   },
 
   row2: { flexDirection: "row", gap: 12 },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   smartHomeCard: {
-    borderRadius: 22,
+   
     overflow: "hidden",
     width: "100%",
   },

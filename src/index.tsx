@@ -24,8 +24,8 @@ import { initializeOrganizations, selectOrganizations } from "./redux/slices/org
 import { selectReady } from "./redux/slices/readySlice";
 
 import { LoginScreen } from "./screens/login/Login";
-//import { LoginScreen } from "./screens/login/LoginScreen";
-
+//import { LoginScreen } from "./screens/BaseModeLoginScreen";
+import { ContentContainer } from "./styles/ContentContainer";
 
 import { hasId, initializeMenu, selectMenu, setActiveMenuId, MenuItem } from "./redux/slices/menuSlice";
 import { foldl } from "./util/func";
@@ -37,7 +37,7 @@ const Drawer = createDrawerNavigator();
 function RootStack() {
   const { theme } = useUnistyles();
   const dispatch = useAppDispatch();
-  dispatch(initializeServers())
+  
 
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
@@ -52,26 +52,41 @@ function RootStack() {
 
   const isReady = Boolean(current_organization && ready);
 
-  useEffect(() => {
-    async function boot() {
-      await Promise.all([
-        dispatch(initializeLanguage()),
-        dispatch(initializeTheme()),
-        dispatch(initializeApi()),
-        dispatch(initializeDataPermissions()),
-        dispatch(initializeOrganizations()),
-      ]);
+ useEffect(() => {
+    let alive = true;
 
-      // ✅ Menu init AFTER api init, because initializeMenu depends on api flags (isBaseMode/isLoggedIn)
-      await dispatch(initializeMenu());
+    (async () => {
+      try {
+       
+        await dispatch(initializeServers()).unwrap?.();
 
-      const id = Number(window.location.pathname.split("/").at(1));
-      if (id) await dispatch(setActiveMenuId(id));
+      
+        await Promise.all([
+          dispatch(initializeLanguage()).unwrap?.(),
+          dispatch(initializeTheme()).unwrap?.(),
+          dispatch(initializeApi()).unwrap?.(),
+          dispatch(initializeDataPermissions()).unwrap?.(),
+          dispatch(initializeOrganizations()).unwrap?.(),
+        ]);
 
-      setIsLoading(false);
-    }
-    boot();
-  }, []);
+       
+        await dispatch(initializeMenu()).unwrap?.();
+
+        const id = Number(window.location.pathname.split("/").at(1));
+        if (id) await dispatch(setActiveMenuId(id));
+
+        if (alive) setIsLoading(false);
+      } catch (e) {
+        console.error("BOOT ERROR:", e);
+        if (alive) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [dispatch]);
+
 
   const navigationMenu = menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 
@@ -141,12 +156,15 @@ function RootStack() {
           );
         }}
         screenLayout={({ children }) => (
+         
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
             {children}
           </View>
+        
         )}
       >
+        
       {
   isLoggedIn ? (
     <Drawer.Group>
@@ -171,6 +189,7 @@ function RootStack() {
     </Drawer.Group>
   )
 }
+        
       </Drawer.Navigator>
     </NavigationContainer>
   );

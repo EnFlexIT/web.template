@@ -46,12 +46,12 @@ container: {
     paddingBottom: 6,
   },
 
-  padding: { padding: 8 },
+  padding: { padding: 5 },
 
   border: {
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderRadius: 10,
+  
   },
 
   upperHalf: { gap: 8 },
@@ -122,7 +122,7 @@ export const modalStyles = NativeStyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.35)",
   },
   card: {
-    width: 380,
+    width: 500,
     maxWidth: "100%",
     padding: 14,
     gap: 14,

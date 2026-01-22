@@ -98,7 +98,7 @@ export function PrivacySettings() {
 const styles = StyleSheet.create((theme) => ({
   container: {
     gap: 10,
-    maxWidth: 300,
+    maxWidth: 400,
   },
   buttonContainer: {
     padding: 5,

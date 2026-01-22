@@ -159,66 +159,68 @@ const horizontalLineStyles = StyleSheet.create((theme) => ({
 }))
 
 export function DataPermissionsDialog() {
-    const { accepted, comfort, mandatory, personalised, statistics } = useAppSelector(selectDataPermissions)
-    const dispatch = useAppDispatch()
+  const { accepted, comfort, mandatory, personalised, statistics } =
+    useAppSelector(selectDataPermissions);
+  const dispatch = useAppDispatch();
 
-    const allesAkzeptieren = function () {
-        dispatch(setDataPermissions({
-            accepted: true,
-            comfort: true,
-            mandatory: true,
-            personalised: true,
-            statistics: true
-        }))
-    }
+  const visible = accepted !== true; 
 
-    const einstellungenSpeichern = function () {
-        dispatch(setDataPermissions({
-            accepted: true,
-            comfort: comfort,
-            mandatory: mandatory,
-            personalised: personalised,
-            statistics: statistics
-        }))
-    }
+  const allesAkzeptieren = () => {
+    dispatch(setDataPermissions({
+      accepted: true,
+      comfort: true,
+      mandatory: true,
+      personalised: true,
+      statistics: true,
+    }));
+  };
 
-    // Data Permissions are not set in one way or the other
-    if (!accepted) {
-        return (
-            <Modal transparent>
-                <BlurView style={[styles.blurView]}>
-                    <ThemedView style={[styles.contentContainer]}>
-                        <ThemedView style={[styles.titleContainer]}>
-                            <ThemedText style={[styles.title]}>Wir verwenden Cookies!</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={[styles.textContainer]}>
-                            <ThemedText style={[styles.text]}>{TEXT}</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={[styles.switchesContainer]}>
-                            <Mandatory />
-                            <HorizontalLine />
-                            <Comfort />
-                            <HorizontalLine />
-                            <Personalised />
-                            <HorizontalLine />
-                            <Statistics />
-                        </ThemedView>
-                        <ThemedView style={[styles.confirmContainer]}>
-                            <Pressable onPress={allesAkzeptieren}>
-                                <ThemedText>Alles akzeptieren</ThemedText>
-                            </Pressable>
-                            <Pressable onPress={einstellungenSpeichern}>
-                                <ThemedText>Einstellungen speichern</ThemedText>
-                            </Pressable>
-                        </ThemedView>
-                    </ThemedView>
-                </BlurView>
-            </Modal>
-        )
-    } else {
-        return undefined
-    }
+  const einstellungenSpeichern = () => {
+    dispatch(setDataPermissions({
+      accepted: true,
+      comfort,
+      mandatory,
+      personalised,
+      statistics,
+    }));
+  };
+
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      <BlurView style={styles.blurView}>
+        <ThemedView style={styles.contentContainer}>
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText style={styles.title}>Wir verwenden Cookies!</ThemedText>
+          </ThemedView>
+
+          <ThemedView style={styles.textContainer}>
+            <ThemedText style={styles.text}>{TEXT}</ThemedText>
+          </ThemedView>
+
+          <ThemedView style={styles.switchesContainer}>
+            <Mandatory />
+            <HorizontalLine />
+            <Comfort />
+            <HorizontalLine />
+            <Personalised />
+            <HorizontalLine />
+            <Statistics />
+          </ThemedView>
+
+          <ThemedView style={styles.confirmContainer}>
+            <Pressable onPress={allesAkzeptieren}>
+              <ThemedText>Alles akzeptieren</ThemedText>
+            </Pressable>
+            <Pressable onPress={einstellungenSpeichern}>
+              <ThemedText>Einstellungen speichern</ThemedText>
+            </Pressable>
+          </ThemedView>
+        </ThemedView>
+      </BlurView>
+    </Modal>
+  );
 }
+
 
 const styles = StyleSheet.create(theme => ({
     blurView: {

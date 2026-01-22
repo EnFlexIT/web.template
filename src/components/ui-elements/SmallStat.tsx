@@ -26,7 +26,7 @@ export function SmallStat({ label, value, icon }: SmallStatProps) {
 const styles = StyleSheet.create((theme) => ({
   card: {
     flex: 1,
-    borderRadius: 16,
+  
     minHeight: 80,
   },
 

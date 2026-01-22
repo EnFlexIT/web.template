@@ -76,7 +76,6 @@ export function Card({
 const styles = StyleSheet.create(() => ({
   card: {
     borderWidth: 1,
-    borderRadius: 10,
     overflow: "hidden",
   },
   pressable: {

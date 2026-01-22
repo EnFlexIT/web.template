@@ -22,7 +22,7 @@
 
   "addServer": "Add new server",
   "serverLabel": "Name (e.g. Localhost)",
-  "serverUrl": "URL (e.g. http://localhost:8081)",
+  "serverUrl": "My Fancy System",
   "saveAndUse": "Save & use",
   "close": "Close",
 

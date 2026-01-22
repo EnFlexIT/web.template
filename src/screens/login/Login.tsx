@@ -1,11 +1,19 @@
 // src/screens/Login.tsx
 
 import React, { useRef, useState } from "react";
-import {ActivityIndicator, Pressable, ScrollView,TextInput, View,StyleSheet as NativeStyleSheet,} from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  TextInput,
+  View,
+  StyleSheet as NativeStyleSheet,
+} from "react-native";
+
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
+import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
 import { H1 } from "../../components/stylistic/H1";
 import { Text } from "../../components/stylistic/Text";
@@ -16,12 +24,18 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {selectApi,selectAuthenticationMethod, selectIp, login as reduxLogin} from "../../redux/slices/apiSlice";
-import{ServerModal} from "./ServerModal";
+import {
+  selectApi,
+  selectAuthenticationMethod,
+  selectIp,
+  login as reduxLogin,
+} from "../../redux/slices/apiSlice";
+import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectTheme, setTheme } from "../../redux/slices/themeSlice";
 import { initializeMenu } from "../../redux/slices/menuSlice";
 import { styles } from "./styles";
+import { H4 } from "../../components/stylistic/H4";
 
 // ---------- component ----------
 export function LoginScreen() {
@@ -39,9 +53,7 @@ export function LoginScreen() {
   const themeState = useAppSelector(selectTheme);
 
   // servers
- const serversState = useAppSelector(selectServers);
-
-
+  const serversState = useAppSelector(selectServers);
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((s) => s.id === selectedServerId);
@@ -62,8 +74,9 @@ export function LoginScreen() {
 
   // Login feedback
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
-  const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed" >("loading");
-
+  const [loginRequestStatus, setLoginRequestStatus] = useState<
+    "loading" | "successful" | "failed"
+  >("loading");
 
   styles.useVariants({ highlight });
 
@@ -79,7 +92,9 @@ export function LoginScreen() {
           });
 
           if (response.status === 200) {
-            const www_authenticate = response.headers["www-authenticate"] as string;
+            const www_authenticate = response.headers[
+              "www-authenticate"
+            ] as string;
             const bearerToken = (www_authenticate ?? "").split(" ")[1];
 
             if (bearerToken) {
@@ -109,8 +124,22 @@ export function LoginScreen() {
 
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
 
+  // Dropdown options (typed)
+  const languageOptions = {
+    de: "Deutsch",
+    en: "English",
+  } as const;
 
-// ---------- render ----------
+  const themeOptions = {
+    system: t("system"),
+    light: t("light"),
+    dark: t("dark"),
+  } as const;
+
+  const currentThemeValue: keyof typeof themeOptions =
+    themeState.val.adaptive ? "system" : themeState.val.theme;
+
+  // ---------- render ----------
   return (
     <View style={[styles.container]}>
       {/* MAIN CARD */}
@@ -121,12 +150,8 @@ export function LoginScreen() {
           <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
         </View>
 
-       
-       
-
         {/* Inputs */}
         <View style={[styles.upperHalf]}>
-          
           <StylisticTextInput
             ref={usernameFieldRef}
             style={[styles.border, styles.padding]}
@@ -167,11 +192,11 @@ export function LoginScreen() {
                 login();
               }}
             >
-              <Text style={[styles.login]}>{t("login")}</Text>
+              <H4>{t("login")}</H4>
             </Pressable>
           ) : (
             <View style={[styles.border, styles.padding, styles.loginContainer]}>
-              <Text style={[styles.login]}>{t("unableToFindServer")}</Text>
+              <H4>{t("unableToFindServer")}</H4>
             </View>
           )}
         </View>
@@ -188,66 +213,62 @@ export function LoginScreen() {
 
           {!folded && (
             <ScrollView contentContainerStyle={[styles.advancedItemsContainer]}>
-               {/* Change Organization / Server */}
-          <Pressable  onPress={() => setOrgModalOpen(true)}>
-                  {/* Current Server/IP badge */}
-               <View  style={[ styles.serverBadge,styles.border, { backgroundColor: theme.colors.card, gap: 1  },  ]} >
-                    <View style={{ flex: 1, gap: 1 }}>
-                        <Text style={{ fontWeight: "700" }}>{t("currentServer")}</Text>
-                        <Text style={[mutedTextStyle]} numberOfLines={1}>
-                          {selectedBaseUrl || "-"}
-                        </Text>
-                    </View>
-                    <View style={[styles.statusPill, styles.border]}>
-                        <Text style={{ fontSize: 12, fontWeight: "700" }}>
-                          {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
-                        </Text>
-                     </View>
-               </View>
-         </Pressable>
-              {/* Language */}
+              {/* Change Organization / Server */}
+              <Pressable onPress={() => setOrgModalOpen(true)}>
+                <View
+                  style={[
+                    styles.serverBadge,
+                    styles.border,
+                    { backgroundColor: theme.colors.card, gap: 1 },
+                  ]}
+                >
+                  <View style={{ flex: 1, gap: 1 }}>
+                    <H4>{t("currentServer")}</H4>
+                    <Text style={[mutedTextStyle]} numberOfLines={1}>
+                      {selectedBaseUrl || "-"}
+                    </Text>
+                  </View>
+                  <View style={[styles.statusPill, styles.border]}>
+                    <H4>
+                      {isPointingToServer
+                        ? t("serverReachable")
+                        : t("serverNotReachable")}
+                    </H4>
+                  </View>
+                </View>
+              </Pressable>
+
+              {/* Language (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("lng")}:</ThemedText>
-                <Picker
-                  selectedValue={language.language}
-                  onValueChange={(itemValue) =>
-                    dispatch(setLanguage({ language: itemValue }))
-                  }
-                >
-                  <Picker.Item label="Deutsch" value="de" />
-                  <Picker.Item label="English" value="en" />
-                </Picker>
+                <Dropdown<"de" | "en">
+                  value={(language.language as "de" | "en") ?? "de"}
+                  options={languageOptions}
+                  onChange={(lng) => dispatch(setLanguage({ language: lng }))}
+                />
               </View>
 
-              {/* Theme */}
+              {/* Theme (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("color-scheme")}:</ThemedText>
-                <Picker
-                  selectedValue={
-                    themeState.val.adaptive ? "system" : themeState.val.theme
-                  }
-                  onValueChange={(itemValue) => {
+                <Dropdown<"system" | "light" | "dark">
+                  value={currentThemeValue}
+                  options={themeOptions}
+                  onChange={(v) => {
                     dispatch(
                       setTheme({
                         val: {
-                          adaptive: itemValue === "system",
+                          adaptive: v === "system",
                           theme:
-                            itemValue === "system"
+                            v === "system"
                               ? themeState.val.theme
-                              : (itemValue as "light" | "dark"),
+                              : (v as "light" | "dark"),
                         },
                       }),
                     );
                   }}
-                >
-                  <Picker.Item label={t("system")} value="system" />
-                  <Picker.Item label={t("light")} value="light" />
-                  <Picker.Item label={t("dark")} value="dark" />
-                </Picker>
+                />
               </View>
-
-             
-              
             </ScrollView>
           )}
         </View>
@@ -260,13 +281,13 @@ export function LoginScreen() {
       />
 
       {/* MODAL */}
-       <ServerModal
-             visible={orgModalOpen}
-             onClose={() => setOrgModalOpen(false)}
-             servers={servers}
-             selectedServerId={selectedServerId}
-             selectedBaseUrl={selectedBaseUrl}
-           />
+      <ServerModal
+        visible={orgModalOpen}
+        onClose={() => setOrgModalOpen(false)}
+        servers={servers}
+        selectedServerId={selectedServerId}
+        selectedBaseUrl={selectedBaseUrl}
+      />
     </View>
   );
 }
@@ -308,7 +329,8 @@ function LoginRequestStatusIndicator({
     </View>
   );
 }
- const logoStyles = NativeStyleSheet.create({
+
+const logoStyles = NativeStyleSheet.create({
   logo: {
     resizeMode: "contain",
     width: 38,
