@@ -25,12 +25,7 @@ const initialState: ThemeState = {
   val: DEFAULT_THEME,
 };
 
-/**
- * ✅ Normalisiert alles, was aus AsyncStorage kommt:
- * - ThemeInfo: { adaptive, theme }
- * - ThemeState: { val: { adaptive, theme } }  (alt)
- * - irgendwas kaputtes -> DEFAULT_THEME
- */
+
 const normalizeTheme = (raw: any): ThemeInfo => {
   const candidate = raw?.val ?? raw;
 
@@ -45,14 +40,7 @@ const normalizeTheme = (raw: any): ThemeInfo => {
   return { adaptive, theme };
 };
 
-/**
- * ✅ Unistyles-Regel:
- * - setTheme() darf nicht laufen, wenn adaptiveThemes aktiv sind.
- * Daher:
- * 1) adaptiveThemes AUS
- * 2) setTheme(validTheme)
- * 3) adaptiveThemes an/aus je nach Setting
- */
+
 const applyUnistylesTheme = (info: ThemeInfo) => {
   // 1) adaptive erstmal AUS, sonst meckert Unistyles
   UnistylesRuntime.setAdaptiveThemes(false);
@@ -81,7 +69,7 @@ export const themeSlice = createSlice({
   name: "theme",
   initialState,
   reducers: {
-    // ✅ Payload ist ThemeInfo (NICHT ThemeState!)
+    //  Payload ist ThemeInfo (NICHT ThemeState!)
     setTheme: (state, action: PayloadAction<ThemeInfo>) => {
       const next = normalizeTheme(action.payload);
 
@@ -90,7 +78,7 @@ export const themeSlice = createSlice({
       applyUnistylesTheme(next);
     },
 
-    // optional, wenn du manchmal ThemeState dispatchst (z.B. alte UI):
+
     setThemeState: (state, action: PayloadAction<ThemeState>) => {
       const next = normalizeTheme(action.payload);
 
@@ -112,7 +100,7 @@ export const themeSlice = createSlice({
 
 export const { setTheme, setThemeState } = themeSlice.actions;
 
-// ✅ Gib direkt ThemeInfo zurück (damit LoginScreen nicht undefined bekommt)
+
 export const selectThemeInfo = (state: RootState) => state.theme?.val ?? DEFAULT_THEME;
 
 export default themeSlice.reducer;

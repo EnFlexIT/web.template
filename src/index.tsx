@@ -52,7 +52,7 @@ const Drawer = createDrawerNavigator();
 function RootStack() {
   const dispatch = useAppDispatch();
 
-  // ✅ Hook IMMER oben, nie conditional
+  //  Hook IMMER oben, nie conditional
   const { theme } = useUnistyles();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
