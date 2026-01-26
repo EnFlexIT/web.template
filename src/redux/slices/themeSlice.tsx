@@ -1,75 +1,118 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { RootState } from '../store'
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UnistylesRuntime } from 'react-native-unistyles'
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UnistylesRuntime } from "react-native-unistyles";
+import { RootState } from "../store";
 
-const key = "color" as const
+type ThemeName = "light" | "dark";
 
-const defaultThemeInfo: ThemeInfo = {
-    adaptive: true,
-    theme: 'light',
-}
-
-interface ThemeInfo {
-    adaptive: boolean,
-    theme: 'dark' | 'light',
+export interface ThemeInfo {
+  adaptive: boolean;
+  theme: ThemeName;
 }
 
 export interface ThemeState {
-    val: ThemeInfo,
+  val: ThemeInfo;
 }
+
+const STORAGE_KEY = "color";
+
+const DEFAULT_THEME: ThemeInfo = {
+  adaptive: true,
+  theme: "light",
+};
 
 const initialState: ThemeState = {
-    val: defaultThemeInfo,
-}
+  val: DEFAULT_THEME,
+};
 
-export const initializeTheme = createAsyncThunk(
-    'theme/initialize',
-    async () => {
-        const storedTheme = await AsyncStorage.getItem(key)
-        if (storedTheme) {
-            return JSON.parse(storedTheme) as ThemeInfo
-        }
-        return defaultThemeInfo
-    },
-)
+/**
+ * ✅ Normalisiert alles, was aus AsyncStorage kommt:
+ * - ThemeInfo: { adaptive, theme }
+ * - ThemeState: { val: { adaptive, theme } }  (alt)
+ * - irgendwas kaputtes -> DEFAULT_THEME
+ */
+const normalizeTheme = (raw: any): ThemeInfo => {
+  const candidate = raw?.val ?? raw;
+
+  const adaptive =
+    typeof candidate?.adaptive === "boolean" ? candidate.adaptive : DEFAULT_THEME.adaptive;
+
+  const theme: ThemeName =
+    candidate?.theme === "dark" || candidate?.theme === "light"
+      ? candidate.theme
+      : DEFAULT_THEME.theme;
+
+  return { adaptive, theme };
+};
+
+/**
+ * ✅ Unistyles-Regel:
+ * - setTheme() darf nicht laufen, wenn adaptiveThemes aktiv sind.
+ * Daher:
+ * 1) adaptiveThemes AUS
+ * 2) setTheme(validTheme)
+ * 3) adaptiveThemes an/aus je nach Setting
+ */
+const applyUnistylesTheme = (info: ThemeInfo) => {
+  // 1) adaptive erstmal AUS, sonst meckert Unistyles
+  UnistylesRuntime.setAdaptiveThemes(false);
+
+  // 2) immer ein valides Theme setzen (nie undefined)
+  UnistylesRuntime.setTheme(info.theme);
+
+  // 3) dann adaptive wieder setzen
+  UnistylesRuntime.setAdaptiveThemes(Boolean(info.adaptive));
+};
+
+export const initializeTheme = createAsyncThunk("theme/initialize", async (): Promise<ThemeInfo> => {
+  try {
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!stored) return DEFAULT_THEME;
+
+    const parsed = JSON.parse(stored);
+    return normalizeTheme(parsed);
+  } catch (e) {
+    console.warn("Theme storage corrupted, fallback to default", e);
+    return DEFAULT_THEME;
+  }
+});
 
 export const themeSlice = createSlice({
-    name: 'theme',
-    initialState,
-    reducers: {
-        setTheme: (state, action: PayloadAction<ThemeState>) => {
-            state.val.adaptive = action.payload.val.adaptive
-            state.val.theme = action.payload.val.theme
+  name: "theme",
+  initialState,
+  reducers: {
+    // ✅ Payload ist ThemeInfo (NICHT ThemeState!)
+    setTheme: (state, action: PayloadAction<ThemeInfo>) => {
+      const next = normalizeTheme(action.payload);
 
-            AsyncStorage.setItem(key, JSON.stringify(action.payload.val))
-            if (action.payload.val.adaptive) {
-                UnistylesRuntime.setAdaptiveThemes(true)
-            } else {
-                UnistylesRuntime.setAdaptiveThemes(false)
-                UnistylesRuntime.setTheme(action.payload.val.theme)
-            }
-        }
+      state.val = next;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      applyUnistylesTheme(next);
     },
-    extraReducers: (builder) => {
-        builder.addCase(initializeTheme.fulfilled, (state, action) => {
-            state.val.adaptive = action.payload.adaptive
-            state.val.theme = action.payload.theme
 
-            AsyncStorage.setItem(key, JSON.stringify(action.payload))
-            if (action.payload.adaptive) {
-                UnistylesRuntime.setAdaptiveThemes(true)
-            } else {
-                UnistylesRuntime.setAdaptiveThemes(false)
-                UnistylesRuntime.setTheme(action.payload.theme)
-            }
-        })
+    // optional, wenn du manchmal ThemeState dispatchst (z.B. alte UI):
+    setThemeState: (state, action: PayloadAction<ThemeState>) => {
+      const next = normalizeTheme(action.payload);
+
+      state.val = next;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      applyUnistylesTheme(next);
     },
-})
+  },
+  extraReducers: (builder) => {
+    builder.addCase(initializeTheme.fulfilled, (state, action) => {
+      const next = normalizeTheme(action.payload);
 
-export const { setTheme } = themeSlice.actions
+      state.val = next;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      applyUnistylesTheme(next);
+    });
+  },
+});
 
-export const selectTheme = (state: RootState) => state.theme
+export const { setTheme, setThemeState } = themeSlice.actions;
 
-export default themeSlice.reducer
+// ✅ Gib direkt ThemeInfo zurück (damit LoginScreen nicht undefined bekommt)
+export const selectThemeInfo = (state: RootState) => state.theme?.val ?? DEFAULT_THEME;
 
+export default themeSlice.reducer;

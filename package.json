@@ -1,6 +1,6 @@
 {
   "name": "enflex.it-template",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -11,7 +11,6 @@
     "Dynamic-Content-Api": "openapi-generator-cli generate -i src/api/definition/Dynamic-Content-Api.yaml -g typescript-axios -o src/api/implementation/Dynamic-Content-Api",
     "api": "npm run AWB-RestAPI && npm run Dynamic-Content-Api"
   },
-
   "dependencies": {
     "@expo/metro-runtime": "~5.0.5",
     "@react-native-async-storage/async-storage": "2.1.2",
@@ -47,15 +46,15 @@
     "react-dom": "19.0.0",
     "react-i18next": "^15.6.0",
     "react-native": "0.79.6",
-    "react-native-edge-to-edge": "1.6.0",
+    "react-native-edge-to-edge": "^1.6.0",
     "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "~2.24.0",
-    "react-native-nitro-modules": "^0.26.4",
+    "react-native-nitro-modules": "^0.32.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
-    "react-native-unistyles": "^3.0.5",
+    "react-native-unistyles": "^3.0.22",
     "react-native-web": "^0.20.0",
     "react-redux": "^9.2.0"
   },

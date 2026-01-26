@@ -1,4 +1,4 @@
-// src/screens/Login.tsx
+// src/screens/login/Login.tsx
 
 import React, { useRef, useState } from "react";
 import {
@@ -23,6 +23,7 @@ import { ThemedText } from "../../components/themed/ThemedText";
 
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
+
 import { selectServers } from "../../redux/slices/serverSlice";
 import {
   selectApi,
@@ -30,10 +31,13 @@ import {
   selectIp,
   login as reduxLogin,
 } from "../../redux/slices/apiSlice";
+
 import { ServerModal } from "./ServerModal";
+
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
-import { selectTheme, setTheme } from "../../redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
 import { initializeMenu } from "../../redux/slices/menuSlice";
+
 import { styles } from "./styles";
 import { H4 } from "../../components/stylistic/H4";
 
@@ -41,6 +45,8 @@ import { H4 } from "../../components/stylistic/H4";
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
+
+  // Unistyles theme (safe as long as index.tsx only calls useUnistyles after boot)
   const { theme } = useUnistyles();
 
   // api
@@ -50,7 +56,7 @@ export function LoginScreen() {
 
   // settings
   const language = useAppSelector(selectLanguage);
-  const themeState = useAppSelector(selectTheme);
+  const themeInfo = useAppSelector(selectThemeInfo);
 
   // servers
   const serversState = useAppSelector(selectServers);
@@ -136,8 +142,9 @@ export function LoginScreen() {
     dark: t("dark"),
   } as const;
 
-  const currentThemeValue: keyof typeof themeOptions =
-    themeState.val.adaptive ? "system" : themeState.val.theme;
+  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive
+    ? "system"
+    : themeInfo.theme;
 
   // ---------- render ----------
   return (
@@ -228,6 +235,7 @@ export function LoginScreen() {
                       {selectedBaseUrl || "-"}
                     </Text>
                   </View>
+
                   <View style={[styles.statusPill, styles.border]}>
                     <H4>
                       {isPointingToServer
@@ -255,17 +263,12 @@ export function LoginScreen() {
                   value={currentThemeValue}
                   options={themeOptions}
                   onChange={(v) => {
-                    dispatch(
-                      setTheme({
-                        val: {
-                          adaptive: v === "system",
-                          theme:
-                            v === "system"
-                              ? themeState.val.theme
-                              : (v as "light" | "dark"),
-                        },
-                      }),
-                    );
+                    const next =
+                      v === "system"
+                        ? { adaptive: true, theme: themeInfo.theme }
+                        : { adaptive: false, theme: v as "light" | "dark" };
+
+                    dispatch(setTheme(next));
                   }}
                 />
               </View>

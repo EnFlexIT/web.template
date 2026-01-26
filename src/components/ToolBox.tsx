@@ -6,7 +6,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { logout } from "../redux/slices/apiSlice";
-import { selectTheme, setTheme } from "../redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 
 const Feather = withUnistyles(Feather_);
@@ -18,22 +18,22 @@ type ToolBoxProps = {
 };
 
 function ColorSwitcher() {
-  const { val: { theme } } = useAppSelector(selectTheme);
+  const themeInfo = useAppSelector(selectThemeInfo); 
   const dispatch = useAppDispatch();
+
+  const currentTheme = themeInfo.theme;
 
   return (
     <Feather
       onPress={() =>
         dispatch(
           setTheme({
-            val: {
-              adaptive: false,
-              theme: theme === "dark" ? "light" : "dark",
-            },
-          }),
+            adaptive: false,
+            theme: currentTheme === "dark" ? "light" : "dark",
+          })
         )
       }
-      name={theme === "dark" ? "moon" : "sun"}
+      name={currentTheme === "dark" ? "moon" : "sun"}
       size={24}
       style={[styles.color]}
     />
