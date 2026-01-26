@@ -1,29 +1,22 @@
 import { Picker } from "@react-native-picker/picker";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet, UnistylesRuntime } from "react-native-unistyles";
 import { Screen } from "../../components/Screen";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
-import {
-  selectTheme,
-  setTheme,
-  themeSlice,
-} from "../../redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
 import { ThemedText } from "../../components/themed/ThemedText";
-import { ThemedTextInput } from "../../components/themed/ThemedTextInput";
-import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
 import { selectIp } from "../../redux/slices/apiSlice";
 import { useState } from "react";
-import { useRoute } from "@react-navigation/native";
 import { setReady } from "../../redux/slices/readySlice";
 
 export function UnauthenticatedSettings() {
   const { t } = useTranslation(["Settings.Unauthenticated"]);
 
   const language = useAppSelector(selectLanguage);
-  const theme = useAppSelector(selectTheme);
+  const themeInfo = useAppSelector(selectThemeInfo); 
   const ip = useAppSelector(selectIp);
 
   const [ipField, setIpField] = useState(ip);
@@ -44,7 +37,7 @@ export function UnauthenticatedSettings() {
               dispatch(
                 setLanguage({
                   language: itemValue,
-                }),
+                })
               )
             }
           >
@@ -52,18 +45,19 @@ export function UnauthenticatedSettings() {
             <Picker.Item label="Englisch" value="en" />
           </Picker>
         </View>
+
         <View style={[styles.noStretchChildren]}>
           <ThemedText>{t("colorscheme")}:</ThemedText>
           <Picker
-            selectedValue={theme.val.adaptive ? "system" : theme.val.theme}
+            selectedValue={themeInfo.adaptive ? "system" : themeInfo.theme}
             onValueChange={(itemValue) => {
+              const v = itemValue as "system" | "light" | "dark";
+
               dispatch(
                 setTheme({
-                  val: {
-                    adaptive: itemValue === "system" ? true : false,
-                    theme: itemValue === "system" ? theme.val.theme : itemValue,
-                  },
-                }),
+                  adaptive: v === "system",
+                  theme: v === "system" ? themeInfo.theme : v, 
+                })
               );
             }}
           >
@@ -72,6 +66,7 @@ export function UnauthenticatedSettings() {
             <Picker.Item label={t("dark")} value="dark" />
           </Picker>
         </View>
+
         <View>
           <Pressable onPress={() => dispatch(setReady({ ready: false }))}>
             <ThemedText>Switch Organization</ThemedText>
@@ -82,7 +77,7 @@ export function UnauthenticatedSettings() {
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   screen: {
     flex: 1,
   },
