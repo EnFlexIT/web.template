@@ -1,67 +1,81 @@
 import { Pressable, View } from "react-native";
-import { Text } from "../stylistic/Text";
+import { H4 } from "../stylistic/H4";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import { Icon, IconName } from "./Icon/Icon";
+import { useState } from "react";
 
 interface ActionButtonProps {
   label?: string;
   variant?: "primary" | "secondary";
+  size?: "sm" | "md";
   onPress: () => void;
-
- 
   icon?: IconName;
   iconSize?: number;
+  disabled?: boolean;
 }
 
 export function ActionButton({
   label,
   variant = "secondary",
+  size = "md",
   onPress,
   icon,
-  iconSize = 24,
+  iconSize = 20,
+  disabled = false,
 }: ActionButtonProps) {
   const { theme } = useUnistyles();
+
+  const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
+
   const isPrimary = variant === "primary";
 
-  const iconColor = isPrimary
-    ? theme.colors.background
-    : theme.colors.text;
+  // ✅ genau wie Login: secondary hover => theme.colors.highlight
+  const backgroundColor = isPrimary
+    ? theme.colors.highlight
+    : pressed
+    ? theme.colors.border
+    : hovered
+    ? theme.colors.highlight
+    : "transparent";
+
+  const textColor = isPrimary ? theme.colors.background : theme.colors.text;
 
   return (
     <Pressable
+      disabled={disabled}
       onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => {
+        setHovered(false);
+        setPressed(false);
+      }}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      onFocus={() => setHovered(true)}
       style={[
         styles.button,
+        sizeStyles[size],
         {
+          backgroundColor,
           borderColor: theme.colors.border,
-          backgroundColor: isPrimary
-            ? theme.colors.highlight
-            : "transparent",
+          opacity: disabled ? 0.6 : 1,
         },
       ]}
     >
-      {/* ICON */}
       {icon && (
         <View style={styles.icon}>
-          <Icon
-            name={icon}
-            size={iconSize}
-            color={iconColor}
-          />
+          <Icon name={icon} size={iconSize} color={textColor} />
         </View>
       )}
 
-      {/* LABEL */}
       {label && (
-        <Text
-          style={{
-            color: iconColor,
-            fontWeight: "600",
-          }}
+        <H4
+         
         >
           {label}
-        </Text>
+        </H4>
       )}
     </Pressable>
   );
@@ -70,12 +84,24 @@ export function ActionButton({
 const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
-   
-    paddingVertical: 10,
-    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
+    
   },
   icon: {},
 });
+
+const sizeStyles = {
+  sm: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    minHeight: 34,
+  },
+  md: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    minHeight: 42,
+  },
+} as const;

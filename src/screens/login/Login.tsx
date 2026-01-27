@@ -40,6 +40,8 @@ import { initializeMenu } from "../../redux/slices/menuSlice";
 
 import { styles } from "./styles";
 import { H4 } from "../../components/stylistic/H4";
+import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { Card } from "../../components/ui-elements/Card";
 
 // ---------- component ----------
 export function LoginScreen() {
@@ -188,19 +190,11 @@ export function LoginScreen() {
 
           {/* Login Button */}
           {isPointingToServer ? (
-            <Pressable
-              ref={loginButtonRef}
-              style={[styles.border, styles.padding, styles.loginContainer]}
-              onHoverIn={() => setHighlight(true)}
-              onHoverOut={() => setHighlight(false)}
-              onFocus={() => setHighlight(true)}
-              onPress={() => {
-                setHighlight(false);
-                login();
-              }}
-            >
-              <H4>{t("login")}</H4>
-            </Pressable>
+           <ActionButton
+            label={t("login")}
+            variant="secondary"
+            onPress={login}
+            />
           ) : (
             <View style={[styles.border, styles.padding, styles.loginContainer]}>
               <H4>{t("unableToFindServer")}</H4>
@@ -221,30 +215,23 @@ export function LoginScreen() {
           {!folded && (
             <ScrollView contentContainerStyle={[styles.advancedItemsContainer]}>
               {/* Change Organization / Server */}
-              <Pressable onPress={() => setOrgModalOpen(true)}>
-                <View
-                  style={[
-                    styles.serverBadge,
-                    styles.border,
-                    { backgroundColor: theme.colors.card, gap: 1 },
-                  ]}
-                >
+              <Card onPress={() => setOrgModalOpen(true)} padding="none">
+                  <View style={[styles.serverBadge, { gap: 1 }]}>
                   <View style={{ flex: 1, gap: 1 }}>
-                    <H4>{t("currentServer")}</H4>
-                    <Text style={[mutedTextStyle]} numberOfLines={1}>
-                      {selectedBaseUrl || "-"}
-                    </Text>
+                  <H4>{t("currentServer")}</H4>
+                  <Text style={[mutedTextStyle]} numberOfLines={1}>
+                  {selectedBaseUrl || "-"}
+                  </Text>
                   </View>
 
+
                   <View style={[styles.statusPill, styles.border]}>
-                    <H4>
-                      {isPointingToServer
-                        ? t("serverReachable")
-                        : t("serverNotReachable")}
-                    </H4>
+                  <H4>
+                  {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
+                  </H4>
                   </View>
-                </View>
-              </Pressable>
+                  </View>
+                  </Card>
 
               {/* Language (Dropdown) */}
               <View style={{ gap: 6 }}>

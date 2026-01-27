@@ -5,13 +5,13 @@ import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-
 import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
-
 export type StaticMenuItem = {
   caption: string;
   menuID: number;
   parentID?: number;
   position?: number;
   Screen: ComponentClass<any> | FunctionComponent<any>;
+ 
 };
 
 /**

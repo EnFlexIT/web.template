@@ -99,11 +99,11 @@ export function hasId(tree: MenuTree, id: number): boolean {
     )
   );
 }
-
+const staticMenu = getStaticMenu();
 const initialState: MenuState = {
-  menu: [],
-  rawMenu: [],
-  activeMenuId: 3003, // settings default
+menu: rawListToTrees(staticMenu),
+rawMenu: staticMenu,
+activeMenuId: 3003,
 };
 
 export const initializeMenu = createAsyncThunk<MenuItem[]>(
@@ -112,22 +112,42 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
     const state = thunkAPI.getState() as RootState;
     const lang = state.language.language;
 
-    //  Nur dynamisches Menü holen, wenn JWT-login aktiv ist
     if (!state.api.isPointingToServer) return [];
 
-    const canLoadDynamicMenu = state.api.isLoggedIn === true;
-    if (!canLoadDynamicMenu) return [];
+    // nur wenn Login aktiv ist
+    if (state.api.isLoggedIn !== true) return [];
 
-    const response = await state.api.dynamic_content_api.defaultApi.menuGet(lang);
-    const data = response.data as ApiMenuItem[];
+    try {
+      const response = await state.api.dynamic_content_api.defaultApi.menuGet(lang);
 
-    return data.map((node) => ({
-      menuID: node.menuID!,
-      parentID: node.parentID,
-      position: node.position,
-      caption: node.caption,
-      Screen: undefined,
-    }));
+      const raw = response?.data as any;
+
+      // ✅ akzeptiere mehrere mögliche Shapes
+      const data: ApiMenuItem[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(raw?.items)
+        ? raw.items
+        : Array.isArray(raw?.menu)
+        ? raw.menu
+        : [];
+
+      // falls Server was Komisches liefert -> einfach kein dynamic menu
+      if (!Array.isArray(data) || data.length === 0) return [];
+
+      return data.map((node) => ({
+        menuID: node.menuID!,
+        parentID: node.parentID,
+        position: node.position,
+        caption: node.caption,
+        Screen: undefined,
+      }));
+    } catch (e) {
+      // 401 / Netzwerk / Format -> kein Crash, einfach fallback auf static
+      console.warn("initializeMenu failed, fallback to static menu", e);
+      return [];
+    }
   },
 );
 
@@ -151,20 +171,20 @@ export const menuSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(initializeMenu.fulfilled, (state, action) => {
-      const staticMenu = getStaticMenu();
+  builder.addCase(initializeMenu.fulfilled, (state, action) => {
+const staticMenu = getStaticMenu();
 
-      //  dynamic + static
-      state.rawMenu = [...action.payload, ...staticMenu];
 
-      state.menu = rawListToTrees(state.rawMenu);
+const dynamic = Array.isArray(action.payload) ? action.payload : [];
 
-      //  activeMenuId muss existieren
-      const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
-      if (!stillValid) {
-        state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
-      }
-    });
+
+state.rawMenu = [...dynamic, ...staticMenu];
+state.menu = rawListToTrees(state.rawMenu);
+
+
+const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
+if (!stillValid) state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
+});
 
     builder.addCase(internalSetLanguage, () => {
       // optional

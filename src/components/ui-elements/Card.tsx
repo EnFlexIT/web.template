@@ -11,16 +11,11 @@ interface CardProps {
   children: ReactNode;
   onPress?: () => void;
 
-  /** optional: eigene Styles */
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
 
-  /** optional: UI Verhalten */
-  hoverBorderHighlight?: boolean; // default true
-  disabled?: boolean; // default false
-
-  /** ✅ padding variants */
-  padding?: CardPadding; // default "md"
+  disabled?: boolean;
+  padding?: CardPadding;
 }
 
 const PADDING_MAP: Record<CardPadding, number> = {
@@ -35,35 +30,44 @@ export function Card({
   onPress,
   style,
   contentStyle,
-  hoverBorderHighlight = true,
   disabled = false,
   padding = "md",
 }: CardProps) {
-  const [over, setOver] = useState(false);
   const { theme } = useUnistyles();
-  const colors: any = theme.colors;
-
-  const backgroundColor =
-    colors.surface ?? colors.card ?? colors.background ?? "transparent";
-
-  const baseBorder = colors.border ?? theme.colors.text;
-  const borderColor =
-    hoverBorderHighlight && over ? theme.colors.highlight : baseBorder;
-
-  const isPressable = !!onPress && !disabled;
+  const [hovered, setHovered] = useState(false);
 
   const paddingValue = useMemo(() => PADDING_MAP[padding], [padding]);
+  const isPressable = !!onPress && !disabled;
 
   return (
-    <ThemedView style={[styles.card, { backgroundColor, borderColor }, style]}>
+    <ThemedView
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.colors.card,
+          borderColor: theme.colors.border,
+        },
+        style,
+      ]}
+    >
       <Pressable
         disabled={!isPressable}
         onPress={onPress}
-        onHoverIn={() => setOver(true)}
-        onHoverOut={() => setOver(false)}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
         style={({ pressed }) => [
           styles.pressable,
-          { padding: paddingValue, opacity: pressed ? 0.88 : 1 },
+          {
+            padding: paddingValue,
+
+           
+            backgroundColor: hovered
+              ? theme.colors.background
+              : "transparent",
+
+           
+            opacity: pressed ? 0.9 : 1,
+          },
           contentStyle,
         ]}
       >
@@ -78,7 +82,5 @@ const styles = StyleSheet.create(() => ({
     borderWidth: 1,
     overflow: "hidden",
   },
-  pressable: {
-    
-  },
+  pressable: {},
 }));

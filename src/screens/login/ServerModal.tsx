@@ -1,33 +1,66 @@
-import React, { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, View } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+// src/screens/login/ServerModal.tsx
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  View,
+  Platform,
+  Alert,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 
-import { Text } from "../../components/stylistic/Text";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
+import { Dropdown } from "../../components/ui-elements/Dropdown";
+import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { Icon } from "../../components/ui-elements/Icon/Icon";
 
 import { useAppDispatch } from "../../hooks/useAppDispatch";
-
 import { setIpAsync } from "../../redux/slices/apiSlice";
 import { initializeMenu } from "../../redux/slices/menuSlice";
-import { addServer, selectServer } from "../../redux/slices/serverSlice";
+import {
+  addServer,
+  selectServer,
+  updateServer,
+  removeServer,
+} from "../../redux/slices/serverSlice";
 
 import { checkServerReachable, normalizeBaseUrl, normalizeName } from "./serverCheck";
 import { styles, modalStyles } from "./styles";
-import { H2 } from "../../components/stylistic/H2";
-import{H3} from "../../components/stylistic/H3";
+import { H1 } from "../../components/stylistic/H1";
 import { H4 } from "../../components/stylistic/H4";
+
+type Server = {
+  id: string;
+  name: string;
+  baseUrl: string;
+};
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-
-  servers: Array<{ id: string; name: string; baseUrl: string }>;
+  servers: Server[];
   selectedServerId: string;
-  selectedBaseUrl: string; // fallback ip etc.
+  selectedBaseUrl: string;
 };
+
+function confirmDialog(title: string, message: string): Promise<boolean> {
+  // Web
+  if (Platform.OS === "web") {
+    // eslint-disable-next-line no-alert
+    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  }
+
+  // Native
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: "Abbrechen", style: "cancel", onPress: () => resolve(false) },
+      { text: "Löschen", style: "destructive", onPress: () => resolve(true) },
+    ]);
+  });
+}
 
 export function ServerModal({
   visible,
@@ -42,13 +75,31 @@ export function ServerModal({
 
   const selectedServer = servers.find((s) => s.id === selectedServerId);
 
-  const [serverSaveBusy, setServerSaveBusy] = useState(false);
-  const [serverNameError, setServerNameError] = useState<string | null>(null);
-  const [serverUrlError, setServerUrlError] = useState<string | null>(null);
-  const [serverGeneralError, setServerGeneralError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const [newServerLabel, setNewServerLabel] = useState("");
-  const [newServerUrl, setNewServerUrl] = useState("");
+  // Add / Edit shared inputs
+  const [nameInput, setNameInput] = useState("");
+  const [urlInput, setUrlInput] = useState("");
+
+  // mode: add vs edit
+  const [editMode, setEditMode] = useState(false);
+
+  const serverOptions = useMemo<Record<string, string>>(
+    () =>
+      Object.fromEntries(
+        servers.map((s) => [s.id, `${s.name} (${s.baseUrl})`]),
+      ),
+    [servers],
+  );
+
+  function resetErrors() {
+    setNameError(null);
+    setUrlError(null);
+    setGeneralError(null);
+  }
 
   async function handleUseSelectedServer() {
     const url = normalizeBaseUrl(selectedServer?.baseUrl ?? selectedBaseUrl);
@@ -57,187 +108,246 @@ export function ServerModal({
     onClose();
   }
 
-  async function handleSaveAndUseServer() {
-    setServerNameError(null);
-    setServerUrlError(null);
-    setServerGeneralError(null);
+  function startEditSelected() {
+    resetErrors();
+    if (!selectedServer) return;
 
-    const name = normalizeName(newServerLabel) || "Custom";
-    const baseUrl = normalizeBaseUrl(newServerUrl);
+    setEditMode(true);
+    setNameInput(selectedServer.name ?? "");
+    setUrlInput(selectedServer.baseUrl ?? "");
+  }
+
+  function startAddNew() {
+    resetErrors();
+    setEditMode(false);
+    setNameInput("");
+    setUrlInput("");
+  }
+
+  async function handleDeleteSelected() {
+    if (!selectedServer) return;
+
+    const ok = await confirmDialog(
+      "Server löschen?",
+      `${selectedServer.name} (${selectedServer.baseUrl})`,
+    );
+    if (!ok) return;
+
+    dispatch(removeServer(selectedServer.id));
+    // optional: Modal offen lassen, damit man direkt einen anderen wählen kann
+    // oder schließen:
+    // onClose();
+  }
+
+  async function handleApply() {
+    resetErrors();
+
+    const name = normalizeName(nameInput) || "Custom";
+    const baseUrl = normalizeBaseUrl(urlInput);
 
     if (!baseUrl) {
-      setServerUrlError(t("errors.serverUrlRequired"));
-      return;
-    }
-    if (!/^https?:\/\//i.test(baseUrl)) {
-      setServerUrlError(t("errors.serverUrlInvalid"));
+      setUrlError(t("errors.serverUrlRequired"));
       return;
     }
 
-    // duplicates (defensiv gegen kaputte Daten)
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      setUrlError(t("errors.serverUrlInvalid"));
+      return;
+    }
+
+    // Duplikate prüfen – beim Edit darf er sich selbst behalten
+    const isSameId = (id: string) => (selectedServer?.id ?? "") === id;
+
     const nameExists = servers.some((s) => {
-      const existingName = (s?.name ?? "").toString().trim().toLowerCase();
-      return existingName === name.toLowerCase();
+      if (editMode && isSameId(s.id)) return false;
+      return (s.name ?? "").toLowerCase() === name.toLowerCase();
     });
     if (nameExists) {
-      setServerNameError(t("errors.serverNameExists"));
+      setNameError(t("errors.serverNameExists"));
       return;
     }
 
     const urlExists = servers.some((s) => {
-      const existingUrl = normalizeBaseUrl((s?.baseUrl ?? "").toString()).toLowerCase();
-      return existingUrl === baseUrl.toLowerCase();
+      if (editMode && isSameId(s.id)) return false;
+      return normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase();
     });
     if (urlExists) {
-      setServerUrlError(t("errors.serverUrlExists"));
+      setUrlError(t("errors.serverUrlExists"));
       return;
     }
 
-    // reachability check
-    setServerSaveBusy(true);
+    setBusy(true);
     const check = await checkServerReachable(baseUrl);
-    setServerSaveBusy(false);
+    setBusy(false);
 
     if (!check.ok) {
-      setServerUrlError(t("errors.serverNotReachable"));
-      setServerGeneralError(check.message);
+      setUrlError(t("errors.serverNotReachable"));
+      setGeneralError(check.message);
       return;
     }
 
-    // id
-    const idBase = name
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-_]/g, "");
+    // ✅ EDIT
+    if (editMode && selectedServer) {
+      dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
+      await dispatch(setIpAsync(baseUrl));
+      await dispatch(initializeMenu());
+      onClose();
+      return;
+    }
 
-    const newId = `${idBase}-${Date.now()}`;
+    // ✅ ADD
+    const id =
+      normalizeName(name).toLowerCase().replace(/\s+/g, "-") +
+      "-" +
+      Date.now();
 
-    dispatch(
-      addServer({
-        id: newId,
-        name,
-        baseUrl,
-      }),
-    );
-
-    dispatch(selectServer(newId)); // sofort auswählen
+    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(selectServer(id));
 
     await dispatch(setIpAsync(baseUrl));
     await dispatch(initializeMenu());
 
-    setNewServerLabel("");
-    setNewServerUrl("");
+    setNameInput("");
+    setUrlInput("");
     onClose();
   }
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={modalStyles.backdrop}>
-        <View
+      {/* Backdrop: click outside closes */}
+      <Pressable style={modalStyles.backdrop} onPress={onClose}>
+        {/* Card: stop propagation */}
+        <Pressable
+          onPress={() => {}}
           style={[
             modalStyles.card,
             styles.border,
-            { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+            {
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border,
+            },
           ]}
         >
-          <H2>
-            {t("changeOrganization")}
-          </H2>
+          {/* Header */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <H1>{t("changeOrganization")}</H1>
+
+            <Pressable onPress={onClose}>
+              <Icon name="close" size={20} color={theme.colors.text} />
+            </Pressable>
+          </View>
 
           {/* Saved servers */}
-          <View style={{ gap: 6 }}>
+          <View style={{ gap: 8 }}>
             <H4>{t("savedServers")}</H4>
 
-            <Picker
-              selectedValue={selectedServerId}
-              onValueChange={(id) => dispatch(selectServer(id))}
-              style={{ height: 25 }}
-
-            >
-              {servers.map((s) => (
-                <Picker.Item
-                  key={s.id}
-                  label={`${s.name} (${s.baseUrl})`}
-                  value={s.id}
+            <Dropdown
+              value={selectedServerId}
+              options={serverOptions}
+              onChange={(id: string) => {
+                dispatch(selectServer(id));
+                // bei Auswahlwechsel: Edit-Modus abbrechen
+                startAddNew();
+              }}
+            />
+            {/* Edit/Delete row */}
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <ActionButton
+                 
+                  variant="secondary"
+                  icon="edit"
+                  onPress={startEditSelected}
                 />
-              ))}
-            </Picker>
+              </View>
+              <View style={{ flex: 1 }}>
+                <ActionButton
+                
+                  variant="secondary"
+                  icon="delete"
+                  onPress={handleDeleteSelected}
+                />
+              </View>
+            </View>
 
-            <Pressable
-              style={[styles.border, styles.padding, styles.loginContainer]}
+            <ActionButton
+              label={t("useServer")}
+              variant="secondary"
+              icon="check"
               onPress={handleUseSelectedServer}
-            >
-              <H4>{t("useServer")}</H4>
-            </Pressable>
+            />
+
+            
           </View>
 
-          {/* Add server */}
-          <View style={{ gap: 6 }}>
-            <ThemedText>{t("addServer")}</ThemedText>
+          {/* Add/Edit form */}
+          <View style={{ gap: 8 }}>
+            <ThemedText>
+              {editMode ? (t("editServer") ?? "Server bearbeiten") : t("addServer")}
+            </ThemedText>
 
             <StylisticTextInput
               style={[
                 styles.border,
                 styles.padding,
-                serverNameError && styles.errorBorder,
+                nameError && styles.errorBorder,
               ]}
               placeholder={t("serverLabel")}
-              value={newServerLabel}
+              value={nameInput}
               onChangeText={(v) => {
-                setNewServerLabel(v);
-                setServerNameError(null);
-                setServerGeneralError(null);
+                setNameInput(v);
+                setNameError(null);
+                setGeneralError(null);
               }}
             />
-            {serverNameError && (
-              <ThemedText style={styles.errorText}>{serverNameError}</ThemedText>
-            )}
+            {nameError && <ThemedText style={styles.errorText}>{nameError}</ThemedText>}
 
             <StylisticTextInput
               style={[
                 styles.border,
                 styles.padding,
-                serverUrlError && styles.errorBorder,
+                urlError && styles.errorBorder,
               ]}
               placeholder={t("serverUrl")}
-              value={newServerUrl}
+              value={urlInput}
               onChangeText={(v) => {
-                setNewServerUrl(v);
-                setServerUrlError(null);
-                setServerGeneralError(null);
+                setUrlInput(v);
+                setUrlError(null);
+                setGeneralError(null);
               }}
             />
-            {serverUrlError && (
-              <ThemedText style={styles.errorText}>{serverUrlError}</ThemedText>
+            {urlError && <ThemedText style={styles.errorText}>{urlError}</ThemedText>}
+            {generalError && (
+              <ThemedText style={styles.errorText}>{generalError}</ThemedText>
             )}
 
-            {serverGeneralError && (
-              <ThemedText style={styles.errorText}>{serverGeneralError}</ThemedText>
+            <ActionButton
+              label={editMode ? (t("applyChanges") ?? "Änderungen anwenden") : t("apply")}
+              variant="secondary"
+              icon="save"
+              onPress={handleApply}
+            />
+
+            {/* Optional: Add-New Shortcut */}
+            {editMode && (
+              <ActionButton
+                label={t("addNew") ?? "Neuen Server hinzufügen"}
+                variant="secondary"
+                icon="plus"
+                onPress={startAddNew}
+              />
             )}
 
-            <Pressable
-              style={[
-                styles.border,
-                styles.padding,
-                styles.loginContainer,
-                serverSaveBusy && { opacity: 0.6 },
-              ]}
-              disabled={serverSaveBusy}
-              onPress={handleSaveAndUseServer}
-            >
-              {serverSaveBusy ? (
-                <ActivityIndicator />
-              ) : (
-                <H4>{t("saveAndUse")}</H4>
-              )}
-            </Pressable>
+            {busy && <ActivityIndicator />}
           </View>
-
-          <Pressable onPress={onClose}>
-            <ThemedText>{t("close")}</ThemedText>
-          </Pressable>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
