@@ -16,7 +16,7 @@ import { MetricCard } from "../../components/ui-elements/MetricCard";
 import { SmallStat } from "../../components/ui-elements/SmallStat";
 import { HeroCard } from "../../components/ui-elements/HeroCard";
 import { ChartCard, BarChartWidget } from "../../components/ui-elements/charts";
-
+import { Screen } from "../../components/Screen";
 import { RenderData } from "../../components/dynamic/content/SiteChart";
 //Translation
 import { useTranslation } from "react-i18next";
@@ -118,6 +118,7 @@ const entries = fakeBarChartContent.dataSeries?.[0]?.entries ?? [];
 
 
   return (
+    <Screen>
     <ScrollView
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
@@ -212,6 +213,7 @@ const entries = fakeBarChartContent.dataSeries?.[0]?.entries ?? [];
   </View>
 </Card>
     </ScrollView>
+    </Screen>
   );
 }
 
@@ -220,7 +222,7 @@ const styles = StyleSheet.create((theme) => ({
     padding: 16,
     gap: 12,
     backgroundColor: theme.colors.background,
-    width:theme.info.maxContentWidth,
+   
   },
 
   row2: { flexDirection: "row", gap: 12 },

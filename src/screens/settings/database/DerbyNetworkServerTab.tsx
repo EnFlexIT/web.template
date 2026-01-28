@@ -27,7 +27,7 @@ export function DerbyNetworkServerTab() {
     ];
 
     return (
-        <View style={{ gap: 24, paddingTop: 16 ,width: theme.info.maxContentWidth }}>
+        <View style={{ gap: 24, paddingTop: 16 ,}}>
 
             <Checkbox
                 label="Start a Derby database server that is accessible via network"

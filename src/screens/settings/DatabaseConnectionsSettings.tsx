@@ -7,12 +7,14 @@ import { FactorySettingsTab } from "./database/FactorySettingsTab";
 import { DerbyNetworkServerTab } from "./database/DerbyNetworkServerTab";
 import { H4 } from "../../components/stylistic/H4";
 import { H2 } from "../../components/stylistic/H2";
+import { Screen } from "../../components/Screen";
 type TabKey = "general" | "factory" | "derby";
 
 export function DatabaseConnectionsSettings() {
   const [activeTab, setActiveTab] = useState<TabKey>("general");
 
   return (
+    <Screen>
     <View style={styles.container}>
       {/* Header */}
       <View >
@@ -50,6 +52,7 @@ export function DatabaseConnectionsSettings() {
         {activeTab === "derby" && <DerbyNetworkServerTab />}
       </View>
     </View>
+    </Screen>
   );
 }
 
@@ -93,7 +96,7 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     padding: 24,
     gap: 24,
-    width: theme.info.maxContentWidth 
+    
   },
   header: {
     gap: 6,

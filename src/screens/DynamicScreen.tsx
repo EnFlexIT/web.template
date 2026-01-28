@@ -6,7 +6,7 @@ import { MenuItem } from "../redux/slices/menuSlice";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "../redux/slices/apiSlice";
 import { ThemedText } from "../components/themed/ThemedText";
-import { selectBaseMode } from "../redux/slices/baseModeSlice"; // falls vorhanden
+import { selectBaseMode } from "../redux/slices/baseModeSlice"; 
 
 
 interface DynamicScreenProps {

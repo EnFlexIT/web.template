@@ -13,9 +13,12 @@ import { useUnistyles } from "react-native-unistyles";
 
 import { ThemedText } from "../../components/themed/ThemedText";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
-import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Icon } from "../../components/ui-elements/Icon/Icon";
+import {
+  SelectableList,
+  SelectableItem,
+} from "../../components/ui-elements/SelectableList";
 
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { setIpAsync } from "../../redux/slices/apiSlice";
@@ -27,10 +30,15 @@ import {
   removeServer,
 } from "../../redux/slices/serverSlice";
 
-import { checkServerReachable, normalizeBaseUrl, normalizeName } from "./serverCheck";
+import {
+  checkServerReachable,
+  normalizeBaseUrl,
+  normalizeName,
+} from "./serverCheck";
 import { styles, modalStyles } from "./styles";
 import { H1 } from "../../components/stylistic/H1";
 import { H4 } from "../../components/stylistic/H4";
+import { H2 } from "../../components/stylistic/H2";
 
 type Server = {
   id: string;
@@ -46,19 +54,57 @@ type Props = {
   selectedBaseUrl: string;
 };
 
-function confirmDialog(title: string, message: string): Promise<boolean> {
-  // Web
+function confirmDialog(
+  title: string,
+  message: string,
+  okText = "OK",
+  cancelText = "Abbrechen",
+): Promise<boolean> {
   if (Platform.OS === "web") {
     // eslint-disable-next-line no-alert
     return Promise.resolve(window.confirm(`${title}\n\n${message}`));
   }
 
-  // Native
   return new Promise((resolve) => {
     Alert.alert(title, message, [
-      { text: "Abbrechen", style: "cancel", onPress: () => resolve(false) },
-      { text: "Löschen", style: "destructive", onPress: () => resolve(true) },
+      { text: cancelText, style: "cancel", onPress: () => resolve(false) },
+      { text: okText, style: "default", onPress: () => resolve(true) },
     ]);
+  });
+}
+
+function showInfo(title: string, message: string) {
+  if (Platform.OS === "web") {
+    // eslint-disable-next-line no-alert
+    alert(`${title}\n\n${message}`);
+    return;
+  }
+  Alert.alert(title, message, [{ text: "OK" }]);
+}
+
+function askSaveBeforeUse(): Promise<boolean> {
+  if (Platform.OS === "web") {
+    // eslint-disable-next-line no-alert
+    return Promise.resolve(
+      window.confirm(
+        "Du hast Änderungen gemacht.\n\nMöchtest du die Änderungen speichern und den Server verwenden?",
+      ),
+    );
+  }
+
+  return new Promise((resolve) => {
+    Alert.alert(
+      "Änderungen speichern?",
+      "Du hast Änderungen gemacht.\n\nMöchtest du speichern und den Server verwenden?",
+      [
+        { text: "Abbrechen", style: "cancel", onPress: () => resolve(false) },
+        {
+          text: "Speichern & verwenden",
+          style: "default",
+          onPress: () => resolve(true),
+        },
+      ],
+    );
   });
 }
 
@@ -80,41 +126,22 @@ export function ServerModal({
   const [urlError, setUrlError] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  // Add / Edit shared inputs
   const [nameInput, setNameInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
-
-  // mode: add vs edit
   const [editMode, setEditMode] = useState(false);
 
-  const serverOptions = useMemo<Record<string, string>>(
-    () =>
-      Object.fromEntries(
-        servers.map((s) => [s.id, `${s.name} (${s.baseUrl})`]),
-      ),
-    [servers],
-  );
+  const serverItems = useMemo<SelectableItem<string>[]>(() => {
+    return servers.map((s) => ({
+      id: s.id,
+      label: s.name,
+      subtitle: s.baseUrl,
+    }));
+  }, [servers]);
 
   function resetErrors() {
     setNameError(null);
     setUrlError(null);
     setGeneralError(null);
-  }
-
-  async function handleUseSelectedServer() {
-    const url = normalizeBaseUrl(selectedServer?.baseUrl ?? selectedBaseUrl);
-    await dispatch(setIpAsync(url));
-    await dispatch(initializeMenu());
-    onClose();
-  }
-
-  function startEditSelected() {
-    resetErrors();
-    if (!selectedServer) return;
-
-    setEditMode(true);
-    setNameInput(selectedServer.name ?? "");
-    setUrlInput(selectedServer.baseUrl ?? "");
   }
 
   function startAddNew() {
@@ -124,38 +151,74 @@ export function ServerModal({
     setUrlInput("");
   }
 
+  function getCurrentInputsNormalized() {
+    return {
+      name: normalizeName(nameInput) || "Custom",
+      baseUrl: normalizeBaseUrl(urlInput),
+    };
+  }
+
+  function hasUnsavedChanges(): boolean {
+    const { name, baseUrl } = getCurrentInputsNormalized();
+
+    if (!normalizeName(nameInput) && !normalizeBaseUrl(urlInput)) return false;
+
+    if (editMode && selectedServer) {
+      const currentName = normalizeName(selectedServer.name ?? "") || "";
+      const currentUrl = normalizeBaseUrl(selectedServer.baseUrl ?? "");
+      return currentName !== name || currentUrl !== baseUrl;
+    }
+
+    return !!nameInput.trim() || !!urlInput.trim();
+  }
+
   async function handleDeleteSelected() {
     if (!selectedServer) return;
 
     const ok = await confirmDialog(
       "Server löschen?",
       `${selectedServer.name} (${selectedServer.baseUrl})`,
+      "Löschen",
+      "Abbrechen",
     );
     if (!ok) return;
 
     dispatch(removeServer(selectedServer.id));
-    // optional: Modal offen lassen, damit man direkt einen anderen wählen kann
-    // oder schließen:
-    // onClose();
   }
 
-  async function handleApply() {
+  async function ensureSelectedServerOnline(url: string): Promise<boolean> {
+    setBusy(true);
+    const check = await checkServerReachable(url);
+    setBusy(false);
+
+    if (check.ok) return true;
+
+    showInfo(
+      "Server nicht erreichbar",
+      `${check.message || ""}\n\nBitte wähle einen anderen Server.`,
+    );
+    return false;
+  }
+
+  async function validateAndSaveOnly(): Promise<{
+    ok: boolean;
+    baseUrl?: string;
+    serverLabel?: string;
+  }> {
     resetErrors();
 
-    const name = normalizeName(nameInput) || "Custom";
-    const baseUrl = normalizeBaseUrl(urlInput);
+    const { name, baseUrl } = getCurrentInputsNormalized();
 
     if (!baseUrl) {
       setUrlError(t("errors.serverUrlRequired"));
-      return;
+      return { ok: false };
     }
 
     if (!/^https?:\/\//i.test(baseUrl)) {
       setUrlError(t("errors.serverUrlInvalid"));
-      return;
+      return { ok: false };
     }
 
-    // Duplikate prüfen – beim Edit darf er sich selbst behalten
     const isSameId = (id: string) => (selectedServer?.id ?? "") === id;
 
     const nameExists = servers.some((s) => {
@@ -164,7 +227,7 @@ export function ServerModal({
     });
     if (nameExists) {
       setNameError(t("errors.serverNameExists"));
-      return;
+      return { ok: false };
     }
 
     const urlExists = servers.some((s) => {
@@ -173,50 +236,70 @@ export function ServerModal({
     });
     if (urlExists) {
       setUrlError(t("errors.serverUrlExists"));
-      return;
+      return { ok: false };
     }
 
-    setBusy(true);
-    const check = await checkServerReachable(baseUrl);
-    setBusy(false);
-
-    if (!check.ok) {
+    // Reachability check (online) BEFORE saving
+    const online = await ensureSelectedServerOnline(baseUrl);
+    if (!online) {
       setUrlError(t("errors.serverNotReachable"));
-      setGeneralError(check.message);
-      return;
+      return { ok: false };
     }
 
-    // ✅ EDIT
+    // speichern (edit/add)
     if (editMode && selectedServer) {
       dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
-      await dispatch(setIpAsync(baseUrl));
-      await dispatch(initializeMenu());
-      onClose();
-      return;
+      return { ok: true, baseUrl, serverLabel: name };
     }
 
-    // ✅ ADD
     const id =
-      normalizeName(name).toLowerCase().replace(/\s+/g, "-") +
-      "-" +
-      Date.now();
+      normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
     dispatch(addServer({ id, name, baseUrl }));
     dispatch(selectServer(id));
+    return { ok: true, baseUrl, serverLabel: name };
+  }
 
-    await dispatch(setIpAsync(baseUrl));
+  async function handleSaveSide() {
+    const res = await validateAndSaveOnly();
+    if (!res.ok || !res.baseUrl) return;
+
+    setEditMode(true);
+
+    showInfo(
+      "Server gespeichert",
+      `${res.serverLabel ?? "Server"} ist online und wurde erfolgreich ausgewählt.\n\n${res.baseUrl}`,
+    );
+  }
+
+  async function handleUseServer() {
+    if (hasUnsavedChanges()) {
+      const proceed = await askSaveBeforeUse();
+      if (!proceed) return;
+
+      const saved = await validateAndSaveOnly();
+      if (!saved.ok || !saved.baseUrl) return;
+
+      showInfo(
+        "Server gespeichert",
+        `${saved.serverLabel ?? "Server"} ist online und wurde erfolgreich ausgewählt.\n\n${saved.baseUrl}`,
+      );
+    }
+
+    const currentSelected = servers.find((s) => s.id === selectedServerId);
+    const url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+
+    const online = await ensureSelectedServerOnline(url);
+    if (!online) return;
+
+    await dispatch(setIpAsync(url));
     await dispatch(initializeMenu());
-
-    setNameInput("");
-    setUrlInput("");
     onClose();
   }
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      {/* Backdrop: click outside closes */}
       <Pressable style={modalStyles.backdrop} onPress={onClose}>
-        {/* Card: stop propagation */}
         <Pressable
           onPress={() => {}}
           style={[
@@ -225,6 +308,7 @@ export function ServerModal({
             {
               backgroundColor: theme.colors.card,
               borderColor: theme.colors.border,
+              padding: 16, 
             },
           ]}
         >
@@ -234,41 +318,122 @@ export function ServerModal({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
+              marginBottom: 16, 
             }}
           >
             <H1>{t("changeOrganization")}</H1>
 
-            <Pressable onPress={onClose}>
+            <Pressable onPress={onClose} hitSlop={10}>
               <Icon name="close" size={20} color={theme.colors.text} />
             </Pressable>
           </View>
 
-          {/* Saved servers */}
-          <View style={{ gap: 8 }}>
+          {/* Inputs */}
+          <View style={{ gap: 12, marginBottom: 20 }}>
+            <H2>
+              {editMode ? t("editServer") ?? "Server bearbeiten" : t("addServer")}
+            </H2>
+
+            {nameError && (
+              <ThemedText style={styles.errorText}>{nameError}</ThemedText>
+            )}
+
+            {/* Name row */}
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <StylisticTextInput
+                style={[
+                  styles.border,
+                  styles.padding,
+                  { flex: 1 },
+                  nameError && styles.errorBorder,
+                ]}
+                placeholder={t("serverLabel")}
+                value={nameInput}
+                onChangeText={(v) => {
+                  setNameInput(v);
+                  setNameError(null);
+                  setGeneralError(null);
+                }}
+              />
+              <ActionButton
+                variant="secondary"
+                icon="plus"
+                onPress={startAddNew}
+              />
+            </View>
+
+            {/* URL row */}
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <StylisticTextInput
+                style={[
+                  styles.border,
+                  styles.padding,
+                  { flex: 1 },
+                  urlError && styles.errorBorder,
+                ]}
+                placeholder={t("serverUrl")}
+                value={urlInput}
+                onChangeText={(v) => {
+                  setUrlInput(v);
+                  setUrlError(null);
+                  setGeneralError(null);
+                }}
+              />
+              <ActionButton
+                variant="secondary"
+                icon="save"
+                onPress={handleSaveSide}
+              />
+            </View>
+
+            {urlError && (
+              <ThemedText style={styles.errorText}>{urlError}</ThemedText>
+            )}
+            {generalError && (
+              <ThemedText style={styles.errorText}>{generalError}</ThemedText>
+            )}
+            {busy && <ActivityIndicator />}
+          </View>
+
+          {/* Liste */}
+          <View style={{ marginTop: 8, gap: 12 }}>
             <H4>{t("savedServers")}</H4>
 
-            <Dropdown
-              value={selectedServerId}
-              options={serverOptions}
-              onChange={(id: string) => {
-                dispatch(selectServer(id));
-                // bei Auswahlwechsel: Edit-Modus abbrechen
-                startAddNew();
-              }}
-            />
-            {/* Edit/Delete row */}
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
               <View style={{ flex: 1 }}>
-                <ActionButton
-                 
-                  variant="secondary"
-                  icon="edit"
-                  onPress={startEditSelected}
+                <SelectableList
+                  items={serverItems}
+                  value={selectedServerId}
+                  onChange={(id) => {
+                    dispatch(selectServer(id));
+
+                    const s = servers.find((x) => x.id === id);
+                    if (s) {
+                      setEditMode(true);
+                      setNameInput(s.name ?? "");
+                      setUrlInput(s.baseUrl ?? "");
+                    } else {
+                      startAddNew();
+                    }
+
+                    resetErrors();
+                  }}
+                  maxHeight={260}
+                  showSearch={false}
+                  searchPlaceholder={t("search") ?? "Server suchen…"}
+                  emptyText={t("noServers") ?? "Keine Server gefunden"}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+
+              {/* Side buttons */}
+              <View
+                style={{
+                  width: 56,
+                  justifyContent: "flex-start",
+                  paddingTop: 8,
+                }}
+              >
                 <ActionButton
-                
                   variant="secondary"
                   icon="delete"
                   onPress={handleDeleteSelected}
@@ -276,75 +441,14 @@ export function ServerModal({
               </View>
             </View>
 
+            {/* Footer button */}
             <ActionButton
               label={t("useServer")}
               variant="secondary"
               icon="check"
-              onPress={handleUseSelectedServer}
+              onPress={handleUseServer}
+              
             />
-
-            
-          </View>
-
-          {/* Add/Edit form */}
-          <View style={{ gap: 8 }}>
-            <ThemedText>
-              {editMode ? (t("editServer") ?? "Server bearbeiten") : t("addServer")}
-            </ThemedText>
-
-            <StylisticTextInput
-              style={[
-                styles.border,
-                styles.padding,
-                nameError && styles.errorBorder,
-              ]}
-              placeholder={t("serverLabel")}
-              value={nameInput}
-              onChangeText={(v) => {
-                setNameInput(v);
-                setNameError(null);
-                setGeneralError(null);
-              }}
-            />
-            {nameError && <ThemedText style={styles.errorText}>{nameError}</ThemedText>}
-
-            <StylisticTextInput
-              style={[
-                styles.border,
-                styles.padding,
-                urlError && styles.errorBorder,
-              ]}
-              placeholder={t("serverUrl")}
-              value={urlInput}
-              onChangeText={(v) => {
-                setUrlInput(v);
-                setUrlError(null);
-                setGeneralError(null);
-              }}
-            />
-            {urlError && <ThemedText style={styles.errorText}>{urlError}</ThemedText>}
-            {generalError && (
-              <ThemedText style={styles.errorText}>{generalError}</ThemedText>
-            )}
-
-            <ActionButton
-              label={editMode ? (t("applyChanges") ?? "Änderungen anwenden") : t("apply")}
-              variant="secondary"
-              icon="save"
-              onPress={handleApply}
-            />
-
-            {/* Optional: Add-New Shortcut */}
-            {editMode && (
-              <ActionButton
-                label={t("addNew") ?? "Neuen Server hinzufügen"}
-                variant="secondary"
-                icon="plus"
-                onPress={startAddNew}
-              />
-            )}
-
-            {busy && <ActivityIndicator />}
           </View>
         </Pressable>
       </Pressable>

@@ -51,7 +51,8 @@ export type IconName =
   | "smileo"
   | "smileo"
   | "frown"
-  | "frowno";
+  | "frowno"
+  | "arrow-left";
 
 interface IconProps {
   name: IconName;

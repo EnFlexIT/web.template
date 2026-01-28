@@ -8,18 +8,32 @@ import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
 import { ThemedText } from "../../components/themed/ThemedText";
-import { selectIp } from "../../redux/slices/apiSlice";
-import { useState } from "react";
-import { setReady } from "../../redux/slices/readySlice";
+import { Dropdown } from "../../components/ui-elements/Dropdown";
+
 
 export function UnauthenticatedSettings() {
   const { t } = useTranslation(["Settings.Unauthenticated"]);
 
   const language = useAppSelector(selectLanguage);
-  const themeInfo = useAppSelector(selectThemeInfo); 
-  const ip = useAppSelector(selectIp);
+  const themeInfo = useAppSelector(selectThemeInfo);
+   // Dropdown options (typed)
+  const languageOptions = {
+    de: "Deutsch",
+    en: "English",
+  } as const;
 
-  const [ipField, setIpField] = useState(ip);
+  const themeOptions = {
+    system: t("system"),
+    light: t("light"),
+    dark: t("dark"),
+  } as const;
+
+  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive
+    ? "system"
+    : themeInfo.theme;
+
+
+
 
   const dispatch = useAppDispatch();
 
@@ -29,49 +43,31 @@ export function UnauthenticatedSettings() {
         style={[styles.container]}
         contentContainerStyle={[styles.content]}
       >
-        <View style={[styles.noStretchChildren]}>
-          <ThemedText>{t("lng")}:</ThemedText>
-          <Picker
-            selectedValue={language.language}
-            onValueChange={(itemValue) =>
-              dispatch(
-                setLanguage({
-                  language: itemValue,
-                })
-              )
-            }
-          >
-            <Picker.Item label="Deutsch" value="de" />
-            <Picker.Item label="Englisch" value="en" />
-          </Picker>
-        </View>
-
-        <View style={[styles.noStretchChildren]}>
-          <ThemedText>{t("colorscheme")}:</ThemedText>
-          <Picker
-            selectedValue={themeInfo.adaptive ? "system" : themeInfo.theme}
-            onValueChange={(itemValue) => {
-              const v = itemValue as "system" | "light" | "dark";
-
-              dispatch(
-                setTheme({
-                  adaptive: v === "system",
-                  theme: v === "system" ? themeInfo.theme : v, 
-                })
-              );
-            }}
-          >
-            <Picker.Item label={t("system")} value="system" />
-            <Picker.Item label={t("light")} value="light" />
-            <Picker.Item label={t("dark")} value="dark" />
-          </Picker>
-        </View>
-
-        <View>
-          <Pressable onPress={() => dispatch(setReady({ ready: false }))}>
-            <ThemedText>Switch Organization</ThemedText>
-          </Pressable>
-        </View>
+        <View style={{ gap: 6 }}>
+                        <ThemedText>{t("lng")}:</ThemedText>
+                        <Dropdown<"de" | "en">
+                          value={(language.language as "de" | "en") ?? "de"}
+                          options={languageOptions}
+                          onChange={(lng) => dispatch(setLanguage({ language: lng }))}
+                        />
+                      </View>
+        
+                      {/* Theme (Dropdown) */}
+                      <View style={{ gap: 6 }}>
+                        <ThemedText>{t("color-scheme")}:</ThemedText>
+                        <Dropdown<"system" | "light" | "dark">
+                          value={currentThemeValue}
+                          options={themeOptions}
+                          onChange={(v) => {
+                            const next =
+                              v === "system"
+                                ? { adaptive: true, theme: themeInfo.theme }
+                                : { adaptive: false, theme: v as "light" | "dark" };
+        
+                            dispatch(setTheme(next));
+                          }}
+                        />
+                      </View>       
       </ScrollView>
     </Screen>
   );

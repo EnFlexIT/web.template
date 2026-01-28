@@ -3,15 +3,14 @@ import { View } from "react-native";
 import { useLinkTo } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { H1 } from "../components/stylistic/H1";
 import { H2 } from "../components/stylistic/H2";
 import { H4 } from "../components/stylistic/H4";
 import { H3 } from "../components/stylistic/H3"; 
 import { Card } from "../components/ui-elements/Card";
-import { ContentContainer } from "../styles/ContentContainer";
+import { Screen } from "../components/Screen";
 
 type SettingCard = {
-  key: "general" | "privacy" | "db";
+  key: "general" | "privacy" | "db"|"ServerModal";
   route: string;
 };
 
@@ -27,10 +26,12 @@ export function SettingsScreen() {
      { key: "db", route: "/3010" },
     { key: "privacy", route: "/3005" },
      { key: "general", route: "/3004" }, 
+     { key: "ServerModal", route: "/3004" }, 
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background,  width: theme.info.maxContentWidth }]}>
+    <Screen>
+    <View style={[styles.container, { backgroundColor: theme.colors.background, }]}>
      
       {/* Header */}
       <View >
@@ -71,6 +72,7 @@ export function SettingsScreen() {
       </View>
      
     </View>
+    </Screen>
   );
 }
 

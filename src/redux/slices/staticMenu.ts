@@ -5,6 +5,7 @@ import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-
 import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
+import { ServerSettingsScreen } from "../../screens/ServerSettings";
 export type StaticMenuItem = {
   caption: string;
   menuID: number;
@@ -25,5 +26,6 @@ export function getStaticMenu(): StaticMenuItem[] {
     { caption: "privacysettings", menuID: 3005, parentID: 3003, Screen: PrivacySettings },
     { caption: "databaseConnectionsAndSettings", menuID: 3010, parentID: 3003, Screen: DatabaseConnectionsSettings },
     { caption: "devHome", menuID: 3011, parentID: 3003, Screen: DevHomeScreen },
+    { caption: "serverSettings", menuID: 3012, parentID: 3003, Screen: ServerSettingsScreen },
   ];
 }
