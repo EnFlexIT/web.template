@@ -6,6 +6,7 @@ import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
+
 export type StaticMenuItem = {
   caption: string;
   menuID: number;

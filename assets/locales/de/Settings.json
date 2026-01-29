@@ -13,6 +13,10 @@
     "privacy": {
       "title": "Datenschutz",
       "description": "Sicherheit & Privatsphäre"
+    },
+     "serversettings": {
+      "title": "Servereinstellungen",
+      "description": "Verbindungen & Einstellungen"
     }
   }
 }

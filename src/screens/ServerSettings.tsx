@@ -1,4 +1,3 @@
-// src/screens/settings/ServerSettings.tsx
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,15 +10,22 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
+import { Pressable } from "react-native";
+import { Screen } from "../components/Screen";
+import { Card } from "../components/ui-elements/Card";
+import { ActionButton } from "../components/ui-elements/ActionButton";
+import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
+import { ThemedText } from "../components/themed/ThemedText";
+import { Icon } from "../components/ui-elements/Icon/Icon";
 
 import { H1 } from "../components/stylistic/H1";
+import { H2 } from "../components/stylistic/H2";
 import { H4 } from "../components/stylistic/H4";
-import { ThemedText } from "../components/themed/ThemedText";
-import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
-import { Dropdown } from "../components/ui-elements/Dropdown";
-import { ActionButton } from "../components/ui-elements/ActionButton";
-import { Card } from "../components/ui-elements/Card";
-import { Screen } from "../components/Screen";
+
+import {
+  SelectableList,
+  SelectableItem,
+} from "../components/ui-elements/SelectableList";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
@@ -39,7 +45,7 @@ import {
   normalizeBaseUrl,
   normalizeName,
 } from "../screens/login/serverCheck";
-import { styles } from "../screens/login/styles";
+import { styles as loginStyles } from "../screens/login/styles";
 
 type Server = {
   id: string;
@@ -47,7 +53,12 @@ type Server = {
   baseUrl: string;
 };
 
-function confirmDialog(title: string, message: string): Promise<boolean> {
+function confirmDialog(
+  title: string,
+  message: string,
+  okText = "OK",
+  cancelText = "Abbrechen",
+): Promise<boolean> {
   if (Platform.OS === "web") {
     // eslint-disable-next-line no-alert
     return Promise.resolve(window.confirm(`${title}\n\n${message}`));
@@ -55,10 +66,19 @@ function confirmDialog(title: string, message: string): Promise<boolean> {
 
   return new Promise((resolve) => {
     Alert.alert(title, message, [
-      { text: "Abbrechen", style: "cancel", onPress: () => resolve(false) },
-      { text: "Löschen", style: "destructive", onPress: () => resolve(true) },
+      { text: cancelText, style: "cancel", onPress: () => resolve(false) },
+      { text: okText, style: "destructive", onPress: () => resolve(true) },
     ]);
   });
+}
+
+function showInfo(title: string, message: string) {
+  if (Platform.OS === "web") {
+    // eslint-disable-next-line no-alert
+    alert(`${title}\n\n${message}`);
+    return;
+  }
+  Alert.alert(title, message, [{ text: "OK" }]);
 }
 
 export function ServerSettingsScreen() {
@@ -69,106 +89,39 @@ export function ServerSettingsScreen() {
 
   const { isPointingToServer } = useAppSelector(selectApi);
 
-  // servers redux
+  // redux servers
   const serversState = useAppSelector(selectServers);
   const servers: Server[] = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((s) => s.id === selectedServerId);
 
-  // current ip as fallback
+  // current ip fallback
   const ip = useAppSelector(selectIp);
-  const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
+  const selectedBaseUrl = normalizeBaseUrl(selectedServer?.baseUrl ?? ip);
 
-
-  const [pendingServerId, setPendingServerId] = useState<string>(selectedServerId);
-
-  const pendingServer = servers.find((s) => s.id === pendingServerId);
-  const pendingBaseUrl = pendingServer?.baseUrl ?? selectedBaseUrl;
-
-  // UI states
+  // UI state
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const [useBusy, setUseBusy] = useState(false);
+  // inputs
+  const [nameInput, setNameInput] = useState(selectedServer?.name ?? "");
+  const [urlInput, setUrlInput] = useState(selectedServer?.baseUrl ?? "");
+  const [editMode, setEditMode] = useState(true); // im Screen ist das meistens "edit" wenn was gewählt ist
 
-  // Add / Edit shared inputs
-  const [nameInput, setNameInput] = useState("");
-  const [urlInput, setUrlInput] = useState("");
-
-  const [editMode, setEditMode] = useState(false);
-
-  const serverOptions = useMemo<Record<string, string>>(
-    () =>
-      Object.fromEntries(
-        servers.map((s) => [s.id, `${s.name} (${s.baseUrl})`]),
-      ),
-    [servers],
-  );
+  const serverItems = useMemo<SelectableItem<string>[]>(() => {
+    return servers.map((s) => ({
+      id: s.id,
+      label: s.name,
+      subtitle: s.baseUrl,
+    }));
+  }, [servers]);
 
   function resetErrors() {
     setNameError(null);
     setUrlError(null);
     setGeneralError(null);
-  }
-
-  function showInfo(title: string, message: string) {
-    Alert.alert(title, message);
-  }
-
-
-  async function handleUseSelectedServer() {
-    resetErrors();
-
-    const url = normalizeBaseUrl(pendingServer?.baseUrl ?? pendingBaseUrl);
-
-    if (!url) {
-      setUrlError(t("errors.serverUrlRequired"));
-      return;
-    }
-
-    if (!/^https?:\/\//i.test(url)) {
-      setUrlError(t("errors.serverUrlInvalid"));
-      return;
-    }
-
-    setUseBusy(true);
-    const check = await checkServerReachable(url);
-    setUseBusy(false);
-
-    if (!check.ok) {
-      setUrlError(t("errors.serverNotReachable"));
-      setGeneralError(check.message);
-
-      showInfo(
-        t("serverNotReachable") ?? "Server nicht erreichbar",
-        check.message || (t("errors.serverNotReachable") ?? "Bitte URL prüfen."),
-      );
-      return;
-    }
-
-    //  Server ist erreichbar 
-    dispatch(selectServer(pendingServerId));
-    await dispatch(setIpAsync(url));
-    await dispatch(initializeMenu());
-
-    showInfo(
-      t("successful") ?? "Erfolgreich",
-      t("serverConnected") ?? "Server wurde erfolgreich verbunden und wird jetzt verwendet.",
-    );
-
-    navigation.goBack();
-  }
-
-  function startEditSelected() {
-    resetErrors();
-    //  edit basiert auf aktuell in Redux gespeicherten Server
-    if (!selectedServer) return;
-
-    setEditMode(true);
-    setNameInput(selectedServer.name ?? "");
-    setUrlInput(selectedServer.baseUrl ?? "");
   }
 
   function startAddNew() {
@@ -178,35 +131,44 @@ export function ServerSettingsScreen() {
     setUrlInput("");
   }
 
-  async function handleDeleteSelected() {
-    if (!selectedServer) return;
-
-    const ok = await confirmDialog(
-      "Server löschen?",
-      `${selectedServer.name} (${selectedServer.baseUrl})`,
-    );
-    if (!ok) return;
-
-    dispatch(removeServer(selectedServer.id));
-    startAddNew();
-
-    setPendingServerId((prev) => (prev === selectedServer.id ? "local" : prev));
+  function getCurrentInputsNormalized() {
+    return {
+      name: normalizeName(nameInput) || "Custom",
+      baseUrl: normalizeBaseUrl(urlInput),
+    };
   }
 
-  async function handleApply() {
+  async function ensureSelectedServerOnline(url: string): Promise<boolean> {
+    setBusy(true);
+    const check = await checkServerReachable(url);
+    setBusy(false);
+
+    if (check.ok) return true;
+
+    showInfo(
+      "Server nicht erreichbar",
+      `${check.message || ""}\n\nBitte wähle einen anderen Server.`,
+    );
+    return false;
+  }
+
+  async function validateAndSaveOnly(): Promise<{
+    ok: boolean;
+    baseUrl?: string;
+    serverLabel?: string;
+    id?: string;
+  }> {
     resetErrors();
 
-    const name = normalizeName(nameInput) || "Custom";
-    const baseUrl = normalizeBaseUrl(urlInput);
+    const { name, baseUrl } = getCurrentInputsNormalized();
 
     if (!baseUrl) {
       setUrlError(t("errors.serverUrlRequired"));
-      return;
+      return { ok: false };
     }
-
     if (!/^https?:\/\//i.test(baseUrl)) {
       setUrlError(t("errors.serverUrlInvalid"));
-      return;
+      return { ok: false };
     }
 
     const isSameId = (id: string) => (selectedServer?.id ?? "") === id;
@@ -217,7 +179,7 @@ export function ServerSettingsScreen() {
     });
     if (nameExists) {
       setNameError(t("errors.serverNameExists"));
-      return;
+      return { ok: false };
     }
 
     const urlExists = servers.some((s) => {
@@ -226,60 +188,162 @@ export function ServerSettingsScreen() {
     });
     if (urlExists) {
       setUrlError(t("errors.serverUrlExists"));
-      return;
+      return { ok: false };
     }
 
-    setBusy(true);
-    const check = await checkServerReachable(baseUrl);
-    setBusy(false);
-
-    if (!check.ok) {
+    // online check
+    const online = await ensureSelectedServerOnline(baseUrl);
+    if (!online) {
       setUrlError(t("errors.serverNotReachable"));
-      setGeneralError(check.message);
-      return;
+      return { ok: false };
     }
 
-    // EDIT
+    // edit/add
     if (editMode && selectedServer) {
       dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
-
-
-      showInfo(
-        t("successful") ?? "Erfolgreich",
-        t("applyChanges") ?? "Änderungen gespeichert.",
-      );
-
-      setPendingServerId(selectedServer.id);
-
-      return;
+      return { ok: true, baseUrl, serverLabel: name, id: selectedServer.id };
     }
 
-    //  ADD
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
     dispatch(addServer({ id, name, baseUrl }));
+    dispatch(selectServer(id));
+    setEditMode(true);
 
-    //  Nach Add: nur pending auswählen, nicht sofort verbinden
-    setPendingServerId(id);
+    return { ok: true, baseUrl, serverLabel: name, id };
+  }
+
+  // PLUS: direkt neu hinzufügen (mit Duplicate-Check + Meldung)
+  async function handleAddByPlus() {
+    resetErrors();
+
+    const { name, baseUrl } = getCurrentInputsNormalized();
+
+    if (!baseUrl) {
+      setUrlError(t("errors.serverUrlRequired"));
+      return;
+    }
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      setUrlError(t("errors.serverUrlInvalid"));
+      return;
+    }
+
+    const nameExists = servers.some(
+      (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
+    );
+    if (nameExists) {
+      showInfo(
+        "Name bereits vorhanden",
+        "Dieser Server-Name existiert bereits. Bitte wähle einen neuen Namen.",
+      );
+      setNameError(t("errors.serverNameExists"));
+      return;
+    }
+
+    const urlExists = servers.some(
+      (s) =>
+        normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
+    );
+    if (urlExists) {
+      showInfo(
+        "Adresse bereits vorhanden",
+        "Diese Server-Adresse ist bereits gespeichert. Bitte trage eine neue Adresse ein.",
+      );
+      setUrlError(t("errors.serverUrlExists"));
+      return;
+    }
+
+    const online = await ensureSelectedServerOnline(baseUrl);
+    if (!online) {
+      setUrlError(t("errors.serverNotReachable"));
+      return;
+    }
+
+    const id =
+      normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+
+    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(selectServer(id));
+
+    setEditMode(true);
+    setNameInput(name);
+    setUrlInput(baseUrl);
+
+    showInfo("Server hinzugefügt", `${name}\n\n${baseUrl}`);
+  }
+
+  async function handleSaveSide() {
+    const res = await validateAndSaveOnly();
+    if (!res.ok || !res.baseUrl) return;
+
+    showInfo(
+      "Server gespeichert",
+      `${res.serverLabel ?? "Server"} ist online und wurde gespeichert.\n\n${res.baseUrl}`,
+    );
+  }
+
+  async function handleDeleteSelected() {
+    if (!selectedServer) return;
+
+    const ok = await confirmDialog(
+      "Server löschen?",
+      `${selectedServer.name} (${selectedServer.baseUrl})`,
+      "Löschen",
+      "Abbrechen",
+    );
+    if (!ok) return;
+
+    dispatch(removeServer(selectedServer.id));
+    startAddNew();
+
+    // Fallback selection: local, falls existiert
+    const local = servers.find((s) => s.id === "local");
+    if (local) {
+      dispatch(selectServer("local"));
+      setNameInput(local.name ?? "");
+      setUrlInput(local.baseUrl ?? "");
+      setEditMode(true);
+    }
+  }
+
+  async function handleUseServer() {
+    const currentSelected = servers.find((s) => s.id === selectedServerId);
+    const url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+
+    const online = await ensureSelectedServerOnline(url);
+    if (!online) return;
+
+    await dispatch(setIpAsync(url));
+    await dispatch(initializeMenu());
 
     showInfo(
       t("successful") ?? "Erfolgreich",
-      t("addServer") ?? "Server gespeichert. Du kannst ihn jetzt verwenden.",
+      t("serverConnected") ??
+        "Server wurde erfolgreich verbunden und wird jetzt verwendet.",
     );
 
-    setNameInput("");
-    setUrlInput("");
+    navigation.goBack();
   }
 
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
 
   return (
     <Screen>
-      <View style={[screenStyles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          screenStyles.container,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         {/* Header */}
-        <View style={[screenStyles.headerRow]}>
-          <ActionButton onPress={() => navigation.goBack()} icon="home" />
+        <View style={screenStyles.headerRow}>
+          <ActionButton
+            onPress={() => navigation.goBack()}
+           icon="home"
+          />
+         
+
           <View style={{ flex: 1 }}>
             <H1>{t("changeOrganization")}</H1>
           </View>
@@ -291,55 +355,141 @@ export function ServerSettingsScreen() {
             <View
               style={[
                 screenStyles.currentCard,
-                styles.border,
+                loginStyles.border,
                 { borderColor: theme.colors.border },
               ]}
             >
               <View style={{ flex: 1, gap: 4 }}>
-                <H4>{t("currentServer")}</H4>
+                <H4>{t("currentServer") ?? "Aktueller Server"}</H4>
                 <ThemedText style={[mutedTextStyle]} numberOfLines={1}>
                   {selectedBaseUrl || "-"}
                 </ThemedText>
-
-                
-                
               </View>
 
               <View
                 style={[
                   screenStyles.statusPill,
-                  styles.border,
+                  loginStyles.border,
                   { borderColor: theme.colors.border },
                 ]}
               >
                 <H4>
-                  {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
+                  {isPointingToServer
+                    ? t("serverReachable") ?? "Erreichbar"
+                    : t("serverNotReachable") ?? "Nicht erreichbar"}
                 </H4>
               </View>
             </View>
           </Card>
 
-          {/* Saved servers */}
-          <View style={{ gap: 8 }}>
-            <H4>{t("savedServers")}</H4>
-            <Dropdown
-              value={pendingServerId}
-              options={serverOptions}
-              onChange={(id: string) => {
-                setPendingServerId(id);
-                startAddNew();
-              }}
-            />
+          {/* Inputs (wie Modal) */}
+          <View style={{ gap: 12 }}>
+            <H2>
+              {editMode
+                ? t("editServer") ?? "Server bearbeiten"
+                : t("addServer") ?? "Server hinzufügen"}
+            </H2>
 
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            {nameError && (
+              <ThemedText style={loginStyles.errorText}>{nameError}</ThemedText>
+            )}
+
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <StylisticTextInput
+                style={[
+                  loginStyles.border,
+                  loginStyles.padding,
+                  { flex: 1 },
+                  nameError && loginStyles.errorBorder,
+                ]}
+                placeholder={t("serverLabel") ?? "Server-Name"}
+                value={nameInput}
+                onChangeText={(v) => {
+                  setNameInput(v);
+                  setNameError(null);
+                  setGeneralError(null);
+                }}
+              />
+              <ActionButton
+                variant="secondary"
+                icon="plus"
+                onPress={handleAddByPlus}
+              />
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <StylisticTextInput
+                style={[
+                  loginStyles.border,
+                  loginStyles.padding,
+                  { flex: 1 },
+                  urlError && loginStyles.errorBorder,
+                ]}
+                placeholder={t("serverUrl") ?? "Server-URL"}
+                value={urlInput}
+                onChangeText={(v) => {
+                  setUrlInput(v);
+                  setUrlError(null);
+                  setGeneralError(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <ActionButton
+                variant="secondary"
+                icon="save"
+                onPress={handleSaveSide}
+              />
+            </View>
+
+            {urlError && (
+              <ThemedText style={loginStyles.errorText}>{urlError}</ThemedText>
+            )}
+            {generalError && (
+              <ThemedText style={loginStyles.errorText}>
+                {generalError}
+              </ThemedText>
+            )}
+            {busy && <ActivityIndicator />}
+          </View>
+
+          {/* Liste (wie Modal) */}
+          <View style={{ gap: 12 }}>
+            <H4>{t("savedServers") ?? "Gespeicherte Server"}</H4>
+
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
               <View style={{ flex: 1 }}>
-                <ActionButton
-                  variant="secondary"
-                  icon="edit"
-                  onPress={startEditSelected}
+                <SelectableList
+                  items={serverItems}
+                  value={selectedServerId}
+                  onChange={(id) => {
+                    dispatch(selectServer(id));
+
+                    const s = servers.find((x) => x.id === id);
+                    if (s) {
+                      setEditMode(true);
+                      setNameInput(s.name ?? "");
+                      setUrlInput(s.baseUrl ?? "");
+                    } else {
+                      startAddNew();
+                    }
+
+                    resetErrors();
+                  }}
+                  maxHeight={320}
+                  showSearch={false}
+                  searchPlaceholder={t("search") ?? "Server suchen…"}
+                  emptyText={t("noServers") ?? "Keine Server gefunden"}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+
+              <View
+                style={{
+                  width: 56,
+                  justifyContent: "flex-start",
+                  paddingTop: 8,
+                }}
+              >
                 <ActionButton
                   variant="secondary"
                   icon="delete"
@@ -349,67 +499,11 @@ export function ServerSettingsScreen() {
             </View>
 
             <ActionButton
-              label={useBusy ? (t("loading") ?? "Prüfe...") : (t("useServer") ?? "Server verwenden")}
+              label={t("useServer") ?? "Server verwenden"}
               variant="secondary"
               icon="check"
-              onPress={handleUseSelectedServer}
-              disabled={useBusy}
+              onPress={handleUseServer}
             />
-
-            {useBusy && <ActivityIndicator />}
-          </View>
-
-          {/* Add/Edit form */}
-          <View style={{ gap: 8 }}>
-            <ThemedText>
-              {editMode ? (t("editServer") ?? "Server bearbeiten") : t("addServer")}
-            </ThemedText>
-
-            <StylisticTextInput
-              style={[styles.border, styles.padding, nameError && styles.errorBorder]}
-              placeholder={t("serverLabel")}
-              value={nameInput}
-              onChangeText={(v) => {
-                setNameInput(v);
-                setNameError(null);
-                setGeneralError(null);
-              }}
-            />
-            {nameError && <ThemedText style={styles.errorText}>{nameError}</ThemedText>}
-
-            <StylisticTextInput
-              style={[styles.border, styles.padding, urlError && styles.errorBorder]}
-              placeholder={t("serverUrl")}
-              value={urlInput}
-              onChangeText={(v) => {
-                setUrlInput(v);
-                setUrlError(null);
-                setGeneralError(null);
-              }}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {urlError && <ThemedText style={styles.errorText}>{urlError}</ThemedText>}
-            {generalError && <ThemedText style={styles.errorText}>{generalError}</ThemedText>}
-
-            <ActionButton
-              label={editMode ? (t("applyChanges") ?? "Änderungen anwenden") : (t("apply") ?? "Anwenden")}
-              variant="secondary"
-              icon="save"
-              onPress={handleApply}
-              disabled={busy}
-            />
-
-            {editMode && (
-              <ActionButton
-                label={t("addNew") ?? "Neuen Server hinzufügen"}
-                variant="secondary"
-                icon="plus"
-                onPress={startAddNew}
-              />
-            )}
-
-            {busy && <ActivityIndicator />}
           </View>
 
           <View style={{ height: 24 }} />
@@ -427,11 +521,18 @@ const screenStyles = RNStyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
-    gap: 8,
+    gap: 10,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     paddingHorizontal: 16,
-    gap: 14,
+    gap: 16,
     paddingBottom: 24,
     maxWidth: 700,
     width: "100%",

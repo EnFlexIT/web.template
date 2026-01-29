@@ -260,6 +260,71 @@ export function ServerModal({
     return { ok: true, baseUrl, serverLabel: name };
   }
 
+  //  PLUS: direkt neu hinzufügen + Duplicate-Check + Meldung
+  async function handleAddByPlus() {
+    resetErrors();
+
+    const { name, baseUrl } = getCurrentInputsNormalized();
+
+    // Pflicht
+    if (!baseUrl) {
+      setUrlError(t("errors.serverUrlRequired"));
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      setUrlError(t("errors.serverUrlInvalid"));
+      return;
+    }
+
+    // Duplicate: Name
+    const nameExists = servers.some(
+      (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
+    );
+    if (nameExists) {
+      showInfo(
+        "Name bereits vorhanden",
+        "Dieser Server-Name existiert bereits. Bitte wähle einen neuen Namen.",
+      );
+      setNameError(t("errors.serverNameExists"));
+      return;
+    }
+
+    // Duplicate: URL
+    const urlExists = servers.some(
+      (s) =>
+        normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
+    );
+    if (urlExists) {
+      showInfo(
+        "Adresse bereits vorhanden",
+        "Diese Server-Adresse ist bereits gespeichert. Bitte trage eine neue Adresse ein.",
+      );
+      setUrlError(t("errors.serverUrlExists"));
+      return;
+    }
+
+    // optional: online check
+    const online = await ensureSelectedServerOnline(baseUrl);
+    if (!online) {
+      setUrlError(t("errors.serverNotReachable"));
+      return;
+    }
+
+    // speichern + auswählen
+    const id =
+      normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+
+    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(selectServer(id));
+
+    setEditMode(true);
+    setNameInput(name);
+    setUrlInput(baseUrl);
+
+    showInfo("Server hinzugefügt", `${name}\n\n${baseUrl}`);
+  }
+
   async function handleSaveSide() {
     const res = await validateAndSaveOnly();
     if (!res.ok || !res.baseUrl) return;
@@ -308,7 +373,7 @@ export function ServerModal({
             {
               backgroundColor: theme.colors.card,
               borderColor: theme.colors.border,
-              padding: 16, 
+              padding: 16,
             },
           ]}
         >
@@ -318,7 +383,7 @@ export function ServerModal({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 16, 
+              marginBottom: 16,
             }}
           >
             <H1>{t("changeOrganization")}</H1>
@@ -358,7 +423,7 @@ export function ServerModal({
               <ActionButton
                 variant="secondary"
                 icon="plus"
-                onPress={startAddNew}
+                onPress={handleAddByPlus} // ✅ direkt hinzufügen
               />
             </View>
 
@@ -447,7 +512,6 @@ export function ServerModal({
               variant="secondary"
               icon="check"
               onPress={handleUseServer}
-              
             />
           </View>
         </Pressable>

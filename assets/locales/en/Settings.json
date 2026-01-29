@@ -13,6 +13,10 @@
     "privacy": {
       "title": "Privacy",
       "description": "Manage permissions and privacy options."
-    }
+    },
+      "serversettings": {
+        "title": "Server Settings",
+        "description": "Connections & Settings" 
+      }
   }
 }

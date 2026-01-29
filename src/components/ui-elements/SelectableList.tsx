@@ -3,6 +3,8 @@ import { FlatList, Pressable, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { H4 } from "../../components/stylistic/H4";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
+import { H3 } from "../stylistic/H3";
+
 
 export type SelectableItem<T extends string> = {
   id: T;
@@ -70,7 +72,7 @@ export function SelectableList<T extends string>({
         data={filtered}
         keyExtractor={(it) => it.id}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={true}   // ✅ Scrollbar
+        showsVerticalScrollIndicator={true}   // Scrollbar
         alwaysBounceVertical={true}           // iOS fühlt sich “scrollbar” an
         contentContainerStyle={{ paddingBottom: 6 }}
         ListEmptyComponent={
@@ -98,8 +100,8 @@ export function SelectableList<T extends string>({
               ]}
             >
               <View style={{ gap: 2 }}>
-                <H4
-                  numberOfLines={1}
+                <H3
+                 
                   style={{
                     color: active ? theme.colors.highlight : theme.colors.text,
                     fontWeight: active ? "700" : "500",
@@ -107,10 +109,10 @@ export function SelectableList<T extends string>({
                   }}
                 >
                   {item.label}
-                </H4>
+                </H3>
 
                 {item.subtitle ? (
-                  <H4 numberOfLines={1} style={{ opacity: 0.7, fontSize: 12 }}>
+                  <H4 style={{ opacity: 0.7}}>
                     {item.subtitle}
                   </H4>
                 ) : null}

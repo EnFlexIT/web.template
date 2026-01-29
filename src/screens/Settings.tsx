@@ -10,7 +10,7 @@ import { Card } from "../components/ui-elements/Card";
 import { Screen } from "../components/Screen";
 
 type SettingCard = {
-  key: "general" | "privacy" | "db"|"ServerModal";
+  key: "serversettings" | "general" | "privacy" | "db";
   route: string;
 };
 
@@ -23,10 +23,11 @@ export function SettingsScreen() {
   const { t } = useTranslation(["Settings"]);
 //Für neue SettingCard einfach hier fügen :
   const cards: SettingCard[] = [
+     { key: "serversettings", route: "/3012" }, 
      { key: "db", route: "/3010" },
     { key: "privacy", route: "/3005" },
      { key: "general", route: "/3004" }, 
-     { key: "ServerModal", route: "/3004" }, 
+    
   ];
 
   return (
