@@ -5,19 +5,15 @@ import {
   Platform,
   ScrollView,
   View,
-  StyleSheet as RNStyleSheet,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
-import { Pressable } from "react-native";
+
 import { Screen } from "../components/Screen";
-import { Card } from "../components/ui-elements/Card";
 import { ActionButton } from "../components/ui-elements/ActionButton";
 import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
 import { ThemedText } from "../components/themed/ThemedText";
-import { Icon } from "../components/ui-elements/Icon/Icon";
-
 import { H1 } from "../components/stylistic/H1";
 import { H2 } from "../components/stylistic/H2";
 import { H4 } from "../components/stylistic/H4";
@@ -37,7 +33,7 @@ import {
   updateServer,
   removeServer,
 } from "../redux/slices/serverSlice";
-import { selectIp, setIpAsync, selectApi } from "../redux/slices/apiSlice";
+import { selectIp, setIpAsync } from "../redux/slices/apiSlice";
 import { initializeMenu } from "../redux/slices/menuSlice";
 
 import {
@@ -87,8 +83,6 @@ export function ServerSettingsScreen() {
   const navigation = useNavigation();
   const { theme } = useUnistyles();
 
-  const { isPointingToServer } = useAppSelector(selectApi);
-
   // redux servers
   const serversState = useAppSelector(selectServers);
   const servers: Server[] = serversState?.servers ?? [];
@@ -108,7 +102,7 @@ export function ServerSettingsScreen() {
   // inputs
   const [nameInput, setNameInput] = useState(selectedServer?.name ?? "");
   const [urlInput, setUrlInput] = useState(selectedServer?.baseUrl ?? "");
-  const [editMode, setEditMode] = useState(true); // im Screen ist das meistens "edit" wenn was gewählt ist
+  const [editMode, setEditMode] = useState(true);
 
   const serverItems = useMemo<SelectableItem<string>[]>(() => {
     return servers.map((s) => ({
@@ -166,6 +160,7 @@ export function ServerSettingsScreen() {
       setUrlError(t("errors.serverUrlRequired"));
       return { ok: false };
     }
+
     if (!/^https?:\/\//i.test(baseUrl)) {
       setUrlError(t("errors.serverUrlInvalid"));
       return { ok: false };
@@ -191,14 +186,12 @@ export function ServerSettingsScreen() {
       return { ok: false };
     }
 
-    // online check
     const online = await ensureSelectedServerOnline(baseUrl);
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return { ok: false };
     }
 
-    // edit/add
     if (editMode && selectedServer) {
       dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
       return { ok: true, baseUrl, serverLabel: name, id: selectedServer.id };
@@ -214,7 +207,6 @@ export function ServerSettingsScreen() {
     return { ok: true, baseUrl, serverLabel: name, id };
   }
 
-  // PLUS: direkt neu hinzufügen (mit Duplicate-Check + Meldung)
   async function handleAddByPlus() {
     resetErrors();
 
@@ -242,8 +234,7 @@ export function ServerSettingsScreen() {
     }
 
     const urlExists = servers.some(
-      (s) =>
-        normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
+      (s) => normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
     );
     if (urlExists) {
       showInfo(
@@ -297,7 +288,6 @@ export function ServerSettingsScreen() {
     dispatch(removeServer(selectedServer.id));
     startAddNew();
 
-    // Fallback selection: local, falls existiert
     const local = servers.find((s) => s.id === "local");
     if (local) {
       dispatch(selectServer("local"));
@@ -326,68 +316,36 @@ export function ServerSettingsScreen() {
     navigation.goBack();
   }
 
-  const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
-
   return (
     <Screen>
-      <View
-        style={[
-          screenStyles.container,
-          { backgroundColor: theme.colors.background },
-        ]}
-      >
-        {/* Header */}
-        <View style={screenStyles.headerRow}>
-          <ActionButton
-            onPress={() => navigation.goBack()}
-           icon="home"
-          />
-         
-
-          <View style={{ flex: 1 }}>
-            <H1>{t("changeOrganization")}</H1>
-          </View>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        {/* Header (Screen statt Modal) */}
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingTop: 14,
+            paddingBottom: 10,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <H1>{t("changeOrganization")}</H1>
+       
         </View>
 
-        <ScrollView contentContainerStyle={screenStyles.content}>
-          {/* Current server card */}
-          <Card padding="none">
-            <View
-              style={[
-                screenStyles.currentCard,
-                loginStyles.border,
-                { borderColor: theme.colors.border },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 4 }}>
-                <H4>{t("currentServer") ?? "Aktueller Server"}</H4>
-                <ThemedText style={[mutedTextStyle]} numberOfLines={1}>
-                  {selectedBaseUrl || "-"}
-                </ThemedText>
-              </View>
-
-              <View
-                style={[
-                  screenStyles.statusPill,
-                  loginStyles.border,
-                  { borderColor: theme.colors.border },
-                ]}
-              >
-                <H4>
-                  {isPointingToServer
-                    ? t("serverReachable") ?? "Erreichbar"
-                    : t("serverNotReachable") ?? "Nicht erreichbar"}
-                </H4>
-              </View>
-            </View>
-          </Card>
-
-          {/* Inputs (wie Modal) */}
-          <View style={{ gap: 12 }}>
-            <H2>
-              {editMode
-                ? t("editServer") ?? "Server bearbeiten"
-                : t("addServer") ?? "Server hinzufügen"}
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: 24,
+            maxWidth: 700,
+            width: "100%",
+          }}
+        >
+          {/* Inputs (1:1 wie Modal) */}
+          <View style={{ gap: 12, marginBottom: 30 }}>
+            <H2 style={{ fontWeight: "bold" }}>
+              {t("addServer")}
             </H2>
 
             {nameError && (
@@ -402,7 +360,7 @@ export function ServerSettingsScreen() {
                   { flex: 1 },
                   nameError && loginStyles.errorBorder,
                 ]}
-                placeholder={t("serverLabel") ?? "Server-Name"}
+                placeholder={t("serverLabel")}
                 value={nameInput}
                 onChangeText={(v) => {
                   setNameInput(v);
@@ -414,6 +372,7 @@ export function ServerSettingsScreen() {
                 variant="secondary"
                 icon="plus"
                 onPress={handleAddByPlus}
+                size="sm"
               />
             </View>
 
@@ -425,7 +384,7 @@ export function ServerSettingsScreen() {
                   { flex: 1 },
                   urlError && loginStyles.errorBorder,
                 ]}
-                placeholder={t("serverUrl") ?? "Server-URL"}
+                placeholder={t("serverUrl")}
                 value={urlInput}
                 onChangeText={(v) => {
                   setUrlInput(v);
@@ -439,6 +398,7 @@ export function ServerSettingsScreen() {
                 variant="secondary"
                 icon="save"
                 onPress={handleSaveSide}
+                size="sm"
               />
             </View>
 
@@ -453,13 +413,29 @@ export function ServerSettingsScreen() {
             {busy && <ActivityIndicator />}
           </View>
 
-          {/* Liste (wie Modal) */}
-          <View style={{ gap: 12 }}>
-            <H4>{t("savedServers") ?? "Gespeicherte Server"}</H4>
+          {/* Liste (1:1 wie Modal) */}
+          <View style={{ marginTop: -25, gap: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <H4>{t("savedServers")}</H4>
+              <ActionButton
+                variant="secondary"
+                icon="delete"
+                onPress={handleDeleteSelected}
+                size="sm"
+                disabled={!selectedServer}
+              />
+            </View>
 
             <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
               <View style={{ flex: 1 }}>
                 <SelectableList
+                  size="xs"
                   items={serverItems}
                   value={selectedServerId}
                   onChange={(id) => {
@@ -476,75 +452,24 @@ export function ServerSettingsScreen() {
 
                     resetErrors();
                   }}
-                  maxHeight={320}
+                  maxHeight={260}
                   showSearch={false}
                   searchPlaceholder={t("search") ?? "Server suchen…"}
                   emptyText={t("noServers") ?? "Keine Server gefunden"}
                 />
               </View>
-
-              <View
-                style={{
-                  width: 56,
-                  justifyContent: "flex-start",
-                  paddingTop: 8,
-                }}
-              >
-                <ActionButton
-                  variant="secondary"
-                  icon="delete"
-                  onPress={handleDeleteSelected}
-                />
-              </View>
             </View>
 
             <ActionButton
-              label={t("useServer") ?? "Server verwenden"}
+              label={t("useServer")}
               variant="secondary"
               icon="check"
               onPress={handleUseServer}
+              size="sm"
             />
           </View>
-
-          <View style={{ height: 24 }} />
         </ScrollView>
       </View>
     </Screen>
   );
 }
-
-const screenStyles = RNStyleSheet.create({
-  container: { flex: 1 },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  content: {
-    paddingHorizontal: 16,
-    gap: 16,
-    paddingBottom: 24,
-    maxWidth: 700,
-    width: "100%",
-  },
-  currentCard: {
-    padding: 12,
-    flexDirection: "row",
-    gap: 10,
-  },
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-});

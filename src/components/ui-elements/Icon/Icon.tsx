@@ -52,7 +52,15 @@ export type IconName =
   | "smileo"
   | "frown"
   | "frowno"
-  | "arrow-left";
+  | "arrow-left"
+  | "arrow-right"
+  | "arrow-up"
+  | "chevron-right"
+  | "chevron-left"
+  | "arrowdown"
+  | "arrowup"
+  | "minuscircleo"
+  | "pluscircleo";
 
 interface IconProps {
   name: IconName;

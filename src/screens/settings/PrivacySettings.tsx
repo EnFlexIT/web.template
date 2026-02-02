@@ -10,118 +10,94 @@ import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { Table } from "../../components/Table";
 import { Screen } from "../../components/Screen";
 import { StyleSheet } from "react-native-unistyles";
-import { Pressable } from "react-native";
+import { Pressable, View } from "react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-
-interface ButtonProps {
-  onPress: () => void;
-  text: string;
-}
-function Button({ onPress, text }: ButtonProps) {
-  const [over, setOver] = useState(false);
-  styles.useVariants({ over: over });
-  return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={() => setOver(true)}
-      onHoverOut={() => setOver(false)}
-    >
-      <ThemedText
-        style={[
-          styles.border,
-          styles.padding,
-          styles.nonSelect,
-          styles.buttonText,
-        ]}
-      >
-        {text}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
+import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { H2 } from "../../components/stylistic/H2";
 export function PrivacySettings() {
   const dispatch = useAppDispatch();
   const dataPermissions = useAppSelector(selectDataPermissions);
 
+type PermissionKey = Exclude<keyof DataPermissionsState, "accepted">;
+
+const PERMISSION_KEYS: PermissionKey[] = [
+  "statistics",
+  "comfort",
+  "personalised",
+  "mandatory",
+];
   const [localDataPermissions, setLocalDataPermissions] =
     useState<DataPermissionsState>({ ...dataPermissions });
 
   const { t } = useTranslation(["Settings.PrivacySecurity"]);
 
   return (
-    <Screen style={[{ maxWidth: 1400 }]}>
-      <ThemedText>{t("privacy_settings_description")}</ThemedText>
-      <Table
-        data={Object.entries(localDataPermissions)
-          // Filter out the 'accepted' field
-          .filter(([key]) => key !== "accepted")
-          .map(([key, value], idx) => {
-            return [
-              <ThemedText key={2 * idx} style={styles.nonSelect}>
-                {t(key)}
-              </ThemedText>,
-              <Pressable
-                // We want to exclude mandatory field from being editable
-                onPress={
-                  key === "mandatory"
-                    ? undefined
-                    : function () {
-                        let dataPerms = localDataPermissions;
-                        dataPerms[key] = !localDataPermissions[key];
-                        setLocalDataPermissions({ ...dataPerms });
-                      }
-                }
-              >
-                <ThemedText key={2 * idx + 1} style={styles.nonSelect}>
-                  {value ? t("accepted") : t("not_accepted")}
-                </ThemedText>
-              </Pressable>,
-            ];
-          })}
-      />
-      <ThemedView style={[styles.buttonContainer]}>
-        <Button
-          onPress={() => dispatch(setDataPermissions(localDataPermissions))}
-          text={t("apply")}
-        />
-        <Button
-          onPress={() => setLocalDataPermissions({ ...dataPermissions })}
-          text={t("cancel")}
-        />
-      </ThemedView>
+    <Screen >
+      <View style={styles.container}>
+      <H2>{t("privacy_settings_description")}</H2>
+
+                  {/* Permissions Table */}
+                  <Table
+              data={PERMISSION_KEYS.map((key, idx) => {
+                const value = localDataPermissions[key];
+
+                return [
+                  <ThemedText key={`k-${idx}`} style={styles.nonSelect}>
+                    {t(key)}
+                  </ThemedText>,
+                  <Pressable
+                    key={`v-${idx}`}
+                    onPress={
+                      key === "mandatory"
+                        ? undefined
+                        : () => {
+                            setLocalDataPermissions((prev) => ({
+                              ...prev,
+                              [key]: !prev[key],
+                            }));
+                          }
+                    }
+                  >
+                    <ThemedText style={styles.nonSelect}>
+                      {value ? t("accepted") : t("not_accepted")}
+                    </ThemedText>
+                  </Pressable>,
+                ];
+              })}
+            />
+                  {/* Buttons */}
+                  <View style={styles.buttonContainer}>
+                    <ActionButton
+                      onPress={() => dispatch(setDataPermissions(localDataPermissions))}
+                      label={t("apply")}
+                    />
+                    <ActionButton
+                      onPress={() => setLocalDataPermissions({ ...dataPermissions })}
+                      label={t("cancel")}
+                    />
+                  </View>
+      </View>
     </Screen>
   );
 }
-
 const styles = StyleSheet.create((theme) => ({
   container: {
-    gap: 10,
-    maxWidth: 400,
+    padding: 16,
+    gap: 12,
+  
+   
   },
   buttonContainer: {
-    padding: 5,
+    padding: 10,
     flexDirection: "row",
     justifyContent: "space-around",
   },
-  border: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
+
   padding: {
     padding: 5,
   },
   nonSelect: {
     userSelect: "none",
-  },
-  buttonText: {
-    variants: {
-      over: {
-        true: {
-          color: theme.colors.highlight,
-        },
-      },
-    },
-  },
+  }
 }));

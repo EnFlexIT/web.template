@@ -5,7 +5,7 @@ import { foldl } from "../../util/func";
 import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Content-Api";
 import { internalSetLanguage } from "./languageSlice";
 import { getStaticMenu } from "../slices/staticMenu";
-
+import { isMenuEnabled } from "./featureFlags";
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
@@ -170,26 +170,32 @@ export const menuSlice = createSlice({
       state.activeMenuId = action.payload;
     },
   },
-  extraReducers: (builder) => {
+extraReducers: (builder) => {
   builder.addCase(initializeMenu.fulfilled, (state, action) => {
-const staticMenu = getStaticMenu();
+    const staticMenu = getStaticMenu();
 
+    // dynamic Menü vom Server
+    const dynamic = Array.isArray(action.payload) ? action.payload : [];
 
-const dynamic = Array.isArray(action.payload) ? action.payload : [];
+    //  Dynamic Menü nach Feature-Flags filtern
+    const filteredDynamic = dynamic.filter((m) => isMenuEnabled(m.menuID));
 
+    // static Menü ist bereits in getStaticMenu() gefiltert
+    state.rawMenu = [...filteredDynamic, ...staticMenu];
 
-state.rawMenu = [...dynamic, ...staticMenu];
-state.menu = rawListToTrees(state.rawMenu);
+    state.menu = rawListToTrees(state.rawMenu);
 
+    // falls aktueller aktiver Screen nicht mehr existiert → fallback
+    const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
+    if (!stillValid) {
+      state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
+    }
+  });
 
-const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
-if (!stillValid) state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
-});
-
-    builder.addCase(internalSetLanguage, () => {
-      // optional
-    });
-  },
+  builder.addCase(internalSetLanguage, () => {
+    // bleibt leer wie vorher
+  });
+},
 });
 
 export const { setActiveMenuId } = menuSlice.actions;

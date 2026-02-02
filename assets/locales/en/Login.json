@@ -18,9 +18,9 @@
   "changeOrganization": "Change organization / server",
   "changeOrganizationsQuick": "Switch organization",
   "savedServers": "Saved servers",
-  "useServer": "Use server",
+  "useServer": "Use",
 
-  "addServer": "Add new server",
+  "addServer": "Add new server or edit existing",
   "serverLabel": "Name (e.g. Localhost)",
   "serverUrl": "My Fancy System",
   "saveAndUse": "Save & use",

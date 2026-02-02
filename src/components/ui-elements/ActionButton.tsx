@@ -8,7 +8,7 @@ import { useState } from "react";
 interface ActionButtonProps {
   label?: string;
   variant?: "primary" | "secondary";
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md"; // ✅ xs hinzugefügt
   onPress: () => void;
   icon?: IconName;
   iconSize?: number;
@@ -31,7 +31,6 @@ export function ActionButton({
 
   const isPrimary = variant === "primary";
 
-  // ✅ genau wie Login: secondary hover => theme.colors.highlight
   const backgroundColor = isPrimary
     ? theme.colors.highlight
     : pressed
@@ -70,13 +69,7 @@ export function ActionButton({
         </View>
       )}
 
-      {label && (
-        <H4
-         
-        >
-          {label}
-        </H4>
-      )}
+      {label && <H4>{label}</H4>}
     </Pressable>
   );
 }
@@ -88,16 +81,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    
   },
   icon: {},
 });
 
 const sizeStyles = {
+  xs: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    minHeight: 28,
+  },
   sm: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    minHeight: 34,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    minHeight: 30,
   },
   md: {
     paddingVertical: 10,

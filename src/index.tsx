@@ -28,6 +28,7 @@ import { selectReady } from "./redux/slices/readySlice";
 
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
+import { NotAvailableScreen } from "./screens/NotAvailableScreen"; 
 
 import {
   hasId,
@@ -35,9 +36,12 @@ import {
   selectMenu,
   setActiveMenuId,
   MenuItem,
+  isDynamicMenuItem,
 } from "./redux/slices/menuSlice";
 import { foldl } from "./util/func";
 import { initializeServers } from "./redux/slices/serverSlice";
+
+import { isMenuEnabled } from "./redux/slices/featureFlags"; // ✅ neu (Pfad ggf. anpassen)
 
 /**
  * ✅ Kein Extra-File:
@@ -52,7 +56,7 @@ const Drawer = createDrawerNavigator();
 function RootStack() {
   const dispatch = useAppDispatch();
 
-  //  Hook IMMER oben, nie conditional
+  // Hook IMMER oben, nie conditional
   const { theme } = useUnistyles();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
@@ -82,8 +86,16 @@ function RootStack() {
 
         await dispatch(initializeMenu()).unwrap?.();
 
+        // ✅ URL-ID nur setzen, wenn existiert & enabled ist
         const id = Number(window.location.pathname.split("/").at(1));
-        if (id) await dispatch(setActiveMenuId(id));
+        if (id) {
+          const stateNow = store.getState();
+          const exists = stateNow.menu.rawMenu.some((m) => m.menuID === id);
+
+          if (exists && isMenuEnabled(id)) {
+            await dispatch(setActiveMenuId(id));
+          }
+        }
       } catch (e) {
         console.error("BOOT ERROR:", e);
       } finally {
@@ -140,6 +152,9 @@ function RootStack() {
             ),
             Login: "/login",
             BaseLogin: "/base-login",
+
+            //  Catch-all: wenn Route nicht existiert (z.B. /)
+            NotFound: "*",
           },
         },
       }}
@@ -180,12 +195,27 @@ function RootStack() {
               <Drawer.Screen
                 key={i}
                 name={node.menuID!.toString()}
-                children={() =>
-                  node.Screen ? <node.Screen /> : <DynamicScreen node={node} />
-                }
+                children={() => {
+                  //  falls ein menuID doch mal disabled reinrutscht
+                  if (!isMenuEnabled(node.menuID!)) return <NotAvailableScreen />;
+
+                  if (!isDynamicMenuItem(node) && node.Screen) {
+                    const ScreenComp = node.Screen;
+                    return <ScreenComp />;
+                  }
+
+                  return <DynamicScreen node={node} />;
+                }}
                 options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
               />
             ))}
+
+            {/*  Fallback Screen für unbekannte Routen */}
+            <Drawer.Screen
+              name="NotFound"
+              component={NotAvailableScreen}
+              options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
+            />
           </Drawer.Group>
         ) : (
           <Drawer.Group

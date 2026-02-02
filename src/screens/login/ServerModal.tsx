@@ -383,7 +383,8 @@ export function ServerModal({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 16,
+              marginBottom: 0,
+          
             }}
           >
             <H1>{t("changeOrganization")}</H1>
@@ -394,9 +395,9 @@ export function ServerModal({
           </View>
 
           {/* Inputs */}
-          <View style={{ gap: 12, marginBottom: 20 }}>
-            <H2>
-              {editMode ? t("editServer") ?? "Server bearbeiten" : t("addServer")}
+          <View style={{ gap: 12 ,  marginBottom:30}}>
+            <H2 style={{ fontWeight: "bold" }}>
+              {t("addServer")}
             </H2>
 
             {nameError && (
@@ -423,7 +424,8 @@ export function ServerModal({
               <ActionButton
                 variant="secondary"
                 icon="plus"
-                onPress={handleAddByPlus} // ✅ direkt hinzufügen
+                onPress={handleAddByPlus} 
+                size="sm"
               />
             </View>
 
@@ -448,6 +450,7 @@ export function ServerModal({
                 variant="secondary"
                 icon="save"
                 onPress={handleSaveSide}
+                 size="sm"
               />
             </View>
 
@@ -461,12 +464,29 @@ export function ServerModal({
           </View>
 
           {/* Liste */}
-          <View style={{ marginTop: 8, gap: 12 }}>
-            <H4>{t("savedServers")}</H4>
+          <View style={{ marginTop: -25, gap: 12 }}>
+             <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between", 
+                          }}
+                        >
+                          <H4>{t("savedServers")}</H4>
+
+                          <ActionButton
+                            variant="secondary"
+                            icon="delete"
+                            onPress={handleDeleteSelected}
+                            size="sm"
+                            disabled={!selectedServer}  
+                          />
+               </View>
 
             <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
               <View style={{ flex: 1 }}>
                 <SelectableList
+                size="xs"
                   items={serverItems}
                   value={selectedServerId}
                   onChange={(id) => {
@@ -491,19 +511,7 @@ export function ServerModal({
               </View>
 
               {/* Side buttons */}
-              <View
-                style={{
-                  width: 56,
-                  justifyContent: "flex-start",
-                  paddingTop: 8,
-                }}
-              >
-                <ActionButton
-                  variant="secondary"
-                  icon="delete"
-                  onPress={handleDeleteSelected}
-                />
-              </View>
+           
             </View>
 
             {/* Footer button */}
@@ -512,6 +520,8 @@ export function ServerModal({
               variant="secondary"
               icon="check"
               onPress={handleUseServer}
+              size="sm"
+            
             />
           </View>
         </Pressable>

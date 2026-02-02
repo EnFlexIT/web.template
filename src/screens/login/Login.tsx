@@ -194,6 +194,7 @@ export function LoginScreen() {
             label={t("login")}
             variant="secondary"
             onPress={login}
+            size="xs"
             />
           ) : (
             <View style={[styles.border, styles.padding, styles.loginContainer]}>
@@ -217,29 +218,36 @@ export function LoginScreen() {
               {/* Change Organization / Server */}
               <Card onPress={() => setOrgModalOpen(true)} padding="none">
                   <View style={[styles.serverBadge, { gap: 1 }]}>
-                  <View style={{ flex: 1, gap: 1 }}>
-                  <H4>{t("currentServer")}</H4>
-                  <Text style={[mutedTextStyle]} numberOfLines={1}>
-                  {selectedBaseUrl || "-"}
-                  </Text>
-                  </View>
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <H4 style={{ fontWeight: "bold" }}>
+                        {selectedServer?.name ?? t("unknownServer")}
+                      </H4>
 
+                      <Text style={[mutedTextStyle]} numberOfLines={1}>
+                        {selectedBaseUrl || "-"}
+                      </Text>
+                    </View>
 
-                  <View style={[styles.statusPill, styles.border]}>
-                  <H4>
-                  {isPointingToServer ? t("serverReachable") : t("serverNotReachable")}
-                  </H4>
+                    <View style={[styles.statusPill, styles.border]}>
+                      <H4>
+                        {isPointingToServer
+                          ? t("serverReachable")
+                          : t("serverNotReachable")}
+                      </H4>
+                    </View>
                   </View>
-                  </View>
-                  </Card>
+                </Card>
+
 
               {/* Language (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("lng")}:</ThemedText>
                 <Dropdown<"de" | "en">
+                  
                   value={(language.language as "de" | "en") ?? "de"}
                   options={languageOptions}
                   onChange={(lng) => dispatch(setLanguage({ language: lng }))}
+                  size="xs"
                 />
               </View>
 
@@ -256,7 +264,9 @@ export function LoginScreen() {
                         : { adaptive: false, theme: v as "light" | "dark" };
 
                     dispatch(setTheme(next));
+                    
                   }}
+                  size="xs"
                 />
               </View>
             </ScrollView>
