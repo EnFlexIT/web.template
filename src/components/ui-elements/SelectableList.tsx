@@ -3,7 +3,6 @@ import { FlatList, Pressable, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { H4 } from "../../components/stylistic/H4";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
-import { H3 } from "../stylistic/H3";
 
 export type SelectableItem<T extends string> = {
   id: T;
@@ -115,7 +114,7 @@ export function SelectableList<T extends string>({
         contentContainerStyle={{ paddingBottom: 6 }}
         ListEmptyComponent={
           <View style={{ paddingVertical: 10 }}>
-            <H4 style={{ opacity: 0.7 }}>{emptyText}</H4>
+            <H4 style={{ opacity: 0.3}}>{emptyText}</H4>
           </View>
         }
         renderItem={({ item }) => {
@@ -124,7 +123,7 @@ export function SelectableList<T extends string>({
           const hovered = hoveredId === item.id;
           const pressed = pressedId === item.id;
 
-          // ✅ same “ActionButton logic”
+          // determine background and text colors
           const backgroundColor = isPrimary
             ? theme.colors.highlight
             : active
@@ -137,8 +136,8 @@ export function SelectableList<T extends string>({
 
           const textColor = isPrimary
             ? theme.colors.background
-            : hovered || active
-            ? theme.colors.highlight
+           
+           
             : theme.colors.text;
 
           return (
@@ -164,22 +163,22 @@ export function SelectableList<T extends string>({
               ]}
             >
               <View style={styles.inlineRow}>
-                <H3
+                <H4
                   numberOfLines={1}
                   style={{
                     color: textColor,
-                    fontWeight: active ? "700" : "500",
+                    //fontWeight: active ? "700" : "500",
                     flexShrink: 1,
                   }}
                 >
                   {item.label}
-                </H3>
+                </H4>
 
                 {!!item.subtitle && (
                   <H4
                     numberOfLines={1}
                     style={{
-                      opacity: isPrimary ? 0.85 : 0.7,
+                      opacity: isPrimary ? 0.65 : 0.3,
                       marginLeft: 6,
                       flexShrink: 1,
                       color: isPrimary ? theme.colors.background : theme.colors.text,

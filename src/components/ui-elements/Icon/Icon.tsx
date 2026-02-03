@@ -60,7 +60,12 @@ export type IconName =
   | "arrowdown"
   | "arrowup"
   | "minuscircleo"
-  | "pluscircleo";
+  | "pluscircleo"
+  | "notafound"
+  | "not-interested";
+
+
+   
 
 interface IconProps {
   name: IconName;

@@ -19,5 +19,6 @@ const styles = StyleSheet.create(theme => ({
   h2: {
     fontSize: theme.info.fontSize + 6,
     fontFamily: theme.info.fontFamily,
+    fontWeight: "bold",
   },
 }))

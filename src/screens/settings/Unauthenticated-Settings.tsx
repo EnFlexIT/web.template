@@ -98,6 +98,6 @@ const styles = StyleSheet.create((theme) => ({
     color: UnistylesRuntime.getTheme("light").colors.text,
   },
   ip: {
-    maxWidth: 700,
+    
   },
 }));

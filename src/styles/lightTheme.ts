@@ -14,7 +14,7 @@ export const lightTheme = {
     fonts,
     info: {
         fontSize: 16,
-        maxContentWidth: 1400,
+        maxContentWidth: 600,
         screenMargin: 20,
         fontFamily: undefined,
     }

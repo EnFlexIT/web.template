@@ -10,8 +10,10 @@
   "changePassword": "Passwort ändern",
   "privacy": "Datenschutz",
   "privacysettings": "Privatsphäre",
-    "databaseConnectionsAndSettings": "Datenbank",
-      "devHome": "Dev Home"
+  "databaseConnectionsAndSettings": "Datenbank",
+  "devHome": "Dev Home",
+  "personalized": "Personalisiert",
+  "serverSettings": "Servereinstellungen"
 
 
 }

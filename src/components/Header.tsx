@@ -1,54 +1,49 @@
-import { DrawerHeaderProps } from "@react-navigation/drawer";
-import { FlexAlignType, Pressable, View } from "react-native";
+import { DrawerHeaderProps, useDrawerStatus } from "@react-navigation/drawer";
+import { Pressable, View } from "react-native";
 import { Text } from "./stylistic/Text";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import {
-  ImageBackground,
-  StyleSheet as NativeStyleSheet,
-  TextProps,
-} from "react-native";
-import AntDesign_ from "@expo/vector-icons/AntDesign";
+import { StyleSheet } from "react-native-unistyles";
+
 import { useIsWide } from "../hooks/useIsWide";
-import { H1 } from "./stylistic/H1";
-import { Logo } from "./Logo";
 import { ToolBox } from "./ToolBox";
+
 import {
   getIdPath,
   isDynamicMenuItem,
-  MenuTree,
   selectMenu,
   setActiveMenuId,
+  MenuItem,
 } from "../redux/slices/menuSlice";
+
 import { useAppSelector } from "../hooks/useAppSelector";
 import { selectIsLoggedIn } from "../redux/slices/apiSlice";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
-import { useState } from "react";
-import { MenuItem } from "../redux/slices/menuSlice";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "./themed/ThemedText";
-import { useDrawerStatus } from "@react-navigation/drawer";
+
+//  Slug builder
+import { buildMenuPaths } from "./routing/menuPaths";
 
 interface HeaderEntryProps {
   node: MenuItem;
+  pathById: Record<number, string>;
 }
-function MenuLink({ node, ...rest }: HeaderEntryProps & TextProps) {
+
+function MenuLink({ node, pathById, ...rest }: HeaderEntryProps & any) {
   const [hovered, setHovered] = useState(false);
-
   const dispatch = useAppDispatch();
-
   const linkTo = useLinkTo();
-
-  styles.useVariants({
-    hovered: hovered,
-  });
-
   const { t } = useTranslation(["Drawer"]);
+
+  styles.useVariants({ hovered });
+
+  const path = pathById[node.menuID] ?? `/${node.menuID}`;
 
   return (
     <Pressable
       onPress={() => {
-        linkTo("/" + node.menuID.toString());
+        linkTo(path); // Slug
         dispatch(setActiveMenuId(node.menuID));
       }}
       onHoverIn={() => setHovered(true)}
@@ -61,74 +56,67 @@ function MenuLink({ node, ...rest }: HeaderEntryProps & TextProps) {
   );
 }
 
-function Breadcrumb() {
-  const { menu: menuTrees, activeMenuId, rawMenu } = useAppSelector(selectMenu);
+function Breadcrumb({ pathById }: { pathById: Record<number, string> }) {
+  const { activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
-  const linkTo = useLinkTo();
-
-  const dispatch = useAppDispatch();
-
-  const activeMenuNode = rawMenu.find(({ menuID }) => menuID === activeMenuId)!;
+  const activeMenuNode = rawMenu.find(({ menuID }) => menuID === activeMenuId);
+  if (!activeMenuNode) return null;
 
   const pathIds = getIdPath(rawMenu, activeMenuNode.menuID);
+  if (!pathIds) return null;
 
-  if (pathIds) {
-    return (
-      <View style={[styles.breadcrumbcontainer]}>
-        {pathIds
-          .map((id) => rawMenu.find(({ menuID }) => menuID === id)!)
-          .flatMap((node, i) => [
-            <MenuLink node={node} key={2 * i} style={[styles.noSelect]} />,
-            <Text key={2 * i + 1} style={[styles.noSelect]}>
-              /
-            </Text>,
-          ])
-          .slice(0, -1)}
-      </View>
-    );
-  } else {
-    return undefined;
-  }
+  return (
+    <View style={styles.breadcrumbcontainer}>
+      {pathIds
+        .map((id) => rawMenu.find(({ menuID }) => menuID === id)!)
+        .flatMap((node, i) => [
+          <MenuLink
+            node={node}
+            pathById={pathById}
+            key={2 * i}
+            style={[styles.noSelect]}
+          />,
+          <Text key={2 * i + 1} style={[styles.noSelect]}>
+            /
+          </Text>,
+        ])
+        .slice(0, -1)}
+    </View>
+  );
 }
 
-export function Header({
-  layout,
-  navigation,
-  options,
-  route,
-}: DrawerHeaderProps) {
+export function Header({ navigation }: DrawerHeaderProps) {
   const isWide = useIsWide();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
-
-  const dispatch = useAppDispatch();
-
-  const linkTo = useLinkTo();
+  const { menu, rawMenu } = useAppSelector(selectMenu);
 
   const drawerStatus = useDrawerStatus();
   const isDrawerOpen = drawerStatus === "open";
+
+  // Slug mapping einmal aus rawMenu bauen
+  const { pathById } = useMemo(() => buildMenuPaths(rawMenu), [rawMenu]);
 
   return (
     <View style={styles.container}>
       {/* Left Header */}
       <View>
-        <View style={[styles.leftHeaderContainer]}>
+        <View style={styles.leftHeaderContainer}>
           {!isWide && (
             <View style={styles.navButtonContainer}>
               <Pressable
                 style={styles.navButton}
-                onPress={() => {
-                  navigation.toggleDrawer();
-                }}
+                onPress={() => navigation.toggleDrawer()}
               >
                 <ThemedText>☰</ThemedText>
               </Pressable>
             </View>
           )}
+
           {menu
-            .flatMap((node, i, arr) => [
+            .flatMap((node, i) => [
               <MenuLink
                 node={node.val}
+                pathById={pathById}
                 key={2 * i}
                 style={[styles.headMenueTitle, styles.noSelect]}
               />,
@@ -142,10 +130,9 @@ export function Header({
             .slice(0, -1)}
         </View>
 
-        <View>
-          <Breadcrumb />
-        </View>
+        <Breadcrumb pathById={pathById} />
       </View>
+
       {/* Right Header */}
       {isWide && <ToolBox isLoggedIn={isLoggedIn} />}
     </View>
@@ -154,12 +141,10 @@ export function Header({
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    // padding: 10,
     paddingHorizontal: theme.info.screenMargin,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    // gap: 10,
     height: 74,
     borderColor: theme.colors.border,
     borderBottomWidth: 1,

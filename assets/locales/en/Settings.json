@@ -2,21 +2,33 @@
   "title": "Settings",
   "subtitle": "Manage app options, privacy and connections.",
   "cards": {
-    "db": {
-      "title": "Database & Connections",
-      "description": "Check server/IP, auth and integrations."
-    },
     "general": {
       "title": "General",
       "description": "Language, theme and basic app settings."
     },
-    "privacy": {
-      "title": "Privacy",
-      "description": "Manage permissions and privacy options."
+    "personalized": {
+      "title": "Personalized",
+      "description": "Privacy and security options tailored to you."
     },
-      "serversettings": {
-        "title": "Server Settings",
-        "description": "Connections & Settings" 
-      }
+    "privacysettings": {
+      "title": "Privacy",
+      "description": "Manage permissions and privacy preferences."
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "description": "Update your account password securely."
+    },
+    "databaseConnectionsAndSettings": {
+      "title": "Database & Connections",
+      "description": "Server, IP, authentication and integrations."
+    },
+    "serverSettings": {
+      "title": "Server Settings",
+      "description": "Connections and technical configuration."
+    },
+    "devHome": {
+      "title": "Developer",
+      "description": "Tools and views for development and debugging."
+    }
   }
 }

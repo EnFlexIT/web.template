@@ -8,7 +8,7 @@ import { useState } from "react";
 interface ActionButtonProps {
   label?: string;
   variant?: "primary" | "secondary";
-  size?: "xs" | "sm" | "md"; // ✅ xs hinzugefügt
+  size?: "xs" | "sm" | "md"; 
   onPress: () => void;
   icon?: IconName;
   iconSize?: number;

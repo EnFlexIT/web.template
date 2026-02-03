@@ -1,8 +1,8 @@
 export const menuFeatureFlags: Record<number, boolean> = {
   // Settings children
-  3011: true,   // devHome
+  3011: false,   // devHome
   3012: true,   // serverSettings
-  3013: false,  // changePassword 
+  3013: true,  // changePassword 
   // weitere IDs...
 };
 

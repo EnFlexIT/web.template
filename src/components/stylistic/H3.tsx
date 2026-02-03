@@ -19,5 +19,6 @@ const styles = StyleSheet.create(theme => ({
   h3: {
     fontSize: theme.info.fontSize + 4,
     fontFamily: theme.info.fontFamily,
+    fontWeight: "bold",
   },
 }))

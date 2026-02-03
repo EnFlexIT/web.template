@@ -2,7 +2,7 @@
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
@@ -28,35 +28,58 @@ import { selectReady } from "./redux/slices/readySlice";
 
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
-import { NotAvailableScreen } from "./screens/NotAvailableScreen"; 
+import { NotAvailableScreen } from "./screens/NotAvailableScreen";
 
 import {
   hasId,
   initializeMenu,
   selectMenu,
   setActiveMenuId,
-  MenuItem,
   isDynamicMenuItem,
 } from "./redux/slices/menuSlice";
-import { foldl } from "./util/func";
+
 import { initializeServers } from "./redux/slices/serverSlice";
+import { isMenuEnabled } from "./redux/slices/featureFlags";
 
-import { isMenuEnabled } from "./redux/slices/featureFlags"; // ✅ neu (Pfad ggf. anpassen)
-
-/**
- * ✅ Kein Extra-File:
- * Unistyles braucht VOR dem ersten Render ein selected theme,
- * sonst crasht useUnistyles/ThemedText.
- */
+// Slug-Routing Helper
+import { buildMenuPaths } from "./components/routing/menuPaths";
+/* =========================
+   Unistyles Init
+   ========================= */
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
 
 const Drawer = createDrawerNavigator();
 
+/* =========================
+   URL Helpers
+   ========================= */
+
+function normalizePath(p: string) {
+  if (!p) return "/";
+  let out = p.trim();
+  if (!out.startsWith("/")) out = "/" + out;
+  if (out.length > 1) out = out.replace(/\/+$/g, "");
+  return out;
+}
+
+function getNumericIdFromPath(pathname: string): number | null {
+  const seg = String(pathname ?? "")
+    .split("?")[0]
+    .split("#")[0]
+    .replace(/^\/+/, "")
+    .split("/")[0];
+
+  const n = Number(seg);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/* =========================
+   RootStack
+   ========================= */
+
 function RootStack() {
   const dispatch = useAppDispatch();
-
-  // Hook IMMER oben, nie conditional
   const { theme } = useUnistyles();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
@@ -67,9 +90,38 @@ function RootStack() {
   const { ready } = useAppSelector(selectReady);
   const { current_organization } = useAppSelector(selectOrganizations);
 
-  const isReady = Boolean(current_organization && ready);
+  // Guards gegen Endlosschleifen
+  const didBootRef = useRef(false);
+  const didHandleUrlRef = useRef(false);
 
+  /* =========================
+     Slug Maps aus Menu
+     ========================= */
+  const { pathById, idByPath } = useMemo(
+    () => buildMenuPaths(rawMenu),
+    [rawMenu]
+  );
+
+  /* =========================
+     Linking Screens Config
+     ========================= */
+  const screensConfig = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const m of rawMenu) {
+      if (!m.menuID) continue;
+      const p = pathById[m.menuID];
+      if (p) out[String(m.menuID)] = p;
+    }
+    return out;
+  }, [rawMenu, pathById]);
+
+  /* =========================
+     BOOT (läuft exakt 1x)
+     ========================= */
   useEffect(() => {
+    if (didBootRef.current) return;
+    didBootRef.current = true;
+
     let alive = true;
 
     (async () => {
@@ -85,17 +137,6 @@ function RootStack() {
         ]);
 
         await dispatch(initializeMenu()).unwrap?.();
-
-        // ✅ URL-ID nur setzen, wenn existiert & enabled ist
-        const id = Number(window.location.pathname.split("/").at(1));
-        if (id) {
-          const stateNow = store.getState();
-          const exists = stateNow.menu.rawMenu.some((m) => m.menuID === id);
-
-          if (exists && isMenuEnabled(id)) {
-            await dispatch(setActiveMenuId(id));
-          }
-        }
       } catch (e) {
         console.error("BOOT ERROR:", e);
       } finally {
@@ -108,8 +149,44 @@ function RootStack() {
     };
   }, [dispatch]);
 
-  const navigationMenu = menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
+  /* =========================
+     Redirect Mapping (1x)
+     ========================= */
+  useEffect(() => {
+    if (didHandleUrlRef.current) return;
+    if (!rawMenu || rawMenu.length === 0) return;
 
+    didHandleUrlRef.current = true;
+
+    const pathname = normalizePath(window.location.pathname || "/");
+
+    // A) Slug → menuID
+    const slugId = idByPath[pathname];
+    if (slugId && isMenuEnabled(slugId)) {
+      dispatch(setActiveMenuId(slugId));
+      return;
+    }
+
+    // B) Numeric → Redirect → Slug
+    const numericId = getNumericIdFromPath(pathname);
+    if (numericId && isMenuEnabled(numericId)) {
+      const slugPath = pathById[numericId];
+      if (slugPath) {
+        window.history.replaceState(null, "", slugPath);
+      }
+      dispatch(setActiveMenuId(numericId));
+    }
+  }, [dispatch, rawMenu, pathById, idByPath]);
+
+  /* =========================
+     Drawer Root Node
+     ========================= */
+  const navigationMenu =
+    menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
+
+  /* =========================
+     Navigation Theme
+     ========================= */
   const navTheme = useMemo(
     () => ({
       colors: {
@@ -141,19 +218,9 @@ function RootStack() {
         prefixes: [Linking.createURL("/")],
         config: {
           screens: {
-            ...foldl<Record<string, string>, MenuItem>(
-              (acc, curr) =>
-                Object.defineProperty(acc, "" + curr.menuID!, {
-                  value: "/" + curr.menuID!,
-                  enumerable: true,
-                }),
-              {},
-              rawMenu
-            ),
+            ...screensConfig,
             Login: "/login",
             BaseLogin: "/base-login",
-
-            //  Catch-all: wenn Route nicht existiert (z.B. /)
             NotFound: "*",
           },
         },
@@ -172,7 +239,6 @@ function RootStack() {
         }}
         drawerContent={(props) => {
           if (!isLoggedIn) return undefined;
-
           return (
             <Navigation
               {...props}
@@ -194,10 +260,10 @@ function RootStack() {
             {rawMenu.map((node, i) => (
               <Drawer.Screen
                 key={i}
-                name={node.menuID!.toString()}
+                name={String(node.menuID!)}
                 children={() => {
-                  //  falls ein menuID doch mal disabled reinrutscht
-                  if (!isMenuEnabled(node.menuID!)) return <NotAvailableScreen />;
+                  if (!isMenuEnabled(node.menuID!))
+                    return <NotAvailableScreen />;
 
                   if (!isDynamicMenuItem(node) && node.Screen) {
                     const ScreenComp = node.Screen;
@@ -210,7 +276,6 @@ function RootStack() {
               />
             ))}
 
-            {/*  Fallback Screen für unbekannte Routen */}
             <Drawer.Screen
               name="NotFound"
               component={NotAvailableScreen}
@@ -233,6 +298,10 @@ function RootStack() {
   );
 }
 
+/* =========================
+   App
+   ========================= */
+
 export default function App() {
   return (
     <Provider store={store}>
@@ -241,8 +310,16 @@ export default function App() {
   );
 }
 
+/* =========================
+   Styles
+   ========================= */
+
 const styles = StyleSheet.create({
   drawer: { width: 200 },
   layoutContainer: { flex: 1 },
-  loadingScreen: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

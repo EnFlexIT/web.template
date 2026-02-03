@@ -13,6 +13,8 @@ const resources = {
         DataPermissions: require('./assets/locales/en/DataPermission.json'),
         Settings: require('./assets/locales/en/Settings.json'),
         DevHome: require('./assets/locales/en/DevHome.json'),
+        NotAvailable: require('./assets/locales/en/NotAvailable.json'),
+       // changePassword: require('./assets/locales/en/changePassword.json'),
     },
     de: {
         Login: require('./assets/locales/de/Login.json'),
@@ -24,6 +26,8 @@ const resources = {
         DataPermissions: require('./assets/locales/de/DataPermission.json'),
         Settings: require('./assets/locales/de/Settings.json'),
         DevHome: require('./assets/locales/de/DevHome.json'),
+        NotAvailable: require('./assets/locales/de/NotAvailable.json'),
+       // changePassword: require('./assets/locales/de/changePassword.json'),
     },
 };
 

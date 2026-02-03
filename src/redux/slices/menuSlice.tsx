@@ -122,7 +122,7 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
 
       const raw = response?.data as any;
 
-      // ✅ akzeptiere mehrere mögliche Shapes
+      //  akzeptiere mehrere mögliche Shapes
       const data: ApiMenuItem[] = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.data)

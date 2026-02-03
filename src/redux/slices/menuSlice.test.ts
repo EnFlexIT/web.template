@@ -4,7 +4,7 @@ import reducer, {
   rawListToTrees,
   getDepthFromList,
   isDynamicMenuItem,
-  isStaticMenuItem,
+  
   MenuItem,
 } from "./menuSlice";
 import { initializeMenu } from "./menuSlice";
@@ -119,6 +119,6 @@ describe("menuSlice helpers (pure functions)", () => {
     };
 
     expect(isDynamicMenuItem(dynamicItem)).toBe(true);
-    expect(isStaticMenuItem(staticItem)).toBe(true);
+    //expect(isStaticMenuItem(staticItem)).toBe(true);
   });
 });

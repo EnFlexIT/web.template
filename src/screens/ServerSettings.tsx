@@ -422,7 +422,7 @@ export function ServerSettingsScreen() {
                 justifyContent: "space-between",
               }}
             >
-              <H4>{t("savedServers")}</H4>
+              <H4 style={{ fontWeight: "bold" }}>{t("savedServers")}</H4>
               <ActionButton
                 variant="secondary"
                 icon="delete"

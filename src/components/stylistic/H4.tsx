@@ -17,7 +17,9 @@ export function H4(props: TextProps) {
 
 const styles = StyleSheet.create(theme => ({
   h4: {
-    fontSize: theme.info.fontSize + 2,
+    fontSize: theme.info.fontSize ,
     fontFamily: theme.info.fontFamily,
+    fontWeight: "bold",
+    
   },
 }))

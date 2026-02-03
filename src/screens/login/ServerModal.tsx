@@ -38,7 +38,6 @@ import {
 import { styles, modalStyles } from "./styles";
 import { H1 } from "../../components/stylistic/H1";
 import { H4 } from "../../components/stylistic/H4";
-import { H2 } from "../../components/stylistic/H2";
 
 type Server = {
   id: string;
@@ -396,9 +395,9 @@ export function ServerModal({
 
           {/* Inputs */}
           <View style={{ gap: 12 ,  marginBottom:30}}>
-            <H2 style={{ fontWeight: "bold" }}>
+            <H4 >
               {t("addServer")}
-            </H2>
+            </H4>
 
             {nameError && (
               <ThemedText style={styles.errorText}>{nameError}</ThemedText>
@@ -486,6 +485,8 @@ export function ServerModal({
             <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
               <View style={{ flex: 1 }}>
                 <SelectableList
+                variant="secondary"
+                
                 size="xs"
                   items={serverItems}
                   value={selectedServerId}
