@@ -29,16 +29,11 @@ import { buildMenuPaths } from "./routing/menuPaths";
 interface DrawerItemProps {
   node: MenuTree;
   expanded: Record<number, boolean>;
-  toggleExpanded: (id: number) => void;
+  setExpanded: React.Dispatch<React.SetStateAction<Record<number, boolean>>>;
   pathById: Record<number, string>;
 }
 
-function DrawerItem({
-  node,
-  expanded,
-  toggleExpanded,
-  pathById,
-}: DrawerItemProps) {
+function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) {
   const linkTo = useLinkTo();
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Drawer"]);
@@ -57,17 +52,20 @@ function DrawerItem({
     hovered,
   });
 
+  const toggle = () => {
+    setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
+  };
+
   return (
     <View style={styles.innerContainer}>
       <Pressable
         onPress={() => {
-          if (isFolder) {
-            toggleExpanded(id);
-            return;
-          }
-
+          //  IMMER zur Seite navigieren (auch folder!)
           dispatch(setActiveMenuId(id));
           linkTo(path);
+
+          //  wenn Folder: zusätzlich auf/zu
+          if (isFolder) toggle();
         }}
         onHoverIn={() => setHovered(true)}
         onHoverOut={() => setHovered(false)}
@@ -84,9 +82,7 @@ function DrawerItem({
             styles.noSelect,
           ]}
         >
-          {isDynamicMenuItem(node.val)
-            ? node.val.caption
-            : t(node.val.caption)}
+          {isDynamicMenuItem(node.val) ? node.val.caption : t(node.val.caption)}
         </Text>
       </Pressable>
 
@@ -97,7 +93,7 @@ function DrawerItem({
               key={i}
               node={child}
               expanded={expanded}
-              toggleExpanded={toggleExpanded}
+              setExpanded={setExpanded}
               pathById={pathById}
             />
           ))}
@@ -125,16 +121,12 @@ export function Navigation({ menu, isLoggedIn, isWide }: NavigationProps) {
   const api = useAppSelector(selectApi);
   const isBaseMode = api.isBaseMode === true;
 
-  const { rawMenu, activeMenuId } = useAppSelector(selectMenu);
+  const { rawMenu } = useAppSelector(selectMenu);
 
-  // 🔑 Slug paths
+  // Slug paths
   const { pathById } = useMemo(() => buildMenuPaths(rawMenu), [rawMenu]);
 
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-
-  const toggleExpanded = (id: number) => {
-    setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
-  };
 
   const rootPath = pathById[menu.val.menuID!] ?? `/${menu.val.menuID!}`;
 
@@ -167,9 +159,7 @@ export function Navigation({ menu, isLoggedIn, isWide }: NavigationProps) {
                 styles.noSelect,
               ]}
             >
-              {isDynamicMenuItem(menu.val)
-                ? menu.val.caption
-                : t(menu.val.caption)}
+              {isDynamicMenuItem(menu.val) ? menu.val.caption : t(menu.val.caption)}
             </Text>
           </Pressable>
 
@@ -179,7 +169,7 @@ export function Navigation({ menu, isLoggedIn, isWide }: NavigationProps) {
                 key={i}
                 node={node}
                 expanded={expanded}
-                toggleExpanded={toggleExpanded}
+                setExpanded={setExpanded}
                 pathById={pathById}
               />
             ))}

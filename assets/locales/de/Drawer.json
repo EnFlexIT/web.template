@@ -12,8 +12,10 @@
   "privacysettings": "Privatsphäre",
   "databaseConnectionsAndSettings": "Datenbank",
   "devHome": "Dev Home",
-  "personalized": "Personalisiert",
-  "serverSettings": "Servereinstellungen"
+  "Personal Settings": "Persönliche Einstellungen",
+  "serverSettings": "Servereinstellungen",
+  "System Settings": "Systemeinstellungen"
+ 
 
 
 }

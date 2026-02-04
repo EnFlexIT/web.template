@@ -87,8 +87,7 @@ function RootStack() {
   const isWide = useIsWide();
 
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
-  const { ready } = useAppSelector(selectReady);
-  const { current_organization } = useAppSelector(selectOrganizations);
+
 
   // Guards gegen Endlosschleifen
   const didBootRef = useRef(false);

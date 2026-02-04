@@ -81,6 +81,7 @@ const styles = StyleSheet.create(() => ({
   card: {
     borderWidth: 1,
     overflow: "hidden",
+    width: "100%",
   },
   pressable: {},
 }));

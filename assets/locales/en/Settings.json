@@ -6,8 +6,8 @@
       "title": "General",
       "description": "Language, theme and basic app settings."
     },
-    "personalized": {
-      "title": "Personalized",
+    "Personal Settings": {
+      "title": "Personal Settings",
       "description": "Privacy and security options tailored to you."
     },
     "privacysettings": {
@@ -29,6 +29,10 @@
     "devHome": {
       "title": "Developer",
       "description": "Tools and views for development and debugging."
+    },
+      "System Settings": {
+      "title": "System Settings",
+      "description": "System-wide configurations and management."
     }
-  }
+}
 }

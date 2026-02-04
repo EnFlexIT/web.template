@@ -89,74 +89,16 @@ export function SettingsScreen() {
   );
 
   const renderNode = useCallback(
-    (node: UiNode) => {
-      const id = node.item.menuID;
-      const isFolder = node.children.length > 0;
-      const isOpen = openById[id] ?? true;
+  (node: UiNode) => {
+    const id = node.item.menuID;
+    const isFolder = node.children.length > 0;
 
-      //  Folder Card
-      if (isFolder) {
-        return (
-          <Card
-            key={id}
-            // Click = auf/zu (wie du es willst)
-            onPress={() => toggleFolder(id)}
-            style={[
-              styles.cardBase,
-              {
-                backgroundColor: theme.colors.card,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <View style={styles.folderHeader}>
-              <H4>{t(`cards.${node.item.caption}.title`)}</H4>
-              <ThemedText style={{ opacity: 0.8 }}>
-                {isOpen ? "▾" : "▸"}
-              </ThemedText>
-            </View>
+   
+    const folderHasOwnScreen =
+      isFolder && node.item.Screen && node.item.menuID !== SETTINGS_ROOT_ID;
 
-            <ThemedText style={{ opacity: 0.85 }}>
-              {t(`cards.${node.item.caption}.description`)}
-            </ThemedText>
-
-            {/* Unterpunkte */}
-            {isOpen && (
-              <View
-                style={[styles.subList, { borderTopColor: theme.colors.border }]}
-              >
-                {node.children.map((child) => {
-                  const childId = child.item.menuID;
-
-                  return (
-                    <Pressable
-                      key={childId}
-                      onPress={() => goTo(childId)}
-                      style={({ pressed }) => [
-                        styles.subItem,
-                        {
-                          borderColor: theme.colors.border,
-                          opacity: pressed ? 0.85 : 1,
-                        },
-                      ]}
-                    >
-                      <ThemedText style={styles.subArrow}>›</ThemedText>
-                      <View style={{ flex: 1 }}>
-                        <H4>{t(`cards.${child.item.caption}.title`)}</H4>
-                        <ThemedText style={{ opacity: 0.8 }}>
-                          {t(`cards.${child.item.caption}.description`)}
-                        </ThemedText>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </Card>
-        );
-      }
-
-      //  leaf card
+    //   navigieren
+    if (folderHasOwnScreen) {
       return (
         <Card
           key={id}
@@ -169,15 +111,38 @@ export function SettingsScreen() {
             },
           ]}
         >
-          <H4>{t(`cards.${node.item.caption}.title`)}</H4>
+          <View style={styles.folderHeader}>
+            <H4>{t(`cards.${node.item.caption}.title`)}</H4>
+          </View>
+
           <ThemedText style={{ opacity: 0.85 }}>
             {t(`cards.${node.item.caption}.description`)}
           </ThemedText>
         </Card>
       );
-    },
-    [goTo, openById, theme.colors, t, toggleFolder]
-  );
+    }
+    return (
+      <Card
+        key={id}
+        onPress={() => goTo(id)}
+        style={[
+          styles.cardBase,
+          {
+            backgroundColor: theme.colors.card,
+            borderColor: theme.colors.border,
+          },
+        ]}
+      >
+        <H4>{t(`cards.${node.item.caption}.title`)}</H4>
+        <ThemedText style={{ opacity: 0.85 }}>
+          {t(`cards.${node.item.caption}.description`)}
+        </ThemedText>
+      </Card>
+    );
+  },
+  [goTo, openById, theme.colors, t, toggleFolder]
+);
+
 
   return (
     <Screen>
@@ -199,11 +164,13 @@ const styles = StyleSheet.create(() => ({
     flex: 1,
     padding: 24,
     gap: 24,
+   
   },
   cardsRow: {
     gap: 12,
     flexDirection: "column",
     flexWrap: "wrap",
+
   },
   cardBase: {},
   folderHeader: {
@@ -211,12 +178,14 @@ const styles = StyleSheet.create(() => ({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+
   },
   subList: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
     gap: 10,
+  
   },
   subItem: {
     flexDirection: "row",
@@ -225,10 +194,12 @@ const styles = StyleSheet.create(() => ({
     paddingHorizontal: 10,
     borderWidth: 1,
     alignItems: "center",
+  
   },
   subArrow: {
     width: "auto",
     opacity: 0.7,
     fontSize: 16,
+    
   },
 }));
