@@ -26,15 +26,18 @@ export function getStaticMenu(): StaticMenuItem[] {
   const items: StaticMenuItem[] = [
     { caption: "settings", menuID: 3003, Screen: SettingsScreen },
 
-    { caption: "general", menuID: 3004, parentID: 3003, Screen: UnauthenticatedSettings },
+    
 
      //  Ordner -> Hub Screen (ein Screen für alle)
-    { caption: "Personal Settings", menuID: 3020, parentID: 3003, Screen: MenuHubScreen },
+    //{ caption: "Personal Settings", menuID: 3020, parentID: 3003, Screen: MenuHubScreen },
     { caption: "System Settings", menuID: 3021, parentID: 3003, Screen: MenuHubScreen },
 
+
+    //Darstllung
+    { caption: "Appearance", menuID: 3004, parentID: 3003, Screen: UnauthenticatedSettings },
     // Kinder unter "personalized"
-    { caption: "privacysettings", menuID: 3005, parentID: 3020, Screen: PrivacySettings },
-    { caption: "changePassword", menuID: 3013, parentID: 3020, Screen: ChangePasswordScreen },
+    { caption: "privacysettings", menuID: 3005, parentID: 3003, Screen: PrivacySettings },
+    { caption: "changePassword", menuID: 3013, parentID: 3003, Screen: ChangePasswordScreen },
 
     // Kinder unter "systemsettings"
     { caption: "serverSettings", menuID: 3012, parentID: 3021, Screen: ServerSettingsScreen },

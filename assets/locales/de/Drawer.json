@@ -1,7 +1,7 @@
 {
   "login": "Anmelden",
   "settings": "Einstellungen",
-  "general": "Allgemein",
+  "Appearance": "Darstellung",
   "systemInformation": "System Informationen",
   "home": "Zuhause",
   "info": "Info",
@@ -9,10 +9,10 @@
   "executionState": "Ausführungsmodus",
   "changePassword": "Passwort ändern",
   "privacy": "Datenschutz",
-  "privacysettings": "Privatsphäre",
+  "privacysettings": "Datenschutz",
   "databaseConnectionsAndSettings": "Datenbank",
   "devHome": "Dev Home",
-  "Personal Settings": "Persönliche Einstellungen",
+  "Personal Settings": "Benutzer-Einstellungen",
   "serverSettings": "Servereinstellungen",
   "System Settings": "Systemeinstellungen"
  

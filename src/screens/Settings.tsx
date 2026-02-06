@@ -149,9 +149,7 @@ export function SettingsScreen() {
       <View
         style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
-        <View>
-          <H3>{t("subtitle")}</H3>
-        </View>
+       
 
         <View style={styles.cardsRow}>{visibleNodes.map(renderNode)}</View>
       </View>

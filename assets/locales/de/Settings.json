@@ -2,8 +2,8 @@
   "title": "Einstellungen",
   "subtitle": "Verwalte App-Optionen, Datenschutz und Verbindungen.",
   "cards": {
-    "general": {
-      "title": "Allgemein",
+    "Appearance": {
+      "title": "Darstellung",
       "description": "Sprache, Darstellung und grundlegende App-Einstellungen."
     },
     "Personal Settings": {
@@ -19,7 +19,7 @@
       "description": "Dein Kontopasswort sicher aktualisieren."
     },
     "databaseConnectionsAndSettings": {
-      "title": "Datenbank & Verbindungen",
+      "title": "Datenbank",
       "description": "Server, IP-Adresse, Authentifizierung und Integrationen."
     },
     "serverSettings": {

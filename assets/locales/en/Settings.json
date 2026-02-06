@@ -2,8 +2,8 @@
   "title": "Settings",
   "subtitle": "Manage app options, privacy and connections.",
   "cards": {
-    "general": {
-      "title": "General",
+    "Appearance": {
+      "title": "Appearance",
       "description": "Language, theme and basic app settings."
     },
     "Personal Settings": {
@@ -19,7 +19,7 @@
       "description": "Update your account password securely."
     },
     "databaseConnectionsAndSettings": {
-      "title": "Database & Connections",
+      "title": "Database",
       "description": "Server, IP, authentication and integrations."
     },
     "serverSettings": {

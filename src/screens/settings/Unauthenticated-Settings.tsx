@@ -46,18 +46,21 @@ export function UnauthenticatedSettings() {
         <View style={{ gap: 6 }}>
                         <ThemedText>{t("lng")}:</ThemedText>
                         <Dropdown<"de" | "en">
+                          
                           value={(language.language as "de" | "en") ?? "de"}
                           options={languageOptions}
                           onChange={(lng) => dispatch(setLanguage({ language: lng }))}
+                          size="xs"
                         />
                       </View>
         
-                      {/* Theme (Dropdown) */}
+                      {/* Theme (Dropdown) 
                       <View style={{ gap: 6 }}>
                         <ThemedText>{t("color-scheme")}:</ThemedText>
                         <Dropdown<"system" | "light" | "dark">
                           value={currentThemeValue}
                           options={themeOptions}
+                          size="xs"
                           onChange={(v) => {
                             const next =
                               v === "system"
@@ -67,7 +70,7 @@ export function UnauthenticatedSettings() {
                             dispatch(setTheme(next));
                           }}
                         />
-                      </View>       
+                      </View>   */}    
       </ScrollView>
     </Screen>
   );

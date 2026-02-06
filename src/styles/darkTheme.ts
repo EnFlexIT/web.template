@@ -14,7 +14,7 @@ export const darkTheme = {
     fonts,
     info: {
         fontSize: 16,
-        maxContentWidth: 1400,
+        maxContentWidth: 800,
         screenMargin: 20,
         fontFamily: undefined,
     }

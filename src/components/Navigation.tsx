@@ -11,6 +11,8 @@ import { Text } from "./stylistic/Text";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
+import { useEffect } from "react";
+import { getIdPath } from "../redux/slices/menuSlice";
 
 import {
   isDynamicMenuItem,
@@ -33,17 +35,19 @@ interface DrawerItemProps {
   pathById: Record<number, string>;
 }
 
+
 function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) {
   const linkTo = useLinkTo();
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Drawer"]);
 
-  const { activeMenuId } = useAppSelector(selectMenu);
+  const { rawMenu, activeMenuId } = useAppSelector(selectMenu);
+
   const [hovered, setHovered] = useState(false);
 
   const id = node.val.menuID!;
   const isFolder = node.children.length > 0;
-  const isOpen = expanded[id] ?? true;
+  const isOpen = expanded[id] ?? false;
 
   const path = pathById[id] ?? `/${id}`;
 
@@ -55,6 +59,18 @@ function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) 
   const toggle = () => {
     setExpanded((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
   };
+  useEffect(() => {
+  if (!activeMenuId) return;
+
+  const pathIds = getIdPath(rawMenu, activeMenuId) ?? [];
+  // pathIds enthält z.B. [3003, 3020, 3013]
+
+  setExpanded((prev) => {
+    const next = { ...prev };
+    for (const id of pathIds) next[id] = true; // Eltern öffnen
+    return next;
+  });
+}, [activeMenuId, rawMenu]);
 
   return (
     <View style={styles.innerContainer}>

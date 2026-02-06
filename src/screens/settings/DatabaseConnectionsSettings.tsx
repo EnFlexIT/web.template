@@ -16,15 +16,7 @@ export function DatabaseConnectionsSettings() {
   return (
     <Screen>
     <View style={styles.container}>
-      {/* Header */}
-      <View >
-        <H2 >
-          Database Connections & Settings
-        </H2>
-        <H4 >
-          Configure database system and runtime behaviour.
-        </H4>
-      </View>
+ 
 
       {/* Tabs */}
       <View style={styles.tabs}>

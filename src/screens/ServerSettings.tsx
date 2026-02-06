@@ -319,21 +319,7 @@ export function ServerSettingsScreen() {
   return (
     <Screen>
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        {/* Header (Screen statt Modal) */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 14,
-            paddingBottom: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <H1>{t("changeOrganization")}</H1>
-       
-        </View>
-
+     
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: 16,
