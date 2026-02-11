@@ -34,6 +34,7 @@ export function FactorySettingsTab() {
                 value={factoryId}
                 onChangeText={setFactoryId}
                 disabled
+                size="sm"
             />
 
             {/* Database system (read-only for now) */}
@@ -42,6 +43,7 @@ export function FactorySettingsTab() {
                 value={databaseSystem}
                 onChangeText={() => {}}
                 disabled
+                size="sm"
             />
 
             {/* Database settings box */}
@@ -55,24 +57,29 @@ export function FactorySettingsTab() {
                     label="Database"
                     value={database}
                     onChangeText={setDatabase}
+                    size="sm"
                 />
 
                 <TextInput
                     label="Add. URL Params"
                     value={urlParams}
                     onChangeText={setUrlParams}
+                    size="sm"
+
                 />
 
                 <TextInput
                     label="User Name"
                     value={user}
                     onChangeText={setUser}
+                    size="sm"
                 />
 
                 <TextInput
                     label="Password"
                     value={password}
                     onChangeText={setPassword}
+                    size="sm"
                 />
             </View>
 
@@ -80,6 +87,7 @@ export function FactorySettingsTab() {
             <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
                 <ActionButton
                     label="Save"
+                    size="sm"
                     variant="secondary"
                     onPress={() => {
                         console.log("Save factory DB settings");
@@ -88,6 +96,7 @@ export function FactorySettingsTab() {
 
                 <ActionButton
                     label="Test Connection"
+                    size="sm"
                     onPress={() => {
                         console.log("Test factory DB connection");
                     }}

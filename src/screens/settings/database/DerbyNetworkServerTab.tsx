@@ -46,6 +46,7 @@ export function DerbyNetworkServerTab() {
                         <TextInput
                             value={host}
                             onChangeText={setHost}
+                            size="sm"
                         />
                     </View>
 
@@ -64,12 +65,14 @@ export function DerbyNetworkServerTab() {
                 value={port}
                 keyboardType="numeric"
                 onChangeText={setPort}
+                size="sm"
             />
 
             <TextInput
                 label="User Name"
                 value={user}
                 onChangeText={setUser}
+                size="sm"
             />
 
             <TextInput
@@ -77,6 +80,7 @@ export function DerbyNetworkServerTab() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                size="sm"
             />
 
             {/* Actions */}
@@ -85,11 +89,13 @@ export function DerbyNetworkServerTab() {
                     label="Save"
                     variant="primary"
                     onPress={() => console.log("Save Derby settings")}
+                    size="sm"
                 />
 
                 <ActionButton
                     label="Test Connection"
                     onPress={() => console.log("Test Derby connection")}
+                    size="sm"
                 />
             </View>
 
@@ -135,6 +141,7 @@ export function DerbyNetworkServerTab() {
                             <ActionButton
                                 label="Close"
                                 onPress={() => setShowIpSelector(false)}
+                                size="sm"
                             />
                         </ThemedView>
                     </Pressable>

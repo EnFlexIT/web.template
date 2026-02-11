@@ -23,9 +23,12 @@ import { styles } from "../login/styles";
 type PasswordChangePayload = {
   password_old: string;
   password_new: string;
-  // falls Backend ein Repeat verlangt, kannst du es hier später ergänzen:
-  // password_new_repeat?: string;
 };
+
+function isStrongPassword(pw: string) {
+  // mind. 8 Zeichen, 1 Großbuchstabe, 1 Kleinbuchstabe, 1 Zahl, 1 Sonderzeichen
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
+}
 
 export function ChangePasswordScreen() {
   const { t } = useTranslation(["Settings.ChangePassword"]);
@@ -37,55 +40,76 @@ export function ChangePasswordScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const canSave = useMemo(() => {
-    return (
-      oldPassword.trim().length > 0 &&
-      newPassword.trim().length >= 6 &&
-      newPassword2.trim().length >= 6 &&
-      newPassword === newPassword2 &&
-      !isSaving
-    );
+    const oldOk = oldPassword.trim().length > 0;
+    const newOk = isStrongPassword(newPassword.trim());
+    const match = newPassword === newPassword2;
+    return oldOk && newOk && match && !isSaving;
   }, [oldPassword, newPassword, newPassword2, isSaving]);
 
   async function onSave() {
-    // Immer klare Rückmeldung
+    // Auth-Check
+    if (!api.jwt) {
+      Alert.alert("Nicht eingeloggt", "Bitte zuerst einloggen.");
+      return;
+    }
+
+    // Validierung
     if (oldPassword.trim().length === 0) {
       Alert.alert("Fehler", "Bitte aktuelles Passwort eingeben.");
       return;
     }
-    if (newPassword.trim().length < 6) {
-      Alert.alert("Fehler", "Das neue Passwort muss mindestens 6 Zeichen haben.");
+
+    if (!isStrongPassword(newPassword.trim())) {
+      Alert.alert(
+        "Fehler",
+        "Das neue Passwort muss mindestens 8 Zeichen haben und Groß-/Kleinbuchstaben, eine Zahl und ein Sonderzeichen enthalten.",
+      );
       return;
     }
+
     if (newPassword !== newPassword2) {
       Alert.alert("Fehler", "Die neuen Passwörter stimmen nicht überein.");
       return;
     }
-    if (isSaving) return;
 
+    if (isSaving) return;
     setIsSaving(true);
 
     try {
-     
       const payload: PasswordChangePayload = {
         password_old: oldPassword,
         password_new: newPassword,
       };
 
-      const res = await api.awb_rest_api.userApi.changePassword(payload);
+      // Endpoint returns void -> wenn kein Error geworfen wird = Erfolg
+      await api.awb_rest_api.userApi.changePassword(payload);
 
-      if (res?.status >= 200 && res?.status < 300) {
-       // Alert.alert("Erfolg", " Passwort wurde erfolgreich geändert.");
-        setOldPassword("");
-        setNewPassword("");
-        setNewPassword2("");
-        return;
-      }
+      Alert.alert("Erfolg", "Passwort wurde erfolgreich geändert.");
 
-   
+      setOldPassword("");
+      setNewPassword("");
+      setNewPassword2("");
     } catch (e: any) {
-   
       const status = e?.response?.status;
       const data = e?.response?.data;
+
+      // Versuche eine sinnvolle Backend-Message zu zeigen
+      const backendMsg =
+        typeof data === "string"
+          ? data
+          : data?.message || data?.error || null;
+
+      if (status === 401 || status === 403) {
+        Alert.alert("Fehler", "Nicht autorisiert. Bitte neu einloggen.");
+      } else if (status === 400) {
+        Alert.alert(
+          "Fehler",
+          backendMsg ??
+            "Bad Request: Altes Passwort falsch oder Passwortrichtlinie nicht erfüllt.",
+        );
+      } else {
+        Alert.alert("Fehler", backendMsg ?? "Passwort konnte nicht geändert werden.");
+      }
 
       console.log("PSWD_CHANGE status:", status);
       console.log("PSWD_CHANGE data:", data);
@@ -93,17 +117,25 @@ export function ChangePasswordScreen() {
         password_old: oldPassword,
         password_new: newPassword,
       });
-
-     
     } finally {
       setIsSaving(false);
     }
   }
 
   const Content = (
-     <View style={[styles.widget, styles.border]}>
+    <View style={[styles.widget, styles.border]}>
       {/* Title */}
-      <View style={[{ flexDirection:"row",paddingBottom:16,  gap:10,alignSelf: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          {
+            flexDirection: "row",
+            paddingBottom: 16,
+            gap: 10,
+            alignSelf: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Logo style={logoStyles.logo} />
         <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
       </View>
@@ -165,7 +197,6 @@ export function ChangePasswordScreen() {
       <Card
         style={{
           maxWidth: 520,
-        
           width: "100%",
         }}
       >
