@@ -150,7 +150,7 @@ export function ChangePasswordScreen() {
         <View style={{ height: 16 }} />
 
         <ActionButton
-          label={isSaving ? "Speichern..." : t("save")}
+          label={isSaving ? "Speichern..." : t("submit")}
           variant="secondary"
           onPress={onSave}
           size="xs"

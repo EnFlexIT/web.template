@@ -10,5 +10,7 @@ const styles = StyleSheet.create((theme) => ({
     padding: theme.info.screenMargin,
     maxWidth: theme.info.maxContentWidth,
     flex: 1,
+    //alignSelf: "center",
+
   },
 }));

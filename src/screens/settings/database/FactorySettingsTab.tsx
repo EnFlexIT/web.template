@@ -4,7 +4,7 @@ import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { TextInput } from "../../../components/ui-elements/TextInput";
 import { useState } from "react";
 import { H4 } from "../../../components/stylistic/H4";
-import { H2 } from "../../../components/stylistic/H2";
+import { Screen } from "../../../components/Screen";
 export function FactorySettingsTab() {
     //  (später API/Redux)
     const [useGlobalSettings, setUseGlobalSettings] = useState(true);
@@ -17,7 +17,8 @@ export function FactorySettingsTab() {
     const [password, setPassword] = useState("•••");
 
     return (
-        <View style={{ gap: 24, paddingTop: 16 }}>
+        <Screen>
+        <View >
 
 
             {/* Global toggle */}
@@ -46,9 +47,9 @@ export function FactorySettingsTab() {
             {/* Database settings box */}
             <View style={{ gap: 12 }}>
 
-                <H2 >
+                <H4 >
                     Database Settings
-                </H2>
+                </H4>
 
                 <TextInput
                     label="Database"
@@ -79,7 +80,7 @@ export function FactorySettingsTab() {
             <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
                 <ActionButton
                     label="Save"
-                    variant="primary"
+                    variant="secondary"
                     onPress={() => {
                         console.log("Save factory DB settings");
                     }}
@@ -94,5 +95,6 @@ export function FactorySettingsTab() {
             </View>
 
         </View>
+        </Screen>
     );
 }

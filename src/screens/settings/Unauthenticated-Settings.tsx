@@ -54,7 +54,7 @@ export function UnauthenticatedSettings() {
                         />
                       </View>
         
-                      {/* Theme (Dropdown) 
+                    
                       <View style={{ gap: 6 }}>
                         <ThemedText>{t("color-scheme")}:</ThemedText>
                         <Dropdown<"system" | "light" | "dark">
@@ -70,7 +70,7 @@ export function UnauthenticatedSettings() {
                             dispatch(setTheme(next));
                           }}
                         />
-                      </View>   */}    
+                      </View>    
       </ScrollView>
     </Screen>
   );

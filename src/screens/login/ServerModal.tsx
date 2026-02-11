@@ -192,10 +192,7 @@ export function ServerModal({
 
     if (check.ok) return true;
 
-    showInfo(
-      "Server nicht erreichbar",
-      `${check.message || ""}\n\nBitte wähle einen anderen Server.`,
-    );
+ 
     return false;
   }
 
@@ -281,10 +278,7 @@ export function ServerModal({
       (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
     );
     if (nameExists) {
-      showInfo(
-        "Name bereits vorhanden",
-        "Dieser Server-Name existiert bereits. Bitte wähle einen neuen Namen.",
-      );
+    
       setNameError(t("errors.serverNameExists"));
       return;
     }
@@ -295,10 +289,7 @@ export function ServerModal({
         normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
     );
     if (urlExists) {
-      showInfo(
-        "Adresse bereits vorhanden",
-        "Diese Server-Adresse ist bereits gespeichert. Bitte trage eine neue Adresse ein.",
-      );
+    
       setUrlError(t("errors.serverUrlExists"));
       return;
     }
@@ -321,7 +312,6 @@ export function ServerModal({
     setNameInput(name);
     setUrlInput(baseUrl);
 
-    showInfo("Server hinzugefügt", `${name}\n\n${baseUrl}`);
   }
 
   async function handleSaveSide() {
@@ -330,10 +320,6 @@ export function ServerModal({
 
     setEditMode(true);
 
-    showInfo(
-      "Server gespeichert",
-      `${res.serverLabel ?? "Server"} ist online und wurde erfolgreich ausgewählt.\n\n${res.baseUrl}`,
-    );
   }
 
   async function handleUseServer() {
@@ -344,10 +330,7 @@ export function ServerModal({
       const saved = await validateAndSaveOnly();
       if (!saved.ok || !saved.baseUrl) return;
 
-      showInfo(
-        "Server gespeichert",
-        `${saved.serverLabel ?? "Server"} ist online und wurde erfolgreich ausgewählt.\n\n${saved.baseUrl}`,
-      );
+     
     }
 
     const currentSelected = servers.find((s) => s.id === selectedServerId);
@@ -399,9 +382,7 @@ export function ServerModal({
               {t("addServer")}
             </H4>
 
-            {nameError && (
-              <ThemedText style={styles.errorText}>{nameError}</ThemedText>
-            )}
+          
 
             {/* Name row */}
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
@@ -452,18 +433,24 @@ export function ServerModal({
                  size="sm"
               />
             </View>
+           
 
+            </View>
+          
+       
+
+          {/* Liste */}
+          <View style={{ marginTop: -30, gap: 12 }}>
+            
             {urlError && (
               <ThemedText style={styles.errorText}>{urlError}</ThemedText>
             )}
             {generalError && (
               <ThemedText style={styles.errorText}>{generalError}</ThemedText>
             )}
-            {busy && <ActivityIndicator />}
-          </View>
-
-          {/* Liste */}
-          <View style={{ marginTop: -25, gap: 12 }}>
+              {nameError && (
+              <ThemedText style={styles.errorText}>{nameError}</ThemedText>
+            )}
              <View
                           style={{
                             flexDirection: "row",

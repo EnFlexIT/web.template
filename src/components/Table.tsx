@@ -1,85 +1,118 @@
-import { PropsWithChildren, ReactNode } from "react";
-import { Text, View } from "react-native";
+import React, { PropsWithChildren, ReactNode } from "react";
+import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
-// export const table: ReactNode[][] = 
-
 interface FieldProps {
-    atRightEdge: boolean,
-    atBottomEdge: boolean
+  atRightEdge: boolean;
+  atBottomEdge: boolean;
+  atFirstRow: boolean;
+  atFirstColumn: boolean;
+  flex?: number; 
 }
-function Field({ children, atBottomEdge, atRightEdge }: PropsWithChildren<FieldProps>) {
 
-    styles.useVariants({
-        atBottomEdge: atBottomEdge,
-        atRightEdge: atRightEdge
-    })
+function Field({
+  children,
+  atBottomEdge,
+  atRightEdge,
+  atFirstRow,
+  atFirstColumn,
+  flex = 1,
+}: PropsWithChildren<FieldProps>) {
+  styles.useVariants({
+    atBottomEdge,
+    atRightEdge,
+    atFirstRow,
+    atFirstColumn,
+  });
 
-    return (
-        <View
-            style={[styles.field, styles.closeBorderToBottom, styles.closeBorderToRight]}
-        >
-            {children}
-        </View>
-    )
+  return (
+    <View
+      style={[
+        styles.field,
+        { flex }, 
+        styles.borderRight,
+        styles.borderBottom,
+        styles.borderTop,
+        styles.borderLeft,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 interface TableProps {
-    data: ReactNode[][]
+  data: ReactNode[][];
+  columnFlex?: number[]; 
 }
-export function Table(props: TableProps) {
-    return (
-        <View>
-            {
-                props.data.map((row, i) => (
-                    <View
-                        key={i}
-                        style={[styles.row]}
-                    >
-                        {
-                            row.map((element, j) => (
-                                <Field
-                                    atRightEdge={j === row.length - 1}
-                                    atBottomEdge={i === props.data.length - 1}
-                                >
-                                    {element}
-                                </Field>
-                            ))
-                        }
-                    </View>
-                ))
-            }
+
+export function Table({ data, columnFlex }: TableProps) {
+  return (
+    <View>
+      {data.map((row, i) => (
+        <View key={i} style={styles.row}>
+          {row.map((element, j) => (
+            <Field
+              key={`${i}-${j}`}
+              flex={columnFlex?.[j] ?? 1} 
+              atRightEdge={j === row.length - 1}
+              atBottomEdge={i === data.length - 1}
+              atFirstRow={i === 0}
+              atFirstColumn={j === 0}
+            >
+              {element}
+            </Field>
+          ))}
         </View>
-    )
+      ))}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create((theme) => ({
-    row: {
-        flexDirection: "row"
+  row: {
+    flexDirection: "row",
+  },
+
+ 
+  field: {
+    padding: 10,
+    borderColor: theme.colors.border,
+  },
+
+ 
+  borderRight: {
+    variants: {
+      atRightEdge: {
+        true: { borderRightWidth: 1 },
+        false: { borderRightWidth: 1 },
+      },
     },
-    field: {
-        flex: 1,
-        padding: 5,
-        borderColor: theme.colors.border,
-        borderLeftWidth: 1,
-        borderTopWidth: 1,
+  },
+  borderBottom: {
+    variants: {
+      atBottomEdge: {
+        true: { borderBottomWidth: 1 },
+        false: { borderBottomWidth: 1 },
+      },
     },
-    closeBorderToRight: {
-        variants: {
-            atRightEdge: {
-                true: {
-                    borderRightWidth: 1,
-                }
-            }
-        }
+  },
+
+ 
+  borderTop: {
+    variants: {
+      atFirstRow: {
+        true: { borderTopWidth: 1 },
+      },
     },
-    closeBorderToBottom: {
-        variants: {
-            atBottomEdge: {
-                true: {
-                    borderBottomWidth: 1,
-                }
-            }
-        }
-    }
-}))
+  },
+
+  
+  borderLeft: {
+    variants: {
+      atFirstColumn: {
+        true: { borderLeftWidth: 1 },
+      },
+    },
+  },
+}));

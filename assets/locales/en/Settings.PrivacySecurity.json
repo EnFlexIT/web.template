@@ -1,13 +1,27 @@
 {
-    "privacy_settings_title": "Privacy Settings",
-    "privacy_settings_description": "Adjust your data permissions in retrospect, by pressing the fields you would like to change!",
-    "accepted": "Accepted",
-    "not_accepted": "Not accepted",
-    "comfort": "Comfort",
-    "mandatory": "Mandatory",
-    "personalised": "Personalised",
-    "statistics": "Statistics",
-    "apply": "Apply",
-    "cancel": "Cancel"
+  "privacy_settings_title": "Privacy Settings",
+  "privacy_settings_description": "Information stored on your device.",
 
+  "permissions": {
+    "mandatory": {
+      "title": "Necessary",
+      "description": "Technically necessary information includes the core functionality of our application. This allows the configuration of language, appearance, session management, and the storage of your privacy settings."
+    },
+    "statistics": {
+      "title": "Statistics",
+      "description": "Allows the storage of anonymized usage data to improve the user experience of our application."
+    },
+    "comfort": {
+      "title": "Comfort",
+      "description": "Enables the storage of individual and functional preferences."
+    },
+    "personalised": {
+      "title": "Personalisation",
+      "description": "Allows us to collect information to create personalized suggestions."
+    }
+  },
+
+  "apply": "Apply",
+  "cancel": "Cancel",
+  "accept_all": "Accept all"
 }

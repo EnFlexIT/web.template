@@ -1,13 +1,27 @@
 {
-    "privacy_settings_title": "Datenschutz Einstellungen",
-    "privacy_settings_description": "Passe deine Datenschutzeinstellungen im Nachhinein an, indem du auf die Felder drückst, die du verändern möchtest!",
-    "accepted": "Akzeptiert",
-    "not_accepted": "Nicht akzeptiert",
-    "comfort": "Komfort",
-    "mandatory": "Notwendig",
-    "personalised": "Personalisierung",
-    "statistics": "Statistik",
-    "apply": "Bestätigen",
-    "cancel": "Rückgängig"
+  "privacy_settings_title": "Datenschutz",
+  "privacy_settings_description": "Auf Ihrem Gerät gespeicherte Informationen: ",
 
+  "permissions": {
+    "mandatory": {
+      "title": "Notwendige",
+      "description": "Technisch notwendige Informationen umfassen die Grundfunktionen unserer Anwendung. Dies erlaubt die Konfiguration von Sprache, Aussehen, das Sitzungs-Management sowie die Speicherung Ihrer Datenschutzeinstellungen."
+    },
+    "statistics": {
+      "title": "Statistik",
+      "description": "Erlaubt die Speicherung anonymisierter Nutzungsdaten zur Verbesserung der Benutzererfahrung mit unserer Anwendung."
+    },
+    "comfort": {
+      "title": "Komfort",
+      "description": "Ermöglicht die Speicherung individueller, funktionaler Präferenzen."
+    },
+    "personalised": {
+      "title": "Personalisierung",
+      "description": "Ermöglicht es uns, Informationen zur Erstellung personalisierter Vorschläge zu sammeln."
+    }
+  },
+
+  "apply": "Bestätigen",
+  "cancel": "Rückgängig",
+  "accept_all": "Alle akzeptieren"
 }

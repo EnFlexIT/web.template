@@ -149,8 +149,6 @@ export function SettingsScreen() {
       <View
         style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
-       
-
         <View style={styles.cardsRow}>{visibleNodes.map(renderNode)}</View>
       </View>
     </Screen>
@@ -176,6 +174,7 @@ const styles = StyleSheet.create(() => ({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+    width:800,
 
   },
   subList: {

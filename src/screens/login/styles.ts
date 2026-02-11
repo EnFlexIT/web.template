@@ -110,7 +110,7 @@ container: {
   },
 
   errorBorder: { borderColor: "red" },
-  errorText: { color: "red", fontSize: 12 },
+  errorText: { color: "red", fontSize: 12,marginBottom:-10 },
 }));
 
 export const modalStyles = NativeStyleSheet.create({

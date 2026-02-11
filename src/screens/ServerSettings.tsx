@@ -42,6 +42,7 @@ import {
   normalizeName,
 } from "../screens/login/serverCheck";
 import { styles as loginStyles } from "../screens/login/styles";
+import { H3 } from "../components/stylistic/H3";
 
 type Server = {
   id: string;
@@ -330,9 +331,9 @@ export function ServerSettingsScreen() {
         >
           {/* Inputs (1:1 wie Modal) */}
           <View style={{ gap: 12, marginBottom: 30 }}>
-            <H2 style={{ fontWeight: "bold" }}>
+            <H4 >
               {t("addServer")}
-            </H2>
+            </H4>
 
             {nameError && (
               <ThemedText style={loginStyles.errorText}>{nameError}</ThemedText>
@@ -408,7 +409,7 @@ export function ServerSettingsScreen() {
                 justifyContent: "space-between",
               }}
             >
-              <H4 style={{ fontWeight: "bold" }}>{t("savedServers")}</H4>
+              <H4>{t("savedServers")}</H4>
               <ActionButton
                 variant="secondary"
                 icon="delete"

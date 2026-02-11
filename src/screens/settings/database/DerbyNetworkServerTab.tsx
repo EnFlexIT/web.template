@@ -8,6 +8,7 @@ import { ThemedView } from "../../../components/themed/ThemedView";
 import { useUnistyles } from "react-native-unistyles";
 import { H4 } from "../../../components/stylistic/H4";
 import { H2 } from "../../../components/stylistic/H2";
+import { Screen } from "../../../components/Screen";
 export function DerbyNetworkServerTab() {
     const { theme } = useUnistyles();
 
@@ -27,7 +28,8 @@ export function DerbyNetworkServerTab() {
     ];
 
     return (
-        <View style={{ gap: 24, paddingTop: 16 ,}}>
+        <Screen>
+        <View >
 
             <Checkbox
                 label="Start a Derby database server that is accessible via network"
@@ -115,20 +117,20 @@ export function DerbyNetworkServerTab() {
                                 borderWidth: 1,
                             }}
                         >
-                            <H2 >
+                            <H4 >
                                 Select IP Address
-                            </H2>
-{ipAddresses.map((ip, index) => (
-    <Pressable
-        key={index}
-        onPress={() => {
-            setHost(ip.split(" ")[0]);
-            setShowIpSelector(false);
-        }}
-    >
-        <H4>{ip}</H4>
-    </Pressable>
-))}
+                            </H4>
+                                {ipAddresses.map((ip, index) => (
+                                    <Pressable
+                                        key={index}
+                                        onPress={() => {
+                                            setHost(ip.split(" ")[0]);
+                                            setShowIpSelector(false);
+                                        }}
+                                    >
+                                        <H4>{ip}</H4>
+                                    </Pressable>
+                                ))}
 
                             <ActionButton
                                 label="Close"
@@ -140,5 +142,6 @@ export function DerbyNetworkServerTab() {
             </Modal>
 
         </View>
+        </Screen>
     );
 }
