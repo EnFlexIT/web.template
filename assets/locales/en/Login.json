@@ -15,7 +15,7 @@
   "serverReachable": "Online",
   "serverNotReachable": "Offline",
 
-  "changeOrganization": "Change organization / server",
+  "changeOrganization": "Server Settings",
   "changeOrganizationsQuick": "Switch organization",
   "savedServers": "Saved servers",
   "useServer": "Use",

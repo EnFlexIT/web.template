@@ -35,7 +35,9 @@ import {
   normalizeBaseUrl,
   normalizeName,
 } from "./serverCheck";
-import { styles, modalStyles } from "./styles";
+
+import { modalStyles } from "./styles";
+
 import { H1 } from "../../components/stylistic/H1";
 import { H4 } from "../../components/stylistic/H4";
 
@@ -70,15 +72,6 @@ function confirmDialog(
       { text: okText, style: "default", onPress: () => resolve(true) },
     ]);
   });
-}
-
-function showInfo(title: string, message: string) {
-  if (Platform.OS === "web") {
-    // eslint-disable-next-line no-alert
-    alert(`${title}\n\n${message}`);
-    return;
-  }
-  Alert.alert(title, message, [{ text: "OK" }]);
 }
 
 function askSaveBeforeUse(): Promise<boolean> {
@@ -137,6 +130,8 @@ export function ServerModal({
     }));
   }, [servers]);
 
+  const firstError = urlError || nameError || generalError;
+
   function resetErrors() {
     setNameError(null);
     setUrlError(null);
@@ -192,7 +187,8 @@ export function ServerModal({
 
     if (check.ok) return true;
 
- 
+    
+    setGeneralError(t("errors.serverNotReachable"));
     return false;
   }
 
@@ -235,14 +231,12 @@ export function ServerModal({
       return { ok: false };
     }
 
-    // Reachability check (online) BEFORE saving
     const online = await ensureSelectedServerOnline(baseUrl);
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return { ok: false };
     }
 
-    // speichern (edit/add)
     if (editMode && selectedServer) {
       dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
       return { ok: true, baseUrl, serverLabel: name };
@@ -256,13 +250,11 @@ export function ServerModal({
     return { ok: true, baseUrl, serverLabel: name };
   }
 
-  //  PLUS: direkt neu hinzufügen + Duplicate-Check + Meldung
   async function handleAddByPlus() {
     resetErrors();
 
     const { name, baseUrl } = getCurrentInputsNormalized();
 
-    // Pflicht
     if (!baseUrl) {
       setUrlError(t("errors.serverUrlRequired"));
       return;
@@ -273,35 +265,28 @@ export function ServerModal({
       return;
     }
 
-    // Duplicate: Name
     const nameExists = servers.some(
       (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
     );
     if (nameExists) {
-    
       setNameError(t("errors.serverNameExists"));
       return;
     }
 
-    // Duplicate: URL
     const urlExists = servers.some(
-      (s) =>
-        normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
+      (s) => normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
     );
     if (urlExists) {
-    
       setUrlError(t("errors.serverUrlExists"));
       return;
     }
 
-    // optional: online check
     const online = await ensureSelectedServerOnline(baseUrl);
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return;
     }
 
-    // speichern + auswählen
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
@@ -311,15 +296,12 @@ export function ServerModal({
     setEditMode(true);
     setNameInput(name);
     setUrlInput(baseUrl);
-
   }
 
   async function handleSaveSide() {
     const res = await validateAndSaveOnly();
     if (!res.ok || !res.baseUrl) return;
-
     setEditMode(true);
-
   }
 
   async function handleUseServer() {
@@ -329,8 +311,6 @@ export function ServerModal({
 
       const saved = await validateAndSaveOnly();
       if (!saved.ok || !saved.baseUrl) return;
-
-     
     }
 
     const currentSelected = servers.find((s) => s.id === selectedServerId);
@@ -349,15 +329,16 @@ export function ServerModal({
       <Pressable style={modalStyles.backdrop} onPress={onClose}>
         <Pressable
           onPress={() => {}}
-          style={[
-            modalStyles.card,
-            styles.border,
-            {
-              backgroundColor: theme.colors.card,
-              borderColor: theme.colors.border,
-              padding: 16,
-            },
-          ]}
+          style={{
+            width: 500,
+            maxWidth: "100%",
+          
+            padding: 16,
+            gap: 14,
+            borderWidth: 1,
+            backgroundColor: theme.colors.card,
+            borderColor: theme.colors.border,
+          }}
         >
           {/* Header */}
           <View
@@ -365,8 +346,6 @@ export function ServerModal({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: 0,
-          
             }}
           >
             <H1>{t("changeOrganization")}</H1>
@@ -377,22 +356,19 @@ export function ServerModal({
           </View>
 
           {/* Inputs */}
-          <View style={{ gap: 12 ,  marginBottom:30}}>
-            <H4 >
-              {t("addServer")}
-            </H4>
-
-          
+          <View style={{ gap: 12 }}>
+            <H4>{t("addServer")}</H4>
 
             {/* Name row */}
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
               <StylisticTextInput
-                style={[
-                  styles.border,
-                  styles.padding,
-                  { flex: 1 },
-                  nameError && styles.errorBorder,
-                ]}
+                style={{
+                  flex: 1,
+                  padding: 5,
+                  borderWidth: 1,
+                
+                  borderColor: nameError ? "red" : theme.colors.border,
+                }}
                 placeholder={t("serverLabel")}
                 value={nameInput}
                 onChangeText={(v) => {
@@ -404,7 +380,7 @@ export function ServerModal({
               <ActionButton
                 variant="secondary"
                 icon="plus"
-                onPress={handleAddByPlus} 
+                onPress={handleAddByPlus}
                 size="sm"
               />
             </View>
@@ -412,12 +388,13 @@ export function ServerModal({
             {/* URL row */}
             <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
               <StylisticTextInput
-                style={[
-                  styles.border,
-                  styles.padding,
-                  { flex: 1 },
-                  urlError && styles.errorBorder,
-                ]}
+                style={{
+                  flex: 1,
+                  padding: 5,
+                  borderWidth: 1,
+                  
+                  borderColor: urlError ? "red" : theme.colors.border,
+                }}
                 placeholder={t("serverUrl")}
                 value={urlInput}
                 onChangeText={(v) => {
@@ -430,86 +407,74 @@ export function ServerModal({
                 variant="secondary"
                 icon="save"
                 onPress={handleSaveSide}
-                 size="sm"
+                size="sm"
               />
             </View>
-           
+          </View>
 
-            </View>
           
-       
+          <View style={{ minHeight: 5, justifyContent: "center" }}>
+            { firstError ? (
+              <ThemedText style={{ color: "red", fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+                {firstError}
+              </ThemedText>
+            ) : (
+              <ThemedText style={{ fontSize: 12, opacity: 0 }}> </ThemedText>
+            )}
+          </View>
 
           {/* Liste */}
-          <View style={{ marginTop: -30, gap: 12 }}>
-            
-            {urlError && (
-              <ThemedText style={styles.errorText}>{urlError}</ThemedText>
-            )}
-            {generalError && (
-              <ThemedText style={styles.errorText}>{generalError}</ThemedText>
-            )}
-              {nameError && (
-              <ThemedText style={styles.errorText}>{nameError}</ThemedText>
-            )}
-             <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between", 
-                          }}
-                        >
-                          <H4>{t("savedServers")}</H4>
-
-                          <ActionButton
-                            variant="secondary"
-                            icon="delete"
-                            onPress={handleDeleteSelected}
-                            size="sm"
-                            disabled={!selectedServer}  
-                          />
-               </View>
-
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
-              <View style={{ flex: 1 }}>
-                <SelectableList
-                variant="secondary"
+          <View style={{ gap: 10,marginTop: -20 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
                 
-                size="xs"
-                  items={serverItems}
-                  value={selectedServerId}
-                  onChange={(id) => {
-                    dispatch(selectServer(id));
+              }}
+            >
+              <H4>{t("savedServers")}</H4>
 
-                    const s = servers.find((x) => x.id === id);
-                    if (s) {
-                      setEditMode(true);
-                      setNameInput(s.name ?? "");
-                      setUrlInput(s.baseUrl ?? "");
-                    } else {
-                      startAddNew();
-                    }
-
-                    resetErrors();
-                  }}
-                  maxHeight={260}
-                  showSearch={false}
-                  searchPlaceholder={t("search") ?? "Server suchen…"}
-                  emptyText={t("noServers") ?? "Keine Server gefunden"}
-                />
-              </View>
-
-              {/* Side buttons */}
-           
+              <ActionButton
+                variant="secondary"
+                icon="delete"
+                onPress={handleDeleteSelected}
+                size="sm"
+                disabled={!selectedServer}
+              />
             </View>
 
-            {/* Footer button */}
+            <SelectableList
+              variant="secondary"
+              size="xs"
+              items={serverItems}
+              value={selectedServerId}
+              onChange={(id) => {
+                dispatch(selectServer(id));
+
+                const s = servers.find((x) => x.id === id);
+                if (s) {
+                  setEditMode(true);
+                  setNameInput(s.name ?? "");
+                  setUrlInput(s.baseUrl ?? "");
+                } else {
+                  startAddNew();
+                }
+
+                resetErrors();
+              }}
+              maxHeight={260}
+              showSearch={false}
+              searchPlaceholder={t("search") ?? "Server suchen…"}
+              emptyText={t("noServers") ?? "Keine Server gefunden"}
+            />
+
             <ActionButton
               label={t("useServer")}
               variant="secondary"
               icon="check"
               onPress={handleUseServer}
               size="sm"
-            
             />
           </View>
         </Pressable>
