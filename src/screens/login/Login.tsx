@@ -5,7 +5,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  TextInput,
+  TextInput as RNTextInput,
   View,
   StyleSheet as NativeStyleSheet,
 } from "react-native";
@@ -17,7 +17,6 @@ import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
 import { H1 } from "../../components/stylistic/H1";
 import { Text } from "../../components/stylistic/Text";
-import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
 import { ThemedAntDesign } from "../../components/themed/ThemedAntDesign";
 import { ThemedText } from "../../components/themed/ThemedText";
 
@@ -43,12 +42,15 @@ import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 
+
+import { TextInput } from "../../components/ui-elements/TextInput";
+
 // ---------- component ----------
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
 
-  // Unistyles theme (safe as long as index.tsx only calls useUnistyles after boot)
+  // Unistyles theme
   const { theme } = useUnistyles();
 
   // api
@@ -72,9 +74,9 @@ export function LoginScreen() {
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
 
-  // Login form
-  const usernameFieldRef = useRef<TextInput>(null);
-  const passwordFieldRef = useRef<TextInput>(null);
+  // Login form refs
+  const usernameFieldRef = useRef<RNTextInput>(null);
+  const passwordFieldRef = useRef<RNTextInput>(null);
   const loginButtonRef = useRef<View>(null);
 
   const [username, setUsername] = useState("");
@@ -161,40 +163,44 @@ export function LoginScreen() {
 
         {/* Inputs */}
         <View style={[styles.upperHalf]}>
-          <StylisticTextInput
-            ref={usernameFieldRef}
+          <TextInput
+           size="sm"
             style={[styles.border, styles.padding]}
             placeholder={t("username_placeholder")}
-            onSubmitEditing={() => passwordFieldRef.current?.focus()}
             textContentType="username"
             onChangeText={setUsername}
             value={username}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordFieldRef.current?.focus()}
           />
 
-          <StylisticTextInput
-            ref={passwordFieldRef}
+          <TextInput
+          size="sm"
             style={[styles.border, styles.padding]}
             placeholder={t("password_placeholder")}
+            textContentType="password"
+            passwordToggle
+            onChangeText={setPassword}
+            value={password}
+            returnKeyType="done"
             onSubmitEditing={() => {
               if (isPointingToServer && username && password) {
                 login();
               } else {
-                loginButtonRef.current?.focus();
+                // optional: falls dein Button fokussierbar ist
+                // @ts-ignore
+                loginButtonRef.current?.focus?.();
               }
             }}
-            textContentType="password"
-            secureTextEntry
-            onChangeText={setPassword}
-            value={password}
           />
 
           {/* Login Button */}
           {isPointingToServer ? (
-           <ActionButton
-            label={t("login")}
-            variant="secondary"
-            onPress={login}
-            size="xs"
+            <ActionButton
+              label={t("login")}
+              variant="secondary"
+              onPress={login}
+              size="xs"
             />
           ) : (
             <View style={[styles.border, styles.padding, styles.loginContainer]}>
@@ -217,33 +223,31 @@ export function LoginScreen() {
             <ScrollView contentContainerStyle={[styles.advancedItemsContainer]}>
               {/* Change Organization / Server */}
               <Card onPress={() => setOrgModalOpen(true)} padding="none">
-                  <View style={[styles.serverBadge, { gap: 1 }]}>
-                    <View style={{ flex: 1, gap: 1 }}>
-                      <H4 style={{ fontWeight: "bold" }}>
-                        {selectedServer?.name ?? t("unknownServer")}
-                      </H4>
+                <View style={[styles.serverBadge, { gap: 1 }]}>
+                  <View style={{ flex: 1, gap: 1 }}>
+                    <H4 style={{ fontWeight: "bold" }}>
+                      {selectedServer?.name ?? t("unknownServer")}
+                    </H4>
 
-                      <Text style={[mutedTextStyle]} numberOfLines={1}>
-                        {selectedBaseUrl || "-"}
-                      </Text>
-                    </View>
-
-                    <View style={[styles.statusPill, styles.border]}>
-                      <H4>
-                        {isPointingToServer
-                          ? t("serverReachable")
-                          : t("serverNotReachable")}
-                      </H4>
-                    </View>
+                    <Text style={[mutedTextStyle]} numberOfLines={1}>
+                      {selectedBaseUrl || "-"}
+                    </Text>
                   </View>
-                </Card>
 
+                  <View style={[styles.statusPill, styles.border]}>
+                    <H4>
+                      {isPointingToServer
+                        ? t("serverReachable")
+                        : t("serverNotReachable")}
+                    </H4>
+                  </View>
+                </View>
+              </Card>
 
               {/* Language (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("lng")}:</ThemedText>
                 <Dropdown<"de" | "en">
-                  
                   value={(language.language as "de" | "en") ?? "de"}
                   options={languageOptions}
                   onChange={(lng) => dispatch(setLanguage({ language: lng }))}
@@ -264,7 +268,6 @@ export function LoginScreen() {
                         : { adaptive: false, theme: v as "light" | "dark" };
 
                     dispatch(setTheme(next));
-                    
                   }}
                   size="xs"
                 />

@@ -33,7 +33,7 @@ export const initializeDataPermissions = createAsyncThunk(
     try {
       const parsed = JSON.parse(stored) as Partial<DataPermissionsState>;
 
-      // ✅ Migration-safe: falls hasSeenDialog in alten Daten fehlt
+   
       return {
         ...defaultDataPermissions,
         ...parsed,

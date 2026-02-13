@@ -42,7 +42,6 @@ import {
   normalizeName,
 } from "../screens/login/serverCheck";
 import { styles as loginStyles } from "../screens/login/styles";
-import { H3 } from "../components/stylistic/H3";
 
 type Server = {
   id: string;
@@ -140,10 +139,6 @@ export function ServerSettingsScreen() {
 
     if (check.ok) return true;
 
-    showInfo(
-      "Server nicht erreichbar",
-      `${check.message || ""}\n\nBitte wähle einen anderen Server.`,
-    );
     return false;
   }
 
@@ -226,10 +221,7 @@ export function ServerSettingsScreen() {
       (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
     );
     if (nameExists) {
-      showInfo(
-        "Name bereits vorhanden",
-        "Dieser Server-Name existiert bereits. Bitte wähle einen neuen Namen.",
-      );
+      
       setNameError(t("errors.serverNameExists"));
       return;
     }
@@ -238,10 +230,7 @@ export function ServerSettingsScreen() {
       (s) => normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
     );
     if (urlExists) {
-      showInfo(
-        "Adresse bereits vorhanden",
-        "Diese Server-Adresse ist bereits gespeichert. Bitte trage eine neue Adresse ein.",
-      );
+  
       setUrlError(t("errors.serverUrlExists"));
       return;
     }
@@ -262,17 +251,13 @@ export function ServerSettingsScreen() {
     setNameInput(name);
     setUrlInput(baseUrl);
 
-    showInfo("Server hinzugefügt", `${name}\n\n${baseUrl}`);
   }
 
   async function handleSaveSide() {
     const res = await validateAndSaveOnly();
     if (!res.ok || !res.baseUrl) return;
 
-    showInfo(
-      "Server gespeichert",
-      `${res.serverLabel ?? "Server"} ist online und wurde gespeichert.\n\n${res.baseUrl}`,
-    );
+  
   }
 
   async function handleDeleteSelected() {
@@ -297,6 +282,7 @@ export function ServerSettingsScreen() {
       setEditMode(true);
     }
   }
+  const firstError = urlError || nameError || generalError;
 
   async function handleUseServer() {
     const currentSelected = servers.find((s) => s.id === selectedServerId);
@@ -308,126 +294,123 @@ export function ServerSettingsScreen() {
     await dispatch(setIpAsync(url));
     await dispatch(initializeMenu());
 
-    showInfo(
-      t("successful") ?? "Erfolgreich",
-      t("serverConnected") ??
-        "Server wurde erfolgreich verbunden und wird jetzt verwendet.",
-    );
+ 
 
     navigation.goBack();
   }
 
   return (
     <Screen>
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-     
-        <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingBottom: 24,
-            maxWidth: 700,
-            width: "100%",
-          }}
-        >
-          {/* Inputs (1:1 wie Modal) */}
-          <View style={{ gap: 12, marginBottom: 30 }}>
-            <H4 >
-              {t("addServer")}
-            </H4>
-
-            {nameError && (
-              <ThemedText style={loginStyles.errorText}>{nameError}</ThemedText>
-            )}
-
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-              <StylisticTextInput
-                style={[
-                  loginStyles.border,
-                  loginStyles.padding,
-                  { flex: 1 },
-                  nameError && loginStyles.errorBorder,
-                ]}
-                placeholder={t("serverLabel")}
-                value={nameInput}
-                onChangeText={(v) => {
-                  setNameInput(v);
-                  setNameError(null);
-                  setGeneralError(null);
+     {/* Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
-              />
-              <ActionButton
-                variant="secondary"
-                icon="plus"
-                onPress={handleAddByPlus}
-                size="sm"
-              />
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-              <StylisticTextInput
-                style={[
-                  loginStyles.border,
-                  loginStyles.padding,
-                  { flex: 1 },
-                  urlError && loginStyles.errorBorder,
-                ]}
-                placeholder={t("serverUrl")}
-                value={urlInput}
-                onChangeText={(v) => {
-                  setUrlInput(v);
-                  setUrlError(null);
-                  setGeneralError(null);
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <ActionButton
-                variant="secondary"
-                icon="save"
-                onPress={handleSaveSide}
-                size="sm"
-              />
-            </View>
-
-            {urlError && (
-              <ThemedText style={loginStyles.errorText}>{urlError}</ThemedText>
-            )}
-            {generalError && (
-              <ThemedText style={loginStyles.errorText}>
-                {generalError}
-              </ThemedText>
-            )}
-            {busy && <ActivityIndicator />}
-          </View>
-
-          {/* Liste (1:1 wie Modal) */}
-          <View style={{ marginTop: -25, gap: 12 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <H4>{t("savedServers")}</H4>
-              <ActionButton
-                variant="secondary"
-                icon="delete"
-                onPress={handleDeleteSelected}
-                size="sm"
-                disabled={!selectedServer}
-              />
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "stretch" }}>
-              <View style={{ flex: 1 }}>
+              >
+                <H1>{t("changeOrganization")}</H1>
+    
+                
+              </View>
+    
+              {/* Inputs */}
+              <View style={{ gap: 12 }}>
+                <H4>{t("addServer")}</H4>
+    
+                {/* Name row */}
+                <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                  <StylisticTextInput
+                    style={{
+                      flex: 1,
+                      padding: 5,
+                      borderWidth: 1,
+                    
+                      borderColor: nameError ? "red" : theme.colors.border,
+                    }}
+                    placeholder={t("serverLabel")}
+                    value={nameInput}
+                    onChangeText={(v) => {
+                      setNameInput(v);
+                      setNameError(null);
+                      setGeneralError(null);
+                    }}
+                  />
+                  <ActionButton
+                    variant="secondary"
+                    icon="plus"
+                    onPress={handleAddByPlus}
+                    size="sm"
+                  />
+                </View>
+    
+                {/* URL row */}
+                <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                  <StylisticTextInput
+                    style={{
+                      flex: 1,
+                      padding: 5,
+                      borderWidth: 1,
+                      
+                      borderColor: urlError ? "red" : theme.colors.border,
+                    }}
+                    placeholder={t("serverUrl")}
+                    value={urlInput}
+                    onChangeText={(v) => {
+                      setUrlInput(v);
+                      setUrlError(null);
+                      setGeneralError(null);
+                    }}
+                  />
+                  <ActionButton
+                    variant="secondary"
+                    icon="save"
+                    onPress={handleSaveSide}
+                    size="sm"
+                  />
+                </View>
+              </View>
+    
+              
+              <View style={{ minHeight: 5, justifyContent: "center" }}>
+                { firstError ? (
+                  <ThemedText style={{ color: "red", fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+                    {firstError}
+                  </ThemedText>
+                ) : (
+                  <ThemedText style={{ fontSize: 12, opacity: 0 }}> </ThemedText>
+                )}
+              </View>
+    
+              {/* Liste */}
+              <View style={{ gap: 10,marginTop: -10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    
+                  }}
+                >
+                  <H4>{t("savedServers")}</H4>
+    
+                  <ActionButton
+                    variant="secondary"
+                    icon="delete"
+                    onPress={handleDeleteSelected}
+                    size="sm"
+                    disabled={!selectedServer}
+                  />
+                </View>
+    
                 <SelectableList
+                  variant="secondary"
                   size="xs"
                   items={serverItems}
                   value={selectedServerId}
                   onChange={(id) => {
                     dispatch(selectServer(id));
-
+    
                     const s = servers.find((x) => x.id === id);
                     if (s) {
                       setEditMode(true);
@@ -436,7 +419,7 @@ export function ServerSettingsScreen() {
                     } else {
                       startAddNew();
                     }
-
+    
                     resetErrors();
                   }}
                   maxHeight={260}
@@ -444,19 +427,15 @@ export function ServerSettingsScreen() {
                   searchPlaceholder={t("search") ?? "Server suchen…"}
                   emptyText={t("noServers") ?? "Keine Server gefunden"}
                 />
+    
+                <ActionButton
+                  label={t("useServer")}
+                  variant="secondary"
+                  icon="check"
+                  onPress={handleUseServer}
+                  size="sm"
+                />
               </View>
-            </View>
-
-            <ActionButton
-              label={t("useServer")}
-              variant="secondary"
-              icon="check"
-              onPress={handleUseServer}
-              size="sm"
-            />
-          </View>
-        </ScrollView>
-      </View>
     </Screen>
   );
 }

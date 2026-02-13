@@ -56,7 +56,7 @@ export function UnauthenticatedSettings() {
         
                     
                       <View style={{ gap: 6 }}>
-                        <ThemedText>{t("color-scheme")}:</ThemedText>
+                        <ThemedText>{t("colorscheme")}:</ThemedText>
                         <Dropdown<"system" | "light" | "dark">
                           value={currentThemeValue}
                           options={themeOptions}
