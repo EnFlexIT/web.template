@@ -1,21 +1,30 @@
+// src/components/DataPermissionsDialog.tsx
+import React, { useMemo } from "react";
 import { Modal, Pressable } from "react-native";
 import { BlurView as BlurView_ } from "expo-blur";
-import { ThemedText } from "./themed/ThemedText";
-import { ThemedView } from "./themed/ThemedView";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { useTranslation } from "react-i18next";
+
+import { ThemedText } from "./themed/ThemedText";
+import { ThemedView } from "./themed/ThemedView";
+import { Dropdown } from "./ui-elements/Dropdown";
+
 import { useAppSelector } from "../hooks/useAppSelector";
-import { selectDataPermissions, setDataPermissions } from "../redux/slices/dataPermissionsSlice";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 
-const BlurView = withUnistyles(BlurView_);
+import { PERMISSIONS } from "../permissions/PermiossionGroup";
+import {
+  selectPermissionValues,
+  setPermissionValue,
+  acceptAll,
+  rejectOptional,
+  setHasSeenDialog,
+} from "../redux/slices/dataPermissionsSlice";
 
-const TEXT = `
-Wir verwenden Daten, um ihnen ein Optimales Erlebnis zu bieten.
-Dazu zählen Daten, die für den Betrieb der Seite notwendig sind, sowie solche, die zu Statistikzwecken, für Komforteinstellungen, oder zur Anzeige personalisierter Inhalte genutzt werden.
-Sie können selbst entscheiden, welche Kategorieren sie zulassen möchten.
-Bitte beachten sie, dass auf Basis ihrer Einstellungen womöglich nicht mehr alle Funktionalitäten der Seite zur Verfügung stehen
-`;
+import { selectLanguage, setLanguage } from "../redux/slices/languageSlice";
+
+const BlurView = withUnistyles(BlurView_);
 
 function HorizontalLine() {
   return <ThemedView style={[horizontalLineStyles.color]} />;
@@ -65,95 +74,139 @@ const rowStyles = StyleSheet.create(() => ({
 }));
 
 export function DataPermissionsDialog() {
-  const { accepted, comfort, mandatory, personalised, statistics, hasSeenDialog } =
-    useAppSelector(selectDataPermissions);
   const dispatch = useAppDispatch();
+
+  // ✅ i18n
+  const { t, i18n } = useTranslation(["Settings.PrivacySecurity", "Settings.Unauthenticated"]);
+
+  // ✅ Permissions state
+  const values = useAppSelector(selectPermissionValues);
+  const hasSeenDialog = useAppSelector((s) => s.dataPermissions.hasSeenDialog);
+
+  // ✅ language state (Redux)
+  const language = useAppSelector(selectLanguage);
 
   const visible = hasSeenDialog !== true;
 
-  const setPartial = (next: Partial<typeof initialValues>) => {
-    dispatch(
-      setDataPermissions({
-        accepted,
-        comfort,
-        mandatory: true,
-        personalised,
-        statistics,
-        hasSeenDialog,
-        ...next,
-      })
-    );
+  // Dropdown options
+  const languageOptions = useMemo(
+    () =>
+      ({
+        de: "Deutsch",
+        en: "English",
+      } as const),
+    []
+  );
+
+  // Keep i18n in sync when Redux language changes (optional safety)
+  React.useEffect(() => {
+    const lng = (language?.language as "de" | "en") ?? "de";
+    if (i18n.language !== lng) {
+      i18n.changeLanguage(lng);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language?.language]);
+
+  const togglePermission = (id: number, nextValue: boolean) => {
+    dispatch(setPermissionValue({ id, value: nextValue }));
   };
 
   const allesAkzeptieren = () => {
-    dispatch(
-      setDataPermissions({
-        accepted: true,
-        comfort: true,
-        mandatory: true,
-        personalised: true,
-        statistics: true,
-        hasSeenDialog: true,
-      })
-    );
+    dispatch(acceptAll());
+    dispatch(setHasSeenDialog(true));
+  };
+
+  // Optional: nur notwendige (falls du den Button später wieder einblenden willst)
+  const nurNotwendige = () => {
+    dispatch(rejectOptional());
+    dispatch(setHasSeenDialog(true));
   };
 
   const einstellungenSpeichern = () => {
-    dispatch(
-      setDataPermissions({
-        accepted: true,
-        comfort,
-        mandatory: true,
-        personalised,
-        statistics,
-        hasSeenDialog: true,
-      })
-    );
+    dispatch(setHasSeenDialog(true));
   };
 
   return (
     <Modal transparent visible={visible} animationType="fade">
       <BlurView style={styles.blurView}>
         <ThemedView style={styles.contentContainer}>
-          <ThemedView>
-            <ThemedText style={styles.title}>Wir verwenden Cookies!</ThemedText>
+          {/* Header: Title + Language Switch */}
+          <ThemedView style={styles.headerRow}>
+            <ThemedText style={styles.title}>
+              {t("privacy_settings_title", { defaultValue: "Datenschutz" })}
+            </ThemedText>
+
+            <ThemedView style={styles.langBox}>
+              <Dropdown<"de" | "en">
+                value={((language?.language as "de" | "en") ?? "de")}
+                options={languageOptions}
+                size="xs"
+                onChange={(lng) => {
+                  // ✅ 1) Redux
+                  dispatch(setLanguage({ language: lng }));
+                  // ✅ 2) i18n (sofort sichtbar)
+                  i18n.changeLanguage(lng);
+                }}
+              />
+            </ThemedView>
           </ThemedView>
 
+          {/* Description */}
           <ThemedView style={styles.textContainer}>
-            <ThemedText style={styles.text}>{TEXT}</ThemedText>
+            <ThemedText style={styles.text}>
+              {t("privacy_settings_description", {
+                defaultValue:
+                  "Auf Ihrem Gerät gespeicherte Informationen:",
+              })}
+            </ThemedText>
           </ThemedView>
 
+          {/* Switches */}
           <ThemedView style={styles.switchesContainer}>
-            <Row label="Mandatory" value={true} disabled />
-            <HorizontalLine />
+            {PERMISSIONS.map((p, idx) => {
+              const value = values[p.id] ?? p.defaultValue;
+              const disabled = !p.editable;
 
-            <Row
-              label="Comfort"
-              value={comfort}
-              onPress={() => setPartial({ comfort: !comfort })}
-            />
-            <HorizontalLine />
+              return (
+                <ThemedView key={p.id}>
+                  <Row
+                    // ✅ Minimal-change i18n: Katalog hat titleKey/descriptionKey
+                    label={t((p as any).titleKey ?? "", {
+                      defaultValue: (p as any).title ?? `Permission ${p.id}`,
+                    })}
+                    value={disabled ? true : value}
+                    disabled={disabled}
+                    onPress={() => togglePermission(p.id, !value)}
+                  />
 
-            <Row
-              label="Personalised"
-              value={personalised}
-              onPress={() => setPartial({ personalised: !personalised })}
-            />
-            <HorizontalLine />
+                  {/* Optional: Wenn du im Dialog auch descriptions anzeigen willst, entkommentieren:
+                  <ThemedText style={styles.permDesc}>
+                    {t((p as any).descriptionKey ?? "", {
+                      defaultValue: (p as any).description ?? "",
+                    })}
+                  </ThemedText>
+                  */}
 
-            <Row
-              label="Statistics"
-              value={statistics}
-              onPress={() => setPartial({ statistics: !statistics })}
-            />
+                  {idx < PERMISSIONS.length - 1 ? <HorizontalLine /> : null}
+                </ThemedView>
+              );
+            })}
           </ThemedView>
 
+          {/* Buttons */}
           <ThemedView style={styles.confirmContainer}>
             <Pressable onPress={allesAkzeptieren}>
-              <ThemedText>Alles akzeptieren</ThemedText>
+              <ThemedText>{t("accept_all", { defaultValue: "Alle akzeptieren" })}</ThemedText>
             </Pressable>
+
+            {/* Optional Button:
+            <Pressable onPress={nurNotwendige}>
+              <ThemedText>{t("cancel", { defaultValue: "Rückgängig" })}</ThemedText>
+            </Pressable>
+            */}
+
             <Pressable onPress={einstellungenSpeichern}>
-              <ThemedText>Einstellungen speichern</ThemedText>
+              <ThemedText>{t("apply", { defaultValue: "Bestätigen" })}</ThemedText>
             </Pressable>
           </ThemedView>
         </ThemedView>
@@ -176,6 +229,17 @@ const styles = StyleSheet.create((theme) => ({
     padding: 20,
     justifyContent: "space-between",
   },
+
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  langBox: {
+    minWidth: 140,
+  },
+
   title: {
     fontWeight: "bold",
     fontSize: 24,
@@ -189,16 +253,14 @@ const styles = StyleSheet.create((theme) => ({
   confirmContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
+    alignItems: "center",
   },
-  text: { fontWeight: "bold", }
-}));
+  text: { fontWeight: "bold" },
 
-const initialValues = {
-  accepted: false,
-  comfort: false,
-  mandatory: true,
-  personalised: false,
-  statistics: false,
-  hasSeenDialog: false,
-}
-;
+  // Optional description styling
+  permDesc: {
+    opacity: 0.8,
+    marginTop: 6,
+    paddingHorizontal: "30%",
+  },
+}));

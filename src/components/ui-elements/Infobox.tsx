@@ -42,7 +42,7 @@ export function Infobox({
       style={[
         ui.box,
         {
-          borderColor: toneColor,
+          borderColor: theme.colors.border,
           backgroundColor: softBg,
         },
         style,

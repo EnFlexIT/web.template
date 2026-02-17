@@ -1,83 +1,103 @@
+// src/redux/slices/dataPermissionsSlice.ts
+
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { RootState } from "../store";
+import {
+  DEFAULT_PERMISSION_VALUES,
+  PermissionId,
+  PERMISSIONS,
+} from "../../permissions/PermiossionGroup";
 
-const key = "dataPermissions" as const;
+const STORAGE_KEY = "dataPermissions";
 
-export interface DataPermissionsState {
-  accepted: boolean;
-  statistics: boolean;
-  comfort: boolean;
-  personalised: boolean;
-  mandatory: boolean;
-  hasSeenDialog: boolean; 
-}
+export type DataPermissionsState = {
+  values: Record<PermissionId, boolean>;
+  hasSeenDialog: boolean;
+};
 
 const initialState: DataPermissionsState = {
-  accepted: false,
-  comfort: false,
-  mandatory: true,
-  personalised: false,
-  statistics: false,
+  values: DEFAULT_PERMISSION_VALUES,
   hasSeenDialog: false,
 };
 
-const defaultDataPermissions: DataPermissionsState = { ...initialState };
-
 export const initializeDataPermissions = createAsyncThunk(
   "dataPermissions/initialize",
-  async () => {
-    const stored = await AsyncStorage.getItem(key);
-    if (!stored) return defaultDataPermissions;
+  async (): Promise<DataPermissionsState> => {
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+
+    if (!stored) return initialState;
 
     try {
-      const parsed = JSON.parse(stored) as Partial<DataPermissionsState>;
+      const parsed = JSON.parse(stored) as DataPermissionsState;
 
-   
       return {
-        ...defaultDataPermissions,
-        ...parsed,
-        mandatory: true,
+        values: {
+          ...DEFAULT_PERMISSION_VALUES,
+          ...parsed.values,
+        },
         hasSeenDialog: parsed.hasSeenDialog ?? false,
-      } as DataPermissionsState;
+      };
     } catch {
-      return defaultDataPermissions;
+      return initialState;
     }
   }
 );
 
-export const dataPermissionsSlice = createSlice({
+const dataPermissionsSlice = createSlice({
   name: "dataPermissions",
   initialState,
   reducers: {
-    setDataPermissions: (
+    setPermissionValue: (
       state,
-      { payload }: PayloadAction<DataPermissionsState>
+      action: PayloadAction<{ id: PermissionId; value: boolean }>
     ) => {
-      state.accepted = payload.accepted;
-      state.comfort = payload.comfort;
-      state.mandatory = true;
-      state.personalised = payload.personalised;
-      state.statistics = payload.statistics;
-      state.hasSeenDialog = payload.hasSeenDialog; 
+      const { id, value } = action.payload;
 
-      AsyncStorage.setItem(key, JSON.stringify(state));
+      const permission = PERMISSIONS.find((p) => p.id === id);
+      if (!permission || !permission.editable) return;
+
+      state.values[id] = value;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
+
+    acceptAll: (state) => {
+      PERMISSIONS.forEach((p) => {
+        if (p.editable) {
+          state.values[p.id] = true;
+        }
+      });
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
+
+    rejectOptional: (state) => {
+      PERMISSIONS.forEach((p) => {
+        state.values[p.id] = p.defaultValue;
+      });
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
+
+    setHasSeenDialog: (state, action: PayloadAction<boolean>) => {
+      state.hasSeenDialog = action.payload;
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(initializeDataPermissions.fulfilled, (state, { payload }) => {
-      state.accepted = payload.accepted;
-      state.comfort = payload.comfort;
-      state.mandatory = true;
-      state.personalised = payload.personalised;
-      state.statistics = payload.statistics;
-      state.hasSeenDialog = payload.hasSeenDialog ?? false; 
-
-      AsyncStorage.setItem(key, JSON.stringify(state));
+    builder.addCase(initializeDataPermissions.fulfilled, (state, action) => {
+      state.values = action.payload.values;
+      state.hasSeenDialog = action.payload.hasSeenDialog;
     });
   },
 });
 
-export const { setDataPermissions } = dataPermissionsSlice.actions;
-export const selectDataPermissions = (state: RootState) => state.dataPermissions;
+export const {
+  setPermissionValue,
+  acceptAll,
+  rejectOptional,
+  setHasSeenDialog,
+} = dataPermissionsSlice.actions;
+
+export const selectPermissionValues = (state: RootState) =>
+  state.dataPermissions.values;
+
 export default dataPermissionsSlice.reducer;

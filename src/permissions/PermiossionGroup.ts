@@ -1,43 +1,48 @@
 // src/permissions/permissionCatalog.ts
 
-export type PermissionId = 1 | 2 | 3 | 4;
+export type PermissionId = number;
 
 export type PermissionDefinition = {
   id: PermissionId;
-  title: string;
-  description: string;
+  titleKey: string;        
+  descriptionKey: string;  
   defaultValue: boolean;
+  editable: boolean;
 };
 
 export const PERMISSIONS: PermissionDefinition[] = [
   {
     id: 1,
-    title: "Notwendige",
-    description: "Erforderlich für den Betrieb der App (z. B. Login, Sicherheit, Speicherung).",
+    titleKey: "permissions.mandatory.title",
+    descriptionKey: "permissions.mandatory.description",
     defaultValue: true,
+    editable: false,
   },
   {
     id: 2,
-    title: "Statistik",
-    description: "Hilft uns zu verstehen, welche Funktionen genutzt werden, um die App zu verbessern.",
+    titleKey: "permissions.statistics.title",
+    descriptionKey: "permissions.statistics.description",
     defaultValue: false,
+    editable: true,
   },
   {
     id: 3,
-    title: "Komfort",
-    description: "Verbessert die Nutzererfahrung (z. B. Spracheinstellungen, Komfortfunktionen).",
+    titleKey: "permissions.comfort.title",
+    descriptionKey: "permissions.comfort.description",
     defaultValue: false,
+    editable: true,
   },
   {
     id: 4,
-    title: "Personalisierung",
-    description: "Personalisierte Inhalte und Empfehlungen basierend auf Nutzung und Einstellungen.",
+    titleKey: "permissions.personalised.title",
+    descriptionKey: "permissions.personalised.description",
     defaultValue: false,
+    editable: true,
   },
 ];
 
 export const DEFAULT_PERMISSION_VALUES: Record<PermissionId, boolean> =
-  PERMISSIONS.reduce((acc, p) => {
+  PERMISSIONS.reduce<Record<PermissionId, boolean>>((acc, p) => {
     acc[p.id] = p.defaultValue;
     return acc;
-  }, {} as Record<PermissionId, boolean>);
+  }, {});
