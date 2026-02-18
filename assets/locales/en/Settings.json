@@ -33,6 +33,10 @@
       "System Settings": {
       "title": "System Settings",
       "description": "System-wide configurations and management."
-    }
+    },
+      "appInfo": {
+      "title": "App Info",
+      "description": "View current version, check for updates, and reload."
+      }
 }
 }

@@ -9,6 +9,7 @@ import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
 import { isMenuEnabled } from "./featureFlags";
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
+import { AppInfoScreen } from "../../screens/AppInfoScreen";
 export type StaticMenuItem = {
   caption: string;
   menuID: number;
@@ -35,6 +36,7 @@ export function getStaticMenu(): StaticMenuItem[] {
 
     //Darstllung
     { caption: "Appearance", menuID: 3004, parentID: 3003, Screen: UnauthenticatedSettings },
+   
     // Kinder unter "personalized"
     { caption: "privacysettings", menuID: 3005, parentID: 3003, Screen: PrivacySettings },
     { caption: "changePassword", menuID: 3013, parentID: 3003, Screen: ChangePasswordScreen },
@@ -45,6 +47,8 @@ export function getStaticMenu(): StaticMenuItem[] {
 
      // Dev-Bereich
     { caption: "devHome", menuID: 3011, parentID: 3003, Screen: DevHomeScreen },
+     //appInfo
+    { caption: "appInfo", menuID: 3014, parentID: 3003, Screen: AppInfoScreen },
     
   ];
 

@@ -33,6 +33,10 @@
       "System Settings": {
       "title": "Systemeinstellungen",
       "description": "Systemweite Konfigurationen und Verwaltung."
+    },
+    "appInfo": {
+      "title": "App-Info",
+      "description": "Aktuelle Version anzeigen, Updates prüfen und neu laden."
     }
   }
 }
