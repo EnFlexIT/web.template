@@ -11,7 +11,8 @@
   "privacy": "Privacy",
   "privacysettings": "Privacy Settings",
   "databaseConnectionsAndSettings": "database",
-    "devHome": "Dev Home"
+  "devHome": "Dev Home",
+  "appInfo":"App Info"
 
 
 }

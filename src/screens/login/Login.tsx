@@ -8,6 +8,7 @@ import {
   TextInput as RNTextInput,
   View,
   StyleSheet as NativeStyleSheet,
+  Platform,
 } from "react-native";
 
 import { useUnistyles } from "react-native-unistyles";
@@ -108,6 +109,11 @@ export function LoginScreen() {
             const bearerToken = (www_authenticate ?? "").split(" ")[1];
 
             if (bearerToken) {
+               if (Platform.OS === "web")
+                 {
+                    sessionStorage.setItem("auth_user", username);
+                    sessionStorage.setItem("auth_pass", password);
+                 }
               dispatch(reduxLogin(bearerToken));
               await dispatch(initializeMenu());
               setLoginRequestStatus("successful");
