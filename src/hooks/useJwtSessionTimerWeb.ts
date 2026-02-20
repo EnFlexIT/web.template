@@ -6,9 +6,9 @@ import { getJwtRemainingMs } from "../util/jwtTime";
 type Options = {
   enabled: boolean;
   jwt: string | null;
-  warnMs: number; // z.B. 30_000
+  warnMs: number;
   onLogout: () => void;
-  onUserActive?: () => void; // hier triggerst du refreshJwtIfNeeded
+  onHeartbeat?: () => void; // Renew-Check 
 };
 
 export function useJwtSessionTimerWeb({
@@ -16,39 +16,44 @@ export function useJwtSessionTimerWeb({
   jwt,
   warnMs,
   onLogout,
-  onUserActive,
+  onHeartbeat,
 }: Options) {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [warning, setWarning] = useState(false);
+
   const lastActivityRef = useRef<number>(Date.now());
+  const lastHeartbeatRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled) return;
     if (Platform.OS !== "web") return;
-    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (typeof window === "undefined") return;
 
     const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
 
     const onActivity = () => {
-      // throttle: activity nur alle 2s als Trigger
-      const now = Date.now();
-      if (now - lastActivityRef.current < 2000) return;
-      lastActivityRef.current = now;
+      lastActivityRef.current = Date.now();
       setWarning(false);
-      onUserActive?.();
+      
     };
 
-    events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+    events.forEach((e) =>
+      window.addEventListener(e, onActivity, { passive: true })
+    );
 
     const onVis = () => {
-      if (document.visibilityState === "visible") onActivity();
+      if (document.visibilityState === "visible") {
+        lastActivityRef.current = Date.now();
+      }
     };
     document.addEventListener("visibilitychange", onVis);
 
     const tick = window.setInterval(() => {
+      if (!jwt) return;
+
       const remainingMs = getJwtRemainingMs(jwt);
 
-      if (!jwt || remainingMs <= 0) {
+      if (remainingMs <= 0) {
         setSecondsLeft(0);
         setWarning(false);
         onLogout();
@@ -57,6 +62,21 @@ export function useJwtSessionTimerWeb({
 
       setSecondsLeft(Math.ceil(remainingMs / 1000));
       setWarning(remainingMs <= warnMs);
+
+    
+      const now = Date.now();
+      const userRecentlyActive = now - lastActivityRef.current < 30_000;
+      const heartbeatCooldownPassed = now - lastHeartbeatRef.current > 10_000;
+
+      if (
+        onHeartbeat &&
+        userRecentlyActive &&
+        remainingMs <= warnMs &&
+        heartbeatCooldownPassed
+      ) {
+        lastHeartbeatRef.current = now;
+        onHeartbeat();
+      }
     }, 1000);
 
     return () => {
@@ -64,7 +84,7 @@ export function useJwtSessionTimerWeb({
       document.removeEventListener("visibilitychange", onVis);
       window.clearInterval(tick);
     };
-  }, [enabled, jwt, warnMs, onLogout, onUserActive]);
+  }, [enabled, jwt, warnMs, onLogout, onHeartbeat]);
 
   return { secondsLeft, warning };
 }

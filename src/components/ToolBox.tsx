@@ -19,7 +19,7 @@ import {
 } from "../redux/slices/baseModeSlice";
 
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
-import { refreshJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
+import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
 
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { Text } from "./stylistic/Text";
@@ -80,33 +80,38 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  // Wird bei User-Aktivität getriggert
-const onUserActive = useCallback(() => {
-  console.log("ACTIVE ✅");
-  dispatch(refreshJwtIfNeeded({ thresholdMs: 2 * 60 * 1000, cooldownMs: 10 * 1000 }));
-}, [dispatch]);
+  /**
+   * Wird vom Session-Timer regelmäßig aufgerufen (nicht bei jeder Mausbewegung)
+   * Prüft ob JWT bald abläuft und erneuert es ggf.
+   */
+  const onHeartbeat = useCallback(() => {
+    dispatch(
+      renewJwtIfNeeded({
+        thresholdMs: 2 * 60 * 1000,   // 2 Minuten vor Ablauf
+        cooldownMs: 15 * 1000,        // max alle 15 Sekunden renew versuchen
+      })
+    );
+  }, [dispatch]);
 
   const { secondsLeft, warning } = useJwtSessionTimerWeb({
     enabled: isWeb && showLogout,
     jwt,
-    warnMs: 30_000, // 30 Sekunden vorher Warnung
+    warnMs: 30_000,          // 30 Sekunden vorher Warnung
     onLogout: onAutoLogout,
-    onUserActive,
+    onHeartbeat,             // ✅ sauberer Renew-Trigger
   });
 
   const [popupOpen, setPopupOpen] = useState(false);
 
   useEffect(() => {
     if (!isWeb || !showLogout) return;
-
-    if (warning) setPopupOpen(true);
-    if (!warning) setPopupOpen(false);
+    setPopupOpen(warning);
   }, [warning, isWeb, showLogout]);
 
   const stayLoggedIn = useCallback(() => {
-    onUserActive(); 
+    onHeartbeat(); // renew prüfen
     setPopupOpen(false);
-  }, [onUserActive]);
+  }, [onHeartbeat]);
 
   const manualLogout = useCallback(() => {
     setPopupOpen(false);
@@ -127,13 +132,21 @@ const onUserActive = useCallback(() => {
             />
           </Pressable>
 
-          <Text style={[styles.timerText, warning ? styles.warningText : undefined]}>
+          <Text
+            style={[
+              styles.timerText,
+              warning ? styles.warningText : undefined,
+            ]}
+          >
             {formatMMSS(secondsLeft)}
           </Text>
 
           {popupOpen ? (
             <View style={styles.popup}>
-              <Text style={styles.popupTitle}>Sind Sie noch da?</Text>
+              <Text style={styles.popupTitle}>
+                Sind Sie noch da?
+              </Text>
+
               <Text style={styles.popupBody}>
                 Sie werden in{" "}
                 <Text style={styles.popupCountdown}>
@@ -142,7 +155,7 @@ const onUserActive = useCallback(() => {
                 automatisch abgemeldet.
               </Text>
 
-            
+             
             </View>
           ) : null}
         </View>
@@ -150,10 +163,7 @@ const onUserActive = useCallback(() => {
 
       {showLogout ? (
         <AntDesign
-          onPress={() => {
-            if (isLoggedIn) dispatch(logout());
-            else dispatch(logoutBaseMode());
-          }}
+          onPress={manualLogout}
           name="logout"
           size={24}
           style={[styles.color]}
@@ -197,7 +207,6 @@ const styles = StyleSheet.create((theme) => ({
     minWidth: 280,
     maxWidth: 340,
     padding: 12,
-    
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.background,
