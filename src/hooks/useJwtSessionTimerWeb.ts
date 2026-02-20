@@ -8,7 +8,7 @@ type Options = {
   jwt: string | null;
   warnMs: number;
   onLogout: () => void;
-  onHeartbeat?: () => void; // Renew-Check 
+  onHeartbeat?: () => void; // Renew N
 };
 
 export function useJwtSessionTimerWeb({
@@ -22,7 +22,8 @@ export function useJwtSessionTimerWeb({
   const [warning, setWarning] = useState(false);
 
   const lastActivityRef = useRef<number>(Date.now());
-  const lastHeartbeatRef = useRef<number>(0);
+  const warningStartedAtRef = useRef<number | null>(null);
+  const renewedThisWarningRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -32,21 +33,23 @@ export function useJwtSessionTimerWeb({
     const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
 
     const onActivity = () => {
-      lastActivityRef.current = Date.now();
-      setWarning(false);
-      
+      const now = Date.now();
+      lastActivityRef.current = now;
+
+   
+      if (
+        warningStartedAtRef.current &&
+        now > warningStartedAtRef.current &&
+        !renewedThisWarningRef.current
+      ) {
+        renewedThisWarningRef.current = true;
+        onHeartbeat?.();
+      }
     };
 
     events.forEach((e) =>
       window.addEventListener(e, onActivity, { passive: true })
     );
-
-    const onVis = () => {
-      if (document.visibilityState === "visible") {
-        lastActivityRef.current = Date.now();
-      }
-    };
-    document.addEventListener("visibilitychange", onVis);
 
     const tick = window.setInterval(() => {
       if (!jwt) return;
@@ -56,32 +59,34 @@ export function useJwtSessionTimerWeb({
       if (remainingMs <= 0) {
         setSecondsLeft(0);
         setWarning(false);
+        warningStartedAtRef.current = null;
+        renewedThisWarningRef.current = false;
         onLogout();
         return;
       }
 
       setSecondsLeft(Math.ceil(remainingMs / 1000));
-      setWarning(remainingMs <= warnMs);
 
-    
-      const now = Date.now();
-      const userRecentlyActive = now - lastActivityRef.current < 30_000;
-      const heartbeatCooldownPassed = now - lastHeartbeatRef.current > 10_000;
+      const isNowWarning = remainingMs <= warnMs;
+      setWarning(isNowWarning);
 
-      if (
-        onHeartbeat &&
-        userRecentlyActive &&
-        remainingMs <= warnMs &&
-        heartbeatCooldownPassed
-      ) {
-        lastHeartbeatRef.current = now;
-        onHeartbeat();
+      // Warnphase beginnt
+      if (isNowWarning && !warningStartedAtRef.current) {
+        warningStartedAtRef.current = Date.now();
+        renewedThisWarningRef.current = false;
+      }
+
+      // Warnphase endet (durch Renew)
+      if (!isNowWarning) {
+        warningStartedAtRef.current = null;
+        renewedThisWarningRef.current = false;
       }
     }, 1000);
 
     return () => {
-      events.forEach((e) => window.removeEventListener(e, onActivity as any));
-      document.removeEventListener("visibilitychange", onVis);
+      events.forEach((e) =>
+        window.removeEventListener(e, onActivity as any)
+      );
       window.clearInterval(tick);
     };
   }, [enabled, jwt, warnMs, onLogout, onHeartbeat]);
