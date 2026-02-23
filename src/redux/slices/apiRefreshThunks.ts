@@ -3,11 +3,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootState } from "../store";
 import { setJwtLocal } from "./apiSlice";
 import { getJwtRemainingMs } from "../../util/jwtTime";
-import { extractJwtFromWwwAuthenticate } from "../../util/jwtHeader";
 
 const jwtKey = "jwt";
-
 let lastRenewAttempt = 0;
+
+function extractJwtFromBearerString(body: unknown): string | null {
+  if (typeof body !== "string") return null;
+  const m = body.match(/Bearer\s+(.+)/i);
+  return m?.[1]?.trim() ?? null;
+}
 
 export const renewJwtIfNeeded = createAsyncThunk<
   void,
@@ -35,18 +39,16 @@ export const renewJwtIfNeeded = createAsyncThunk<
     lastRenewAttempt = now;
 
     try {
-   
-      const response = await awb_rest_api.adminsApi.infoGet();
-    
+     
+      const response = await awb_rest_api.userApi.loginUser();
 
-      const newJwt = extractJwtFromWwwAuthenticate(response.headers);
-
+      const newJwt = extractJwtFromBearerString(response.data);
       if (!newJwt) return;
 
       thunkAPI.dispatch(setJwtLocal(newJwt));
       await AsyncStorage.setItem(jwtKey, newJwt);
 
-      console.log("JWT renewed successfully ");
+      console.log("JWT renewed successfully");
     } catch (e) {
       console.warn("JWT renew failed", e);
     }

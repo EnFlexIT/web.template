@@ -836,6 +836,40 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
     return {
         /**
          * 
+         * @summary Health check endpoint
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        aliveGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/alive`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1066,6 +1100,18 @@ export const InfoApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
+         * @summary Health check endpoint
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async aliveGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.aliveGet(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['InfoApi.aliveGet']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1151,6 +1197,15 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
     return {
         /**
          * 
+         * @summary Health check endpoint
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        aliveGet(options?: RawAxiosRequestConfig): AxiosPromise<string> {
+            return localVarFp.aliveGet(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1216,6 +1271,17 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
  * @extends {BaseAPI}
  */
 export class InfoApi extends BaseAPI {
+    /**
+     * 
+     * @summary Health check endpoint
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof InfoApi
+     */
+    public aliveGet(options?: RawAxiosRequestConfig) {
+        return InfoApiFp(this.configuration).aliveGet(options).then((request) => request(this.axios, this.basePath));
+    }
+
     /**
      * 
      * @summary get logs of specific type
@@ -1333,8 +1399,8 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
-         * @summary Logs user into the system
+         * Returns \"Bearer <token>\" if the current authentication is valid.
+         * @summary Returns (renews) the current bearer token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1351,9 +1417,9 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            // authentication basicAuth required
-            // http basic authentication required
-            setBasicAuthToObject(localVarRequestOptions, configuration)
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -1424,8 +1490,8 @@ export const UserApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
-         * @summary Logs user into the system
+         * Returns \"Bearer <token>\" if the current authentication is valid.
+         * @summary Returns (renews) the current bearer token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1468,8 +1534,8 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.changePassword(passwordChange, options).then((request) => request(axios, basePath));
         },
         /**
-         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
-         * @summary Logs user into the system
+         * Returns \"Bearer <token>\" if the current authentication is valid.
+         * @summary Returns (renews) the current bearer token
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1508,8 +1574,8 @@ export class UserApi extends BaseAPI {
     }
 
     /**
-     * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
-     * @summary Logs user into the system
+     * Returns \"Bearer <token>\" if the current authentication is valid.
+     * @summary Returns (renews) the current bearer token
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UserApi

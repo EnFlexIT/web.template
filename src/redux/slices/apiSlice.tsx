@@ -265,7 +265,30 @@ export const setIpAsync = createAsyncThunk(
     return { ip, isPointingToServer, authenticationMethod, isBaseMode };
   },
 );
+export const refreshServerStatus = createAsyncThunk(
+  "api/refreshServerStatus",
+  async (_, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
 
+    const ip = state.api.ip;
+    const jwt = state.api.jwt;
+
+    const { isPointingToServer, authenticationMethod, isBaseMode } =
+      await detectServerAndMode(ip);
+
+    thunkAPI.dispatch(
+      setConnectionLocal({
+        ip,
+        jwt,
+        isPointingToServer,
+        authenticationMethod,
+        isBaseMode,
+      }),
+    );
+
+    return { isPointingToServer, authenticationMethod, isBaseMode };
+  },
+);
 export const login = createAsyncThunk(
   "api/login",
   async (jwt: string, thunkAPI) => {

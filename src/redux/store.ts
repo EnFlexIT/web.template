@@ -8,7 +8,7 @@ import readySlice from "./slices/readySlice";
 import { OrganizationsData } from "./slices/organizationsSlice";
 import baseModeReducer from "./slices/baseModeSlice";
 import serversReducer from "./slices/serverSlice";
-
+import connectivityReducer from "./slices/connectivitySlice";
 export const store = configureStore({
   reducer: {
     language: languageReducer,
@@ -19,7 +19,8 @@ export const store = configureStore({
     organizations: OrganizationsData.slice.reducer,
     ready: readySlice,
     baseMode: baseModeReducer,
-   servers: serversReducer,
+    servers: serversReducer,
+    connectivity: connectivityReducer,
   },
 });
 

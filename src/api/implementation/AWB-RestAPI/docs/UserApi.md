@@ -5,7 +5,7 @@ All URIs are relative to *https://localhost:8080/api*
 |Method | HTTP request | Description|
 |------------- | ------------- | -------------|
 |[**changePassword**](#changepassword) | **POST** /user/pswd-change | Changes the user password|
-|[**loginUser**](#loginuser) | **GET** /user/login | Logs user into the system|
+|[**loginUser**](#loginuser) | **GET** /user/login | Returns (renews) the current bearer token|
 |[**logout**](#logout) | **GET** /user/logout | Logs out the user from the system|
 
 # **changePassword**
@@ -64,7 +64,7 @@ void (empty response body)
 # **loginUser**
 > string loginUser()
 
-Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
+Returns \"Bearer <token>\" if the current authentication is valid.
 
 ### Example
 
@@ -90,7 +90,7 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-[basicAuth](../README.md#basicAuth)
+[bearerAuth](../README.md#bearerAuth)
 
 ### HTTP request headers
 
@@ -101,8 +101,9 @@ This endpoint does not have any parameters.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | successfully logged-in |  -  |
-|**0** | Invalid username/password supplied |  -  |
+|**200** | successfully logged-in / token renewed |  -  |
+|**401** | Unauthorized |  -  |
+|**0** | Invalid request |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

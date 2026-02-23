@@ -6,15 +6,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
-
+import { checkAlive } from "./redux/slices/connectivitySlice";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
+import { refreshServerStatus } from "./redux/slices/apiSlice";
 
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
 import { useIsWide } from "./hooks/useIsWide";
-
+import { OfflineOverlay } from "./screens/OfflineOverlay";
 import { store } from "./redux/store";
 import { initializeLanguage } from "./redux/slices/languageSlice";
 import { initializeTheme } from "./redux/slices/themeSlice";
@@ -79,9 +80,22 @@ function getNumericIdFromPath(pathname: string): number | null {
    ========================= */
 
 function RootStack() {
+  
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
+useEffect(() => {
+  // nur auf Login-Screen / nicht eingeloggt
+  const id = setInterval(() => {
+    dispatch(refreshServerStatus());
+    dispatch(checkAlive({ silent: true }));
+  }, 30000);
 
+  // direkt beim Mount einmal
+  dispatch(refreshServerStatus());
+  dispatch(checkAlive({ silent: true }));
+
+  return () => clearInterval(id);
+}, [dispatch]);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
   const isWide = useIsWide();
@@ -206,11 +220,13 @@ function RootStack() {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator />
+
       </View>
     );
   }
 
   return (
+    
     <NavigationContainer
       theme={navTheme}
       linking={{
@@ -227,9 +243,11 @@ function RootStack() {
       fallback={
         <View style={styles.loadingScreen}>
           <ActivityIndicator />
+          
         </View>
       }
     >
+       
       <Drawer.Navigator
         screenOptions={{
           drawerType: isWide ? "permanent" : "front",
@@ -250,6 +268,7 @@ function RootStack() {
         screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
+             <OfflineOverlay />
             {children}
           </View>
         )}
@@ -292,6 +311,7 @@ function RootStack() {
             <Drawer.Screen name="Login" component={LoginScreen} />
           </Drawer.Group>
         )}
+      
       </Drawer.Navigator>
     </NavigationContainer>
   );
@@ -305,6 +325,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <RootStack />
+
     </Provider>
   );
 }

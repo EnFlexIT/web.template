@@ -197,18 +197,14 @@ export function LoginScreen() {
           />
 
           {/* Login Button */}
-          {isPointingToServer ? (
+         
             <ActionButton
               label={t("login")}
               variant="secondary"
               onPress={login}
               size="xs"
             />
-          ) : (
-            <View style={[styles.border, styles.padding, styles.loginContainer]}>
-              <H4>{t("unableToFindServer")}</H4>
-            </View>
-          )}
+        
         </View>
 
         {/* ADVANCED */}
