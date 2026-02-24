@@ -1,4 +1,12 @@
 {
     "notAvailableTitle": "Ups",
-    "notAvailableMessage": "Diese Seite ist nicht erreichbar."
+    "notAvailableMessage": "Diese Seite ist nicht erreichbar.",
+    "OfflineMessage": "Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "offlineTitle": "server ist nicht erreichbar",
+    "onlineTitle": "server ist wieder erreichbar",
+    "onlineMessage": "Ihre Verbindung wurde wiederhergestellt. Sie können jetzt fortfahren.",
+    "checking": "Überprüfe...",
+    "refresh": "Aktualisieren"
+    
+    
 }
