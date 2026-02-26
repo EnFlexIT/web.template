@@ -13,7 +13,7 @@ import { ThemedText } from "../components/themed/ThemedText";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { selectApi } from "../redux/slices/apiSlice";
 
-const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersion";
+const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
 const API_PREFIX = "/api";
 
 function normalizeBaseUrl(url: string) {
@@ -29,7 +29,7 @@ type ApiVersion = {
   major?: number;
   minor?: number;
   micro?: number;
-  qualifier?: string;
+  qualifier?: string; // build / timestamp etc.
 };
 
 function fmtRelease(v: ApiVersion | null | undefined) {
@@ -44,6 +44,10 @@ function fmtFull(v: ApiVersion | null | undefined) {
   return q ? `${r}-${q}` : r;
 }
 
+/**
+ * Expected server payload contains SoftwareComponentList (or softwareComponentList)
+ * We prefer componentType "WEBAPP". Fallback to first.
+ */
 function extractServerWebApp(data: any): {
   bundleName: string;
   version: ApiVersion;
@@ -52,7 +56,6 @@ function extractServerWebApp(data: any): {
   const list = data?.SoftwareComponentList ?? data?.softwareComponentList;
   if (!Array.isArray(list) || list.length === 0) return null;
 
-  // bevorzugt WEBAPP
   const item =
     list.find((x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP") ??
     list[0];
@@ -87,6 +90,19 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   }
 }
 
+/**
+ * Hard reload for Web, with cache-buster query params to avoid stale index.html/assets.
+ * Uses replace() to prevent going "back" to the old version.
+ */
+function hardReloadWeb(cacheKey: string) {
+  if (typeof window === "undefined") return;
+
+  const u = new URL(window.location.href);
+  u.searchParams.set("_v", cacheKey); // version-based buster
+  u.searchParams.set("_ts", String(Date.now())); // extra safety
+  window.location.replace(u.toString());
+}
+
 export function AppInfoScreen() {
   const { t } = useTranslation(["Settings.AppInfo"]);
   const api = useAppSelector(selectApi);
@@ -94,7 +110,6 @@ export function AppInfoScreen() {
   const ip = api.ip;
   const jwt = api.jwt;
 
- 
   const intervalRef = useRef<any>(null);
 
   const [serverBundle, setServerBundle] = useState<string>("-");
@@ -105,8 +120,6 @@ export function AppInfoScreen() {
   const [updateStatus, setUpdateStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
 
- 
-
   const checkNow = useCallback(async () => {
     if (!ip) return;
 
@@ -114,12 +127,12 @@ export function AppInfoScreen() {
     setLastCheckedAt(new Date().toLocaleString());
 
     const query = new URLSearchParams();
-    query.set("_ts", String(Date.now())); // cache-buster
+    query.set("_ts", String(Date.now())); // cache-buster for the API call
 
     const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
     const data = await fetchJsonNoCache({ url, jwt });
 
-    // Netz-Fehler
+    // Network error
     if (data === null) {
       setUpdateStatus("Network error");
       setServerBundle("-");
@@ -129,9 +142,9 @@ export function AppInfoScreen() {
       return;
     }
 
-    // HTTP Error
-    if (data?.__status) {
-      const st = Number(data.__status);
+    // HTTP error
+    if ((data as any)?.__status) {
+      const st = Number((data as any).__status);
       setUpdateStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
       setServerBundle("-");
       setServerRelease("-");
@@ -151,18 +164,19 @@ export function AppInfoScreen() {
     }
 
     const release = fmtRelease(parsed.version);
-    const full = fmtFull(parsed.version);
+    const full = fmtFull(parsed.version); // IMPORTANT: compare FULL (includes qualifier/build)
 
     setServerBundle(parsed.bundleName || "-");
     setServerRelease(release);
     setServerFull(full);
 
+    // read stored baseline/accepted
     const acceptedStored = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
 
     if (!acceptedStored) {
-      // erstes Mal -> akzeptieren, aber kein "Update" (ist baseline)
-      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, release);
-      setLastAccepted(release);
+      // first run -> store baseline; do NOT reload
+      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
+      setLastAccepted(full);
       setUpdateStatus("OK (baseline stored)");
       setIsChecking(false);
       return;
@@ -170,19 +184,20 @@ export function AppInfoScreen() {
 
     setLastAccepted(acceptedStored);
 
-    if (acceptedStored !== release) {
-      setUpdateStatus(`Update detected: ${acceptedStored} → ${release}`);
+    // compare FULL, because server uses build timestamp (qualifier)
+    if (acceptedStored !== full) {
+      setUpdateStatus(`Update detected: ${acceptedStored} → ${full}`);
 
-      // akzeptieren (damit wir nicht in einer Reload-Schleife hängen)
-      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, release);
+      // store new accepted first to avoid reload loops
+      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
 
-      // Web: sofort reload erzwingen
+      // Web: hard reload whole page
       if (Platform.OS === "web" && typeof window !== "undefined") {
-        window.location.reload();
-        return;
+        hardReloadWeb(full);
+        return; // stop here
       }
 
-     
+      // Native: (optional) you could show a message, or trigger some navigation reset
       setIsChecking(false);
       return;
     }
@@ -191,7 +206,7 @@ export function AppInfoScreen() {
     setIsChecking(false);
   }, [ip, jwt]);
 
-  // beim Mount: einmal prüfen
+  // On mount: load lastAccepted and check once
   useEffect(() => {
     (async () => {
       const acceptedRaw = await AsyncStorage.getItem(LAST_ACCEPTED_KEY);
@@ -201,13 +216,13 @@ export function AppInfoScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pflicht: regelmäßiger Check (kein Toggle mehr)
+  // Regular check
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
       checkNow();
-    }, 5 * 60 * 1000); // alle 5 Minuten (anpassbar)
+    }, 5 * 60 * 1000); // every 5 minutes
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -250,6 +265,14 @@ export function AppInfoScreen() {
       };
     }
 
+    if (String(updateStatus).toLowerCase().includes("http")) {
+      return {
+        tone: "warning" as const,
+        title: "HTTP issue",
+        subtitle: `Server returned: ${updateStatus}`,
+      };
+    }
+
     return {
       tone: "info" as const,
       title: "OK",
@@ -262,17 +285,19 @@ export function AppInfoScreen() {
       <Card>
         <View>
           <ThemedText style={s.title}>{t("title", "App-Info")}</ThemedText>
+
           <View style={s.block}>
             <ThemedText style={s.blockTitle}>{t("serverWeb.title", "Web-App")}</ThemedText>
+
             <Row label={t("serverWeb.bundle", "Bundle")} value={serverBundle} />
             <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
             <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
+
             <Row label={t("status", "Update Status")} value={updateStatus} />
             <Row label={t("lastAccepted", "Last accepted")} value={lastAccepted} />
             <Row label={t("lastChecked", "Last checked")} value={lastCheckedAt} />
           </View>
 
-          {/* Optional Debug Button */}
           <View style={s.btnRow}>
             <ActionButton
               label={isChecking ? t("checkNow_loading", "Prüfe…") : t("checkNow", "Jetzt überprüfen")}
@@ -303,7 +328,6 @@ function Row(props: { label: string; value: string }) {
 
 const s = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "700" },
-  sub: { fontSize: 12, opacity: 0.7 },
 
   block: { padding: 14, gap: 10 },
   blockTitle: { fontSize: 16, fontWeight: "700" },
