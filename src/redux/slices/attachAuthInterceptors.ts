@@ -3,8 +3,6 @@ import axios, { type AxiosError, type AxiosInstance } from "axios";
 import { store } from "../store";
 import { logout } from "./apiSlice";
 
-// import { setOfflineLocal } from "./connectivitySlice";
-
 let installed = false;
 let inFlightLogout = false;
 
@@ -19,37 +17,47 @@ function isNetworkError(err: AxiosError) {
   );
 }
 
+function normalizeUrl(url?: string) {
+  return (url ?? "").toLowerCase();
+}
+
+
+function isSoft401Endpoint(url?: string): boolean {
+  const u = normalizeUrl(url);
+
+  return (
+    u.includes("/api/alive") ||
+    u.includes("/api/version") ||
+    u.includes("/api/app/settings/get")
+  );
+}
+
+/**
+ * Renew/Login Endpoint:
+ * - Wenn das 401 ist, ist die Session praktisch tot => Logout ist OK.
+ * - Also NICHT ignorieren.
+ */
+function isRenewLoginEndpoint(url?: string): boolean {
+  const u = normalizeUrl(url);
+  return u.includes("/api/user/login");
+}
+
 function forceRedirectToLogin() {
-  if (typeof window !== "undefined") {
-    if (window.location.pathname !== "/login") {
-      window.location.replace("/login");
-    }
+  if (typeof window === "undefined") return;
+
+  // wenn du /login route hast
+  if (window.location.pathname !== "/login") {
+    window.location.replace("/login");
   }
 }
 
-
-function shouldIgnore401(url?: string): boolean {
-  if (!url) return false;
-
-  // normalize (relative/absolute)
-  const u = url.toLowerCase();
-
-  
-  const ignore = [
-    "/api/alive",
-    "/api/app/settings/get",
-    "/api/user/login",
-    "/dc/menu",
-  ];
-
-  return ignore.some((p) => u.includes(p));
-}
-
-function doLogout(reason: "401") {
+function doLogout(reason: "401" | "network") {
   if (inFlightLogout) return;
   inFlightLogout = true;
 
   store.dispatch(logout());
+
+  // Web: direkt zur Login-Seite
   forceRedirectToLogin();
 
   setTimeout(() => {
@@ -64,25 +72,42 @@ function attach(instance: AxiosInstance) {
     (res) => res,
     (err: AxiosError) => {
       const status = err.response?.status;
-      const network = isNetworkError(err);
 
+      // URL aus config holen (OpenAPI/axios hängt sie dort rein)
       const cfg = err.config as any;
       const url: string | undefined =
         cfg?.url || err.response?.config?.url || undefined;
 
-      if (network) {
-      
+      // 1) Network errors: KEIN Logout (sonst nervig)
+      if (isNetworkError(err)) {
+        // OPTIONAL: offline state setzen
+        // store.dispatch(
+        //   setOfflineLocal({ error: "Netzwerkfehler / Server nicht erreichbar" }),
+        // );
+
         return Promise.reject(err);
       }
 
+      // 2) 401 Handling
       if (status === 401) {
-        if (!shouldIgnore401(url)) {
-          doLogout("401");
+        // a) Soft endpoints (alive/version/settings/get) => NICHT logouten
+        if (isSoft401Endpoint(url)) {
+          return Promise.reject(err);
         }
+
+        // b) Renew/Login endpoint => wenn 401 => Session kaputt => logout
+        if (isRenewLoginEndpoint(url)) {
+          doLogout("401");
+          return Promise.reject(err);
+        }
+
+        // c) Alle anderen 401 => logout
+        doLogout("401");
+        return Promise.reject(err);
       }
 
       return Promise.reject(err);
-    }
+    },
   );
 }
 
