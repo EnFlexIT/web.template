@@ -17,7 +17,7 @@ export function FactorySettingsTab() {
     const [password, setPassword] = useState("•••");
 
     return (
-        <Screen>
+        
         <View >
 
 
@@ -104,6 +104,6 @@ export function FactorySettingsTab() {
             </View>
 
         </View>
-        </Screen>
+        
     );
 }

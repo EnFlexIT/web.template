@@ -7,7 +7,7 @@ import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
-import { AppInfoScreen } from "../../screens/update/AppInfoScreen";
+import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
 
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
@@ -138,7 +138,7 @@ export function getStaticMenu(): StaticMenuItem[] {
       caption: "appInfo", 
       menuID: 3014, 
       parentID: 3003, 
-      Screen: AppInfoScreen 
+      Screen: UpdateWebAppTab 
     },
   ];
 

@@ -38,7 +38,7 @@ export function GeneralSettingsTab() {
   }, [dbSystem, database, params]);
 
   return (
-    <Screen>
+    
       <View style={styles.container}>
         {/* Apply to all */}
         <Checkbox
@@ -101,7 +101,7 @@ export function GeneralSettingsTab() {
           />
         </View>
       </View>
-    </Screen>
+   
   );
 }
 

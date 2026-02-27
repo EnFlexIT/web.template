@@ -9,7 +9,9 @@ import { isTabEnabled } from "./tabFeatureFlags";
 import { DerbyNetworkServerTab } from "../../screens/settings/database/DerbyNetworkServerTab";
 import { FactorySettingsTab } from "../../screens/settings/database/FactorySettingsTab";
 import { GeneralSettingsTab } from "../../screens/settings/database/GeneralSettingsTab";
-
+import { UpdateGeneralTab } from "../../screens/update/tabs/UpdateGeneralTab";
+import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
+import { UpdateBackendTab } from "../../screens/update/tabs/UpdateBackendTab";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 export type StaticTabItem = {
@@ -47,8 +49,34 @@ export const STATIC_TABS: StaticTabItem[] = [
     position: 3,
     Content: DerbyNetworkServerTab,
   },
+  /**
+   * ============================================================
+   * Update Menü (menuID 3014 = appInfo)
+   * ============================================================
+   */
+  {
+    menuID: 3014,
+    tabKey: "general",
+    caption: "General",
+    position: 1,
+    Content: UpdateGeneralTab,
+  },
+  {
+    menuID: 3014,
+    tabKey: "webapp",
+    caption: "Web-App",
+    position: 2,
+    Content: UpdateWebAppTab,
+  },
+  {
+    menuID: 3014,
+    tabKey: "backend",
+    caption: "Backend",
+    position: 3,
+    Content: UpdateBackendTab,
+  },
 
-  // ✅ später neue Tabs hinzu:
+  
   // { menuID: 3010, tabKey: "newTab", caption: "New Tab", position: 4, featureID: 5002, Content: NewTabComponent },
 ];
 

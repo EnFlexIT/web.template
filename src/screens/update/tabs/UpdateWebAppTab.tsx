@@ -4,14 +4,14 @@ import { Platform, StyleSheet, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
-import { Screen } from "../../components/Screen";
-import { Card } from "../../components/ui-elements/Card";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { Infobox } from "../../components/ui-elements/Infobox";
-import { ThemedText } from "../../components/themed/ThemedText";
+import { Screen } from "../../../components/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { Infobox } from "../../../components/ui-elements/Infobox";
+import { ThemedText } from "../../../components/themed/ThemedText";
 
-import { useAppSelector } from "../../hooks/useAppSelector";
-import { selectApi } from "../../redux/slices/apiSlice";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectApi } from "../../../redux/slices/apiSlice";
 
 const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
 const API_PREFIX = "/api";
@@ -97,7 +97,7 @@ function hardReloadWeb(cacheKey: string) {
   window.location.replace(u.toString());
 }
 
-export function AppInfoScreen() {
+export function UpdateWebAppTab() {
   const { t } = useTranslation(["Settings.AppInfo"]);
   const api = useAppSelector(selectApi);
 
@@ -275,15 +275,12 @@ export function AppInfoScreen() {
   })();
 
   return (
-    <Screen>
+    
       <Card>
         <View>
-          <ThemedText style={s.title}>{t("title", "App-Info")}</ThemedText>
+          <ThemedText style={s.title}>{t("serverWeb.title", "Web-App")}</ThemedText>
 
           <View style={s.block}>
-            <ThemedText style={s.blockTitle}>{t("serverWeb.title", "Web-App")}</ThemedText>
-
-           
             <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
             <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
             <Row label={t("status", "Update Status")} value={updateStatus} />
@@ -305,7 +302,7 @@ export function AppInfoScreen() {
           </View>
         </View>
       </Card>
-    </Screen>
+    
   );
 }
 

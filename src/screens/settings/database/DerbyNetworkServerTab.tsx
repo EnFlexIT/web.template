@@ -28,7 +28,7 @@ export function DerbyNetworkServerTab() {
     ];
 
     return (
-        <Screen>
+    
         <View >
 
             <Checkbox
@@ -149,6 +149,6 @@ export function DerbyNetworkServerTab() {
             </Modal>
 
         </View>
-        </Screen>
+       
     );
 }
