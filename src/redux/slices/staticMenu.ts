@@ -1,56 +1,163 @@
 import { ComponentClass, FunctionComponent } from "react";
 
+// Screens
 import { SettingsScreen } from "../../screens/Settings";
 import { UnauthenticatedSettings } from "../../screens/settings/Unauthenticated-Settings";
 import { PrivacySettings } from "../../screens/settings/PrivacySettings";
-import { DatabaseConnectionsSettings } from "../../screens/settings/DatabaseConnectionsSettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
-import { isMenuEnabled } from "./featureFlags";
-import { MenuHubScreen } from "../../screens/MenuHubScreen";
 import { AppInfoScreen } from "../../screens/update/AppInfoScreen";
+
+// Hub
+import { MenuHubScreen } from "../../screens/MenuHubScreen";
+
+// Logic
+import { isMenuEnabled } from "./featureFlags";
+
+
+import { withAutoTabs } from "../../components/config/tabAuto";
+
 export type StaticMenuItem = {
   caption: string;
   menuID: number;
   parentID?: number;
   position?: number;
   Screen: ComponentClass<any> | FunctionComponent<any>;
- 
 };
 
-/**
- *  Statische Menüpunkte, die immer existieren (BaseMode + normal)
- * KEIN Redux Import hier -> vermeidet Require Cycle
- */
 export function getStaticMenu(): StaticMenuItem[] {
+  /**
+   * ============================================================
+   * ROOT LEVEL (Hauptbereiche der App)
+   * ============================================================
+   * Diese Einträge sind oberste Navigationsebenen.
+   * Sie sind KEINE Tabs.
+   */
   const items: StaticMenuItem[] = [
-    { caption: "settings", menuID: 3003, Screen: SettingsScreen },
+    { 
+      caption: "settings", 
+      menuID: 3003, 
+      Screen: SettingsScreen 
+    },
 
-    
+    /**
+     * ============================================================
+     * HUB SCREEN (Ordner-Ebene)
+     * ============================================================
+     * MenuHubScreen zeigt alle Kinder (parentID === menuID).
+     * Das ist vergleichbar mit einem Ordner.
+     * Diese Einträge werden NIE zu Tabs umgewandelt.
+     */
+    { 
+      caption: "System Settings", 
+      menuID: 3021, 
+      parentID: 3003, 
+      Screen: MenuHubScreen 
+    },
 
-     //  Ordner -> Hub Screen (ein Screen für alle)
-    //{ caption: "Personal Settings", menuID: 3020, parentID: 3003, Screen: MenuHubScreen },
-    { caption: "System Settings", menuID: 3021, parentID: 3003, Screen: MenuHubScreen },
+    /**
+     * ============================================================
+     * UNTERPUNKTE DIREKT UNTER SETTINGS (Normale Screens)
+     * ============================================================
+     * Diese Einträge sind klassische Screens.
+     * Falls für deren menuID Tabs existieren,
+     * wird Screen automatisch durch TabScreen ersetzt.
+     */
+    { 
+      caption: "Appearance", 
+      menuID: 3004, 
+      parentID: 3003, 
+      Screen: UnauthenticatedSettings 
+    },
 
+    { 
+      caption: "privacysettings", 
+      menuID: 3005, 
+      parentID: 3003, 
+      Screen: PrivacySettings 
+    },
 
-    //Darstllung
-    { caption: "Appearance", menuID: 3004, parentID: 3003, Screen: UnauthenticatedSettings },
-   
-    // Kinder unter "personalized"
-    { caption: "privacysettings", menuID: 3005, parentID: 3003, Screen: PrivacySettings },
-    { caption: "changePassword", menuID: 3013, parentID: 3003, Screen: ChangePasswordScreen },
+    { 
+      caption: "changePassword", 
+      menuID: 3013, 
+      parentID: 3003, 
+      Screen: ChangePasswordScreen 
+    },
 
-    // Kinder unter "systemsettings"
-    { caption: "serverSettings", menuID: 3012, parentID: 3021, Screen: ServerSettingsScreen },
-    { caption: "databaseConnectionsAndSettings", menuID: 3010, parentID: 3021, Screen: DatabaseConnectionsSettings },
+    /**
+     * ============================================================
+     * UNTERPUNKTE VON "System Settings"
+     * ============================================================
+     * Diese befinden sich im Hub (parentID: 3021).
+     * 
+     * Wichtig:
+     * Wenn für eine menuID Tabs in staticTabs.tsx existieren,
+     * wird Screen automatisch zu TabScreen.
+     */
 
-     // Dev-Bereich
-    { caption: "devHome", menuID: 3011, parentID: 3003, Screen: DevHomeScreen },
-     //appInfo
-    { caption: "appInfo", menuID: 3014, parentID: 3003, Screen: AppInfoScreen },
-    
+    { 
+      caption: "serverSettings", 
+      menuID: 3012, 
+      parentID: 3021, 
+      Screen: ServerSettingsScreen 
+    },
+
+    /**
+     * ============================================================
+     * TAB-BEREICH (Automatisch TabScreen)
+     * ============================================================
+     * Dieser Menüpunkt bekommt Tabs,
+     * sobald in staticTabs.tsx Einträge mit menuID: 3010 existieren.
+     *
+     * Wir setzen hier absichtlich einen normalen Screen als Fallback.
+     * withAutoTabs() ersetzt ihn automatisch durch TabScreen,
+     * wenn Tabs vorhanden sind.
+     */
+    { 
+      caption: "databaseConnectionsAndSettings", 
+      menuID: 3010, 
+      parentID: 3021, 
+      Screen: ServerSettingsScreen 
+    },
+
+    /**
+     * ============================================================
+     * WEITERE BEREICHE
+     * ============================================================
+     */
+
+    { 
+      caption: "devHome", 
+      menuID: 3011, 
+      parentID: 3003, 
+      Screen: DevHomeScreen 
+    },
+
+    { 
+      caption: "appInfo", 
+      menuID: 3014, 
+      parentID: 3003, 
+      Screen: AppInfoScreen 
+    },
   ];
 
-  return items.filter((it) => isMenuEnabled(it.menuID));
+  /**
+   * ============================================================
+   * FEATURE FLAG FILTER
+   * ============================================================
+   * Entfernt deaktivierte Menüeinträge.
+   */
+  const enabled = items.filter((it) => isMenuEnabled(it.menuID));
+
+  /**
+   * ============================================================
+   * AUTO TAB CONVERSION
+   * ============================================================
+   * Wenn für eine menuID Tabs existieren (staticTabs.tsx),
+   * wird der Screen automatisch zu TabScreen umgewandelt.
+   *
+   * → Keine manuelle Pflege notwendig.
+   */
+  return withAutoTabs(enabled);
 }
