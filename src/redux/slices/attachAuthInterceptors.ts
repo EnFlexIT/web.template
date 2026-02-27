@@ -31,12 +31,6 @@ function isSoft401Endpoint(url?: string): boolean {
     u.includes("/api/app/settings/get")
   );
 }
-
-/**
- * Renew/Login Endpoint:
- * - Wenn das 401 ist, ist die Session praktisch tot => Logout ist OK.
- * - Also NICHT ignorieren.
- */
 function isRenewLoginEndpoint(url?: string): boolean {
   const u = normalizeUrl(url);
   return u.includes("/api/user/login");
@@ -57,7 +51,6 @@ function doLogout(reason: "401" | "network") {
 
   store.dispatch(logout());
 
-  // Web: direkt zur Login-Seite
   forceRedirectToLogin();
 
   setTimeout(() => {

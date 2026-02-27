@@ -95,10 +95,12 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
   const { secondsLeft, warning } = useJwtSessionTimerWeb({
     enabled: isWeb && showLogout,
-    jwt,
-    warnMs: 30_000,          // 30 Sekunden vorher Warnung
-    onLogout: onAutoLogout,
-    onHeartbeat,             // ✅ sauberer Renew-Trigger
+  jwt,
+  warnMs: 30_000,
+  onLogout: onAutoLogout,
+  onHeartbeat: () => {
+    dispatch(renewJwtIfNeeded({ thresholdMs: 35_000, cooldownMs: 15_000 }));
+  },       
   });
 
   const [popupOpen, setPopupOpen] = useState(false);

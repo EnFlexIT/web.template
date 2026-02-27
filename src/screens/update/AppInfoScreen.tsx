@@ -4,14 +4,14 @@ import { Platform, StyleSheet, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
-import { Screen } from "../components/Screen";
-import { Card } from "../components/ui-elements/Card";
-import { ActionButton } from "../components/ui-elements/ActionButton";
-import { Infobox } from "../components/ui-elements/Infobox";
-import { ThemedText } from "../components/themed/ThemedText";
+import { Screen } from "../../components/Screen";
+import { Card } from "../../components/ui-elements/Card";
+import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { Infobox } from "../../components/ui-elements/Infobox";
+import { ThemedText } from "../../components/themed/ThemedText";
 
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectApi } from "../redux/slices/apiSlice";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import { selectApi } from "../../redux/slices/apiSlice";
 
 const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
 const API_PREFIX = "/api";
@@ -44,10 +44,7 @@ function fmtFull(v: ApiVersion | null | undefined) {
   return q ? `${r}-${q}` : r;
 }
 
-/**
- * Expected server payload contains SoftwareComponentList (or softwareComponentList)
- * We prefer componentType "WEBAPP". Fallback to first.
- */
+
 function extractServerWebApp(data: any): {
   bundleName: string;
   version: ApiVersion;
@@ -90,10 +87,7 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   }
 }
 
-/**
- * Hard reload for Web, with cache-buster query params to avoid stale index.html/assets.
- * Uses replace() to prevent going "back" to the old version.
- */
+
 function hardReloadWeb(cacheKey: string) {
   if (typeof window === "undefined") return;
 
@@ -289,13 +283,11 @@ export function AppInfoScreen() {
           <View style={s.block}>
             <ThemedText style={s.blockTitle}>{t("serverWeb.title", "Web-App")}</ThemedText>
 
-            <Row label={t("serverWeb.bundle", "Bundle")} value={serverBundle} />
+           
             <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
             <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
-
             <Row label={t("status", "Update Status")} value={updateStatus} />
-            <Row label={t("lastAccepted", "Last accepted")} value={lastAccepted} />
-            <Row label={t("lastChecked", "Last checked")} value={lastCheckedAt} />
+           
           </View>
 
           <View style={s.btnRow}>

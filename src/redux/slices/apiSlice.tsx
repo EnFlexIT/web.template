@@ -348,24 +348,25 @@ export const apiSlice = createSlice({
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
     },
+setJwtLocal: (state, action: PayloadAction<string | null>) => {
+  if (state.jwt === action.payload) return;
 
-    setJwtLocal: (state, action: PayloadAction<string | null>) => {
-      state.jwt = action.payload;
+  state.jwt = action.payload;
 
-      const apis = buildApis({
-        baseUrl: state.ip,
-        jwt: action.payload,
-        authenticationMethod: state.authenticationMethod,
-      });
+  const apis = buildApis({
+    baseUrl: state.ip,
+    jwt: action.payload,
+    authenticationMethod: state.authenticationMethod,
+  });
 
-      state.awb_rest_api = apis.awb_rest_api;
-      state.dynamic_content_api = apis.dynamic_content_api;
+  state.awb_rest_api = apis.awb_rest_api;
+  state.dynamic_content_api = apis.dynamic_content_api;
 
-      state.isLoggedIn =
-        state.authenticationMethod === "jwt"
-          ? isJwtStillValid(action.payload)
-          : false;
-    },
+  state.isLoggedIn =
+    state.authenticationMethod === "jwt"
+      ? isJwtStillValid(action.payload)
+      : false;
+},
 
     logout: (state) => {
       state.isLoggedIn = false;

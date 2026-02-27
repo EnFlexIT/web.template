@@ -9,7 +9,7 @@ import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
 import { isMenuEnabled } from "./featureFlags";
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
-import { AppInfoScreen } from "../../screens/AppInfoScreen";
+import { AppInfoScreen } from "../../screens/update/AppInfoScreen";
 export type StaticMenuItem = {
   caption: string;
   menuID: number;
