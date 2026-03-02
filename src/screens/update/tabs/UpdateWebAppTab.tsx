@@ -4,7 +4,6 @@ import { Platform, StyleSheet, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 
-import { Screen } from "../../../components/Screen";
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { Infobox } from "../../../components/ui-elements/Infobox";
@@ -43,7 +42,6 @@ function fmtFull(v: ApiVersion | null | undefined) {
   const q = String(v?.qualifier ?? "").trim();
   return q ? `${r}-${q}` : r;
 }
-
 
 function extractServerWebApp(data: any): {
   bundleName: string;
@@ -87,7 +85,6 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   }
 }
 
-
 function hardReloadWeb(cacheKey: string) {
   if (typeof window === "undefined") return;
 
@@ -109,7 +106,10 @@ export function UpdateWebAppTab() {
   const [serverBundle, setServerBundle] = useState<string>("-");
   const [serverRelease, setServerRelease] = useState<string>("-");
   const [serverFull, setServerFull] = useState<string>("-");
+
   const [lastAccepted, setLastAccepted] = useState<string>("-");
+  const [pendingUpdateFull, setPendingUpdateFull] = useState<string | null>(null);
+
   const [lastCheckedAt, setLastCheckedAt] = useState<string>("-");
   const [updateStatus, setUpdateStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
@@ -121,7 +121,7 @@ export function UpdateWebAppTab() {
     setLastCheckedAt(new Date().toLocaleString());
 
     const query = new URLSearchParams();
-    query.set("_ts", String(Date.now())); // cache-buster for the API call
+    query.set("_ts", String(Date.now()));
 
     const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
     const data = await fetchJsonNoCache({ url, jwt });
@@ -132,6 +132,7 @@ export function UpdateWebAppTab() {
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
+      setPendingUpdateFull(null);
       setIsChecking(false);
       return;
     }
@@ -143,6 +144,7 @@ export function UpdateWebAppTab() {
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
+      setPendingUpdateFull(null);
       setIsChecking(false);
       return;
     }
@@ -153,52 +155,60 @@ export function UpdateWebAppTab() {
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
+      setPendingUpdateFull(null);
       setIsChecking(false);
       return;
     }
 
     const release = fmtRelease(parsed.version);
-    const full = fmtFull(parsed.version); // IMPORTANT: compare FULL (includes qualifier/build)
+    const full = fmtFull(parsed.version);
 
     setServerBundle(parsed.bundleName || "-");
     setServerRelease(release);
     setServerFull(full);
 
-    // read stored baseline/accepted
+    // read stored accepted baseline
     const acceptedStored = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
 
     if (!acceptedStored) {
-      // first run -> store baseline; do NOT reload
+  
       await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
       setLastAccepted(full);
-      setUpdateStatus("OK (baseline stored)");
+      setPendingUpdateFull(null);
+      setUpdateStatus("Up to date");
       setIsChecking(false);
       return;
     }
 
     setLastAccepted(acceptedStored);
 
-    // compare FULL, because server uses build timestamp (qualifier)
     if (acceptedStored !== full) {
-      setUpdateStatus(`Update detected: ${acceptedStored} → ${full}`);
-
-      // store new accepted first to avoid reload loops
-      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
-
-      // Web: hard reload whole page
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        hardReloadWeb(full);
-        return; // stop here
-      }
-
-      // Native: (optional) you could show a message, or trigger some navigation reset
+      setPendingUpdateFull(full);
+      setUpdateStatus(`Update available: ${acceptedStored} → ${full}`);
       setIsChecking(false);
       return;
     }
 
+    setPendingUpdateFull(null);
     setUpdateStatus("Up to date");
     setIsChecking(false);
   }, [ip, jwt]);
+
+  const applyUpdateNow = useCallback(async () => {
+    if (!pendingUpdateFull) return;
+
+    await AsyncStorage.setItem(LAST_ACCEPTED_KEY, pendingUpdateFull);
+    setLastAccepted(pendingUpdateFull);
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      hardReloadWeb(pendingUpdateFull);
+      return;
+    }
+
+    // Native: hier könntest du optional eine Meldung anzeigen
+    setPendingUpdateFull(null);
+    setUpdateStatus("Update accepted (native)");
+  }, [pendingUpdateFull]);
 
   // On mount: load lastAccepted and check once
   useEffect(() => {
@@ -216,7 +226,7 @@ export function UpdateWebAppTab() {
 
     intervalRef.current = setInterval(() => {
       checkNow();
-    }, 5 * 60 * 1000); // every 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -228,18 +238,15 @@ export function UpdateWebAppTab() {
       return {
         tone: "warning" as const,
         title: t("infobox.no_server.title", "Kein Server verbunden"),
-        subtitle: t(
-          "infobox.no_server.subtitle",
-          "Bitte zuerst eine Server-IP konfigurieren.",
-        ),
+        subtitle: t("infobox.no_server.subtitle", "Bitte zuerst eine Server-IP konfigurieren."),
       };
     }
 
-    if (String(updateStatus).toLowerCase().includes("update detected")) {
+    if (pendingUpdateFull) {
       return {
         tone: "warning" as const,
-        title: "Update detected",
-        subtitle: "A new Web-App version was detected. Reload is triggered automatically.",
+        title: "Update verfügbar",
+        subtitle: "Eine neue Web-App Version wurde gefunden. Klicke auf „Jetzt neu laden“, wenn du bereit bist.",
       };
     }
 
@@ -275,34 +282,42 @@ export function UpdateWebAppTab() {
   })();
 
   return (
-    
-      <Card>
-        <View>
-          <ThemedText style={s.title}>{t("serverWeb.title", "Web-App")}</ThemedText>
+    <Card>
+      <View>
+        <ThemedText style={s.title}>{t("serverWeb.title", "Web-App")}</ThemedText>
 
-          <View style={s.block}>
-            <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
-            <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
-            <Row label={t("status", "Update Status")} value={updateStatus} />
-           
-          </View>
+        <View style={s.block}>
+          <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
+          <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
+          <Row label={t("status", "Update Status")} value={updateStatus} />   
+        </View>
 
-          <View style={s.btnRow}>
+        <View style={s.btnRow}>
+          <ActionButton
+            label={isChecking ? t("checkNow_loading", "Prüfe…") : t("checkNow", "Jetzt überprüfen")}
+            variant="secondary"
+            size="xs"
+            onPress={checkNow}
+            disabled={isChecking || !ip}
+          />
+
+         
+          {pendingUpdateFull ? (
             <ActionButton
-              label={isChecking ? t("checkNow_loading", "Prüfe…") : t("checkNow", "Jetzt überprüfen")}
-              variant="secondary"
+              label={t("reloadNow", "Jetzt neu laden")}
+              variant="primary"
               size="xs"
-              onPress={checkNow}
+              onPress={applyUpdateNow}
               disabled={isChecking || !ip}
             />
-          </View>
-
-          <View style={s.bottom}>
-            <Infobox tone={box.tone} title={box.title} subtitle={box.subtitle} style={s.fixedBox} />
-          </View>
+          ) : null}
         </View>
-      </Card>
-    
+
+        <View style={s.bottom}>
+          <Infobox tone={box.tone} title={box.title} subtitle={box.subtitle} style={s.fixedBox} />
+        </View>
+      </View>
+    </Card>
   );
 }
 

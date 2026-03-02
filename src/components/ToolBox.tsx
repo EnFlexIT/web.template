@@ -1,23 +1,16 @@
 // src/components/ToolBox.tsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 
+import { useUpdateNotifierWeb } from "../hooks/useUpdateNotifierWeb";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 
-import {
-  logout,
-  selectJwt,
-} from "../redux/slices/apiSlice";
-
-import {
-  logoutBaseMode,
-  selectBaseMode,
-} from "../redux/slices/baseModeSlice";
-
+import { logout, selectJwt } from "../redux/slices/apiSlice";
+import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
 
@@ -60,15 +53,26 @@ function ColorSwitcher() {
   );
 }
 
+type OpenPopup = "session" | "update" | null;
+
 export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const dispatch = useAppDispatch();
   const jwt = useAppSelector(selectJwt);
   const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
 
+  const isWeb = Platform.OS === "web";
+
   const showLogout =
     isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
 
-  const isWeb = Platform.OS === "web";
+  const update = useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
+
+  // ✅ nur ein Popup gleichzeitig
+  const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
+
+  // Refs für "click outside"
+  const sessionWrapRef = useRef<View>(null);
+  const updateWrapRef = useRef<View>(null);
 
   const onAutoLogout = useCallback(() => {
     if (isLoggedIn) {
@@ -80,53 +84,102 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  /**
-   * Wird vom Session-Timer regelmäßig aufgerufen (nicht bei jeder Mausbewegung)
-   * Prüft ob JWT bald abläuft und erneuert es ggf.
-   */
   const onHeartbeat = useCallback(() => {
     dispatch(
       renewJwtIfNeeded({
-        thresholdMs: 2 * 60 * 1000,   // 2 Minuten vor Ablauf
-        cooldownMs: 15 * 1000,        // max alle 15 Sekunden renew versuchen
+        thresholdMs: 2 * 60 * 1000,
+        cooldownMs: 15 * 1000,
       })
     );
   }, [dispatch]);
 
   const { secondsLeft, warning } = useJwtSessionTimerWeb({
     enabled: isWeb && showLogout,
-  jwt,
-  warnMs: 30_000,
-  onLogout: onAutoLogout,
-  onHeartbeat: () => {
-    dispatch(renewJwtIfNeeded({ thresholdMs: 35_000, cooldownMs: 15_000 }));
-  },       
+    jwt,
+    warnMs: 30_000,
+    onLogout: onAutoLogout,
+    onHeartbeat: () => {
+      dispatch(renewJwtIfNeeded({ thresholdMs: 35_000, cooldownMs: 15_000 }));
+    },
   });
 
-  const [popupOpen, setPopupOpen] = useState(false);
+  // ✅ Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
+  useEffect(() => {
+    if (!isWeb) return;
+    if (update.updateAvailable) setOpenPopup("update");
+  }, [update.updateAvailable, isWeb]);
 
+  // ✅ Wenn warning aktiv und Session angezeigt werden soll: Session-Popup öffnen (und Update schließen)
   useEffect(() => {
     if (!isWeb || !showLogout) return;
-    setPopupOpen(warning);
+    if (warning) setOpenPopup("session");
+    if (!warning && openPopup === "session") setOpenPopup(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warning, isWeb, showLogout]);
 
+  // ✅ Click-outside schließt Popups (Web)
+  useEffect(() => {
+    if (!isWeb) return;
+
+    const handler = (ev: MouseEvent | TouchEvent) => {
+      const target = ev.target as Node | null;
+      if (!target) return;
+
+      // @ts-expect-error: RN Web host nodes have `contains`
+      const inSession = sessionWrapRef.current?.contains?.(target) ?? false;
+      // @ts-expect-error: RN Web host nodes have `contains`
+      const inUpdate = updateWrapRef.current?.contains?.(target) ?? false;
+
+      if (!inSession && !inUpdate) {
+        setOpenPopup(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handler, true);
+    document.addEventListener("touchstart", handler, true);
+    return () => {
+      document.removeEventListener("mousedown", handler, true);
+      document.removeEventListener("touchstart", handler, true);
+    };
+  }, [isWeb]);
+
   const stayLoggedIn = useCallback(() => {
-    onHeartbeat(); // renew prüfen
-    setPopupOpen(false);
+    onHeartbeat();
+    setOpenPopup(null);
   }, [onHeartbeat]);
 
   const manualLogout = useCallback(() => {
-    setPopupOpen(false);
+    setOpenPopup(null);
     onAutoLogout();
   }, [onAutoLogout]);
+
+  const toggleSessionPopup = useCallback(() => {
+    setOpenPopup((v) => (v === "session" ? null : "session"));
+  }, []);
+
+  const toggleUpdatePopup = useCallback(() => {
+    setOpenPopup((v) => (v === "update" ? null : "update"));
+  }, []);
+
+  const updateTitle = useMemo(() => {
+    return update.updateAvailable ? "Update verfügbar" : "Keine Updates";
+  }, [update.updateAvailable]);
+
+  const updateBody = useMemo(() => {
+    if (update.updateAvailable) {
+      return "Eine neue Version ist verfügbar. Bitte speichere deine Arbeit und lade dann neu.";
+    }
+    return "Keine Updates verfügbar. Du bist auf dem aktuellen Stand.";
+  }, [update.updateAvailable]);
 
   return (
     <View style={[styles.toolBoxContainer]}>
       <ColorSwitcher />
 
+      {/* SESSION / TIMER */}
       {isWeb && showLogout ? (
-        <View style={styles.timerWrap}>
-          <Pressable onPress={() => setPopupOpen((v) => !v)}>
+        <View style={styles.timerWrap} ref={sessionWrapRef}>
+          <Pressable onPress={toggleSessionPopup}>
             <Feather
               name={warning ? "alert-triangle" : "clock"}
               size={22}
@@ -143,11 +196,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
             {formatMMSS(secondsLeft)}
           </Text>
 
-          {popupOpen ? (
+          {openPopup === "session" ? (
             <View style={styles.popup}>
-              <Text style={styles.popupTitle}>
-                Sind Sie noch da?
-              </Text>
+              <Text style={styles.popupTitle}>Sind Sie noch da?</Text>
 
               <Text style={styles.popupBody}>
                 Sie werden in{" "}
@@ -163,6 +214,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
         </View>
       ) : null}
 
+     
+
+      {/* LOGOUT ICON */}
       {showLogout ? (
         <AntDesign
           onPress={manualLogout}
@@ -214,7 +268,7 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
     shadowColor: "#000",
     shadowOpacity: 0.12,
-    shadowRadius: 12,
+   
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
     zIndex: 999,
@@ -223,6 +277,17 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: 15,
     fontWeight: "700",
     marginBottom: 6,
+  },
+  badgeDot: {
+    position: "absolute",
+    right: -2,
+    top: -2,
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "red",
+    borderWidth: 2,
+    borderColor: theme.colors.background,
   },
   popupBody: {
     fontSize: 13,
@@ -240,7 +305,7 @@ const styles = StyleSheet.create((theme) => ({
   btn: {
     paddingVertical: 8,
     paddingHorizontal: 10,
-    borderRadius: 10,
+ 
     borderWidth: 1,
   },
   btnPrimary: {
