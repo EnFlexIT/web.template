@@ -83,33 +83,29 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
       dispatch(logoutBaseMode());
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
+const onHeartbeat = useCallback(() => {
+  dispatch(
+    renewJwtIfNeeded({
+      force: true,          
+      cooldownMs: 10_000,   
+    })
+  );
+}, [dispatch]);
 
-  const onHeartbeat = useCallback(() => {
-    dispatch(
-      renewJwtIfNeeded({
-        thresholdMs: 2 * 60 * 1000,
-        cooldownMs: 15 * 1000,
-      })
-    );
-  }, [dispatch]);
+const { secondsLeft, warning } = useJwtSessionTimerWeb({
+  enabled: isWeb && showLogout,
+  jwt,
+  warnMs: 30_000,
+  onLogout: onAutoLogout,
+  onHeartbeat, 
+});
 
-  const { secondsLeft, warning } = useJwtSessionTimerWeb({
-    enabled: isWeb && showLogout,
-    jwt,
-    warnMs: 30_000,
-    onLogout: onAutoLogout,
-    onHeartbeat: () => {
-      dispatch(renewJwtIfNeeded({ thresholdMs: 35_000, cooldownMs: 15_000 }));
-    },
-  });
-
-  // ✅ Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
   useEffect(() => {
     if (!isWeb) return;
     if (update.updateAvailable) setOpenPopup("update");
   }, [update.updateAvailable, isWeb]);
 
-  // ✅ Wenn warning aktiv und Session angezeigt werden soll: Session-Popup öffnen (und Update schließen)
+  // Wenn warning aktiv und Session angezeigt werden soll: Session-Popup öffnen (und Update schließen)
   useEffect(() => {
     if (!isWeb || !showLogout) return;
     if (warning) setOpenPopup("session");
@@ -117,7 +113,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warning, isWeb, showLogout]);
 
-  // ✅ Click-outside schließt Popups (Web)
+  // Click-outside schließt Popups (Web)
   useEffect(() => {
     if (!isWeb) return;
 
