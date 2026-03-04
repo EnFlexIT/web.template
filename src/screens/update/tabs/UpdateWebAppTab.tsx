@@ -6,12 +6,10 @@ import { useTranslation } from "react-i18next";
 
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { Infobox } from "../../../components/ui-elements/Infobox";
 import { ThemedText } from "../../../components/themed/ThemedText";
 
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
-import { H2 } from "../../../components/stylistic/H2";
 import { H3 } from "../../../components/stylistic/H3";
 
 const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
@@ -97,7 +95,8 @@ function hardReloadWeb(cacheKey: string) {
 }
 
 export function UpdateWebAppTab() {
-  const { t } = useTranslation(["Settings.AppInfo"]);
+  // ✅ genau wie du willst: Namespace heißt "Update"
+  const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
 
   const ip = api.ip;
@@ -130,7 +129,7 @@ export function UpdateWebAppTab() {
 
     // Network error
     if (data === null) {
-      setUpdateStatus("Network error");
+      setUpdateStatus(t("serverWeb.statusTexts.networkError"));
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -142,7 +141,11 @@ export function UpdateWebAppTab() {
     // HTTP error
     if ((data as any)?.__status) {
       const st = Number((data as any).__status);
-      setUpdateStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
+      setUpdateStatus(
+        st === 401
+          ? t("serverWeb.statusTexts.unauthorized")
+          : t("serverWeb.statusTexts.httpError", { status: st })
+      );
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -153,7 +156,7 @@ export function UpdateWebAppTab() {
 
     const parsed = extractServerWebApp(data);
     if (!parsed) {
-      setUpdateStatus("Unexpected format");
+      setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -173,11 +176,10 @@ export function UpdateWebAppTab() {
     const acceptedStored = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
 
     if (!acceptedStored) {
-  
       await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
       setLastAccepted(full);
       setPendingUpdateFull(null);
-      setUpdateStatus("Up to date");
+      setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
       setIsChecking(false);
       return;
     }
@@ -186,15 +188,15 @@ export function UpdateWebAppTab() {
 
     if (acceptedStored !== full) {
       setPendingUpdateFull(full);
-      setUpdateStatus(`Update available: ${full}`);
+      setUpdateStatus(t("serverWeb.statusTexts.updateAvailable", { version: full }));
       setIsChecking(false);
       return;
     }
 
     setPendingUpdateFull(null);
-    setUpdateStatus("Up to date");
+    setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
     setIsChecking(false);
-  }, [ip, jwt]);
+  }, [ip, jwt, t]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!pendingUpdateFull) return;
@@ -209,8 +211,8 @@ export function UpdateWebAppTab() {
 
     // Native: hier könntest du optional eine Meldung anzeigen
     setPendingUpdateFull(null);
-    setUpdateStatus("Update accepted (native)");
-  }, [pendingUpdateFull]);
+    setUpdateStatus(t("serverWeb.statusTexts.updateAcceptedNative"));
+  }, [pendingUpdateFull, t]);
 
   // On mount: load lastAccepted and check once
   useEffect(() => {
@@ -235,20 +237,23 @@ export function UpdateWebAppTab() {
     };
   }, [checkNow]);
 
-
-
   return (
     <Card>
       <View style={s.container}>
-        
-          <H3>{t("serverWeb.title", "Web-App")}</H3>  
-          <Row label={t("Version (Release)")} value={serverRelease} />
-          <Row label={t("Version ")} value={lastAccepted} />
-          <Row label={t("status", "Update Status")} value={updateStatus} />   
-        
+        <H3>{t("serverWeb.title", "Web-App")}</H3>
+
+        {/* ✅ exakt passend zu deiner Konstante */}
+        <Row label={t("serverWeb.fields.releaseVersion")} value={serverRelease} />
+        <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
+        <Row label={t("serverWeb.fields.status")} value={updateStatus} />
+
         <View style={s.btnRow}>
           <ActionButton
-            label={isChecking ? t("checkNow_loading", "Prüfe…") : t("checkNow", "Jetzt überprüfen")}
+            label={
+              isChecking
+                ? t("serverWeb.actions.checking")
+                : t("serverWeb.actions.checkNow")
+            }
             variant="secondary"
             size="xs"
             onPress={checkNow}
@@ -256,7 +261,7 @@ export function UpdateWebAppTab() {
           />
           {pendingUpdateFull ? (
             <ActionButton
-              label={t("reloadNow", "Jetzt neu laden")}
+              label={t("serverWeb.actions.reloadNow")}
               variant="primary"
               size="xs"
               onPress={applyUpdateNow}
@@ -296,5 +301,5 @@ const s = StyleSheet.create({
   btnRow: { flexDirection: "row", gap: 5, justifyContent: "flex-end", padding: 5 },
   bottom: { paddingTop: 8, paddingHorizontal: 14, paddingBottom: 14 },
   fixedBox: { minHeight: 120 },
-   container: { gap: 14 }
+  container: { gap: 14 },
 });

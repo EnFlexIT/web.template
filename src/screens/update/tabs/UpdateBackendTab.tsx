@@ -1,10 +1,11 @@
+// UpdateBackendTab.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { Infobox } from "../../../components/ui-elements/Infobox";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
@@ -41,7 +42,7 @@ function fmtFull(v: ApiVersion | null | undefined) {
   return q ? `${r}-${q}` : r;
 }
 
-type BackendType = "WEBAPP" | "FEATURE" | "BUNDLE" | "BUNDLE_OF_FEATURE";
+type BackendType = "FEATURE" | "BUNDLE" | "BUNDLE_OF_FEATURE";
 
 type ParsedComponent = {
   id: string;
@@ -66,34 +67,47 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   }
 }
 
+function uniqById(list: ParsedComponent[]) {
+  const seen = new Set<string>();
+  const out: ParsedComponent[] = [];
+  for (const x of list) {
+    const id = String(x?.id ?? "");
+    if (!id) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(x);
+  }
+  return out;
+}
+
 function parseSoftwareComponents(data: any): ParsedComponent[] {
   const list = data?.SoftwareComponentList ?? data?.softwareComponentList;
   if (!Array.isArray(list)) return [];
 
-  return list
-    .map((x: any, idx: number) => {
-      const version = x?.version ?? x?.Version;
-      const vObj =
-        version && typeof version === "object"
-          ? {
-              major: Number(version?.major ?? version?.Major ?? 0),
-              minor: Number(version?.minor ?? version?.Minor ?? 0),
-              micro: Number(version?.micro ?? version?.Micro ?? 0),
-              qualifier: String(version?.qualifier ?? version?.Qualifier ?? ""),
-            }
-          : { major: 0, minor: 0, micro: 0, qualifier: "" };
+  const parsed = list.map((x: any, idx: number) => {
+    const version = x?.version ?? x?.Version;
+    const vObj =
+      version && typeof version === "object"
+        ? {
+            major: Number(version?.major ?? version?.Major ?? 0),
+            minor: Number(version?.minor ?? version?.Minor ?? 0),
+            micro: Number(version?.micro ?? version?.Micro ?? 0),
+            qualifier: String(version?.qualifier ?? version?.Qualifier ?? ""),
+          }
+        : { major: 0, minor: 0, micro: 0, qualifier: "" };
 
-      const id = String(x?.ID ?? x?.id ?? x?.Id ?? `${idx}`);
-      const name = String(x?.name ?? x?.Name ?? "-");
-      const type = String(x?.componentType ?? x?.ComponentType ?? x?.type ?? "-");
+    const id = String(x?.ID ?? x?.id ?? x?.Id ?? `${idx}`);
+    const name = String(x?.name ?? x?.Name ?? "-");
+    const type = String(x?.componentType ?? x?.ComponentType ?? x?.type ?? "-");
 
-      return { id, name, type, version: vObj, raw: x } as ParsedComponent;
-    })
-    .filter(Boolean);
+    return { id, name, type, version: vObj, raw: x } as ParsedComponent;
+  });
+
+  return uniqById(parsed);
 }
 
 export function UpdateBackendTab() {
-  const { t } = useTranslation(["Settings.AppInfo"]);
+  const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
 
   const ip = api.ip;
@@ -101,74 +115,137 @@ export function UpdateBackendTab() {
 
   const intervalRef = useRef<any>(null);
 
-  const [type, setType] = useState<BackendType>("BUNDLE");
   const [isShowSource, setIsShowSource] = useState<boolean>(true);
 
-  const [items, setItems] = useState<ParsedComponent[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [features, setFeatures] = useState<ParsedComponent[]>([]);
+  const [bundles, setBundles] = useState<ParsedComponent[]>([]);
+
+  const [selectedFeatureId, setSelectedFeatureId] = useState<string>("");
+  const [selectedBundleId, setSelectedBundleId] = useState<string>("");
 
   const [lastCheckedAt, setLastCheckedAt] = useState<string>("-");
   const [status, setStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
 
+  const loadFeaturesAndBundles = useCallback(
+    async (override?: { featureId?: string; showSource?: boolean }) => {
+      if (!ip) return;
+
+      const effectiveFeatureId = override?.featureId ?? selectedFeatureId;
+      const effectiveShowSource = override?.showSource ?? isShowSource;
+
+      setIsChecking(true);
+      setLastCheckedAt(new Date().toLocaleString());
+
+      // ---- 1) FEATURES ----
+      const q1 = new URLSearchParams();
+      q1.set("_ts", String(Date.now()));
+      q1.set("type", "FEATURE");
+      q1.set("isShowSource", String(effectiveShowSource));
+
+      const urlFeatures = joinUrl(ip, `${API_PREFIX}/version?${q1.toString()}`);
+      const dataFeatures = await fetchJsonNoCache({ url: urlFeatures, jwt });
+
+      if (dataFeatures === null) {
+        setStatus(t("serverWeb.statusTexts.networkError", "Network error"));
+        setFeatures([]);
+        setBundles([]);
+        setSelectedFeatureId("");
+        setSelectedBundleId("");
+        setIsChecking(false);
+        return;
+      }
+
+      if ((dataFeatures as any)?.__status) {
+        const st = Number((dataFeatures as any).__status);
+        setStatus(
+          st === 401
+            ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
+            : t("serverWeb.statusTexts.httpError", { status: st, defaultValue: `HTTP ${st}` })
+        );
+        setFeatures([]);
+        setBundles([]);
+        setSelectedFeatureId("");
+        setSelectedBundleId("");
+        setIsChecking(false);
+        return;
+      }
+
+      const parsedFeatures = parseSoftwareComponents(dataFeatures);
+      setFeatures(parsedFeatures);
+
+      const nextFeatureId =
+        effectiveFeatureId && parsedFeatures.some((x) => x.id === effectiveFeatureId)
+          ? effectiveFeatureId
+          : parsedFeatures[0]?.id ?? "";
+
+      setSelectedFeatureId(nextFeatureId);
+
+   
+      const bundleType: BackendType = nextFeatureId ? "BUNDLE_OF_FEATURE" : "BUNDLE";
+
+      const q2 = new URLSearchParams();
+      q2.set("_ts", String(Date.now()));
+      q2.set("type", bundleType);
+      q2.set("isShowSource", String(effectiveShowSource));
+
+   
+      if (bundleType === "BUNDLE_OF_FEATURE") {
+        q2.set("filter", nextFeatureId);
+      }
+
+      const urlBundles = joinUrl(ip, `${API_PREFIX}/version?${q2.toString()}`);
+      const dataBundles = await fetchJsonNoCache({ url: urlBundles, jwt });
+
+      if (dataBundles === null) {
+        setStatus(t("serverWeb.statusTexts.networkError", "Network error"));
+        setBundles([]);
+        setSelectedBundleId("");
+        setIsChecking(false);
+        return;
+      }
+
+      if ((dataBundles as any)?.__status) {
+        const st = Number((dataBundles as any).__status);
+        setStatus(
+          st === 401
+            ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
+            : t("serverWeb.statusTexts.httpError", { status: st, defaultValue: `HTTP ${st}` })
+        );
+        setBundles([]);
+        setSelectedBundleId("");
+        setIsChecking(false);
+        return;
+      }
+
+      const parsedBundles = parseSoftwareComponents(dataBundles);
+
+    
+      const onlyBundles = parsedBundles.filter(
+        (x) => String(x.type).toUpperCase() === "BUNDLE"
+      );
+
+      setBundles(onlyBundles);
+
+      setSelectedBundleId((prev) =>
+        prev && onlyBundles.some((b) => b.id === prev) ? prev : onlyBundles[0]?.id ?? ""
+      );
+
+      setStatus(t("serverWeb.statusTexts.upToDate", "Up to date"));
+      setIsChecking(false);
+    },
+    [ip, jwt, selectedFeatureId, isShowSource, t]
+  );
+
   const checkNow = useCallback(async () => {
-    if (!ip) return;
+    await loadFeaturesAndBundles();
+  }, [loadFeaturesAndBundles]);
 
-    setIsChecking(true);
-    setLastCheckedAt(new Date().toLocaleString());
-
-    const query = new URLSearchParams();
-    query.set("_ts", String(Date.now()));
-    query.set("type", type);
-    query.set("isShowSource", String(isShowSource));
-
-    // optional: filter (z.B. für BUNDLE_OF_FEATURE)
-    // query.set("filter", "someFeatureId");
-
-    const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
-    const data = await fetchJsonNoCache({ url, jwt });
-
-    // Network error
-    if (data === null) {
-      setStatus("Network error");
-      setItems([]);
-      setSelectedId("");
-      setIsChecking(false);
-      return;
-    }
-
-    // HTTP error
-    if ((data as any)?.__status) {
-      const st = Number((data as any).__status);
-      setStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
-      setItems([]);
-      setSelectedId("");
-      setIsChecking(false);
-      return;
-    }
-
-    const parsed = parseSoftwareComponents(data);
-    if (!parsed.length) {
-      setStatus("No components / unexpected format");
-      setItems([]);
-      setSelectedId("");
-      setIsChecking(false);
-      return;
-    }
-
-    setItems(parsed);
-    setSelectedId((prev) => (prev && parsed.some((p) => p.id === prev) ? prev : parsed[0].id));
-    setStatus("OK");
-    setIsChecking(false);
-  }, [ip, jwt, type, isShowSource]);
-
-  // initial check
   useEffect(() => {
     checkNow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, []);
 
-  // interval check (optional — erstmal minimal an/aus lassen)
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
 
@@ -181,170 +258,135 @@ export function UpdateBackendTab() {
     };
   }, [checkNow]);
 
-  const typeItems = useMemo<SelectableItem<BackendType>[]>(() => {
-    return [
-      { id: "BUNDLE", label: "Bundles", },
-      { id: "FEATURE", label: "Features",  },
-      { id: "BUNDLE_OF_FEATURE", label: "Bundles of Feature",  },
-      { id: "WEBAPP", label: "WebApp",  },
-    ];
-  }, []);
-
-  const componentItems = useMemo<SelectableItem<string>[]>(() => {
-    return items.map((c) => ({
-      id: c.id,
-      label: c.name,
-    
+  const featureItems = useMemo<SelectableItem<string>[]>(() => {
+    return features.map((f) => ({
+      id: f.id, 
+      label: `${f.name} (${fmtFull(f.version)})`,
     }));
-  }, [items]);
+  }, [features]);
 
-  const selected = useMemo(() => items.find((x) => x.id === selectedId) ?? null, [items, selectedId]);
-
-  const box = (() => {
-    if (!ip) {
-      return {
-        tone: "warning" as const,
-        title: t("infobox.no_server.title", "Kein Server verbunden"),
-        subtitle: t("infobox.no_server.subtitle", "Bitte zuerst eine Server-IP konfigurieren."),
-      };
-    }
-
-    const s = String(status).toLowerCase();
-    if (s.includes("unauthorized")) {
-      return {
-        tone: "warning" as const,
-        title: "Version check not authorized",
-        subtitle: "Server returned 401. Check JWT / permissions for /api/version.",
-      };
-    }
-    if (s.includes("network")) {
-      return { tone: "warning" as const, title: "Network issue", subtitle: "Backend version could not be checked." };
-    }
-    if (s.includes("http")) {
-      return { tone: "warning" as const, title: "HTTP issue", subtitle: `Server returned: ${status}` };
-    }
-    if (s.includes("no components")) {
-      return { tone: "warning" as const, title: "No data", subtitle: "Response contained no components (or format changed)." };
-    }
-    return { tone: "info" as const, title: "OK", subtitle: "Backend components loaded." };
-  })();
+  const bundleItems = useMemo<SelectableItem<string>[]>(() => {
+    return bundles.map((b) => ({
+      id: b.id,
+      label: `${b.name} (${fmtFull(b.version)})`,
+    }));
+  }, [bundles]);
 
   return (
-   
     <Card>
-     
       <View style={s.container}>
-        <H3>Backend</H3>
-
-        <View style={s.row}>
-          {/* Left: type selector + component list */}
-          <View style={s.col}>
-            <ThemedText style={s.blockTitle}>Type</ThemedText>
-            <SelectableList<BackendType>
-              items={typeItems}
-              value={type}
-              onChange={(id) => setType(id)}
-              maxHeight={180}
-              minVisibleRows={3}
-              size="sm"
-              variant="secondary"
-            />
-
-            <View style={{ height: 12 }} />
-
-            <ThemedText style={s.blockTitle}>Components</ThemedText>
-            <SelectableList<string>
-              items={componentItems}
-              value={selectedId || (componentItems[0]?.id ?? "")}
-              onChange={(id) => setSelectedId(id)}
-              maxHeight={260}
-              minVisibleRows={4}
-              size="sm"
-              variant="secondary"
-              emptyText="No components"
-            />
+     
+        <View style={s.headerRow}>
+          <View style={s.headerLeft}>
+            <H3>{t("backend.title", "Backend")}</H3>    
           </View>
 
-          {/* Right: details */}
-          <View style={s.col}>
-            <ThemedText style={s.blockTitle}>Details</ThemedText>
+            <View style={s.headerRight}>
+               <ThemedText > {t("backend.updateStatusBadge", "Update Status")} </ThemedText>           
+               <ThemedText>{status}</ThemedText>
+             </View>
 
-            <View style={s.detailsBox}>
-              <Row label="Last checked" value={lastCheckedAt} />
-              <Row label="Status" value={status} />
-              <Row label="Show source" value={String(isShowSource)} />
-              <Row label="Selected" value={selected ? selected.name : "-"} />
-              <Row label="Component type" value={selected ? selected.type : "-"} />
-              <Row label="Version (Release)" value={selected ? fmtRelease(selected.version) : "-"} />
-              <Row label="Version (Full)" value={selected ? fmtFull(selected.version) : "-"} />
-            </View>
-
-            <View style={s.btnRow}>
+            <View style={s.headerButtons}>
               <ActionButton
-                label={isChecking ? "Prüfe…" : "Jetzt überprüfen"}
+                label={
+                  isChecking
+                    ? t("serverWeb.actions.checking", "Prüfe…")
+                    : t("serverWeb.actions.checkNow", "Jetzt überprüfen")
+                }
                 variant="secondary"
                 size="xs"
                 onPress={checkNow}
                 disabled={isChecking || !ip}
               />
 
-              {/* Minimal Toggle für isShowSource (ohne extra UI Element) */}
               <ActionButton
                 label={isShowSource ? "Source: ON" : "Source: OFF"}
                 variant="secondary"
                 size="xs"
-                onPress={() => setIsShowSource((v) => !v)}
+                onPress={() => {
+                  const next = !isShowSource;
+                  setIsShowSource(next);
+                  loadFeaturesAndBundles({ showSource: next });
+                }}
                 disabled={isChecking}
               />
             </View>
-
-            <Infobox tone={box.tone} title={box.title} subtitle={box.subtitle} style={s.fixedBox} />
           </View>
         </View>
-      </View>
-      
-    </Card>
-   
-  );
-}
 
-function Row(props: { label: string; value: string }) {
-  return (
-    <View style={s.rowLine}>
-      <ThemedText style={s.label}>{props.label}</ThemedText>
-      <ThemedText style={s.value}>{props.value || "-"}</ThemedText>
-    </View>
+        {/* Installed Features */}
+        <View style={s.section}>
+          <ThemedText style={s.sectionTitle}>
+            {t("backend.sections.installedFeatures", "Installed Features")}
+          </ThemedText>
+
+          <SelectableList<string>
+            items={featureItems}
+            value={selectedFeatureId || (featureItems[0]?.id ?? "")}
+            onChange={(id) => {
+              setSelectedFeatureId(id);
+              setSelectedBundleId("");
+              loadFeaturesAndBundles({ featureId: id });
+            }}
+            maxHeight={190}
+            minVisibleRows={4}
+            size="xs"
+            variant="secondary"
+            emptyText={t("backend.empty.noFeatures", "No features")}
+          />
+        </View>
+
+        {/* Bundles */}
+        <View style={s.section}>
+          <ThemedText style={s.sectionTitle}>
+            {t("backend.sections.bundles", "Bundles")}
+          </ThemedText>
+
+          <SelectableList<string>
+            items={bundleItems}
+            value={selectedBundleId || (bundleItems[0]?.id ?? "")}
+            onChange={(id) => setSelectedBundleId(id)}
+            maxHeight={220}
+            minVisibleRows={5}
+            size="xs"
+            variant="secondary"
+            emptyText={t("backend.empty.noBundles", "No bundles")}
+          />
+        </View>
+
+        <View style={s.footerRow}>
+          <ThemedText style={s.footerText}>
+            {t("backend.labels.lastChecked", "Last checked")}: {lastCheckedAt}
+          </ThemedText>
+        </View>
+   
+    </Card>
   );
 }
 
 const s = StyleSheet.create({
-  container: { gap: 12 },
-  title: { fontSize: 20, fontWeight: "700" },
-  blockTitle: { fontSize: 13, fontWeight: "700", opacity: 0.85, marginBottom: 6 },
+  container: { gap: 14 },
 
-  row: { flexDirection: "row", gap: 16 },
-  col: { flex: 1, gap: 8 },
-  scrollContent: {
-    paddingBottom: 18, // damit unten nichts abgeschnitten wirkt
-  },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  headerLeft: { gap: 6, flexShrink: 1 },
+  headerRight: {gap: 6, flexDirection: "row", alignItems: "center" },
 
-
-  detailsBox: {
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-    padding: 12,
-    gap: 8,
+    borderColor: "rgba(0,0,0,0.10)",
   },
+  badgeText: { fontSize: 12, fontWeight: "700" },
 
-  rowLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  label: { fontSize: 12, opacity: 0.75, flex: 1 },
-  value: { fontSize: 13, fontWeight: "600" },
+  headerStatus: { fontSize: 13, fontWeight: "700" },
+  headerButtons: { flexDirection: "row", gap: 10, justifyContent: "flex-end" },
 
-  btnRow: { flexDirection: "row", gap: 10, justifyContent: "flex-end", marginTop: 4 },
-  fixedBox: { minHeight: 120, marginTop: 8 },
+  section: { gap: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", opacity: 0.9 },
+
+  footerRow: { paddingTop: 4 },
+  footerText: { fontSize: 11, opacity: 0.7 },
 });

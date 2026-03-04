@@ -14,6 +14,7 @@ const resources = {
         Settings: require('./assets/locales/en/Settings.json'),
         DevHome: require('./assets/locales/en/DevHome.json'),
         NotAvailable: require('./assets/locales/en/NotAvailable.json'),
+        Update: require('./assets/locales/en/Update.json'),
        // changePassword: require('./assets/locales/en/changePassword.json'),
     },
     de: {
@@ -27,6 +28,7 @@ const resources = {
         Settings: require('./assets/locales/de/Settings.json'),
         DevHome: require('./assets/locales/de/DevHome.json'),
         NotAvailable: require('./assets/locales/de/NotAvailable.json'),
+        Update: require('./assets/locales/de/Update.json'),
        // changePassword: require('./assets/locales/de/changePassword.json'),
     },
 };

@@ -1,0 +1,24 @@
+{
+  "serverWeb": {
+    "title": "Web App",
+    "fields": {
+      "releaseVersion": "Version (Release)",
+      "acceptedVersion": "Version",
+      "status": "Update status"
+    },
+    "actions": {
+      "checkNow": "search for updates",
+      "checking": "Checking…",
+      "reloadNow": "Reload now"
+    },
+    "statusTexts": {
+      "networkError": "Network error",
+      "unauthorized": "401 (Unauthorized)",
+      "httpError": "HTTP {{status}}",
+      "unexpectedFormat": "Unexpected format",
+      "upToDate": "Up to date",
+      "updateAvailable": "Update available",
+      "updateAcceptedNative": "Update accepted (native)"
+    }
+  }
+}
