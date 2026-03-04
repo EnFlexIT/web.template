@@ -9,6 +9,7 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
 import { SelectableList, SelectableItem } from "../../../components/ui-elements/SelectableList";
+import { H3 } from "../../../components/stylistic/H3";
 
 const API_PREFIX = "/api";
 
@@ -233,7 +234,7 @@ export function UpdateBackendTab() {
     <Card>
      
       <View style={s.container}>
-        <ThemedText style={s.title}>Backend</ThemedText>
+        <H3>Backend</H3>
 
         <View style={s.row}>
           {/* Left: type selector + component list */}

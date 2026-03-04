@@ -11,6 +11,8 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
+import { H2 } from "../../../components/stylistic/H2";
+import { H3 } from "../../../components/stylistic/H3";
 
 const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
 const API_PREFIX = "/api";
@@ -184,7 +186,7 @@ export function UpdateWebAppTab() {
 
     if (acceptedStored !== full) {
       setPendingUpdateFull(full);
-      setUpdateStatus(`Update available: ${acceptedStored} → ${full}`);
+      setUpdateStatus(`Update available: ${full}`);
       setIsChecking(false);
       return;
     }
@@ -233,65 +235,17 @@ export function UpdateWebAppTab() {
     };
   }, [checkNow]);
 
-  const box = (() => {
-    if (!ip) {
-      return {
-        tone: "warning" as const,
-        title: t("infobox.no_server.title", "Kein Server verbunden"),
-        subtitle: t("infobox.no_server.subtitle", "Bitte zuerst eine Server-IP konfigurieren."),
-      };
-    }
 
-    if (pendingUpdateFull) {
-      return {
-        tone: "warning" as const,
-        title: "Update verfügbar",
-        subtitle: "Eine neue Web-App Version wurde gefunden. Klicke auf „Jetzt neu laden“, wenn du bereit bist.",
-      };
-    }
-
-    if (String(updateStatus).toLowerCase().includes("unauthorized")) {
-      return {
-        tone: "warning" as const,
-        title: "Version check not authorized",
-        subtitle: "Server returned 401. Check JWT / permissions for /api/version.",
-      };
-    }
-
-    if (String(updateStatus).toLowerCase().includes("network")) {
-      return {
-        tone: "warning" as const,
-        title: "Network issue",
-        subtitle: "Server version could not be checked due to a network error.",
-      };
-    }
-
-    if (String(updateStatus).toLowerCase().includes("http")) {
-      return {
-        tone: "warning" as const,
-        title: "HTTP issue",
-        subtitle: `Server returned: ${updateStatus}`,
-      };
-    }
-
-    return {
-      tone: "info" as const,
-      title: "OK",
-      subtitle: "Server Web-App version is up to date.",
-    };
-  })();
 
   return (
     <Card>
-      <View>
-        <ThemedText style={s.title}>{t("serverWeb.title", "Web-App")}</ThemedText>
-
-        <View style={s.block}>
-          <Row label={t("serverWeb.release", "WebApp Version (Release)")} value={serverRelease} />
-          <Row label={t("serverWeb.full", "WebApp Version (Full)")} value={serverFull} />
+      <View style={s.container}>
+        
+          <H3>{t("serverWeb.title", "Web-App")}</H3>  
+          <Row label={t("Version (Release)")} value={serverRelease} />
+          <Row label={t("Version ")} value={lastAccepted} />
           <Row label={t("status", "Update Status")} value={updateStatus} />   
-        </View>
-
+        
         <View style={s.btnRow}>
           <ActionButton
             label={isChecking ? t("checkNow_loading", "Prüfe…") : t("checkNow", "Jetzt überprüfen")}
@@ -300,8 +254,6 @@ export function UpdateWebAppTab() {
             onPress={checkNow}
             disabled={isChecking || !ip}
           />
-
-         
           {pendingUpdateFull ? (
             <ActionButton
               label={t("reloadNow", "Jetzt neu laden")}
@@ -311,10 +263,6 @@ export function UpdateWebAppTab() {
               disabled={isChecking || !ip}
             />
           ) : null}
-        </View>
-
-        <View style={s.bottom}>
-          <Infobox tone={box.tone} title={box.title} subtitle={box.subtitle} style={s.fixedBox} />
         </View>
       </View>
     </Card>
@@ -345,7 +293,8 @@ const s = StyleSheet.create({
   label: { fontSize: 12, opacity: 0.75, flex: 1 },
   value: { fontSize: 13, fontWeight: "600" },
 
-  btnRow: { flexDirection: "row", gap: 10, justifyContent: "flex-end", padding: 14 },
+  btnRow: { flexDirection: "row", gap: 5, justifyContent: "flex-end", padding: 5 },
   bottom: { paddingTop: 8, paddingHorizontal: 14, paddingBottom: 14 },
   fixedBox: { minHeight: 120 },
+   container: { gap: 14 }
 });

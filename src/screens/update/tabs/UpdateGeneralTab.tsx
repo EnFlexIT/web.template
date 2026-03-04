@@ -7,6 +7,8 @@ import { Card } from "../../../components/ui-elements/Card";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
+import { H2 } from "../../../components/stylistic/H2";
+import { H3 } from "../../../components/stylistic/H3";
 
 const API_PREFIX = "/api";
 
@@ -133,7 +135,7 @@ export function UpdateGeneralTab() {
   return (
     <Card>
       <View style={s.container}>
-        <ThemedText style={s.title}>{t("general.title", "General")}</ThemedText>
+        <H3>{t("general.title", "General")}</H3>
 
         <View style={s.block}>
           <ThemedText style={s.blockTitle}>{t("general.webapp", "Web-App")}</ThemedText>

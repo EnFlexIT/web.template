@@ -16,6 +16,7 @@ import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
 
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { Text } from "./stylistic/Text";
+import { ActionButton } from "./ui-elements/ActionButton";
 
 const Feather = withUnistyles(Feather_);
 const AntDesign = withUnistyles(AntDesign_);
@@ -74,6 +75,10 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const sessionWrapRef = useRef<View>(null);
   const updateWrapRef = useRef<View>(null);
 
+  // ✅ verhindert, dass Session-Popup direkt wieder aufgeht, wenn user "Weitermachen" klickt
+  // (weil warning oft noch true bleibt bis Renew/JWT-Update ankommt)
+  const suppressSessionPopupUntilRef = useRef<number>(0);
+
   const onAutoLogout = useCallback(() => {
     if (isLoggedIn) {
       dispatch(logout());
@@ -83,37 +88,50 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
       dispatch(logoutBaseMode());
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
-const onHeartbeat = useCallback(() => {
-  dispatch(
-    renewJwtIfNeeded({
-      force: true,          
-      cooldownMs: 10_000,   
-    })
-  );
-}, [dispatch]);
 
-const { secondsLeft, warning } = useJwtSessionTimerWeb({
-  enabled: isWeb && showLogout,
-  jwt,
-  warnMs: 30_000,
-  onLogout: onAutoLogout,
-  onHeartbeat, 
-});
+  // ✅ Renew (Throttle passiert im Thunk über cooldownMs)
+  const onHeartbeat = useCallback(() => {
+    dispatch(
+      renewJwtIfNeeded({
+        force: true,
+        cooldownMs: 10_000, // max 1 Renew / 10s
+      })
+    );
+  }, [dispatch]);
 
+  const { secondsLeft, warning } = useJwtSessionTimerWeb({
+    enabled: isWeb && showLogout,
+    jwt,
+    warnMs: 30_000,
+    onLogout: onAutoLogout,
+    onHeartbeat,
+  });
+
+  // ✅ Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
   useEffect(() => {
     if (!isWeb) return;
     if (update.updateAvailable) setOpenPopup("update");
   }, [update.updateAvailable, isWeb]);
 
-  // Wenn warning aktiv und Session angezeigt werden soll: Session-Popup öffnen (und Update schließen)
+  // ✅ Session-Popup nur öffnen, wenn warning aktiv UND nicht gerade "unterdrückt"
   useEffect(() => {
     if (!isWeb || !showLogout) return;
-    if (warning) setOpenPopup("session");
-    if (!warning && openPopup === "session") setOpenPopup(null);
+
+    const now = Date.now();
+    const suppressed = now < suppressSessionPopupUntilRef.current;
+
+    if (warning && !suppressed) {
+      setOpenPopup("session");
+    }
+
+    // wenn warning weg ist, Session-Popup schließen
+    if (!warning && openPopup === "session") {
+      setOpenPopup(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warning, isWeb, showLogout]);
 
-  // Click-outside schließt Popups (Web)
+  // ✅ Click-outside schließt Popups (Web)
   useEffect(() => {
     if (!isWeb) return;
 
@@ -139,9 +157,15 @@ const { secondsLeft, warning } = useJwtSessionTimerWeb({
     };
   }, [isWeb]);
 
+  // ✅ Weitermachen:
+  // - Renew anstoßen
+  // - Popup sicher schließen
+  // - Session-Popup kurz unterdrücken, damit es nicht sofort wieder aufgeht,
+  //   obwohl warning noch true ist (bis neues JWT im Store ankommt)
   const stayLoggedIn = useCallback(() => {
     onHeartbeat();
-    setOpenPopup(null);
+    suppressSessionPopupUntilRef.current = Date.now() + 10_000; // ✅ genau dein Wunsch
+    setOpenPopup(null); // ✅ garantiert zu
   }, [onHeartbeat]);
 
   const manualLogout = useCallback(() => {
@@ -183,12 +207,7 @@ const { secondsLeft, warning } = useJwtSessionTimerWeb({
             />
           </Pressable>
 
-          <Text
-            style={[
-              styles.timerText,
-              warning ? styles.warningText : undefined,
-            ]}
-          >
+          <Text style={[styles.timerText, warning ? styles.warningText : undefined]}>
             {formatMMSS(secondsLeft)}
           </Text>
 
@@ -198,19 +217,18 @@ const { secondsLeft, warning } = useJwtSessionTimerWeb({
 
               <Text style={styles.popupBody}>
                 Sie werden in{" "}
-                <Text style={styles.popupCountdown}>
-                  {formatMMSS(secondsLeft)}
-                </Text>{" "}
+                <Text style={styles.popupCountdown}>{formatMMSS(secondsLeft)}</Text>{" "}
                 automatisch abgemeldet.
               </Text>
 
-             
+              <ActionButton variant="secondary" onPress={stayLoggedIn} label="Weitermachen" />
             </View>
           ) : null}
         </View>
       ) : null}
 
-     
+      {/* UPDATE ICON / POPUP (optional – wenn du es renderst) */}
+      {/* Hier könntest du deinen Update-Button + Popup mit updateWrapRef einbauen */}
 
       {/* LOGOUT ICON */}
       {showLogout ? (
@@ -264,7 +282,6 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
     shadowColor: "#000",
     shadowOpacity: 0.12,
-   
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
     zIndex: 999,
@@ -274,17 +291,6 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: "700",
     marginBottom: 6,
   },
-  badgeDot: {
-    position: "absolute",
-    right: -2,
-    top: -2,
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: "red",
-    borderWidth: 2,
-    borderColor: theme.colors.background,
-  },
   popupBody: {
     fontSize: 13,
     opacity: 0.85,
@@ -292,32 +298,5 @@ const styles = StyleSheet.create((theme) => ({
   },
   popupCountdown: {
     fontWeight: "800",
-  },
-  popupButtons: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "flex-end",
-  },
-  btn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
- 
-    borderWidth: 1,
-  },
-  btnPrimary: {
-    borderColor: theme.colors.highlight,
-    backgroundColor: theme.colors.highlight,
-  },
-  btnPrimaryText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  btnGhost: {
-    borderColor: theme.colors.border,
-    backgroundColor: "transparent",
-  },
-  btnGhostText: {
-    color: theme.colors.text,
-    fontWeight: "600",
   },
 }));

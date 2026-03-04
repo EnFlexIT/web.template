@@ -8,8 +8,7 @@ type Options = {
   jwt: string | null;
   warnMs: number;
   onLogout: () => void;
-  onHeartbeat?: () => void; // Renew
-  heartbeatMinIntervalMs?: number; // optional
+  onHeartbeat?: () => void; // Renew (throttling happens in thunk via cooldownMs)
 };
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -35,6 +34,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   const el = target.closest(selector);
   if (!el) return false;
 
+  // disabled soll NICHT zählen
   if ((el as HTMLButtonElement).disabled) return false;
   if (el.getAttribute("aria-disabled") === "true") return false;
 
@@ -42,6 +42,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 function isEffectiveKey(e: KeyboardEvent): boolean {
+  // "echte" Navigation / Bedienung
   return [
     "Tab",
     "Enter",
@@ -65,82 +66,99 @@ export function useJwtSessionTimerWeb({
   warnMs,
   onLogout,
   onHeartbeat,
-  heartbeatMinIntervalMs = 10_000, // z.B. max 1 Renew / 10s
 }: Options) {
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [warning, setWarning] = useState(false);
+  //  direkt aus JWT (kein 0-Flash)
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (!jwt) return 0;
+    const remainingMs = getJwtRemainingMs(jwt);
+    return Math.max(0, Math.ceil(remainingMs / 1000));
+  });
 
-  const lastActivityRef = useRef<number>(Date.now());
-  const lastHeartbeatAtRef = useRef<number>(0);
+  const [warning, setWarning] = useState(() => {
+    if (!jwt) return false;
+    const remainingMs = getJwtRemainingMs(jwt);
+    return Number.isFinite(remainingMs) && remainingMs > 0 && remainingMs <= warnMs;
+  });
+
+  const lastLogoutAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled) return;
     if (Platform.OS !== "web") return;
     if (typeof window === "undefined") return;
 
-   const tryHeartbeat = () => {
-  if (!jwt) return;
-  if (getJwtRemainingMs(jwt) <= 0) return;
-  onHeartbeat?.();
-};
-
-    const markEffectiveActivity = () => {
-      lastActivityRef.current = Date.now();
-      tryHeartbeat(); // <- IMMER bei effektiver Aktivität
+    const safeLogout = () => {
+    
+      const now = Date.now();
+      if (now - lastLogoutAtRef.current < 1000) return;
+      lastLogoutAtRef.current = now;
+      onLogout();
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!isEffectiveKey(e)) return;
-      markEffectiveActivity();
-    };
-
-    const onClick = (e: MouseEvent) => {
-      if (!isInteractiveTarget(e.target)) return; // kein "sinnloser" Seitenklick
-      markEffectiveActivity();
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!isInteractiveTarget(e.target)) return;
-      markEffectiveActivity();
-    };
-
-    const onFocusIn = (e: FocusEvent) => {
-      if (!isInteractiveTarget(e.target)) return;
-      markEffectiveActivity();
-    };
-
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    window.addEventListener("click", onClick, { capture: true });
-    window.addEventListener("touchend", onTouchEnd, {
-      capture: true,
-      passive: true,
-    });
-    window.addEventListener("focusin", onFocusIn, { capture: true });
-
-    const tick = window.setInterval(() => {
-      if (!jwt) return;
+    const tickOnce = () => {
+      if (!jwt) {
+        setSecondsLeft(0);
+        setWarning(false);
+        return;
+      }
 
       const remainingMs = getJwtRemainingMs(jwt);
 
-      if (remainingMs <= 0) {
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
         setSecondsLeft(0);
         setWarning(false);
-        onLogout();
+        safeLogout();
         return;
       }
 
       setSecondsLeft(Math.ceil(remainingMs / 1000));
       setWarning(remainingMs <= warnMs);
-    }, 1000);
+    };
+
+    const triggerHeartbeat = () => {
+      // nur wenn token grundsätzlich gültig ist
+      if (!jwt) return;
+      const remainingMs = getJwtRemainingMs(jwt);
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) return;
+
+    
+      onHeartbeat?.();
+
+  
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!isEffectiveKey(e)) return;
+      triggerHeartbeat();
+    };
+
+    const onClick = (e: MouseEvent) => {
+      if (!isInteractiveTarget(e.target)) return; 
+      triggerHeartbeat();
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!isInteractiveTarget(e.target)) return;
+      triggerHeartbeat();
+    };
+
+    // Listener
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("click", onClick, { capture: true });
+    window.addEventListener("touchend", onTouchEnd, { capture: true, passive: true });
+
+  
+    tickOnce();
+
+    const tick = window.setInterval(tickOnce, 1000);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
       window.removeEventListener("click", onClick, { capture: true } as any);
       window.removeEventListener("touchend", onTouchEnd, { capture: true } as any);
-      window.removeEventListener("focusin", onFocusIn, { capture: true } as any);
       window.clearInterval(tick);
     };
-  }, [enabled, jwt, warnMs, onLogout, onHeartbeat, heartbeatMinIntervalMs]);
+  }, [enabled, jwt, warnMs, onLogout, onHeartbeat]);
 
   return { secondsLeft, warning };
 }
