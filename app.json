@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "enflex.it-ems",
-    "slug": "enflex.it-ems",
+    "slug": "enflex-it-ems",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.enflexit.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,6 +33,11 @@
     "plugins": [
       "react-native-edge-to-edge"
     ],
-    "scheme": "example"
+    "scheme": "example",
+    "extra": {
+      "eas": {
+        "projectId": "2c3096d1-40f9-4b89-a39c-483530ed29b3"
+      }
+    }
   }
 }

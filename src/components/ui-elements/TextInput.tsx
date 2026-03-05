@@ -140,7 +140,7 @@ export function TextInput({
             disabled={disabled}
           >
             <AntDesign
-              name={isVisible ? "eye" : "eyeo"}
+              name={isVisible ? "eye" : "eye-invisible"}
               size={18}
               color={theme.colors.text}
             />
