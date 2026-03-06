@@ -40,7 +40,17 @@ function fmtRelease(v: ApiVersion | null | undefined) {
 function fmtFull(v: ApiVersion | null | undefined) {
   const r = fmtRelease(v);
   const q = String(v?.qualifier ?? "").trim();
-  return q ? `${r}-${q}` : r;
+
+  if (!q) return r;
+
+  const parts = q.split("-").filter(Boolean);
+  const last = parts[parts.length - 1]; // "1539"
+
+  // if last is numeric, append with dot: "0.0.4.1539"
+  if (last && /^\d+$/.test(last)) return `${r}.${last}`;
+
+  // fallback: keep old behavior
+  return `${r}-${q}`;
 }
 
 function extractServerWebApp(data: any): {
@@ -95,7 +105,7 @@ function hardReloadWeb(cacheKey: string) {
 }
 
 export function UpdateWebAppTab() {
-  // ✅ genau wie du willst: Namespace heißt "Update"
+ 
   const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
 
@@ -241,8 +251,7 @@ export function UpdateWebAppTab() {
     <Card>
       <View style={s.container}>
         <H3>{t("serverWeb.title", "Web-App")}</H3>
-
-        {/* ✅ exakt passend zu deiner Konstante */}
+      
         <Row label={t("serverWeb.fields.releaseVersion")} value={serverRelease} />
         <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
         <Row label={t("serverWeb.fields.status")} value={updateStatus} />

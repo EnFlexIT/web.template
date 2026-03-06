@@ -37,6 +37,7 @@
     "appInfo": {
       "title": "Update",
       "description": "Aktuelle Version anzeigen, Updates prüfen und neu laden."
-    }
+    },
+    "search": "Suchen…"
   }
 }

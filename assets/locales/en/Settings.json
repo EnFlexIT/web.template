@@ -35,8 +35,9 @@
       "description": "System-wide configurations and management."
     },
       "appInfo": {
-      "title": "App Info",
+      "title": "Update",
       "description": "View current version, check for updates, and reload."
-      }
+      },
+      "search": "Search…"
 }
 }

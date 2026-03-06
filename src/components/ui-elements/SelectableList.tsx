@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { H4 } from "../../components/stylistic/H4";
+import { useTranslation } from "react-i18next";
+
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
+import { ThemedText } from "../themed/ThemedText";
 
 export type SelectableItem<T extends string> = {
   id: T;
@@ -12,7 +14,7 @@ export type SelectableItem<T extends string> = {
 };
 
 type ListVariant = "primary" | "secondary";
-type ListSize = "xs" | "sm" | "md";
+type ListSize = "xs" | "sm" | "md" | "xs0";
 
 type Props<T extends string> = {
   items: SelectableItem<T>[];
@@ -28,7 +30,6 @@ type Props<T extends string> = {
 
   minVisibleRows?: number;
 
-  
   variant?: ListVariant; // default: "secondary"
   size?: ListSize; // default: "sm"
 };
@@ -39,19 +40,22 @@ export function SelectableList<T extends string>({
   onChange,
   maxHeight = 200,
   showSearch = true,
-  searchPlaceholder = "Suchen…",
+  searchPlaceholder,
   emptyText = "Keine Einträge gefunden",
   minVisibleRows = 4,
   variant = "secondary",
   size = "sm",
 }: Props<T>) {
+ 
+
+
   const { theme } = useUnistyles();
   const [q, setQ] = useState("");
 
   // hover/pressed states per item (like ActionButton)
   const [hoveredId, setHoveredId] = useState<T | null>(null);
   const [pressedId, setPressedId] = useState<T | null>(null);
-
+ const { t } = useTranslation(["Settings"]);
   const filtered = useMemo(() => {
     if (!showSearch) return items;
     const needle = q.trim().toLowerCase();
@@ -94,7 +98,7 @@ export function SelectableList<T extends string>({
         <StylisticTextInput
           value={q}
           onChangeText={setQ}
-          placeholder={searchPlaceholder}
+          placeholder={t("search")}
           style={[
             styles.search,
             {
@@ -114,7 +118,7 @@ export function SelectableList<T extends string>({
         contentContainerStyle={{ paddingBottom: 6 }}
         ListEmptyComponent={
           <View style={{ paddingVertical: 10 }}>
-            <H4 style={{ opacity: 0.3}}>{emptyText}</H4>
+            <ThemedText style={{ opacity: 0.3 }}>{emptyText}</ThemedText>
           </View>
         }
         renderItem={({ item }) => {
@@ -134,11 +138,7 @@ export function SelectableList<T extends string>({
             ? theme.colors.highlight
             : theme.colors.card;
 
-          const textColor = isPrimary
-            ? theme.colors.background
-           
-           
-            : theme.colors.text;
+          const textColor = isPrimary ? theme.colors.background : theme.colors.text;
 
           return (
             <Pressable
@@ -163,19 +163,18 @@ export function SelectableList<T extends string>({
               ]}
             >
               <View style={styles.inlineRow}>
-                <H4
+                <ThemedText
                   numberOfLines={1}
                   style={{
                     color: textColor,
-                    //fontWeight: active ? "700" : "500",
                     flexShrink: 1,
                   }}
                 >
                   {item.label}
-                </H4>
+                </ThemedText>
 
                 {!!item.subtitle && (
-                  <H4
+                  <ThemedText
                     numberOfLines={1}
                     style={{
                       opacity: isPrimary ? 0.65 : 0.3,
@@ -185,7 +184,7 @@ export function SelectableList<T extends string>({
                     }}
                   >
                     ({item.subtitle})
-                  </H4>
+                  </ThemedText>
                 )}
               </View>
             </Pressable>
@@ -206,12 +205,12 @@ const styles = StyleSheet.create({
   },
   search: {
     borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    marginBottom: 6,
   },
   itemBase: {
-    borderWidth: 1,
+   
     justifyContent: "center",
   },
   inlineRow: {
@@ -221,17 +220,25 @@ const styles = StyleSheet.create({
 });
 
 const itemSizeStyles = {
+  xs0: {
+  
+    paddingHorizontal: 8,
+    minHeight: 28,
+  },
   xs: {
+     borderWidth: 1,
     paddingVertical: 4,
     paddingHorizontal: 8,
     minHeight: 28,
   },
   sm: {
+     borderWidth: 1,
     paddingVertical: 6,
     paddingHorizontal: 8,
     minHeight: 34,
   },
   md: {
+    borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 12,
     minHeight: 42,

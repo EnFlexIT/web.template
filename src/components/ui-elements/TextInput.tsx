@@ -23,11 +23,10 @@ interface TextInputProps {
   keyboardType?: "default" | "numeric" | "email-address";
   disabled?: boolean;
 
-
   secureTextEntry?: boolean;
   size?: InputSize;
 
-  //Passwort Toggle (zeigt Auge + toggelt)
+  // Passwort-Anzeige nur während gedrückt wird
   passwordToggle?: boolean;
 
   // optional: eigenes Right-Element (wenn nicht passwordToggle)
@@ -72,13 +71,13 @@ export function TextInput({
 
   const [isVisible, setIsVisible] = React.useState(false);
 
-  const showEye = passwordToggle; // immer zeigen (auch web)
+  const showEye = passwordToggle;
   const showRight = showEye || !!right;
 
-  // Native: echtes secureTextEntry toggeln
+  // Native: Passwort nur sichtbar solange gedrückt
   const nativeSecure = passwordToggle ? !isVisible : secureTextEntry;
 
-  // Web: Browser-Passwort-Auge vermeiden + trotzdem maskieren
+  // Web: Browser-Passwort-Auge vermeiden + selbst maskieren
   const isWebPasswordMode = Platform.OS === "web" && passwordToggle;
 
   return (
@@ -99,9 +98,6 @@ export function TextInput({
           onSubmitEditing={onSubmitEditing}
           returnKeyType={returnKeyType}
           placeholderTextColor={theme.colors.text + "80"}
-         
-          // - Web: NICHT secureTextEntry nutzen -> sonst Browser-Auge (unstabil)
-          // - Native: normal secureTextEntry
           secureTextEntry={isWebPasswordMode ? false : nativeSecure}
           style={[
             styles.inputBase,
@@ -112,29 +108,24 @@ export function TextInput({
               color: theme.colors.text,
               opacity: disabled ? 0.5 : 1,
             },
-
-            //  Platz für Icon nur wenn rechts was ist
             showRight ? { paddingRight: 38 } : null,
-
-            //  Web-Maskierung statt Browser-password
             isWebPasswordMode
               ? ({
-                  // solange "unsichtbar": Punkte anzeigen
                   WebkitTextSecurity: isVisible ? "none" : "disc",
-                  // optional: sorgt für konsistenteres Rendering
                   outlineStyle: "none",
                 } as any)
               : null,
-
             style,
             inputStyle,
           ]}
         />
 
-        {/* Right side */}
         {showEye ? (
           <Pressable
-            onPress={() => setIsVisible((p) => !p)}
+            onPressIn={() => setIsVisible(true)}
+            onPressOut={() => setIsVisible(false)}
+            onTouchEnd={() => setIsVisible(false)}
+            onTouchCancel={() => setIsVisible(false)}
             hitSlop={10}
             style={styles.right}
             disabled={disabled}
@@ -159,7 +150,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
 
-  //wie dein Original
   inputBase: {
     borderWidth: 1,
     paddingHorizontal: 10,

@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import { Icon, IconName } from "./Icon/Icon";
 import { useState } from "react";
+import { ThemedText } from "../themed/ThemedText";
 
 interface ActionButtonProps {
   label?: string;
@@ -69,7 +70,7 @@ export function ActionButton({
         </View>
       )}
 
-      {label && <H4>{label}</H4>}
+      {label && <ThemedText>{label}</ThemedText>}
     </Pressable>
   );
 }

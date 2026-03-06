@@ -13,7 +13,11 @@ import { SelectableList, SelectableItem } from "../../../components/ui-elements/
 import { H3 } from "../../../components/stylistic/H3";
 
 const API_PREFIX = "/api";
+const MAX_FEATURES_DRAWN = 5;
 
+/* =========================
+   Helpers
+   ========================= */
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
@@ -106,6 +110,39 @@ function parseSoftwareComponents(data: any): ParsedComponent[] {
   return uniqById(parsed);
 }
 
+function includesCI(haystack: string, needle: string) {
+  const h = String(haystack ?? "").toLowerCase();
+  const n = String(needle ?? "").toLowerCase().trim();
+  if (!n) return true;
+  return h.includes(n);
+}
+
+/**
+ * Suche läuft über ALLE Features (features),
+ * aber wir geben nur max. 5 Items an die List-Komponente zum Rendern zurück.
+ * Optional halten wir das selektierte Feature sichtbar (falls es sonst rausfällt).
+ */
+function pickTopNWithSelected<T extends { id: string }>(
+  all: T[],
+  selectedId: string,
+  n: number
+): T[] {
+  const picked = all.slice(0, n);
+  if (!selectedId) return picked;
+
+  const alreadyIn = picked.some((x) => x.id === selectedId);
+  if (alreadyIn) return picked;
+
+  const selected = all.find((x) => x.id === selectedId);
+  if (!selected) return picked;
+
+  // Selected nach oben ziehen, trotzdem max n
+  return [selected, ...picked].slice(0, n);
+}
+
+/* =========================
+   Component
+   ========================= */
 export function UpdateBackendTab() {
   const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
@@ -117,15 +154,25 @@ export function UpdateBackendTab() {
 
   const [isShowSource, setIsShowSource] = useState<boolean>(true);
 
+  // -> hier liegen ALLE geladenen Einträge
   const [features, setFeatures] = useState<ParsedComponent[]>([]);
   const [bundles, setBundles] = useState<ParsedComponent[]>([]);
+
+  // Suche über ALLE Features, Anzeige aber nur 5
+  const [featureQuery, setFeatureQuery] = useState<string>("");
 
   const [selectedFeatureId, setSelectedFeatureId] = useState<string>("");
   const [selectedBundleId, setSelectedBundleId] = useState<string>("");
 
-  const [lastCheckedAt, setLastCheckedAt] = useState<string>("-");
   const [status, setStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
+
+  const resetLists = useCallback(() => {
+    setFeatures([]);
+    setBundles([]);
+    setSelectedFeatureId("");
+    setSelectedBundleId("");
+  }, []);
 
   const loadFeaturesAndBundles = useCallback(
     async (override?: { featureId?: string; showSource?: boolean }) => {
@@ -135,7 +182,6 @@ export function UpdateBackendTab() {
       const effectiveShowSource = override?.showSource ?? isShowSource;
 
       setIsChecking(true);
-      setLastCheckedAt(new Date().toLocaleString());
 
       // ---- 1) FEATURES ----
       const q1 = new URLSearchParams();
@@ -148,10 +194,7 @@ export function UpdateBackendTab() {
 
       if (dataFeatures === null) {
         setStatus(t("serverWeb.statusTexts.networkError", "Network error"));
-        setFeatures([]);
-        setBundles([]);
-        setSelectedFeatureId("");
-        setSelectedBundleId("");
+        resetLists();
         setIsChecking(false);
         return;
       }
@@ -161,12 +204,12 @@ export function UpdateBackendTab() {
         setStatus(
           st === 401
             ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
-            : t("serverWeb.statusTexts.httpError", { status: st, defaultValue: `HTTP ${st}` })
+            : t("serverWeb.statusTexts.httpError", {
+                status: st,
+                defaultValue: `HTTP ${st}`,
+              })
         );
-        setFeatures([]);
-        setBundles([]);
-        setSelectedFeatureId("");
-        setSelectedBundleId("");
+        resetLists();
         setIsChecking(false);
         return;
       }
@@ -181,7 +224,7 @@ export function UpdateBackendTab() {
 
       setSelectedFeatureId(nextFeatureId);
 
-   
+      // ---- 2) BUNDLES ----
       const bundleType: BackendType = nextFeatureId ? "BUNDLE_OF_FEATURE" : "BUNDLE";
 
       const q2 = new URLSearchParams();
@@ -189,7 +232,6 @@ export function UpdateBackendTab() {
       q2.set("type", bundleType);
       q2.set("isShowSource", String(effectiveShowSource));
 
-   
       if (bundleType === "BUNDLE_OF_FEATURE") {
         q2.set("filter", nextFeatureId);
       }
@@ -210,7 +252,10 @@ export function UpdateBackendTab() {
         setStatus(
           st === 401
             ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
-            : t("serverWeb.statusTexts.httpError", { status: st, defaultValue: `HTTP ${st}` })
+            : t("serverWeb.statusTexts.httpError", {
+                status: st,
+                defaultValue: `HTTP ${st}`,
+              })
         );
         setBundles([]);
         setSelectedBundleId("");
@@ -220,13 +265,10 @@ export function UpdateBackendTab() {
 
       const parsedBundles = parseSoftwareComponents(dataBundles);
 
-    
-      const onlyBundles = parsedBundles.filter(
-        (x) => String(x.type).toUpperCase() === "BUNDLE"
-      );
+      // Optional: falls der Endpoint auch Features/anderes mitschickt → nur Bundles anzeigen
+      const onlyBundles = parsedBundles.filter((x) => String(x.type).toUpperCase() === "BUNDLE");
 
       setBundles(onlyBundles);
-
       setSelectedBundleId((prev) =>
         prev && onlyBundles.some((b) => b.id === prev) ? prev : onlyBundles[0]?.id ?? ""
       );
@@ -234,7 +276,7 @@ export function UpdateBackendTab() {
       setStatus(t("serverWeb.statusTexts.upToDate", "Up to date"));
       setIsChecking(false);
     },
-    [ip, jwt, selectedFeatureId, isShowSource, t]
+    [ip, jwt, selectedFeatureId, isShowSource, t, resetLists]
   );
 
   const checkNow = useCallback(async () => {
@@ -243,7 +285,7 @@ export function UpdateBackendTab() {
 
   useEffect(() => {
     checkNow();
-    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -258,12 +300,24 @@ export function UpdateBackendTab() {
     };
   }, [checkNow]);
 
+  // Suche über ALLE Features:
+  const filteredFeatures = useMemo(() => {
+    const q = featureQuery.trim();
+    if (!q) return features;
+    return features.filter((f) => includesCI(f.name, q) || includesCI(f.id, q) || includesCI(f.type, q));
+  }, [features, featureQuery]);
+
+  // Anzeige max 5 (aber selektiertes Feature bleibt sichtbar):
+  const drawnFeatures = useMemo(() => {
+    return pickTopNWithSelected(filteredFeatures, selectedFeatureId, MAX_FEATURES_DRAWN);
+  }, [filteredFeatures, selectedFeatureId]);
+
   const featureItems = useMemo<SelectableItem<string>[]>(() => {
-    return features.map((f) => ({
-      id: f.id, 
+    return drawnFeatures.map((f) => ({
+      id: f.id,
       label: `${f.name} (${fmtFull(f.version)})`,
     }));
-  }, [features]);
+  }, [drawnFeatures]);
 
   const bundleItems = useMemo<SelectableItem<string>[]>(() => {
     return bundles.map((b) => ({
@@ -275,51 +329,45 @@ export function UpdateBackendTab() {
   return (
     <Card>
       <View style={s.container}>
-     
+        {/* Header */}
         <View style={s.headerRow}>
           <View style={s.headerLeft}>
-            <H3>{t("backend.title", "Backend")}</H3>    
+            <H3>{t("backend.title", "Backend")}</H3>
           </View>
-
-            <View style={s.headerRight}>
-               <ThemedText > {t("backend.updateStatusBadge", "Update Status")} </ThemedText>           
-               <ThemedText>{status}</ThemedText>
-             </View>
-
-            <View style={s.headerButtons}>
-              <ActionButton
-                label={
-                  isChecking
-                    ? t("serverWeb.actions.checking", "Prüfe…")
-                    : t("serverWeb.actions.checkNow", "Jetzt überprüfen")
-                }
-                variant="secondary"
-                size="xs"
-                onPress={checkNow}
-                disabled={isChecking || !ip}
-              />
-
-              <ActionButton
-                label={isShowSource ? "Source: ON" : "Source: OFF"}
-                variant="secondary"
-                size="xs"
-                onPress={() => {
-                  const next = !isShowSource;
-                  setIsShowSource(next);
-                  loadFeaturesAndBundles({ showSource: next });
-                }}
-                disabled={isChecking}
-              />
-            </View>
+          <View style={s.headerRight}>
+            <ThemedText style={s.statusLabel}>
+              {t("backend.updateStatusBadge", "Update Status")}
+            </ThemedText>
+            <ThemedText style={s.statusValue}>{status}</ThemedText>
+          </View>
+          <View style={s.headerButtons}>
+            <ActionButton
+              label={    t("serverWeb.actions.checkNow", "Jetzt überprüfen") }
+              variant="secondary"
+              size="xs"
+              onPress={checkNow}
+              disabled={isChecking || !ip}
+            />
+            <ActionButton
+              label={isShowSource ? "Source: ON" : "Source: OFF"}
+              variant="secondary"
+              size="xs"
+              onPress={() => {
+                const next = !isShowSource;
+                setIsShowSource(next);
+                loadFeaturesAndBundles({ showSource: next });
+              }}
+              disabled={isChecking}
+            />
           </View>
         </View>
-
         {/* Installed Features */}
         <View style={s.section}>
-          <ThemedText style={s.sectionTitle}>
-            {t("backend.sections.installedFeatures", "Installed Features")}
-          </ThemedText>
-
+          <View style={s.sectionTitleRow}>
+            <ThemedText style={s.sectionTitle}>
+              {t("backend.sections.installedFeatures", "Installed Features")}
+            </ThemedText>
+          </View>
           <SelectableList<string>
             items={featureItems}
             value={selectedFeatureId || (featureItems[0]?.id ?? "")}
@@ -329,8 +377,8 @@ export function UpdateBackendTab() {
               loadFeaturesAndBundles({ featureId: id });
             }}
             maxHeight={190}
-            minVisibleRows={4}
-            size="xs"
+            minVisibleRows={5}
+            size="xs0"
             variant="secondary"
             emptyText={t("backend.empty.noFeatures", "No features")}
           />
@@ -338,55 +386,76 @@ export function UpdateBackendTab() {
 
         {/* Bundles */}
         <View style={s.section}>
-          <ThemedText style={s.sectionTitle}>
-            {t("backend.sections.bundles", "Bundles")}
-          </ThemedText>
-
+          <ThemedText style={s.sectionTitle}>{t("backend.sections.bundles", "Bundles")}</ThemedText>
           <SelectableList<string>
             items={bundleItems}
             value={selectedBundleId || (bundleItems[0]?.id ?? "")}
             onChange={(id) => setSelectedBundleId(id)}
             maxHeight={220}
             minVisibleRows={5}
-            size="xs"
+            size="xs0"
             variant="secondary"
             emptyText={t("backend.empty.noBundles", "No bundles")}
           />
         </View>
-
-        <View style={s.footerRow}>
-          <ThemedText style={s.footerText}>
-            {t("backend.labels.lastChecked", "Last checked")}: {lastCheckedAt}
-          </ThemedText>
-        </View>
-   
+      </View>
     </Card>
   );
 }
 
+/* =========================
+   Styles (Responsive Header)
+   ========================= */
 const s = StyleSheet.create({
   container: { gap: 14 },
 
-  headerRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  headerLeft: { gap: 6, flexShrink: 1 },
-  headerRight: {gap: 6, flexDirection: "row", alignItems: "center" },
-
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.10)",
+  headerRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 10,
   },
-  badgeText: { fontSize: 12, fontWeight: "700" },
+  headerLeft: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 160,
+    gap: 4,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 0,
+    minWidth: 170,
+  },
 
-  headerStatus: { fontSize: 13, fontWeight: "700" },
-  headerButtons: { flexDirection: "row", gap: 10, justifyContent: "flex-end" },
+  statusLabel: { opacity: 0.85 },
+  statusValue: { fontWeight: "700" },
+
+  headerButtons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    flexBasis: "100%",
+    justifyContent: "flex-start",
+  },
 
   section: { gap: 8 },
   sectionTitle: { fontSize: 13, fontWeight: "700", opacity: 0.9 },
 
-  footerRow: { paddingTop: 4 },
-  footerText: { fontSize: 11, opacity: 0.7 },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  quickFilterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+
+  helperText: { fontSize: 12, opacity: 0.75 },
 });
