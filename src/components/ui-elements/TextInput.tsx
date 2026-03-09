@@ -12,6 +12,7 @@ import { useUnistyles } from "react-native-unistyles";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 import { Text } from "../stylistic/Text";
+import { WebPasswordInput } from "./WebPasswordInput";
 
 type InputSize = "xs" | "sm" | "md";
 
@@ -22,20 +23,12 @@ interface TextInputProps {
   placeholder?: string;
   keyboardType?: "default" | "numeric" | "email-address";
   disabled?: boolean;
-
   secureTextEntry?: boolean;
   size?: InputSize;
-
-  // Passwort-Anzeige nur während gedrückt wird
   passwordToggle?: boolean;
-
-  // optional: eigenes Right-Element (wenn nicht passwordToggle)
   right?: React.ReactNode;
-
-  // wichtig: damit alte Screens nicht kaputt gehen
   style?: ViewStyle | ViewStyle[];
   inputStyle?: any;
-
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   textContentType?: any;
   onBlur?: () => void;
@@ -53,13 +46,10 @@ export function TextInput({
   disabled = false,
   secureTextEntry = false,
   size = "md",
-
   passwordToggle = false,
   right,
-
   style,
   inputStyle,
-
   autoCapitalize = "none",
   textContentType,
   onBlur,
@@ -73,12 +63,34 @@ export function TextInput({
 
   const showEye = passwordToggle;
   const showRight = showEye || !!right;
+  const isPasswordField = passwordToggle || secureTextEntry;
 
-  // Native: Passwort nur sichtbar solange gedrückt
+  // WEB: eigenes Passwortfeld statt RNTextInput
+  if (Platform.OS === "web" && isPasswordField) {
+    return (
+      <View style={{ gap: 4 }}>
+        {label && <Text style={styles.label}>{label}</Text>}
+
+        <WebPasswordInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          disabled={disabled}
+          size={size}
+          isVisible={isVisible}
+          setIsVisible={setIsVisible}
+          style={style}
+          inputStyle={inputStyle}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          onSubmitEditing={onSubmitEditing}
+          theme={theme}
+        />
+      </View>
+    );
+  }
+
   const nativeSecure = passwordToggle ? !isVisible : secureTextEntry;
-
-  // Web: Browser-Passwort-Auge vermeiden + selbst maskieren
-  const isWebPasswordMode = Platform.OS === "web" && passwordToggle;
 
   return (
     <View style={{ gap: 4 }}>
@@ -98,7 +110,11 @@ export function TextInput({
           onSubmitEditing={onSubmitEditing}
           returnKeyType={returnKeyType}
           placeholderTextColor={theme.colors.text + "80"}
-          secureTextEntry={isWebPasswordMode ? false : nativeSecure}
+          secureTextEntry={nativeSecure}
+          contextMenuHidden={isPasswordField}
+          selectTextOnFocus={!isPasswordField}
+          autoCorrect={false}
+          spellCheck={false}
           style={[
             styles.inputBase,
             inputSizeStyles[size],
@@ -109,12 +125,6 @@ export function TextInput({
               opacity: disabled ? 0.5 : 1,
             },
             showRight ? { paddingRight: 38 } : null,
-            isWebPasswordMode
-              ? ({
-                  WebkitTextSecurity: isVisible ? "none" : "disc",
-                  outlineStyle: "none",
-                } as any)
-              : null,
             style,
             inputStyle,
           ]}
@@ -149,12 +159,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     opacity: 0.7,
   },
-
   inputBase: {
     borderWidth: 1,
     paddingHorizontal: 10,
   },
-
   right: {
     position: "absolute",
     right: 10,
@@ -166,7 +174,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const inputSizeStyles = {
+export const inputSizeStyles = {
   xs: {
     minHeight: 28,
     paddingVertical: 4,
