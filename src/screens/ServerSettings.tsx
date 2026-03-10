@@ -305,9 +305,14 @@ async function handleUseServer() {
   }
 
   await dispatch(switchServer(newUrl));
+
+  if (Platform.OS === "web") {
+    window.location.assign(`${newUrl}/login`);
+    return;
+  }
+
   navigation.goBack();
 }
-
   return (
     <Screen>
      {/* Header */}
