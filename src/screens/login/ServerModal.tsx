@@ -1,5 +1,5 @@
 // src/screens/login/ServerModal.tsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -21,8 +21,7 @@ import {
 } from "../../components/ui-elements/SelectableList";
 
 import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { setIpAsync } from "../../redux/slices/apiSlice";
-import { initializeMenu } from "../../redux/slices/menuSlice";
+import { switchServer } from "../../redux/slices/apiSlice";
 import {
   addServer,
   selectServer,
@@ -166,6 +165,22 @@ export function ServerModal({
     return !!nameInput.trim() || !!urlInput.trim();
   }
 
+  useEffect(() => {
+    if (!visible) return;
+
+    if (selectedServer) {
+      setEditMode(true);
+      setNameInput(selectedServer.name ?? "");
+      setUrlInput(selectedServer.baseUrl ?? "");
+    } else {
+      setEditMode(false);
+      setNameInput("");
+      setUrlInput(selectedBaseUrl ?? "");
+    }
+
+    resetErrors();
+  }, [visible, selectedServerId, selectedServer, selectedBaseUrl]);
+
   async function handleDeleteSelected() {
     if (!selectedServer) return;
 
@@ -187,7 +202,6 @@ export function ServerModal({
 
     if (check.ok) return true;
 
-    
     setGeneralError(t("errors.serverNotReachable"));
     return false;
   }
@@ -305,22 +319,25 @@ export function ServerModal({
   }
 
   async function handleUseServer() {
+    let url = "";
+
     if (hasUnsavedChanges()) {
       const proceed = await askSaveBeforeUse();
       if (!proceed) return;
 
       const saved = await validateAndSaveOnly();
       if (!saved.ok || !saved.baseUrl) return;
-    }
 
-    const currentSelected = servers.find((s) => s.id === selectedServerId);
-    const url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+      url = normalizeBaseUrl(saved.baseUrl);
+    } else {
+      const currentSelected = servers.find((s) => s.id === selectedServerId);
+      url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+    }
 
     const online = await ensureSelectedServerOnline(url);
     if (!online) return;
 
-    await dispatch(setIpAsync(url));
-    await dispatch(initializeMenu());
+    await dispatch(switchServer(url));
     onClose();
   }
 
@@ -332,7 +349,6 @@ export function ServerModal({
           style={{
             width: 500,
             maxWidth: "100%",
-          
             padding: 16,
             gap: 14,
             borderWidth: 1,
@@ -366,7 +382,6 @@ export function ServerModal({
                   flex: 1,
                   padding: 5,
                   borderWidth: 1,
-                
                   borderColor: nameError ? "red" : theme.colors.border,
                 }}
                 placeholder={t("serverLabel")}
@@ -392,7 +407,6 @@ export function ServerModal({
                   flex: 1,
                   padding: 5,
                   borderWidth: 1,
-                  
                   borderColor: urlError ? "red" : theme.colors.border,
                 }}
                 placeholder={t("serverUrl")}
@@ -412,10 +426,12 @@ export function ServerModal({
             </View>
           </View>
 
-          
           <View style={{ minHeight: 5, justifyContent: "center" }}>
-            { firstError ? (
-              <ThemedText style={{ color: "red", fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
+            {firstError ? (
+              <ThemedText
+                style={{ color: "red", fontSize: 12, lineHeight: 16 }}
+                numberOfLines={2}
+              >
                 {firstError}
               </ThemedText>
             ) : (
@@ -424,13 +440,12 @@ export function ServerModal({
           </View>
 
           {/* Liste */}
-          <View style={{ gap: 10,marginTop: -20 }}>
+          <View style={{ gap: 10, marginTop: -20 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                
               }}
             >
               <H4>{t("savedServers")}</H4>

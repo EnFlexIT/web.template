@@ -73,6 +73,7 @@ export const STATIC_TABS: StaticTabItem[] = [
     tabKey: "backend",
     caption: "Backend",
     position: 3,
+      featureID: 3111, // diese Tab hat eine Feature Flag (3014) - siehe tabFeatureFlags.ts
     Content: UpdateBackendTab,
   },
 
