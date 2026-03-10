@@ -318,29 +318,34 @@ export function ServerModal({
     setEditMode(true);
   }
 
-  async function handleUseServer() {
-    let url = "";
+async function handleUseServer() {
+  let url = "";
 
-    if (hasUnsavedChanges()) {
-      const proceed = await askSaveBeforeUse();
-      if (!proceed) return;
+  if (hasUnsavedChanges()) {
+    const proceed = await askSaveBeforeUse();
+    if (!proceed) return;
 
-      const saved = await validateAndSaveOnly();
-      if (!saved.ok || !saved.baseUrl) return;
+    const saved = await validateAndSaveOnly();
+    if (!saved.ok || !saved.baseUrl) return;
 
-      url = normalizeBaseUrl(saved.baseUrl);
-    } else {
-      const currentSelected = servers.find((s) => s.id === selectedServerId);
-      url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
-    }
-
-    const online = await ensureSelectedServerOnline(url);
-    if (!online) return;
-
-    await dispatch(switchServer(url));
-    onClose();
+    url = normalizeBaseUrl(saved.baseUrl);
+  } else {
+    const currentSelected = servers.find((s) => s.id === selectedServerId);
+    url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
   }
 
+  const online = await ensureSelectedServerOnline(url);
+  if (!online) return;
+
+  await dispatch(switchServer(url));
+
+  if (Platform.OS === "web") {
+    window.location.assign(`${url}/login`);
+    return;
+  }
+
+  onClose();
+}
   return (
     <Modal visible={visible} transparent animationType="fade">
       <Pressable style={modalStyles.backdrop} onPress={onClose}>
