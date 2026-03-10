@@ -6,6 +6,7 @@ import {
   ScrollView,
   View,
 } from "react-native";
+import { logout } from "../redux/slices/apiSlice";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
@@ -284,20 +285,37 @@ export function ServerSettingsScreen() {
   }
   const firstError = urlError || nameError || generalError;
 
-  async function handleUseServer() {
-    const currentSelected = servers.find((s) => s.id === selectedServerId);
-    const url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+ async function handleUseServer() {
+  const currentSelected = servers.find((s) => s.id === selectedServerId);
+  const newUrl = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+  const currentUrl = normalizeBaseUrl(ip);
 
-    const online = await ensureSelectedServerOnline(url);
-    if (!online) return;
+  const online = await ensureSelectedServerOnline(newUrl);
+  if (!online) return;
 
-    await dispatch(setIpAsync(url));
-    await dispatch(initializeMenu());
+  // Prüfen ob der Server wirklich geändert wurde
+  if (currentUrl !== newUrl) {
+    const confirm = await confirmDialog(
+      "Server wechseln",
+      "Der Server wurde geändert.\n\nSie werden  abgemeldet und müssen sich anschließend erneut am neuen Server anmelden.",
+      "OK",
+      "Abbrechen",
+    );
 
- 
+    if (!confirm) return;
 
-    navigation.goBack();
+    // Benutzer abmelden
+    dispatch(logout());
   }
+
+  // neuen Server setzen
+  await dispatch(setIpAsync(newUrl));
+
+  // Menü neu laden
+  await dispatch(initializeMenu());
+
+  navigation.goBack();
+}
 
   return (
     <Screen>

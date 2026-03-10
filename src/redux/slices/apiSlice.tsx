@@ -2,7 +2,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
-
+import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
 import { RootState } from "../store";
 import {
   AdminsApi,
@@ -25,9 +25,13 @@ type AuthMethod = "jwt" | "oidc";
 
 const defaultAuthenticationMethod: AuthMethod = "jwt";
 
-const defaultIp: string = __DEV__
+const fallbackDefaultIp: string = __DEV__
   ? (process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8081")
   : (process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "");
+
+const initialBaseUrl = normalizeBaseUrl(
+  resolveRuntimeBaseUrl() ?? fallbackDefaultIp
+);
 
 const defaultJwt: string | null = null;
 
@@ -198,34 +202,44 @@ export interface ApiState {
 export const initializeApi = createAsyncThunk(
   "api/initialize",
   async (): Promise<ApiState> => {
+
     const storedIp = await AsyncStorage.getItem(ipKey);
     const storedJwt = await AsyncStorage.getItem(jwtKey);
 
-    const ip = normalizeBaseUrl(storedIp ?? defaultIp);
+    const runtimeBaseUrl = resolveRuntimeBaseUrl();
+
+    /**
+     * Priorität:
+     * 1. Browser Origin (Web)
+     * 2. gespeicherte IP
+     * 3. ENV Default
+     */
+    const ip = normalizeBaseUrl(
+      runtimeBaseUrl ?? storedIp ?? fallbackDefaultIp
+    );
+
     const jwt = (storedJwt ?? defaultJwt) as string | null;
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
 
-    // Important: Build API clients with whatever we currently have (jwt may be null)
-    const apis = buildApis({ baseUrl: ip, jwt, authenticationMethod });
+    const apis = buildApis({
+      baseUrl: ip,
+      jwt,
+      authenticationMethod,
+    });
 
-    //  logged-in only if JWT exists and valid (OIDC handled separately; keep false here)
     const isLoggedIn =
-      authenticationMethod === "jwt" ? isJwtStillValid(jwt) : false;
+      authenticationMethod === "jwt"
+        ? isJwtStillValid(jwt)
+        : false;
 
-    // persist ip / jwt
     await AsyncStorage.setItem(ipKey, ip);
-    if (jwt) await AsyncStorage.setItem(jwtKey, jwt);
-    else await AsyncStorage.removeItem(jwtKey);
 
-    //  Menu init strategy:
-    // - If BaseMode: load menu WITHOUT login (server/device admin pages etc.)
-    // - If LoggedIn: load menu normally (needs Authorization)
-    // If your DC menu endpoint requires auth, BaseMode should point to an endpoint that is public on device.
-    // We'll still try to init menu in both cases; if it errors, your menuSlice should fallback to static menu.
-    // (We'll adjust menuSlice next.)
-    // Note: We do not dispatch here to avoid circular deps; RootStack should call initializeMenu after initApi.
+    if (jwt)
+      await AsyncStorage.setItem(jwtKey, jwt);
+    else
+      await AsyncStorage.removeItem(jwtKey);
 
     return {
       ...apis,
@@ -236,8 +250,9 @@ export const initializeApi = createAsyncThunk(
       isPointingToServer,
       isBaseMode,
     };
-  },
+  }
 );
+
 
 export const setIpAsync = createAsyncThunk(
   "api/setIpAsync",
@@ -301,7 +316,7 @@ export const login = createAsyncThunk(
 );
 
 const initialApis = buildApis({
-  baseUrl: defaultIp,
+  baseUrl: initialBaseUrl,
   jwt: defaultJwt,
   authenticationMethod: defaultAuthenticationMethod,
 });
@@ -309,7 +324,7 @@ const initialApis = buildApis({
 const initialState: ApiState = {
   ...initialApis,
   authenticationMethod: defaultAuthenticationMethod,
-  ip: normalizeBaseUrl(defaultIp),
+  ip: initialBaseUrl,
   jwt: defaultJwt,
   isLoggedIn: false,
   isPointingToServer: false,

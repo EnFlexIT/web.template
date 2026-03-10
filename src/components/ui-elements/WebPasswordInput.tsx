@@ -1,8 +1,7 @@
-// src/components/ui-elements/WebPasswordInput.tsx
 import React from "react";
-import { Pressable, View, ViewStyle } from "react-native";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { View, Pressable } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import AntDesign from "@expo/vector-icons/AntDesign";
 
 import { inputSizeStyles } from "./TextInput";
 
@@ -15,13 +14,67 @@ interface WebPasswordInputProps {
   disabled?: boolean;
   size?: InputSize;
   isVisible: boolean;
-  setIsVisible: (value: boolean) => void;
-  style?: ViewStyle | ViewStyle[];
+  setIsVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  style?: any;
   inputStyle?: any;
   onBlur?: () => void;
   onFocus?: () => void;
   onSubmitEditing?: () => void;
+  returnKeyType?: "done" | "next" | "go" | "search" | "send";
   theme: any;
+  showEye?: boolean;
+  right?: React.ReactNode;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+}
+
+function mapAutoCapitalize(value?: string) {
+  switch (value) {
+    case "characters":
+      return "characters";
+    case "words":
+      return "words";
+    case "sentences":
+      return "sentences";
+    case "none":
+    default:
+      return "none";
+  }
+}
+
+function mapEnterKeyHint(
+  value?: "done" | "next" | "go" | "search" | "send"
+): React.HTMLAttributes<HTMLInputElement>["enterKeyHint"] {
+  switch (value) {
+    case "done":
+      return "done";
+    case "next":
+      return "next";
+    case "go":
+      return "go";
+    case "search":
+      return "search";
+    case "send":
+      return "send";
+    default:
+      return "done";
+  }
+}
+
+function flattenStyle(style: any): Record<string, any> {
+  if (!style) return {};
+
+  if (Array.isArray(style)) {
+    return style.reduce((acc, item) => {
+      if (!item) return acc;
+      return { ...acc, ...flattenStyle(item) };
+    }, {});
+  }
+
+  if (typeof style === "object") {
+    return style;
+  }
+
+  return {};
 }
 
 export function WebPasswordInput({
@@ -37,132 +90,97 @@ export function WebPasswordInput({
   onBlur,
   onFocus,
   onSubmitEditing,
+  returnKeyType,
   theme,
+  showEye = true,
+  right,
+  autoCapitalize = "none",
 }: WebPasswordInputProps) {
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const showRight = showEye || !!right;
 
-  const block = (e: any) => {
-    e.preventDefault?.();
-    e.stopPropagation?.();
-    return false;
-  };
-
-  const moveCaretToEnd = () => {
-    const el = inputRef.current;
-    if (!el) return;
-    try {
-      const pos = el.value.length;
-      el.setSelectionRange(pos, pos);
-    } catch {}
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const key = e.key.toLowerCase();
-
-    if ((e.ctrlKey || e.metaKey) && ["c", "x", "v", "a"].includes(key)) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    if (key === "enter") {
-      onSubmitEditing?.();
-      return;
-    }
-
-    requestAnimationFrame(moveCaretToEnd);
-  };
-
-  const handleSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
-    e.preventDefault?.();
-    moveCaretToEnd();
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
-    if (e.detail > 1) {
-      e.preventDefault();
-      moveCaretToEnd();
-    }
+  const webInputStyle: React.CSSProperties & {
+    WebkitTextSecurity?: "none" | "disc";
+  } = {
+    width: "100%",
+    outline: "none",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
+    opacity: disabled ? 0.5 : 1,
+    borderRadius: 0,
+    paddingLeft: 10,
+    paddingRight: showRight ? 38 : 10,
+    fontSize: inputSizeStyles[size].fontSize,
+    minHeight: inputSizeStyles[size].minHeight,
+    paddingTop: inputSizeStyles[size].paddingVertical,
+    paddingBottom: inputSizeStyles[size].paddingVertical,
+    boxSizing: "border-box",
+    WebkitTextSecurity: isVisible ? "none" : "disc",
+    ...flattenStyle(style),
+    ...flattenStyle(inputStyle),
   };
 
   return (
-    <View style={{ position: "relative" }}>
+    <View style={showRight ? styles.wrapper : undefined}>
       <input
-        ref={inputRef}
         value={value}
-        disabled={disabled}
-        placeholder={placeholder}
-        type={isVisible ? "text" : "password"}
-        autoComplete="new-password"
-        autoCorrect="off"
-        autoCapitalize="none"
-        spellCheck={false}
         onChange={(e) => onChangeText(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
         onBlur={onBlur}
         onFocus={onFocus}
-        onCopy={block}
-        onCut={block}
-        onPaste={block}
-        onContextMenu={block}
-        onDragStart={block}
-        onDrop={block}
-        onSelect={handleSelect}
-        onMouseDown={handleMouseDown}
-        onKeyDown={handleKeyDown}
-        style={{
-          ...styles.inputBase,
-          ...inputSizeStyles[size],
-          backgroundColor: theme.colors.card,
-          borderColor: theme.colors.border,
-          color: theme.colors.text,
-          opacity: disabled ? 0.5 : 1,
-          paddingRight: 38,
-          userSelect: "none",
-          WebkitUserSelect: "none",
-          MozUserSelect: "none",
-          outline: "none",
-          width: "100%",
-          boxSizing: "border-box",
-          ...(StyleSheet.flatten(style) || {}),
-          ...(StyleSheet.flatten(inputStyle) || {}),
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && onSubmitEditing) {
+            onSubmitEditing();
+          }
         }}
+        onCopy={(e) => e.preventDefault()}
+        onCut={(e) => e.preventDefault()}
+        // Einfügen bleibt erlaubt
+        autoCorrect="off"
+        spellCheck={false}
+        autoCapitalize={mapAutoCapitalize(autoCapitalize)}
+        enterKeyHint={mapEnterKeyHint(returnKeyType)}
+        type="text"
+        style={webInputStyle}
       />
 
-      <Pressable
-        onPressIn={() => setIsVisible(true)}
-        onPressOut={() => setIsVisible(false)}
-        onTouchEnd={() => setIsVisible(false)}
-        onTouchCancel={() => setIsVisible(false)}
-        hitSlop={10}
-        style={styles.right}
-        disabled={disabled}
-      >
-        <AntDesign
-          name={isVisible ? "eye" : "eye-invisible"}
-          size={18}
-          color={theme.colors.text}
-        />
-      </Pressable>
+      {showEye ? (
+        <Pressable
+          onPressIn={() => setIsVisible(true)}
+          onPressOut={() => setIsVisible(false)}
+          onTouchEnd={() => setIsVisible(false)}
+          onTouchCancel={() => setIsVisible(false)}
+          hitSlop={10}
+          style={styles.right}
+          disabled={disabled}
+        >
+          <AntDesign
+            name={isVisible ? "eye" : "eye-invisible"}
+            size={18}
+            color={theme.colors.text}
+          />
+        </Pressable>
+      ) : right ? (
+        <View style={styles.right}>{right}</View>
+      ) : null}
     </View>
   );
 }
 
-const styles = {
-  inputBase: {
-    borderWidth: 1,
-    borderStyle: "solid" as const,
-    paddingLeft: 10,
-    paddingRight: 10,
-    borderRadius: 0,
+const styles = StyleSheet.create({
+  wrapper: {
+    position: "relative",
   },
   right: {
-    position: "absolute" as const,
+    position: "absolute",
     right: 10,
     top: 0,
     bottom: 0,
     width: 28,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-    //display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
-};
+});

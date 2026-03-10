@@ -1,4 +1,3 @@
-// src/components/ui-elements/TextInput.tsx
 import React from "react";
 import {
   View,
@@ -58,14 +57,13 @@ export function TextInput({
   returnKeyType,
 }: TextInputProps) {
   const { theme } = useUnistyles();
-
   const [isVisible, setIsVisible] = React.useState(false);
 
   const showEye = passwordToggle;
   const showRight = showEye || !!right;
   const isPasswordField = passwordToggle || secureTextEntry;
 
-  // WEB: eigenes Passwortfeld statt RNTextInput
+  // WEB: eigenes Passwortfeld ohne Browser-Standard-Icon
   if (Platform.OS === "web" && isPasswordField) {
     return (
       <View style={{ gap: 4 }}>
@@ -84,7 +82,11 @@ export function TextInput({
           onBlur={onBlur}
           onFocus={onFocus}
           onSubmitEditing={onSubmitEditing}
+          returnKeyType={returnKeyType}
           theme={theme}
+          showEye={showEye}
+          right={right}
+          autoCapitalize={autoCapitalize}
         />
       </View>
     );

@@ -2,8 +2,8 @@
     "notAvailableTitle": "Ups",
     "notAvailableMessage": "This page is not available.",
     "OfflineMessage": "Please check your connection and try again.",
-    "offlineTitle": "server is unreachable",
-    "onlineTitle": "server is reachable again",
+    "offlineTitle": "Server is unreachable",
+    "onlineTitle": "Server is reachable again",
     "onlineMessage": "Your connection has been restored. You can now proceed.",
     "checking": "Checking...",
     "refresh": "Refresh"

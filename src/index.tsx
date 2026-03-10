@@ -44,6 +44,7 @@ import { isMenuEnabled } from "./redux/slices/featureFlags";
 
 // Slug-Routing Helper
 import { buildMenuPaths } from "./components/routing/menuPaths";
+import { Footer } from "./components/Footer";
 /* =========================
    Unistyles Init
    ========================= */
@@ -88,7 +89,7 @@ useEffect(() => {
   const id = setInterval(() => {
     dispatch(refreshServerStatus());
     dispatch(checkAlive({ silent: true }));
-  }, 30000);
+  }, 5000);
 
   // direkt beim Mount einmal
   dispatch(refreshServerStatus());
@@ -324,12 +325,15 @@ useEffect(() => {
 export default function App() {
   return (
     <Provider store={store}>
-      <RootStack />
-
+      <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <RootStack />
+        </View>
+        <Footer />
+      </View>
     </Provider>
   );
 }
-
 /* =========================
    Styles
    ========================= */
