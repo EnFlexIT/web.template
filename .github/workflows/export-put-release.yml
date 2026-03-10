@@ -10,6 +10,17 @@ jobs:
     steps:
       - name: Clone
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Show Git info
+        run: |
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
+          git branch --show-current
+          ls -la
+          test -f package.json && echo "package.json found"
+          test -f package-lock.json && echo "package-lock.json found"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -17,25 +28,31 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Update npm
+        run: npm install -g npm@10
+
       - name: Show versions
         run: |
           node -v
           npm -v
 
-      - name: Update npm
-        run: npm install -g npm@10
-
-      - name: Show versions after npm update
+      - name: Debug package files
         run: |
-          node -v
-          npm -v
+          echo "---- package.json dependency search ----"
+          grep -n "@floating-ui/dom" package.json || true
+          echo "---- package-lock.json dependency search ----"
+          grep -n "@floating-ui/dom" package-lock.json || true
+          echo "---- lockfile version ----"
+          node -e "const lock=require('./package-lock.json'); console.log(lock.lockfileVersion)"
+          echo "---- package name/version ----"
+          node -e "const pkg=require('./package.json'); console.log(pkg.name, pkg.version)"
 
-      - name: Install Repository
+      - name: Validate lockfile with npm ci
         run: npm ci
 
       - name: Set version
         id: version-selector
-        run: echo "version=$(grep version package.json | cut -d '"' -f 4 | head -n1)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Set time
         id: time-selector
