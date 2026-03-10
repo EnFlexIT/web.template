@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
 import { RootState } from "../store";
+
 import {
   AdminsApi,
   Configuration as RestApiConfiguration,
@@ -16,8 +17,7 @@ import {
   DefaultApi,
 } from "../../api/implementation/Dynamic-Content-Api";
 
-import { initializeMenu } from "./menuSlice";
-
+import { clearMenu, initializeMenu } from "./menuSlice";
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
 
@@ -214,8 +214,8 @@ export const initializeApi = createAsyncThunk(
      * 2. gespeicherte IP
      * 3. ENV Default
      */
-    const ip = normalizeBaseUrl(
-      runtimeBaseUrl ?? storedIp ?? fallbackDefaultIp
+   const ip = normalizeBaseUrl(
+  storedIp ?? runtimeBaseUrl ?? fallbackDefaultIp
     );
 
     const jwt = (storedJwt ?? defaultJwt) as string | null;
@@ -330,7 +330,51 @@ const initialState: ApiState = {
   isPointingToServer: false,
   isBaseMode: false,
 };
+export const logoutAsync = createAsyncThunk(
+  "api/logoutAsync",
+  async (_, thunkAPI) => {
+    await AsyncStorage.removeItem(jwtKey);
+    thunkAPI.dispatch(logout());
+  },
+);
+export const switchServer = createAsyncThunk(
+  "api/switchServer",
+  async (rawUrl: string, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
 
+    const newUrl = normalizeBaseUrl(rawUrl);
+    const currentUrl = normalizeBaseUrl(state.api.ip);
+
+    const serverChanged = currentUrl !== newUrl;
+
+    if (serverChanged) {
+      await AsyncStorage.removeItem(jwtKey);
+      thunkAPI.dispatch(logout());
+
+      // später weitere serverabhängige Slices hier resetten
+      thunkAPI.dispatch(clearMenu());
+      // thunkAPI.dispatch(clearUser());
+      // thunkAPI.dispatch(clearSomethingElse());
+    }
+
+    const { isPointingToServer, authenticationMethod, isBaseMode } =
+      await detectServerAndMode(newUrl);
+
+    await AsyncStorage.setItem(ipKey, newUrl);
+
+    thunkAPI.dispatch(
+      setConnectionLocal({
+        ip: newUrl,
+        jwt: null,
+        isPointingToServer,
+        authenticationMethod,
+        isBaseMode,
+      }),
+    );
+
+    await thunkAPI.dispatch(initializeMenu());
+  },
+);
 export const apiSlice = createSlice({
   name: "api",
   initialState,
@@ -385,17 +429,16 @@ setJwtLocal: (state, action: PayloadAction<string | null>) => {
 
     logout: (state) => {
       state.isLoggedIn = false;
-      state.jwt = null;
-      AsyncStorage.removeItem(jwtKey);
+  state.jwt = null;
 
-      const apis = buildApis({
-        baseUrl: state.ip,
-        jwt: null,
-        authenticationMethod: state.authenticationMethod,
-      });
+  const apis = buildApis({
+    baseUrl: state.ip,
+    jwt: null,
+    authenticationMethod: state.authenticationMethod,
+  });
 
-      state.awb_rest_api = apis.awb_rest_api;
-      state.dynamic_content_api = apis.dynamic_content_api;
+  state.awb_rest_api = apis.awb_rest_api;
+  state.dynamic_content_api = apis.dynamic_content_api;
     },
   },
   extraReducers: (builder) => {

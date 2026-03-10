@@ -169,6 +169,13 @@ export const menuSlice = createSlice({
     setActiveMenuId: (state, action: PayloadAction<number>) => {
       state.activeMenuId = action.payload;
     },
+    clearMenu: (state) => {
+    const staticMenu = getStaticMenu();
+
+    state.rawMenu = staticMenu;
+    state.menu = rawListToTrees(staticMenu);
+    state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
+  },
   },
 extraReducers: (builder) => {
   builder.addCase(initializeMenu.fulfilled, (state, action) => {
@@ -198,7 +205,7 @@ extraReducers: (builder) => {
 },
 });
 
-export const { setActiveMenuId } = menuSlice.actions;
+export const { setActiveMenuId,clearMenu } = menuSlice.actions;
 export const selectMenu = (state: RootState) => state.menu;
 
 export default menuSlice.reducer;

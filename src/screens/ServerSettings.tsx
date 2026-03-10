@@ -18,7 +18,7 @@ import { ThemedText } from "../components/themed/ThemedText";
 import { H1 } from "../components/stylistic/H1";
 import { H2 } from "../components/stylistic/H2";
 import { H4 } from "../components/stylistic/H4";
-
+import { switchServer } from "../redux/slices/apiSlice";
 import {
   SelectableList,
   SelectableItem,
@@ -285,35 +285,26 @@ export function ServerSettingsScreen() {
   }
   const firstError = urlError || nameError || generalError;
 
- async function handleUseServer() {
-  const currentSelected = servers.find((s) => s.id === selectedServerId);
-  const newUrl = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+async function handleUseServer() {
+  const saveResult = await validateAndSaveOnly();
+  if (!saveResult.ok || !saveResult.baseUrl) return;
+
+  const newUrl = normalizeBaseUrl(saveResult.baseUrl);
   const currentUrl = normalizeBaseUrl(ip);
+  const serverChanged = currentUrl !== newUrl;
 
-  const online = await ensureSelectedServerOnline(newUrl);
-  if (!online) return;
-
-  // Prüfen ob der Server wirklich geändert wurde
-  if (currentUrl !== newUrl) {
+  if (serverChanged) {
     const confirm = await confirmDialog(
       "Server wechseln",
-      "Der Server wurde geändert.\n\nSie werden  abgemeldet und müssen sich anschließend erneut am neuen Server anmelden.",
+      "Der Server wurde geändert.\n\nSie werden abgemeldet und müssen sich anschließend erneut am neuen Server anmelden.",
       "OK",
       "Abbrechen",
     );
 
     if (!confirm) return;
-
-    // Benutzer abmelden
-    dispatch(logout());
   }
 
-  // neuen Server setzen
-  await dispatch(setIpAsync(newUrl));
-
-  // Menü neu laden
-  await dispatch(initializeMenu());
-
+  await dispatch(switchServer(newUrl));
   navigation.goBack();
 }
 
