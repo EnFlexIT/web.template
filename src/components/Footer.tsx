@@ -3,11 +3,14 @@ import React from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
-import { ThemedText } from "./themed/ThemedText";
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectApi } from "../redux/slices/apiSlice";
-import { selectConnectivity } from "../redux/slices/connectivitySlice";
-import { getAppEnvironment } from "../util/appEnvironment";
+import { ThemedText } from "../themed/ThemedText";
+import { useAppSelector } from "../../hooks/useAppSelector";
+import {
+  selectIp,
+  selectIsBaseMode,
+} from "../../redux/slices/apiSlice";
+import { selectConnectivity } from "../../redux/slices/connectivitySlice";
+import { getAppEnvironment } from "../../util/appEnvironment";
 
 function getHostLabel(ip: string): string {
   if (!ip) return "Kein Server";
@@ -21,7 +24,8 @@ function getHostLabel(ip: string): string {
 }
 
 export function Footer() {
-  const { ip, isBaseMode } = useAppSelector(selectApi);
+  const ip = useAppSelector(selectIp);
+  const isBaseMode = useAppSelector(selectIsBaseMode);
   const { isOffline } = useAppSelector(selectConnectivity);
 
   const env = getAppEnvironment();
@@ -34,9 +38,10 @@ export function Footer() {
       <View style={[styles.badge, styles[getEnvStyleKey(env)]]}>
         <ThemedText style={styles.badgeText}>{env}</ThemedText>
       </View>
-     <ThemedText style={styles.text}>{deviceMode}</ThemedText>
-     <ThemedText style={styles.separator}>|</ThemedText>
-      <ThemedText style={styles.text}>{host}</ThemedText>   
+
+      <ThemedText style={styles.text}>{deviceMode}</ThemedText>
+      <ThemedText style={styles.separator}>|</ThemedText>
+      <ThemedText style={styles.text}>{host}</ThemedText>
       <ThemedText style={styles.separator}>|</ThemedText>
       <ThemedText style={styles.text}>{status}</ThemedText>
     </View>
@@ -47,7 +52,8 @@ function getEnvStyleKey(env: "DEV" | "TEST" | "PROD") {
   switch (env) {
     case "TEST":
       return "testBadge";
-   
+    case "PROD":
+      return "prodBadge";
     case "DEV":
     default:
       return "devBadge";
