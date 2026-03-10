@@ -6,7 +6,7 @@ import {
   ScrollView,
   View,
 } from "react-native";
-import { logout } from "../redux/slices/apiSlice";
+
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
