@@ -9,7 +9,7 @@ import { useUpdateNotifierWeb } from "../hooks/useUpdateNotifierWeb";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 
-import { logout, selectJwt } from "../redux/slices/apiSlice";
+import { logoutAsync, selectJwt } from "../redux/slices/apiSlice";
 import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
@@ -68,20 +68,18 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
   const update = useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
 
-  // ✅ nur ein Popup gleichzeitig
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
 
   // Refs für "click outside"
   const sessionWrapRef = useRef<View>(null);
   const updateWrapRef = useRef<View>(null);
 
-  // ✅ verhindert, dass Session-Popup direkt wieder aufgeht, wenn user "Weitermachen" klickt
-  // (weil warning oft noch true bleibt bis Renew/JWT-Update ankommt)
+
   const suppressSessionPopupUntilRef = useRef<number>(0);
 
   const onAutoLogout = useCallback(() => {
     if (isLoggedIn) {
-      dispatch(logout());
+      dispatch(logoutAsync());
       return;
     }
     if (isBaseMode === true && baseModeLoggedIn === true) {
@@ -89,7 +87,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  // ✅ Renew (Throttle passiert im Thunk über cooldownMs)
+  //  Renew (Throttle passiert im Thunk über cooldownMs)
   const onHeartbeat = useCallback(() => {
     dispatch(
       renewJwtIfNeeded({
@@ -107,13 +105,13 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     onHeartbeat,
   });
 
-  // ✅ Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
+  //  Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
   useEffect(() => {
     if (!isWeb) return;
     if (update.updateAvailable) setOpenPopup("update");
   }, [update.updateAvailable, isWeb]);
 
-  // ✅ Session-Popup nur öffnen, wenn warning aktiv UND nicht gerade "unterdrückt"
+  // Session-Popup nur öffnen, wenn warning aktiv UND nicht gerade "unterdrückt"
   useEffect(() => {
     if (!isWeb || !showLogout) return;
 
@@ -131,7 +129,6 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warning, isWeb, showLogout]);
 
-  // ✅ Click-outside schließt Popups (Web)
   useEffect(() => {
     if (!isWeb) return;
 
@@ -157,15 +154,15 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     };
   }, [isWeb]);
 
-  // ✅ Weitermachen:
+  //  Weitermachen:
   // - Renew anstoßen
   // - Popup sicher schließen
   // - Session-Popup kurz unterdrücken, damit es nicht sofort wieder aufgeht,
   //   obwohl warning noch true ist (bis neues JWT im Store ankommt)
   const stayLoggedIn = useCallback(() => {
     onHeartbeat();
-    suppressSessionPopupUntilRef.current = Date.now() + 10_000; // ✅ genau dein Wunsch
-    setOpenPopup(null); // ✅ garantiert zu
+    suppressSessionPopupUntilRef.current = Date.now() + 10_000; //  genau dein Wunsch
+    setOpenPopup(null); 
   }, [onHeartbeat]);
 
   const manualLogout = useCallback(() => {
