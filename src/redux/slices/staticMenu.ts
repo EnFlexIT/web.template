@@ -97,7 +97,7 @@ export function getStaticMenu(): StaticMenuItem[] {
      */
 
     { 
-      caption: "serverSettings", 
+      caption: "Server Settings", 
       menuID: 3012, 
       parentID: 3021, 
       Screen: ServerSettingsScreen 

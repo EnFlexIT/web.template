@@ -8,5 +8,5 @@ export function getApplicationMode(): ApplicationMode {
     return "STANDALONE";
   }
 
-  return "STANDALONE";
+  return "CENTRAL_SHELL";
 }

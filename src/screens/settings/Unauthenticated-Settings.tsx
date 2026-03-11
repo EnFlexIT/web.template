@@ -9,6 +9,7 @@ import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
+import { Card } from "../../components/ui-elements/Card";
 
 
 export function UnauthenticatedSettings() {
@@ -39,6 +40,7 @@ export function UnauthenticatedSettings() {
 
   return (
     <Screen style={[styles.screen]}>
+      <Card style={{ width: "100%" }}>
       <ScrollView
         style={[styles.container]}
         contentContainerStyle={[styles.content]}
@@ -72,6 +74,7 @@ export function UnauthenticatedSettings() {
                         />
                       </View>    
       </ScrollView>
+      </Card>
     </Screen>
   );
 }

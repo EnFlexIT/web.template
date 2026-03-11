@@ -26,7 +26,7 @@ import {
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-
+import { Card } from "../components/ui-elements/Card";
 import {
   selectServers,
   addServer,
@@ -327,6 +327,7 @@ async function handleUseServer() {
 }
   return (
     <Screen>
+         <Card style={{ width: "100%" }}>
      {/* Header */}
               <View
                 style={{
@@ -462,6 +463,7 @@ async function handleUseServer() {
                   size="sm"
                 />
               </View>
+              </Card>
     </Screen>
   );
 }

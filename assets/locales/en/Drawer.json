@@ -12,7 +12,8 @@
   "privacysettings": "Privacy Settings",
   "databaseConnectionsAndSettings": "database",
   "devHome": "Dev Home",
-  "appInfo":"Update"
+  "appInfo":"Update",
+  "changeOrganization": "Server Settings"
 
 
 }

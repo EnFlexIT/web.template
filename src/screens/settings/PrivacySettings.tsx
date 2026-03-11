@@ -18,6 +18,7 @@ import {
   acceptAll,
   rejectOptional,
 } from "../../redux/slices/dataPermissionsSlice";
+import { Card } from "../../components/ui-elements/Card";
 
 export function PrivacySettings() {
   const dispatch = useAppDispatch();
@@ -33,6 +34,7 @@ const { t } = useTranslation(["Settings.PrivacySecurity"]);
 
   return (
     <Screen>
+      <Card style={{ width: "100%" }}>
       <View style={styles.container}>
         <H4>{t("privacy_settings_description")}</H4>
 
@@ -90,6 +92,7 @@ const { t } = useTranslation(["Settings.PrivacySecurity"]);
           ]}
         />
       </View>
+      </Card>
     </Screen>
   );
 }
