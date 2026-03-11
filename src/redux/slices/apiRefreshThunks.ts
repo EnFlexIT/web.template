@@ -2,7 +2,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { RootState } from "../store";
-import { setJwtLocal, logout } from "./apiSlice";
+import { setJwtLocal, logoutAsync } from "./apiSlice";
 import { getJwtRemainingMs } from "../../util/jwtTime";
 
 const JWT_KEY = "jwt";
@@ -41,7 +41,7 @@ export const renewJwtIfNeeded = createAsyncThunk<
     const remaining = getJwtRemainingMs(jwt);
     if (!Number.isFinite(remaining) || remaining <= 0) {
       await AsyncStorage.removeItem(JWT_KEY);
-      thunkAPI.dispatch(logout());
+      thunkAPI.dispatch(logoutAsync());
       return { renewed: false, reason: "expired" };
     }
 
@@ -70,7 +70,7 @@ lastRenewAttempt = now;
 
       if (res.status === 401) {
         await AsyncStorage.removeItem(JWT_KEY);
-        thunkAPI.dispatch(logout());
+        thunkAPI.dispatch(logoutAsync());
         return { renewed: false, reason: "401-logout" };
       }
 
@@ -94,7 +94,7 @@ lastRenewAttempt = now;
     } catch (error: any) {
       if (isUnauthorized(error)) {
         await AsyncStorage.removeItem(JWT_KEY);
-        thunkAPI.dispatch(logout());
+        thunkAPI.dispatch(logoutAsync());
         return { renewed: false, reason: "401-logout" };
       }
       console.warn("[JWT] Renew failed", error);

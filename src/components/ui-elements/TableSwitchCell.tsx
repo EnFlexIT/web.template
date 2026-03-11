@@ -25,7 +25,9 @@ export function TableSwitchCell({
           false: theme.colors.highlight,
           true: theme.colors.highlight,
         }}
-       
+        thumbColor={value ? "rgb(0, 122, 255)" : "rgb(0, 122, 255)"}
+
+        
       />
     </View>
   );

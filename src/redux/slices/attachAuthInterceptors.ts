@@ -1,7 +1,7 @@
 // src/redux/slices/attachAuthInterceptors.ts
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import { store } from "../store";
-import { logout } from "./apiSlice";
+import { logoutAsync } from "./apiSlice";
 
 let installed = false;
 let inFlightLogout = false;
@@ -49,7 +49,7 @@ function doLogout(reason: "401" | "network") {
   if (inFlightLogout) return;
   inFlightLogout = true;
 
-  store.dispatch(logout());
+  store.dispatch(logoutAsync());
 
   forceRedirectToLogin();
 
