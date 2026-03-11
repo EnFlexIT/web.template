@@ -19,7 +19,7 @@ import {
   SelectableList,
   SelectableItem,
 } from "../../components/ui-elements/SelectableList";
-
+import { getApplicationMode } from "../../util/applicationMode";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { switchServer } from "../../redux/slices/apiSlice";
 import {
@@ -27,6 +27,7 @@ import {
   selectServer,
   updateServer,
   removeServer,
+  ServerEnvironment,
 } from "../../redux/slices/serverSlice";
 
 import {
@@ -130,7 +131,13 @@ export function ServerModal({
   }, [servers]);
 
   const firstError = urlError || nameError || generalError;
+  function detectEnvironment(url: string): ServerEnvironment {
+          if (url.includes("localhost") || url.includes("dev")) return "DEV";
+          if (url.includes("test") || url.includes("staging")) return "TEST";
+          return "PROD";
+        }
 
+  
   function resetErrors() {
     setNameError(null);
     setUrlError(null);
@@ -259,7 +266,7 @@ export function ServerModal({
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(addServer({ id, name, baseUrl, environment: detectEnvironment(baseUrl) }));
     dispatch(selectServer(id));
     return { ok: true, baseUrl, serverLabel: name };
   }
@@ -304,7 +311,7 @@ export function ServerModal({
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(addServer({ id, name, baseUrl, environment: detectEnvironment(baseUrl) }));
     dispatch(selectServer(id));
 
     setEditMode(true);
@@ -339,6 +346,17 @@ async function handleUseServer() {
 
   await dispatch(switchServer(url));
 
+  const applicationMode = getApplicationMode();
+
+  // CENTRAL_SHELL:
+  // App bleibt auf der Haupt-WebApp und nutzt nur neuen API-Server
+  if (applicationMode === "CENTRAL_SHELL") {
+    onClose();
+    return;
+  }
+
+  // STANDALONE:
+  // App und Backend laufen auf derselben Instanz
   if (Platform.OS === "web") {
     window.location.assign(`${url}/login`);
     return;

@@ -3,6 +3,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
+import { getApplicationMode, type ApplicationMode } from "../../util/applicationMode";
 import { RootState } from "../store";
 
 import {
@@ -36,19 +37,30 @@ function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
 
-function isLocalhostUrl(url?: string | null): boolean {
-  if (!url) return false;
-
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
-  } catch {
-    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
+function resolveActiveApiBaseUrl(params: {
+  mode: ApplicationMode;
+  runtimeBaseUrl: string | null;
+  storedIp: string | null;
+  fallbackBaseUrl: string;
+}): string {
+  if (params.mode === "CENTRAL_SHELL") {
+    return normalizeBaseUrl(
+      params.storedIp ?? params.runtimeBaseUrl ?? params.fallbackBaseUrl,
+    );
   }
+
+  return normalizeBaseUrl(
+    params.runtimeBaseUrl ?? params.storedIp ?? params.fallbackBaseUrl,
+  );
 }
 
 function getInitialBaseUrl() {
-  return normalizeBaseUrl(resolveRuntimeBaseUrl() ?? fallbackDefaultIp);
+  return resolveActiveApiBaseUrl({
+    mode: getApplicationMode(),
+    runtimeBaseUrl: resolveRuntimeBaseUrl(),
+    storedIp: null,
+    fallbackBaseUrl: fallbackDefaultIp,
+  });
 }
 
 function makeRestConf(params: {
@@ -210,18 +222,16 @@ export const initializeApi = createAsyncThunk(
   async (): Promise<ApiState> => {
     const storedIp = await AsyncStorage.getItem(ipKey);
     const storedJwt = await AsyncStorage.getItem(jwtKey);
+
     const runtimeBaseUrl = resolveRuntimeBaseUrl();
+    const applicationMode = getApplicationMode();
 
-    let ip = "";
-
-    if (isLocalhostUrl(runtimeBaseUrl)) {
-      // Wenn die Web-App lokal auf localhost:<port> läuft,
-      // soll immer genau diese aktuell gestartete Origin verwendet werden.
-      ip = normalizeBaseUrl(runtimeBaseUrl ?? fallbackDefaultIp);
-    } else {
-      // Sonst darf die gespeicherte Serverwahl Vorrang haben.
-      ip = normalizeBaseUrl(storedIp ?? runtimeBaseUrl ?? fallbackDefaultIp);
-    }
+    const ip = resolveActiveApiBaseUrl({
+      mode: applicationMode,
+      runtimeBaseUrl,
+      storedIp,
+      fallbackBaseUrl: fallbackDefaultIp,
+    });
 
     const jwt = (storedJwt ?? defaultJwt) as string | null;
 
@@ -340,9 +350,7 @@ export const switchServer = createAsyncThunk(
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());
 
-      // Später weitere serverabhängige Slices hier resetten:
-      // thunkAPI.dispatch(clearUser());
-      // thunkAPI.dispatch(clearSomethingElse());
+      // Weitere serverabhängige Slices hier zurücksetzen, falls nötig.
     }
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
@@ -400,6 +408,7 @@ export const apiSlice = createSlice({
       state.isPointingToServer = action.payload.isPointingToServer;
       state.authenticationMethod = action.payload.authenticationMethod;
       state.isBaseMode = action.payload.isBaseMode;
+      state.jwt = action.payload.jwt;
 
       const apis = buildApis({
         baseUrl: action.payload.ip,
@@ -409,6 +418,10 @@ export const apiSlice = createSlice({
 
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
+      state.isLoggedIn =
+        action.payload.authenticationMethod === "jwt"
+          ? isJwtStillValid(action.payload.jwt)
+          : false;
     },
 
     setJwtLocal: (state, action: PayloadAction<string | null>) => {

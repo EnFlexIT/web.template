@@ -7,10 +7,10 @@ import { ThemedText } from "./themed/ThemedText";
 import { useAppSelector } from "../hooks/useAppSelector";
 import {
   selectIp,
-  selectIsBaseMode,
-} from "../redux/slices/apiSlice";
+  selectIsBaseMode} from "../redux/slices/apiSlice";
 import { selectConnectivity } from "../redux/slices/connectivitySlice";
 import { getAppEnvironment } from "../util/appEnvironment";
+import { getApplicationMode } from "../util/applicationMode";
 
 function getHostLabel(ip: string): string {
   if (!ip) return "Kein Server";
@@ -23,14 +23,27 @@ function getHostLabel(ip: string): string {
   }
 }
 
+function getApplicationModeLabel(mode: "CENTRAL_SHELL" | "STANDALONE") {
+  switch (mode) {
+    case "STANDALONE":
+      return "STANDALONE";
+    case "CENTRAL_SHELL":
+    default:
+      return "CENTRAL";
+  }
+}
+
 export function Footer() {
   const ip = useAppSelector(selectIp);
   const isBaseMode = useAppSelector(selectIsBaseMode);
   const { isOffline } = useAppSelector(selectConnectivity);
 
   const env = getAppEnvironment();
+  const applicationMode = getApplicationMode();
+
   const host = getHostLabel(ip);
-  const deviceMode = isBaseMode ? "Base Application" : "USER MODE";
+  const modeLabel = getApplicationModeLabel(applicationMode);
+  const deviceMode = isBaseMode ? "Base Application" : "User Mode";
   const status = isOffline ? "Offline" : "Online";
 
   return (
@@ -39,10 +52,15 @@ export function Footer() {
         <ThemedText style={styles.badgeText}>{env}</ThemedText>
       </View>
 
+      <ThemedText style={styles.text}>{modeLabel}</ThemedText>
+      <ThemedText style={styles.separator}>|</ThemedText>
+
       <ThemedText style={styles.text}>{deviceMode}</ThemedText>
       <ThemedText style={styles.separator}>|</ThemedText>
+
       <ThemedText style={styles.text}>{host}</ThemedText>
       <ThemedText style={styles.separator}>|</ThemedText>
+
       <ThemedText style={styles.text}>{status}</ThemedText>
     </View>
   );

@@ -6,7 +6,7 @@ import {
   ScrollView,
   View,
 } from "react-native";
-
+import { getApplicationMode } from "../util/applicationMode";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
@@ -33,6 +33,7 @@ import {
   selectServer,
   updateServer,
   removeServer,
+  ServerEnvironment,
 } from "../redux/slices/serverSlice";
 import { selectIp, setIpAsync } from "../redux/slices/apiSlice";
 import { initializeMenu } from "../redux/slices/menuSlice";
@@ -197,7 +198,7 @@ export function ServerSettingsScreen() {
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(addServer({ id, name, baseUrl, environment: "DEV" }));
     dispatch(selectServer(id));
     setEditMode(true);
 
@@ -241,11 +242,15 @@ export function ServerSettingsScreen() {
       setUrlError(t("errors.serverNotReachable"));
       return;
     }
-
+      function detectEnvironment(url: string): ServerEnvironment {
+        if (url.includes("localhost") || url.includes("dev")) return "DEV";
+        if (url.includes("test") || url.includes("staging")) return "TEST";
+        return "PROD";
+      }
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl }));
+    dispatch(addServer({ id, name, baseUrl, environment: detectEnvironment(baseUrl) }));
     dispatch(selectServer(id));
 
     setEditMode(true);
@@ -305,6 +310,13 @@ async function handleUseServer() {
   }
 
   await dispatch(switchServer(newUrl));
+
+  const applicationMode = getApplicationMode();
+
+  if (applicationMode === "CENTRAL_SHELL") {
+    navigation.goBack();
+    return;
+  }
 
   if (Platform.OS === "web") {
     window.location.assign(`${newUrl}/login`);
