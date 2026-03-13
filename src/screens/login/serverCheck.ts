@@ -17,11 +17,18 @@ export async function checkServerReachable(
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
+  console.log("[checkServerReachable] checking:", base);
+
   try {
-    const res = await fetch(`${base}/api/app/settings/get`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
+   const res = await fetch(`${base}/api/app/settings/get`, {
+  method: "GET",
+  mode: "cors",
+  headers: {
+    Accept: "application/json",
+  },
+});
+
+    console.log("[checkServerReachable] status:", res.status, "url:", `${base}/api/app/settings/get`);
 
     if (res.ok) return { ok: true };
     if (res.status === 401) return { ok: true };
@@ -30,11 +37,13 @@ export async function checkServerReachable(
       ok: false,
       message: `Server antwortet, aber Status ${res.status}. Bitte URL prüfen.`,
     };
-  } catch {
+  } catch (error) {
+    console.log("[checkServerReachable] failed:", base, error);
+
     return {
       ok: false,
       message:
-        "Server nicht erreichbar. Bitte andere URL verwenden (z.B. http://localhost:8080).",
+        "Server nicht erreichbar. Bitte andere URL verwenden.",
     };
   }
 }

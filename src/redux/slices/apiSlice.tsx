@@ -19,11 +19,13 @@ import {
 } from "../../api/implementation/Dynamic-Content-Api";
 
 import { clearMenu, initializeMenu } from "./menuSlice";
-
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
+const jwtByServerKey = "jwtByServer" as const;
+const serversKey = "servers" as const;
 
 type AuthMethod = "jwt" | "oidc";
+type JwtByServer = Record<string, string>;
 
 const defaultAuthenticationMethod: AuthMethod = "jwt";
 
@@ -35,6 +37,45 @@ const defaultJwt: string | null = null;
 
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
+}
+
+async function loadJwtByServer(): Promise<JwtByServer> {
+  const raw = await AsyncStorage.getItem(jwtByServerKey);
+
+  if (!raw) return {};
+
+  try {
+    return JSON.parse(raw) as JwtByServer;
+  } catch {
+    return {};
+  }
+}
+async function loadSelectedServerBaseUrl(): Promise<string | null> {
+  const raw = await AsyncStorage.getItem(serversKey);
+
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      servers?: Array<{ id: string; baseUrl: string }>;
+      selectedServerId?: string;
+    };
+
+    const servers = Array.isArray(parsed?.servers) ? parsed.servers : [];
+    const selectedServerId =
+      typeof parsed?.selectedServerId === "string" ? parsed.selectedServerId : null;
+
+    if (!selectedServerId) return null;
+
+    const selected = servers.find((s) => s.id === selectedServerId);
+
+    return selected?.baseUrl ? normalizeBaseUrl(selected.baseUrl) : null;
+  } catch {
+    return null;
+  }
+}
+async function saveJwtByServer(map: JwtByServer): Promise<void> {
+  await AsyncStorage.setItem(jwtByServerKey, JSON.stringify(map));
 }
 
 function resolveActiveApiBaseUrl(params: {
@@ -220,20 +261,27 @@ export interface ApiState {
 export const initializeApi = createAsyncThunk(
   "api/initialize",
   async (): Promise<ApiState> => {
-    const storedIp = await AsyncStorage.getItem(ipKey);
-    const storedJwt = await AsyncStorage.getItem(jwtKey);
+  const storedIp = await AsyncStorage.getItem(ipKey);
+const storedJwt = await AsyncStorage.getItem(jwtKey);
+const jwtByServer = await loadJwtByServer();
+const selectedServerBaseUrl = await loadSelectedServerBaseUrl();
 
-    const runtimeBaseUrl = resolveRuntimeBaseUrl();
-    const applicationMode = getApplicationMode();
+const runtimeBaseUrl = resolveRuntimeBaseUrl();
+const applicationMode = getApplicationMode();
 
-    const ip = resolveActiveApiBaseUrl({
-      mode: applicationMode,
-      runtimeBaseUrl,
-      storedIp,
-      fallbackBaseUrl: fallbackDefaultIp,
-    });
+let ip = "";
 
-    const jwt = (storedJwt ?? defaultJwt) as string | null;
+if (applicationMode === "CENTRAL_SHELL") {
+  ip = normalizeBaseUrl(
+    selectedServerBaseUrl ?? storedIp ?? runtimeBaseUrl ?? fallbackDefaultIp
+  );
+} else {
+  ip = normalizeBaseUrl(
+    runtimeBaseUrl ?? selectedServerBaseUrl ?? storedIp ?? fallbackDefaultIp
+  );
+}
+
+    const jwt = (jwtByServer[ip] ?? storedJwt ?? defaultJwt) as string | null;
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
@@ -322,8 +370,16 @@ export const refreshServerStatus = createAsyncThunk(
 export const login = createAsyncThunk(
   "api/login",
   async (jwt: string, thunkAPI) => {
-    thunkAPI.dispatch(setJwtLocal(jwt));
+    const state = thunkAPI.getState() as RootState;
+    const currentIp = normalizeBaseUrl(state.api.ip);
+
+    const jwtByServer = await loadJwtByServer();
+    jwtByServer[currentIp] = jwt;
+
+    await saveJwtByServer(jwtByServer);
     await AsyncStorage.setItem(jwtKey, jwt);
+
+    thunkAPI.dispatch(setJwtLocal(jwt));
     await thunkAPI.dispatch(initializeMenu());
   },
 );
@@ -331,37 +387,45 @@ export const login = createAsyncThunk(
 export const logoutAsync = createAsyncThunk(
   "api/logoutAsync",
   async (_, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
+    const currentIp = normalizeBaseUrl(state.api.ip);
+
+    const jwtByServer = await loadJwtByServer();
+    delete jwtByServer[currentIp];
+    await saveJwtByServer(jwtByServer);
+
     await AsyncStorage.removeItem(jwtKey);
+
     thunkAPI.dispatch(logoutLocal());
+    thunkAPI.dispatch(clearMenu());
   },
 );
 
 export const switchServer = createAsyncThunk(
   "api/switchServer",
   async (rawUrl: string, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
-
     const newUrl = normalizeBaseUrl(rawUrl);
-    const currentUrl = normalizeBaseUrl(state.api.ip);
-    const serverChanged = currentUrl !== newUrl;
 
-    if (serverChanged) {
-      await AsyncStorage.removeItem(jwtKey);
-      thunkAPI.dispatch(logoutLocal());
-      thunkAPI.dispatch(clearMenu());
-
-      // Weitere serverabhängige Slices hier zurücksetzen, falls nötig.
-    }
+    const jwtByServer = await loadJwtByServer();
+    const nextJwt = jwtByServer[newUrl] ?? null;
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(newUrl);
 
     await AsyncStorage.setItem(ipKey, newUrl);
 
+    if (nextJwt) {
+      await AsyncStorage.setItem(jwtKey, nextJwt);
+    } else {
+      await AsyncStorage.removeItem(jwtKey);
+    }
+
+    thunkAPI.dispatch(clearMenu());
+
     thunkAPI.dispatch(
       setConnectionLocal({
         ip: newUrl,
-        jwt: null,
+        jwt: nextJwt,
         isPointingToServer,
         authenticationMethod,
         isBaseMode,

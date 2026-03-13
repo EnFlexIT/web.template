@@ -1,50 +1,57 @@
-// src/components/layout/Footer.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
 import { ThemedText } from "./themed/ThemedText";
+import { Dropdown } from "./ui-elements/Dropdown";
 import { useAppSelector } from "../hooks/useAppSelector";
+import { useAppDispatch } from "../hooks/useAppDispatch";
+
 import {
   selectIp,
-  selectIsBaseMode} from "../redux/slices/apiSlice";
+  selectIsBaseMode,
+  switchServer,
+} from "../redux/slices/apiSlice";
+
 import { selectConnectivity } from "../redux/slices/connectivitySlice";
+import {
+  selectSelectedServer,
+  selectServers,
+  selectServer,
+} from "../redux/slices/serverSlice";
+
 import { getAppEnvironment } from "../util/appEnvironment";
-import { getApplicationMode } from "../util/applicationMode";
-
-function getHostLabel(ip: string): string {
-  if (!ip) return "Kein Server";
-
-  try {
-    const url = new URL(ip);
-    return url.host;
-  } catch {
-    return ip.replace(/^https?:\/\//, "");
-  }
-}
-
-function getApplicationModeLabel(mode: "CENTRAL_SHELL" | "STANDALONE") {
-  switch (mode) {
-    case "STANDALONE":
-      return "STANDALONE";
-    case "CENTRAL_SHELL":
-    default:
-      return "CENTRAL";
-  }
-}
 
 export function Footer() {
+  const dispatch = useAppDispatch();
+
   const ip = useAppSelector(selectIp);
   const isBaseMode = useAppSelector(selectIsBaseMode);
   const { isOffline } = useAppSelector(selectConnectivity);
 
   const env = getAppEnvironment();
-  const applicationMode = getApplicationMode();
+  const selectedServer = useAppSelector(selectSelectedServer);
+  const serversState = useAppSelector(selectServers);
 
-  const host = getHostLabel(ip);
-  const modeLabel = getApplicationModeLabel(applicationMode);
   const deviceMode = isBaseMode ? "Base Application" : "User Mode";
   const status = isOffline ? "Offline" : "Online";
+
+  const serverOptions = useMemo(() => {
+    const entries = (serversState?.servers ?? []).map((server) => [
+      server.id,
+      server.name?.trim() || server.baseUrl,
+    ]);
+
+    return Object.fromEntries(entries) as Record<string, string>;
+  }, [serversState?.servers]);
+
+  async function handleServerChange(serverId: string) {
+    const server = serversState?.servers?.find((s) => s.id === serverId);
+    if (!server) return;
+
+    dispatch(selectServer(serverId));
+    await dispatch(switchServer(server.baseUrl));
+  }
 
   return (
     <View style={styles.footer}>
@@ -52,15 +59,23 @@ export function Footer() {
         <ThemedText style={styles.badgeText}>{env}</ThemedText>
       </View>
 
-      <ThemedText style={styles.text}>{modeLabel}</ThemedText>
       <ThemedText style={styles.separator}>|</ThemedText>
-
       <ThemedText style={styles.text}>{deviceMode}</ThemedText>
+
       <ThemedText style={styles.separator}>|</ThemedText>
 
-      <ThemedText style={styles.text}>{host}</ThemedText>
-      <ThemedText style={styles.separator}>|</ThemedText>
+      <View style={styles.serverDropdownWrap}>
+      <Dropdown
+          value={selectedServer?.id ?? "local"}
+          options={serverOptions}
+          onChange={handleServerChange}
+          size="xs"
+          appearance="menu"
+          menuWidth={140}
+      />
+      </View>
 
+      <ThemedText style={styles.separator}>|</ThemedText>
       <ThemedText style={styles.text}>{status}</ThemedText>
     </View>
   );
@@ -80,12 +95,12 @@ function getEnvStyleKey(env: "DEV" | "TEST" | "PROD") {
 
 const styles = StyleSheet.create((theme) => ({
   footer: {
-    minHeight: 42,
+    minHeight: 25,
     borderTopWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -113,15 +128,20 @@ const styles = StyleSheet.create((theme) => ({
 
   badgeText: {
     color: "#FFFFFF",
-    fontSize: 12,
+   
   },
 
   text: {
-    fontSize: 12,
+  
   },
 
   separator: {
-    fontSize: 12,
+    
     opacity: 0.6,
+  },
+
+  serverDropdownWrap: {
+    minWidth: 100,
+    maxWidth: 230,
   },
 }));

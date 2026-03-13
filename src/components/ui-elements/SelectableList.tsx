@@ -223,7 +223,7 @@ const itemSizeStyles = {
   xs0: {
   
     paddingHorizontal: 8,
-    minHeight: 28,
+    minHeight: 20,
   },
   xs: {
      borderWidth: 1,

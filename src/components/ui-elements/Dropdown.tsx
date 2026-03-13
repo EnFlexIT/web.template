@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Modal, Pressable, View, useWindowDimensions } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
-import { useUnistyles } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Text } from "../stylistic/Text";
-
+import { ThemedText } from "../themed/ThemedText";
 type DropdownSize = "xs" | "sm" | "md";
+type DropdownAppearance = "field" | "menu";
 
 interface DropdownProps<T extends string> {
   value: T;
@@ -12,9 +12,9 @@ interface DropdownProps<T extends string> {
   onChange: (value: T) => void;
   disabled?: boolean;
   maxMenuHeight?: number;
-
- 
-  size?: DropdownSize; 
+  size?: DropdownSize;
+  appearance?: DropdownAppearance;
+  menuWidth?: number;
 }
 
 type AnchorRect = {
@@ -31,6 +31,8 @@ export function Dropdown<T extends string>({
   disabled = false,
   maxMenuHeight = 220,
   size = "md",
+  appearance = "field",
+  menuWidth = 180,
 }: DropdownProps<T>) {
   const { theme } = useUnistyles();
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -63,19 +65,30 @@ export function Dropdown<T extends string>({
   const menuStyle = useMemo(() => {
     if (!anchor) return null;
 
-    const GAP = 6;
+    const GAP = 14;
 
     let left = anchor.x;
-    let top = anchor.y + anchor.height + GAP;
-    const menuW = anchor.width;
+    let top =
+      appearance === "menu"
+        ? anchor.y - GAP - Math.min(maxMenuHeight, keys.length * rowH)
+        : anchor.y + anchor.height + GAP;
 
-    if (left + menuW > screenW - 8) left = Math.max(8, screenW - menuW - 8);
-    if (left < 8) left = 8;
-
+   const menuW = anchor.width;
     const menuH = Math.min(maxMenuHeight, keys.length * rowH);
-    if (top + menuH > screenH - 8) {
+
+    if (appearance !== "menu" && top + menuH > screenH - 8) {
       top = Math.max(8, anchor.y - GAP - menuH);
     }
+
+    if (appearance === "menu" && top < 8) {
+      top = anchor.y + anchor.height + GAP;
+    }
+
+    if (left + menuW > screenW - 8) {
+      left = Math.max(8, screenW - menuW - 8);
+    }
+
+    if (left < 8) left = 8;
 
     return {
       position: "absolute" as const,
@@ -84,27 +97,51 @@ export function Dropdown<T extends string>({
       width: menuW,
       maxHeight: maxMenuHeight,
     };
-  }, [anchor, screenW, screenH, maxMenuHeight, keys.length, rowH]);
+  }, [
+    anchor,
+    appearance,
+    menuWidth,
+    maxMenuHeight,
+    keys.length,
+    rowH,
+    screenW,
+    screenH,
+  ]);
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[
+        styles.wrapper,
+        appearance === "menu" && { width: menuWidth },
+      ]}
+    >
       <Pressable
+        ref={buttonRef}
+        collapsable={false}
         disabled={disabled}
         onPress={measureAndOpen}
         style={[
           styles.buttonBase,
           sizeStyles[size].button,
-          {
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.card,
-            opacity: disabled ? 0.6 : 1,
-          },
+          appearance === "menu"
+            ? [
+                styles.buttonMenu,
+                {
+                  width: menuWidth,
+                  backgroundColor: "transparent",
+                },
+              ]
+            : {
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.card,
+              },
+          { opacity: disabled ? 0.6 : 1 },
         ]}
       >
-        <View ref={buttonRef} collapsable={false} style={styles.buttonInner}>
-          <Text numberOfLines={1} style={{ flex: 1 }}>
+        <View style={styles.buttonInner}>
+          <ThemedText numberOfLines={1} style={{ flex: 1 }}>
             {selectedLabel}
-          </Text>
+          </ThemedText>
           <Text style={{ opacity: 0.6, marginLeft: 8 }}>
             {open ? "▲" : "▼"}
           </Text>
@@ -127,6 +164,7 @@ export function Dropdown<T extends string>({
             <View>
               {keys.map((key) => {
                 const active = key === value;
+
                 return (
                   <Pressable
                     key={key}
@@ -137,17 +175,17 @@ export function Dropdown<T extends string>({
                     style={[
                       styles.itemBase,
                       sizeStyles[size].item,
-                      active && { backgroundColor: theme.colors.background },
+                      {
+                        borderBottomColor: theme.colors.border,
+                      },
+                      active && {
+                        backgroundColor: theme.colors.background,
+                      },
                     ]}
                   >
-                    <Text
-                      style={{
-                        color: active ? theme.colors.highlight : theme.colors.text,
-                        fontWeight: active ? "700" : "400",
-                      }}
-                    >
+                    <ThemedText>
                       {options[key]}
-                    </Text>
+                    </ThemedText>
                   </Pressable>
                 );
               })}
@@ -168,6 +206,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
+  buttonMenu: {
+    borderWidth: 0,
+    justifyContent: "center",
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    minHeight: 0,
+  },
+
   buttonInner: {
     flexDirection: "row",
     alignItems: "center",
@@ -175,20 +221,20 @@ const styles = StyleSheet.create({
 
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: "rgba(0,0,0,0.18)",
   },
 
   menuBase: {
     borderWidth: 1,
     overflow: "hidden",
-    elevation: 6,
+    elevation: 8,
   },
 
   itemBase: {
     justifyContent: "center",
+    borderBottomWidth: 1,
   },
 });
-
 
 const sizeStyles = {
   xs: {

@@ -26,7 +26,8 @@ function getDefaultServer(): SavedServer {
   const runtimeBaseUrl = resolveRuntimeBaseUrl();
 
   const fallbackBaseUrl =
-    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8080";
+    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP 
+  
 
   return {
     id: "local",

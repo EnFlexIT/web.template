@@ -484,7 +484,7 @@ async function handleUseServer() {
 
             <SelectableList
               variant="secondary"
-              size="xs"
+              size="xs0"
               items={serverItems}
               value={selectedServerId}
               onChange={(id) => {

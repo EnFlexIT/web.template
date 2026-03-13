@@ -81,44 +81,35 @@ function getNumericIdFromPath(pathname: string): number | null {
    ========================= */
 
 function RootStack() {
-  
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
-useEffect(() => {
-  // nur auf Login-Screen / nicht eingeloggt
-  const id = setInterval(() => {
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      dispatch(refreshServerStatus());
+      dispatch(checkAlive({ silent: true }));
+    }, 5000);
+
     dispatch(refreshServerStatus());
     dispatch(checkAlive({ silent: true }));
-  }, 5000);
 
-  // direkt beim Mount einmal
-  dispatch(refreshServerStatus());
-  dispatch(checkAlive({ silent: true }));
+    return () => clearInterval(id);
+  }, [dispatch]);
 
-  return () => clearInterval(id);
-}, [dispatch]);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
   const isWide = useIsWide();
 
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
-
-  // Guards gegen Endlosschleifen
   const didBootRef = useRef(false);
   const didHandleUrlRef = useRef(false);
 
-  /* =========================
-     Slug Maps aus Menu
-     ========================= */
   const { pathById, idByPath } = useMemo(
     () => buildMenuPaths(rawMenu),
     [rawMenu]
   );
 
-  /* =========================
-     Linking Screens Config
-     ========================= */
   const screensConfig = useMemo(() => {
     const out: Record<string, string> = {};
     for (const m of rawMenu) {
@@ -174,6 +165,11 @@ useEffect(() => {
 
     const pathname = normalizePath(window.location.pathname || "/");
 
+    // Login-Pfade hier bewusst überspringen
+    if (pathname === "/login" || pathname === "/base-login") {
+      return;
+    }
+
     // A) Slug → menuID
     const slugId = idByPath[pathname];
     if (slugId && isMenuEnabled(slugId)) {
@@ -193,14 +189,56 @@ useEffect(() => {
   }, [dispatch, rawMenu, pathById, idByPath]);
 
   /* =========================
-     Drawer Root Node
+     Wenn bereits eingeloggt:
+     /login -> auf gültige App-Seite umleiten
      ========================= */
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isLoggedIn) return;
+    if (!rawMenu || rawMenu.length === 0) return;
+
+    const pathname = normalizePath(window.location.pathname || "/");
+
+    if (
+      pathname === "/login" ||
+      pathname === "/base-login" ||
+      pathname === "/"
+    ) {
+      const fallbackId =
+        rawMenu.find((m) => m.menuID && isMenuEnabled(m.menuID))?.menuID;
+
+      const targetId =
+        activeMenuId && isMenuEnabled(activeMenuId)
+          ? activeMenuId
+          : fallbackId;
+
+      if (!targetId) return;
+
+      const targetPath = pathById[targetId];
+      if (!targetPath) return;
+
+      window.history.replaceState(null, "", targetPath);
+      dispatch(setActiveMenuId(targetId));
+    }
+  }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
+
+  /* =========================
+     Wenn NICHT eingeloggt:
+     App-Pfade -> /login umleiten
+     ========================= */
+  useEffect(() => {
+    if (isLoading) return;
+
+    const pathname = normalizePath(window.location.pathname || "/");
+
+    if (!isLoggedIn && pathname !== "/login") {
+      window.history.replaceState(null, "", "/login");
+    }
+  }, [isLoading, isLoggedIn]);
+
   const navigationMenu =
     menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 
-  /* =========================
-     Navigation Theme
-     ========================= */
   const navTheme = useMemo(
     () => ({
       colors: {
@@ -221,13 +259,11 @@ useEffect(() => {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator />
-
       </View>
     );
   }
 
   return (
-    
     <NavigationContainer
       theme={navTheme}
       linking={{
@@ -244,11 +280,9 @@ useEffect(() => {
       fallback={
         <View style={styles.loadingScreen}>
           <ActivityIndicator />
-          
         </View>
       }
     >
-       
       <Drawer.Navigator
         screenOptions={{
           drawerType: isWide ? "permanent" : "front",
@@ -257,6 +291,7 @@ useEffect(() => {
         }}
         drawerContent={(props) => {
           if (!isLoggedIn) return undefined;
+
           return (
             <Navigation
               {...props}
@@ -269,7 +304,7 @@ useEffect(() => {
         screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
-             <OfflineOverlay />
+            <OfflineOverlay />
             {children}
           </View>
         )}
@@ -281,8 +316,9 @@ useEffect(() => {
                 key={i}
                 name={String(node.menuID!)}
                 children={() => {
-                  if (!isMenuEnabled(node.menuID!))
+                  if (!isMenuEnabled(node.menuID!)) {
                     return <NotAvailableScreen />;
+                  }
 
                   if (!isDynamicMenuItem(node) && node.Screen) {
                     const ScreenComp = node.Screen;
@@ -312,7 +348,6 @@ useEffect(() => {
             <Drawer.Screen name="Login" component={LoginScreen} />
           </Drawer.Group>
         )}
-      
       </Drawer.Navigator>
     </NavigationContainer>
   );
