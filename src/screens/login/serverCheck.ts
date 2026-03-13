@@ -21,11 +21,11 @@ export async function checkServerReachable(
 
   try {
    const res = await fetch(`${base}/api/app/settings/get`, {
-  method: "GET",
-  mode: "cors",
-  headers: {
-    Accept: "application/json",
-  },
+    method: "GET",
+    mode: "cors",
+    headers: {
+      Accept: "application/json",
+    },
 });
 
     console.log("[checkServerReachable] status:", res.status, "url:", `${base}/api/app/settings/get`);
