@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
@@ -24,6 +24,7 @@ import { selectAuthenticationMethod } from "../redux/slices/apiSlice";
 
 import { getAppEnvironment } from "../util/appEnvironment";
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
+import { checkServerReachable } from "../screens/login/serverCheck";
 
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
@@ -70,6 +71,15 @@ async function checkServerAuthenticated(
   }
 }
 
+type ServerTone = "green" | "yellow" | "red";
+
+type ServerOptionMeta = {
+  tone: ServerTone;
+  subtitle: string;
+};
+
+const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
+
 export function Footer() {
   const dispatch = useAppDispatch();
 
@@ -89,6 +99,10 @@ export function Footer() {
   const [pendingServerUrl, setPendingServerUrl] = useState<string | null>(null);
   const [pendingServerLabel, setPendingServerLabel] = useState("");
 
+  const [serverOptionMeta, setServerOptionMeta] = useState<
+    Record<string, ServerOptionMeta>
+  >({});
+
   const isLoginPage =
     typeof window !== "undefined" &&
     (window.location.pathname === "/login" ||
@@ -101,19 +115,114 @@ export function Footer() {
       ? "Offline"
       : "Online";
 
+  const servers = serversState?.servers ?? [];
+
   const serverOptions = useMemo(() => {
-    const entries = (serversState?.servers ?? []).map((server) => [
+    const entries = servers.map((server) => [
       server.id,
       server.name?.trim() || server.baseUrl,
     ]);
 
     return Object.fromEntries(entries) as Record<string, string>;
-  }, [serversState?.servers]);
+  }, [servers]);
+
+  const refreshServerStatuses = useCallback(async () => {
+    if (!servers.length) {
+      setServerOptionMeta({});
+      return;
+    }
+
+    const entries = await Promise.all(
+      servers.map(async (server) => {
+        try {
+          const reachable = await checkServerReachable(server.baseUrl);
+
+          if (!reachable.ok) {
+            return [
+              server.id,
+              {
+                tone: "red" as const,
+                subtitle: "Nicht erreichbar / offline",
+              },
+            ] as const;
+          }
+
+          const jwt = await getJwtForServer(server.baseUrl);
+          const authenticated = await checkServerAuthenticated(
+            server.baseUrl,
+            jwt,
+          );
+
+          if (authenticated) {
+            return [
+              server.id,
+              {
+                tone: "green" as const,
+                subtitle: "Eingeloggt",
+              },
+            ] as const;
+          }
+
+          return [
+            server.id,
+            {
+              tone: "yellow" as const,
+              subtitle: "Erreichbar – nicht eingeloggt",
+            },
+          ] as const;
+        } catch {
+          return [
+            server.id,
+            {
+              tone: "red" as const,
+              subtitle: "Nicht erreichbar / offline",
+            },
+          ] as const;
+        }
+      }),
+    );
+
+    setServerOptionMeta(Object.fromEntries(entries));
+  }, [servers]);
+
+  useEffect(() => {
+    let active = true;
+
+    const safeRefresh = async () => {
+      if (!active) return;
+      await refreshServerStatuses();
+    };
+
+    safeRefresh();
+
+    const intervalId = setInterval(() => {
+      safeRefresh();
+    }, 10000);
+
+    const onRefreshEvent = () => {
+      safeRefresh();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+      window.addEventListener("focus", onRefreshEvent);
+    }
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+        window.removeEventListener("focus", onRefreshEvent);
+      }
+    };
+  }, [refreshServerStatuses]);
 
   async function handleServerChange(serverId: string) {
     if (isSwitchingServer || loginLoading) return;
 
-    const server = serversState?.servers?.find((s) => s.id === serverId);
+    const server = servers.find((s) => s.id === serverId);
     if (!server) return;
     if (server.id === selectedServer?.id) return;
 
@@ -125,9 +234,6 @@ export function Footer() {
     );
 
     if (!alreadyAuthenticated) {
-      // Auf Login-Seite: kein extra Modal anzeigen.
-      // Einfach Server aktiv umstellen, damit der normale Login-Screen
-      // für den neuen Server benutzt wird.
       if (isLoginPage) {
         dispatch(selectServer(server.id));
 
@@ -138,10 +244,13 @@ export function Footer() {
           }),
         );
 
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        }
+
         return;
       }
 
-      // Außerhalb der Login-Seite: Modal öffnen
       setPendingServerId(server.id);
       setPendingServerUrl(newUrl);
       setPendingServerLabel(server.name?.trim() || server.baseUrl);
@@ -158,6 +267,10 @@ export function Footer() {
         initializeMenu: true,
       }),
     );
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+    }
   }
 
   async function handleServerLoginSubmit(params: {
@@ -214,6 +327,10 @@ export function Footer() {
       setPendingServerUrl(null);
       setPendingServerLabel("");
       setLoginError(null);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+      }
     } catch (err: any) {
       setLoginError(err?.message ?? "Anmeldung fehlgeschlagen.");
     } finally {
@@ -248,6 +365,9 @@ export function Footer() {
             appearance="menu"
             menuWidth={140}
             disabled={isSwitchingServer || loginLoading}
+            optionMeta={serverOptionMeta}
+            showOptionToneDot
+            menuOffsetY={24}
           />
         </View>
 

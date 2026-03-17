@@ -3,8 +3,15 @@ import { Modal, Pressable, View, useWindowDimensions } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Text } from "../stylistic/Text";
 import { ThemedText } from "../themed/ThemedText";
+
 type DropdownSize = "xs" | "sm" | "md";
 type DropdownAppearance = "field" | "menu";
+type DropdownStatusTone = "green" | "yellow" | "red" | "neutral";
+
+type DropdownOptionMeta = {
+  subtitle?: string;
+  tone?: DropdownStatusTone;
+};
 
 interface DropdownProps<T extends string> {
   value: T;
@@ -15,6 +22,16 @@ interface DropdownProps<T extends string> {
   size?: DropdownSize;
   appearance?: DropdownAppearance;
   menuWidth?: number;
+
+  optionMeta?: Partial<Record<T, DropdownOptionMeta>>;
+  showSelectedToneDot?: boolean;
+  showOptionToneDot?: boolean;
+
+  /**
+   * Optionaler zusätzlicher Y-Abstand für das Menü.
+   * Besonders nützlich bei Footer-Dropdowns mit appearance="menu".
+   */
+  menuOffsetY?: number;
 }
 
 type AnchorRect = {
@@ -33,6 +50,10 @@ export function Dropdown<T extends string>({
   size = "md",
   appearance = "field",
   menuWidth = 180,
+  optionMeta,
+  showSelectedToneDot = false,
+  showOptionToneDot = false,
+  menuOffsetY,
 }: DropdownProps<T>) {
   const { theme } = useUnistyles();
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -42,6 +63,7 @@ export function Dropdown<T extends string>({
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
 
   const selectedLabel = options[value] ?? String(value);
+  const selectedMeta = optionMeta?.[value];
   const keys = useMemo(() => Object.keys(options) as T[], [options]);
 
   const rowH = sizeStyles[size].menuItemMinHeight;
@@ -65,23 +87,28 @@ export function Dropdown<T extends string>({
   const menuStyle = useMemo(() => {
     if (!anchor) return null;
 
-    const GAP = 14;
+    const DEFAULT_GAP = 8;
+    const footerMenuGap = menuOffsetY ?? 18;
+
+    const menuW = appearance === "menu" ? menuWidth : anchor.width;
+    const menuH = Math.min(maxMenuHeight, keys.length * rowH);
 
     let left = anchor.x;
     let top =
       appearance === "menu"
-        ? anchor.y - GAP - Math.min(maxMenuHeight, keys.length * rowH)
-        : anchor.y + anchor.height + GAP;
-
-   const menuW = anchor.width;
-    const menuH = Math.min(maxMenuHeight, keys.length * rowH);
+        ? anchor.y - menuH - footerMenuGap
+        : anchor.y + anchor.height + DEFAULT_GAP;
 
     if (appearance !== "menu" && top + menuH > screenH - 8) {
-      top = Math.max(8, anchor.y - GAP - menuH);
+      top = Math.max(8, anchor.y - DEFAULT_GAP - menuH);
     }
 
     if (appearance === "menu" && top < 8) {
-      top = anchor.y + anchor.height + GAP;
+      top = anchor.y + anchor.height + DEFAULT_GAP;
+    }
+
+    if (top + menuH > screenH - 8) {
+      top = Math.max(8, screenH - menuH - 8);
     }
 
     if (left + menuW > screenW - 8) {
@@ -96,6 +123,7 @@ export function Dropdown<T extends string>({
       top,
       width: menuW,
       maxHeight: maxMenuHeight,
+      zIndex: 9999,
     };
   }, [
     anchor,
@@ -106,6 +134,7 @@ export function Dropdown<T extends string>({
     rowH,
     screenW,
     screenH,
+    menuOffsetY,
   ]);
 
   return (
@@ -139,9 +168,14 @@ export function Dropdown<T extends string>({
         ]}
       >
         <View style={styles.buttonInner}>
+          {showSelectedToneDot ? (
+            <StatusDot tone={selectedMeta?.tone ?? "neutral"} />
+          ) : null}
+
           <ThemedText numberOfLines={1} style={{ flex: 1 }}>
             {selectedLabel}
           </ThemedText>
+
           <Text style={{ opacity: 0.6, marginLeft: 8 }}>
             {open ? "▲" : "▼"}
           </Text>
@@ -162,8 +196,10 @@ export function Dropdown<T extends string>({
             ]}
           >
             <View>
-              {keys.map((key) => {
+              {keys.map((key, index) => {
                 const active = key === value;
+                const meta = optionMeta?.[key];
+                const isLast = index === keys.length - 1;
 
                 return (
                   <Pressable
@@ -177,15 +213,30 @@ export function Dropdown<T extends string>({
                       sizeStyles[size].item,
                       {
                         borderBottomColor: theme.colors.border,
+                        borderBottomWidth: isLast ? 0 : 1,
                       },
                       active && {
                         backgroundColor: theme.colors.background,
                       },
                     ]}
                   >
-                    <ThemedText>
-                      {options[key]}
-                    </ThemedText>
+                    <View style={styles.itemContent}>
+                      <View style={styles.itemMainRow}>
+                        {showOptionToneDot ? (
+                          <StatusDot tone={meta?.tone ?? "neutral"} />
+                        ) : null}
+
+                        <ThemedText numberOfLines={1} style={styles.itemLabel}>
+                          {options[key]}
+                        </ThemedText>
+                      </View>
+
+                      {meta?.subtitle ? (
+                        <ThemedText numberOfLines={1} style={styles.itemSubtitle}>
+                          {meta.subtitle}
+                        </ThemedText>
+                      ) : null}
+                    </View>
                   </Pressable>
                 );
               })}
@@ -197,7 +248,21 @@ export function Dropdown<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+function StatusDot({ tone }: { tone: DropdownStatusTone }) {
+  return (
+    <View
+      style={[
+        styles.statusDot,
+        tone === "green" && styles.statusDotGreen,
+        tone === "yellow" && styles.statusDotYellow,
+        tone === "red" && styles.statusDotRed,
+        tone === "neutral" && styles.statusDotNeutral,
+      ]}
+    />
+  );
+}
+
+const styles = StyleSheet.create((theme) => ({
   wrapper: {
     width: "100%",
   },
@@ -222,19 +287,63 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.18)",
+    zIndex: 9998,
   },
 
   menuBase: {
     borderWidth: 1,
     overflow: "hidden",
     elevation: 8,
+    zIndex: 9999,
   },
 
   itemBase: {
     justifyContent: "center",
-    borderBottomWidth: 1,
   },
-});
+
+  itemContent: {
+    gap: 2,
+  },
+
+  itemMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  itemLabel: {
+    flex: 1,
+  },
+
+  itemSubtitle: {
+    fontSize: 11,
+    opacity: 0.65,
+    marginLeft: 16,
+  },
+
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    flexShrink: 0,
+  },
+
+  statusDotGreen: {
+    backgroundColor: "#16A34A",
+  },
+
+  statusDotYellow: {
+    backgroundColor: "#EAB308",
+  },
+
+  statusDotRed: {
+    backgroundColor: "#DC2626",
+  },
+
+  statusDotNeutral: {
+    backgroundColor: theme.colors.border,
+  },
+}));
 
 const sizeStyles = {
   xs: {

@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { ScrollView } from "react-native-gesture-handler";
+
 import { ThemedText } from "../../components/themed/ThemedText";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { Card } from "../../components/ui-elements/Card";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
@@ -15,91 +17,101 @@ import {
   normalizeBaseUrl,
 } from "../../redux/slices/apiSlice";
 import { selectServers } from "../../redux/slices/serverSlice";
-import { Card } from "../../components/ui-elements/Card";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
 };
 
-type ExtraServerItem = {
+type LogoutServerItem = {
   id: string;
   name: string;
   baseUrl: string;
+  normalizedBaseUrl: string;
+  isCurrent: boolean;
 };
 
-const mockServers = Array.from({ length: 10 }, (_, index) => ({
-  id: `server-${index + 1}`,
-  name: `Server ${index + 1}`,
-  baseUrl: `https://server-${index + 1}.example.com`,
-}));
+const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
   const currentIp = useAppSelector(selectIp);
   const serversState = useAppSelector(selectServers);
 
-  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedServerIds, setSelectedServerIds] = useState<string[]>([]);
-  const [loggedInExtraServers, setLoggedInExtraServers] = useState<ExtraServerItem[]>([]);
+  const [loggedInServers, setLoggedInServers] = useState<LogoutServerItem[]>([]);
+  const [serversLoaded, setServersLoaded] = useState(false);
 
   const servers = serversState?.servers ?? [];
-
   const currentNormalizedIp = normalizeBaseUrl(currentIp);
 
   useEffect(() => {
     if (!visible) {
-      setExpanded(false);
       setSelectedServerIds([]);
-      setLoggedInExtraServers([]);
+      setLoggedInServers([]);
+      setServersLoaded(false);
       return;
     }
 
     let mounted = true;
 
+    setServersLoaded(false);
+
     (async () => {
       const jwtMap = await loadJwtByServer();
 
-      const extraServers = servers.filter((server) => {
-        const normalized = normalizeBaseUrl(server.baseUrl);
-        const hasJwt = !!jwtMap[normalized];
-        const isCurrent = normalized === currentNormalizedIp;
+      const allLoggedInServers = servers
+        .filter((server) => {
+          const normalized = normalizeBaseUrl(server.baseUrl);
+          return !!jwtMap[normalized];
+        })
+        .map<LogoutServerItem>((server) => {
+          const normalized = normalizeBaseUrl(server.baseUrl);
 
-        return hasJwt && !isCurrent;
-      });
+          return {
+            id: server.id,
+            name: server.name?.trim() || server.baseUrl,
+            baseUrl: server.baseUrl,
+            normalizedBaseUrl: normalized,
+            isCurrent: normalized === currentNormalizedIp,
+          };
+        })
+        .sort((a, b) => {
+          if (a.isCurrent) return -1;
+          if (b.isCurrent) return 1;
+          return a.name.localeCompare(b.name);
+        });
 
       if (!mounted) return;
 
-      setLoggedInExtraServers(
-        extraServers.map((server) => ({
-          id: server.id,
-          name: server.name?.trim() || server.baseUrl,
-          baseUrl: server.baseUrl,
-        })),
-      );
+      setLoggedInServers(allLoggedInServers);
+
+      const currentServer = allLoggedInServers.find((server) => server.isCurrent);
+
+      setSelectedServerIds(currentServer ? [currentServer.id] : []);
+      setServersLoaded(true);
     })();
 
     return () => {
       mounted = false;
     };
   }, [visible, servers, currentNormalizedIp]);
-const serversToRender = useMemo<ExtraServerItem[]>(() => {
-    if (loggedInExtraServers.length > 0) {
-      return loggedInExtraServers;
-    }
 
-    
+  const hasMultipleLoggedInServers = loggedInServers.length > 1;
 
-    return [];
-  }, [loggedInExtraServers]);
+  const serversToRender = useMemo<LogoutServerItem[]>(() => {
+    if (!hasMultipleLoggedInServers) return [];
+    return loggedInServers;
+  }, [hasMultipleLoggedInServers, loggedInServers]);
 
-  const hasExtraServers = loggedInExtraServers.length > 0;
-   const allSelected =
+  const allSelected =
     serversToRender.length > 0 &&
     serversToRender.every((server) => selectedServerIds.includes(server.id));
+
   const someSelected = selectedServerIds.length > 0 && !allSelected;
- function toggleSelectAll() {
+
+  function toggleSelectAll() {
     if (allSelected) {
       setSelectedServerIds([]);
       return;
@@ -118,23 +130,55 @@ const serversToRender = useMemo<ExtraServerItem[]>(() => {
 
   async function handleLogout() {
     if (loading) return;
+
     setLoading(true);
 
     try {
-      const selectedExtras = loggedInExtraServers.filter((server) =>
+      if (!hasMultipleLoggedInServers) {
+        await dispatch(logoutAsync()).unwrap();
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        }
+
+        onClose();
+        return;
+      }
+
+      const selectedServers = loggedInServers.filter((server) =>
         selectedServerIds.includes(server.id),
       );
 
-      for (const server of selectedExtras) {
+      if (selectedServers.length === 0) {
+        return;
+      }
+
+      const selectedCurrentServer = selectedServers.find((server) => server.isCurrent);
+      const selectedOtherServers = selectedServers.filter((server) => !server.isCurrent);
+
+      for (const server of selectedOtherServers) {
         await setJwtForServer(server.baseUrl, null);
       }
 
-      await dispatch(logoutAsync());
+      if (selectedCurrentServer) {
+        await dispatch(logoutAsync()).unwrap();
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+      }
+
       onClose();
     } finally {
       setLoading(false);
     }
   }
+
+  const canSubmit = hasMultipleLoggedInServers
+    ? serversLoaded && !loading && selectedServerIds.length > 0
+    : serversLoaded && !loading;
+
+  const logoutLabel = loading ? "Abmelden..." : "Abmelden";
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -143,81 +187,74 @@ const serversToRender = useMemo<ExtraServerItem[]>(() => {
           <ThemedText style={styles.title}>Abmelden</ThemedText>
 
           <ThemedText style={styles.body}>
-            Möchtest du dich hier ausloggen?
+            {hasMultipleLoggedInServers
+              ? "Wähle aus, von welchen Servern du dich abmelden möchtest."
+              : "Möchtest du dich vom aktuellen Server abmelden?"}
           </ThemedText>
 
-          {hasExtraServers ? (
+          {hasMultipleLoggedInServers ? (
             <View style={styles.section}>
-              <Pressable onPress={() => setExpanded((v) => !v)}>
-                <ThemedText style={styles.linkLike}>
-                  {expanded
-                    ? "Weitere Server ausblenden"
-                    : "Weitere eingeloggte Server anzeigen"}
-                </ThemedText>
-              </Pressable>
-
-              {expanded ? (
-                         <Card style={styles.listCard} padding="sm">
-                  <Pressable style={styles.selectAllRow} onPress={toggleSelectAll}>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        (allSelected || someSelected) && styles.checkboxChecked,
-                      ]}
-                    >
-                      {allSelected ? (
-                        <ThemedText style={styles.checkmark}>✓</ThemedText>
-                      ) : someSelected ? (
-                        <View style={styles.partialMark} />
-                      ) : null}
-                    </View>
-
-                    <ThemedText style={styles.selectAllText}>
-                      Alle auswählen
-                    </ThemedText>
-                  </Pressable>
-
-                  <View style={styles.divider} />
-
-                  <ScrollView
-                    style={styles.scroll}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator
+              <Card style={styles.listCard} padding="sm">
+                <Pressable style={styles.selectAllRow} onPress={toggleSelectAll}>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      (allSelected || someSelected) && styles.checkboxChecked,
+                    ]}
                   >
-                    {serversToRender.map((server) => {
-                      const checked = selectedServerIds.includes(server.id);
+                    {allSelected ? (
+                      <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    ) : someSelected ? (
+                      <View style={styles.partialMark} />
+                    ) : null}
+                  </View>
 
-                      return (
-                        <Pressable
-                          key={server.id}
-                          style={styles.row}
-                          onPress={() => toggleServer(server.id)}
+                  <ThemedText style={styles.selectAllText}>
+                    Alle auswählen
+                  </ThemedText>
+                </Pressable>
+
+                <View style={styles.divider} />
+
+                <ScrollView
+                  style={styles.scroll}
+                  contentContainerStyle={styles.scrollContent}
+                  showsVerticalScrollIndicator
+                >
+                  {serversToRender.map((server) => {
+                    const checked = selectedServerIds.includes(server.id);
+
+                    return (
+                      <Pressable
+                        key={server.id}
+                        style={styles.row}
+                        onPress={() => toggleServer(server.id)}
+                      >
+                        <View
+                          style={[
+                            styles.checkbox,
+                            checked && styles.checkboxChecked,
+                          ]}
                         >
-                          <View
-                            style={[
-                              styles.checkbox,
-                              checked && styles.checkboxChecked,
-                            ]}
-                          >
-                            {checked ? (
-                              <ThemedText style={styles.checkmark}>✓</ThemedText>
-                            ) : null}
-                          </View>
+                          {checked ? (
+                            <ThemedText style={styles.checkmark}>✓</ThemedText>
+                          ) : null}
+                        </View>
 
-                          <View style={styles.serverTextWrap}>
-                            <ThemedText style={styles.serverName}>
-                              {server.name}
-                            </ThemedText>
-                            <ThemedText style={styles.serverUrl}>
-                              ({server.baseUrl})
-                            </ThemedText>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
-                  </ScrollView>
-                </Card>
-              ) : null}
+                        <View style={styles.serverTextWrap}>
+                          <ThemedText style={styles.serverName}>
+                            {server.name}
+                          </ThemedText>
+
+                          <ThemedText style={styles.serverUrl}>
+                            ({server.baseUrl})
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </Card>
             </View>
           ) : null}
 
@@ -229,10 +266,11 @@ const serversToRender = useMemo<ExtraServerItem[]>(() => {
               size="sm"
             />
             <ActionButton
-              label={loading ? "Abmelden..." : "Abmelden"}
+              label={logoutLabel}
               variant="secondary"
               onPress={handleLogout}
               size="sm"
+              disabled={!canSubmit}
             />
           </View>
         </Pressable>
@@ -242,7 +280,7 @@ const serversToRender = useMemo<ExtraServerItem[]>(() => {
 }
 
 const styles = StyleSheet.create((theme) => ({
-   backdrop: {
+  backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.30)",
     alignItems: "center",
@@ -256,7 +294,6 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.card,
     borderColor: theme.colors.border,
     borderWidth: 1,
-  
     padding: 18,
     gap: 16,
   },
@@ -272,12 +309,22 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.9,
   },
 
-  section: {
-    gap: 10,
+  currentInfo: {
+    gap: 4,
   },
 
-  expandRow: {
-    alignSelf: "flex-start",
+  currentInfoLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    opacity: 0.7,
+  },
+
+  currentInfoValue: {
+    fontSize: 13,
+  },
+
+  section: {
+    gap: 10,
   },
 
   linkLike: {
@@ -287,7 +334,6 @@ const styles = StyleSheet.create((theme) => ({
 
   listCard: {
     marginTop: 4,
-  
     maxHeight: 280,
   },
 
@@ -325,13 +371,11 @@ const styles = StyleSheet.create((theme) => ({
     gap: 10,
     paddingVertical: 2,
     paddingHorizontal: 2,
-   
   },
 
   checkbox: {
     width: 16,
     height: 16,
-
     borderWidth: 1,
     borderColor: theme.colors.border,
     alignItems: "center",
@@ -353,7 +397,6 @@ const styles = StyleSheet.create((theme) => ({
   partialMark: {
     width: 8,
     height: 2,
- 
     backgroundColor: "#fff",
   },
 
