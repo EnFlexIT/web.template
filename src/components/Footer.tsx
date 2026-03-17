@@ -367,7 +367,7 @@ export function Footer() {
             disabled={isSwitchingServer || loginLoading}
             optionMeta={serverOptionMeta}
             showOptionToneDot
-            menuOffsetY={24}
+            menuOffsetY={49}
           />
         </View>
 
