@@ -2,39 +2,41 @@
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { getJwtRemainingMs } from "../util/jwtTime";
+import { store } from "../redux/store";
+import { renewAllServerJwtsIfNeeded } from "../redux/slices/jwtRenewSlice";
 
 type Options = {
   enabled: boolean;
   jwt: string | null;
   warnMs: number;
   onLogout: () => void;
-  onHeartbeat?: () => void; // Renew (throttling happens in thunk via cooldownMs)
+  onHeartbeat?: () => void;
 };
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
 
-  const selector = [
-    "button",
-    "a[href]",
-    "input",
-    "select",
-    "textarea",
-    "[role='button']",
-    "[role='tab']",
-    "[role='menuitem']",
-    "[role='option']",
-    "[role='switch']",
-    "[role='checkbox']",
-    "[role='radio']",
-    "[contenteditable='true']",
-    "[tabindex]:not([tabindex='-1'])",
-  ].join(",");
+const selector = [
+  "button",
+  "a[href]",
+  "input",
+  "select",
+  "textarea",
+  "[role='button']",
+  "[role='tab']",
+  "[role='menuitem']",
+  "[role='option']",
+  "[role='switch']",
+  "[role='checkbox']",
+  "[role='radio']",
+  "[contenteditable='true']",
+  "[tabindex]:not([tabindex='-1'])",
+  "[id^='session-activity-']",
+].join(",");
 
   const el = target.closest(selector);
   if (!el) return false;
 
-  // disabled soll NICHT zählen
   if ((el as HTMLButtonElement).disabled) return false;
   if (el.getAttribute("aria-disabled") === "true") return false;
 
@@ -42,7 +44,6 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 function isEffectiveKey(e: KeyboardEvent): boolean {
-  // "echte" Navigation / Bedienung
   return [
     "Tab",
     "Enter",
@@ -67,7 +68,6 @@ export function useJwtSessionTimerWeb({
   onLogout,
   onHeartbeat,
 }: Options) {
-  //  direkt aus JWT (kein 0-Flash)
   const [secondsLeft, setSecondsLeft] = useState(() => {
     if (!jwt) return 0;
     const remainingMs = getJwtRemainingMs(jwt);
@@ -81,6 +81,7 @@ export function useJwtSessionTimerWeb({
   });
 
   const lastLogoutAtRef = useRef<number>(0);
+  const lastHeartbeatAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled) return;
@@ -88,7 +89,6 @@ export function useJwtSessionTimerWeb({
     if (typeof window === "undefined") return;
 
     const safeLogout = () => {
-    
       const now = Date.now();
       if (now - lastLogoutAtRef.current < 1000) return;
       lastLogoutAtRef.current = now;
@@ -116,15 +116,31 @@ export function useJwtSessionTimerWeb({
     };
 
     const triggerHeartbeat = () => {
-      // nur wenn token grundsätzlich gültig ist
       if (!jwt) return;
+
       const remainingMs = getJwtRemainingMs(jwt);
       if (!Number.isFinite(remainingMs) || remainingMs <= 0) return;
 
-    
+      // lokales Throttling gegen zu viele Dispatches bei vielen Klicks
+      const now = Date.now();
+      if (now - lastHeartbeatAtRef.current < 3000) {
+        return;
+      }
+      lastHeartbeatAtRef.current = now;
+
+      console.log("[SESSION TIMER] heartbeat triggered");
+
+      // Bestehendes Verhalten beibehalten
       onHeartbeat?.();
 
-  
+      // Neues Verhalten:
+      // automatisch alle Server-JWTs prüfen/verlängern
+      store.dispatch(
+        renewAllServerJwtsIfNeeded({
+          thresholdMs: 35_000,
+          cooldownMs: 15_000,
+        }) as any,
+      );
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -133,7 +149,7 @@ export function useJwtSessionTimerWeb({
     };
 
     const onClick = (e: MouseEvent) => {
-      if (!isInteractiveTarget(e.target)) return; 
+      if (!isInteractiveTarget(e.target)) return;
       triggerHeartbeat();
     };
 
@@ -142,12 +158,13 @@ export function useJwtSessionTimerWeb({
       triggerHeartbeat();
     };
 
-    // Listener
     window.addEventListener("keydown", onKeyDown, { capture: true });
     window.addEventListener("click", onClick, { capture: true });
-    window.addEventListener("touchend", onTouchEnd, { capture: true, passive: true });
+    window.addEventListener("touchend", onTouchEnd, {
+      capture: true,
+      passive: true,
+    });
 
-  
     tickOnce();
 
     const tick = window.setInterval(tickOnce, 1000);

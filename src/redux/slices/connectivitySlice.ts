@@ -17,13 +17,6 @@ const initialState: ConnectivityState = {
   lastError: null,
 };
 
-/**
- * Kleiner Ping ohne Auth + Timeout.
- * Wichtig:
- * Jede HTTP-Response bedeutet hier "Server erreichbar".
- * Auch 401/403/500 zählen als online.
- * Offline ist nur: kein Response wegen Netzwerkfehler / Abort / Timeout.
- */
 async function ping(
   url: string,
   timeoutMs = 4000,
@@ -48,10 +41,20 @@ async function ping(
 }
 
 export const checkAlive = createAsyncThunk<
-  { isOnline: boolean; wentOnline: boolean; error?: string | null },
+  { isOnline: boolean; wentOnline: boolean; error?: string | null; skipped?: boolean },
   { silent?: boolean } | undefined
 >("connectivity/checkAlive", async (arg, thunkAPI) => {
   const state = thunkAPI.getState() as RootState;
+
+  if (state.api.isSwitchingServer) {
+    return {
+      isOnline: !state.connectivity.isOffline,
+      wentOnline: false,
+      error: null,
+      skipped: true,
+    };
+  }
+
   const ip = selectIp(state);
   const wasOffline = state.connectivity.isOffline;
   const silent = arg?.silent === true;
@@ -64,6 +67,7 @@ export const checkAlive = createAsyncThunk<
       isOnline: false,
       wentOnline: false,
       error: silent ? null : "Keine Server-URL gesetzt.",
+      skipped: false,
     };
   }
 
@@ -76,6 +80,7 @@ export const checkAlive = createAsyncThunk<
       isOnline: true,
       wentOnline: wasOffline,
       error: null,
+      skipped: false,
     };
   } catch (err: any) {
     const msg = silent
@@ -90,6 +95,7 @@ export const checkAlive = createAsyncThunk<
       isOnline: false,
       wentOnline: false,
       error: msg,
+      skipped: false,
     };
   }
 });
@@ -115,11 +121,15 @@ const connectivitySlice = createSlice({
 
     builder.addCase(checkAlive.fulfilled, (state, action) => {
       state.checking = false;
+
+      if (action.payload.skipped) {
+        return;
+      }
+
       state.lastError = action.payload.error ?? null;
 
       if (action.payload.isOnline) {
         const wasOffline = state.isOffline;
-
         state.isOffline = false;
         state.showBackOnline = wasOffline ? true : state.showBackOnline;
       } else {
@@ -138,7 +148,6 @@ const connectivitySlice = createSlice({
 });
 
 export const { dismissBackOnline, setOfflineLocal } = connectivitySlice.actions;
-
 export const selectConnectivity = (state: RootState) => state.connectivity;
 
 export default connectivitySlice.reducer;

@@ -8,7 +8,6 @@ import {
   TextInput as RNTextInput,
   View,
   StyleSheet as NativeStyleSheet,
-  Platform,
 } from "react-native";
 
 import { useUnistyles } from "react-native-unistyles";
@@ -29,61 +28,62 @@ import {
   selectApi,
   selectAuthenticationMethod,
   selectIp,
-  login as reduxLogin,
+  switchServer,
 } from "../../redux/slices/apiSlice";
-
 import { ServerModal } from "./ServerModal";
 
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
-import { initializeMenu } from "../../redux/slices/menuSlice";
 
 import { styles } from "./styles";
 import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
-
-
 import { TextInput } from "../../components/ui-elements/TextInput";
+
+// ---------- helpers ----------
+function toBase64(str: string) {
+  return typeof btoa !== "undefined"
+    ? btoa(str)
+    : Buffer.from(str).toString("base64");
+}
+
+function extractBearerToken(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const m = value.match(/Bearer\s+(.+)/i);
+  return m?.[1]?.trim() ?? null;
+}
 
 // ---------- component ----------
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
 
-  // Unistyles theme
   const { theme } = useUnistyles();
 
-  // api
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-  const { isPointingToServer, awb_rest_api } = useAppSelector(selectApi);
+  const { isPointingToServer } = useAppSelector(selectApi);
   const ip = useAppSelector(selectIp);
 
-  // settings
   const language = useAppSelector(selectLanguage);
   const themeInfo = useAppSelector(selectThemeInfo);
 
-  // servers
   const serversState = useAppSelector(selectServers);
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((s) => s.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
 
-  // UI states
   const [highlight, setHighlight] = useState(false);
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
 
-  // Login form refs
-  const usernameFieldRef = useRef<RNTextInput>(null);
   const passwordFieldRef = useRef<RNTextInput>(null);
   const loginButtonRef = useRef<View>(null);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  // Login feedback
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
   const [loginRequestStatus, setLoginRequestStatus] = useState<
     "loading" | "successful" | "failed"
@@ -98,27 +98,55 @@ export function LoginScreen() {
     switch (authenticationMethod) {
       case "jwt": {
         try {
-          const response = await awb_rest_api.userApi.loginUser({
-            auth: { username, password },
+          const basic = toBase64(`${username}:${password}`);
+          const loginUrl = `${selectedBaseUrl}/api/user/login`;
+
+          console.log("[LOGIN SCREEN] selectedBaseUrl:", selectedBaseUrl);
+          console.log("[LOGIN SCREEN] loginUrl:", loginUrl);
+
+          const response = await fetch(loginUrl, {
+            method: "GET",
+            headers: {
+              Authorization: `Basic ${basic}`,
+              Accept: "application/json",
+            },
           });
 
-          if (response.status === 200) {
-            const www_authenticate = response.headers[
-              "www-authenticate"
-            ] as string;
-            const bearerToken = (www_authenticate ?? "").split(" ")[1];
+          const wwwAuthenticate =
+            response.headers.get("www-authenticate") ??
+            response.headers.get("WWW-Authenticate") ??
+            response.headers.get("authorization") ??
+            response.headers.get("Authorization");
 
-            if (bearerToken) {
-               
-              dispatch(reduxLogin(bearerToken));
-              await dispatch(initializeMenu());
-              setLoginRequestStatus("successful");
-              return;
-            }
-          }
+          const bodyText = await response.text();
+
+          const bearerToken =
+            extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
+
+      if (response.status === 200 && bearerToken) {
+          console.log("[LOGIN SCREEN] switching to server with token:", selectedBaseUrl);
+
+          await dispatch(
+            switchServer({
+              url: selectedBaseUrl,
+              providedJwt: bearerToken,
+              initializeMenu: true,
+            }),
+          );
+
+          setLoginRequestStatus("successful");
+          return;
+        }
+
+          console.warn("[LOGIN SCREEN] login failed - no bearer token", {
+            status: response.status,
+            wwwAuthenticate,
+            bodyText,
+          });
 
           setLoginRequestStatus("failed");
-        } catch {
+        } catch (error) {
+          console.error("[LOGIN SCREEN] login failed:", error);
           setLoginRequestStatus("failed");
         }
         break;
@@ -136,7 +164,6 @@ export function LoginScreen() {
 
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
 
-  // Dropdown options (typed)
   const languageOptions = {
     de: "Deutsch",
     en: "English",
@@ -152,21 +179,17 @@ export function LoginScreen() {
     ? "system"
     : themeInfo.theme;
 
-  // ---------- render ----------
   return (
     <View style={[styles.container]}>
-      {/* MAIN CARD */}
       <View style={[styles.widget, styles.border]}>
-        {/* Title */}
         <View style={[styles.titleContainer]}>
           <Logo style={logoStyles.logo} />
           <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
         </View>
 
-        {/* Inputs */}
         <View style={[styles.upperHalf]}>
           <TextInput
-           size="sm"
+            size="sm"
             style={[styles.border, styles.padding]}
             placeholder={t("username_placeholder")}
             textContentType="username"
@@ -177,7 +200,7 @@ export function LoginScreen() {
           />
 
           <TextInput
-          size="sm"
+            size="sm"
             style={[styles.border, styles.padding]}
             placeholder={t("password_placeholder")}
             textContentType="password"
@@ -189,25 +212,20 @@ export function LoginScreen() {
               if (isPointingToServer && username && password) {
                 login();
               } else {
-                // optional: falls dein Button fokussierbar ist
                 // @ts-ignore
                 loginButtonRef.current?.focus?.();
               }
             }}
           />
 
-          {/* Login Button */}
-         
-            <ActionButton
-              label={t("login")}
-              variant="secondary"
-              onPress={login}
-              size="xs"
-            />
-        
+          <ActionButton
+            label={t("login")}
+            variant="secondary"
+            onPress={login}
+            size="xs"
+          />
         </View>
 
-        {/* ADVANCED */}
         <View style={[styles.lowerHalf]}>
           <Pressable
             style={[styles.advancedSettingsTitleContainer]}
@@ -219,7 +237,6 @@ export function LoginScreen() {
 
           {!folded && (
             <ScrollView contentContainerStyle={[styles.advancedItemsContainer]}>
-              {/* Change Organization / Server */}
               <Card onPress={() => setOrgModalOpen(true)} padding="none">
                 <View style={[styles.serverBadge, { gap: 1 }]}>
                   <View style={{ flex: 1, gap: 1 }}>
@@ -242,7 +259,6 @@ export function LoginScreen() {
                 </View>
               </Card>
 
-              {/* Language (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("lng")}:</ThemedText>
                 <Dropdown<"de" | "en">
@@ -253,7 +269,6 @@ export function LoginScreen() {
                 />
               </View>
 
-              {/* Theme (Dropdown) */}
               <View style={{ gap: 6 }}>
                 <ThemedText>{t("color-scheme")}:</ThemedText>
                 <Dropdown<"system" | "light" | "dark">
@@ -275,13 +290,11 @@ export function LoginScreen() {
         </View>
       </View>
 
-      {/* STATUS INDICATOR */}
       <LoginRequestStatusIndicator
         issued={loginRequestIssued}
         status={loginRequestStatus}
       />
 
-      {/* MODAL */}
       <ServerModal
         visible={orgModalOpen}
         onClose={() => setOrgModalOpen(false)}

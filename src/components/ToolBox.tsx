@@ -17,6 +17,7 @@ import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { Text } from "./stylistic/Text";
 import { ActionButton } from "./ui-elements/ActionButton";
+import { LogoutDialog } from "../screens/Logout/LogoutDialog";
 
 const Feather = withUnistyles(Feather_);
 const AntDesign = withUnistyles(AntDesign_);
@@ -38,19 +39,24 @@ function ColorSwitcher() {
   const currentTheme = themeInfo.theme;
 
   return (
-    <Feather
+    <Pressable
       onPress={() =>
         dispatch(
           setTheme({
             adaptive: false,
             theme: currentTheme === "dark" ? "light" : "dark",
-          })
+          }),
         )
       }
-      name={currentTheme === "dark" ? "moon" : "sun"}
-      size={24}
-      style={[styles.color]}
-    />
+      accessibilityRole="button"
+       nativeID="session-activity-theme-toggle"
+    >
+      <Feather
+        name={currentTheme === "dark" ? "moon" : "sun"}
+        size={24}
+        style={[styles.color]}
+      />
+    </Pressable>
   );
 }
 
@@ -69,11 +75,10 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const update = useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
 
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
 
-  // Refs für "click outside"
   const sessionWrapRef = useRef<View>(null);
   const updateWrapRef = useRef<View>(null);
-
 
   const suppressSessionPopupUntilRef = useRef<number>(0);
 
@@ -87,13 +92,12 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  //  Renew (Throttle passiert im Thunk über cooldownMs)
   const onHeartbeat = useCallback(() => {
     dispatch(
       renewJwtIfNeeded({
         force: true,
-        cooldownMs: 10_000, // max 1 Renew / 10s
-      })
+        cooldownMs: 10_000,
+      }),
     );
   }, [dispatch]);
 
@@ -105,13 +109,11 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     onHeartbeat,
   });
 
-  //  Wenn Update erkannt: Update-Popup automatisch öffnen (und Session-Popup schließen)
   useEffect(() => {
     if (!isWeb) return;
     if (update.updateAvailable) setOpenPopup("update");
   }, [update.updateAvailable, isWeb]);
 
-  // Session-Popup nur öffnen, wenn warning aktiv UND nicht gerade "unterdrückt"
   useEffect(() => {
     if (!isWeb || !showLogout) return;
 
@@ -122,7 +124,6 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
       setOpenPopup("session");
     }
 
-    // wenn warning weg ist, Session-Popup schließen
     if (!warning && openPopup === "session") {
       setOpenPopup(null);
     }
@@ -136,9 +137,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
       const target = ev.target as Node | null;
       if (!target) return;
 
-      // @ts-expect-error: RN Web host nodes have `contains`
+      // @ts-expect-error
       const inSession = sessionWrapRef.current?.contains?.(target) ?? false;
-      // @ts-expect-error: RN Web host nodes have `contains`
+      // @ts-expect-error
       const inUpdate = updateWrapRef.current?.contains?.(target) ?? false;
 
       if (!inSession && !inUpdate) {
@@ -154,21 +155,16 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     };
   }, [isWeb]);
 
-  //  Weitermachen:
-  // - Renew anstoßen
-  // - Popup sicher schließen
-  // - Session-Popup kurz unterdrücken, damit es nicht sofort wieder aufgeht,
-  //   obwohl warning noch true ist (bis neues JWT im Store ankommt)
   const stayLoggedIn = useCallback(() => {
     onHeartbeat();
-    suppressSessionPopupUntilRef.current = Date.now() + 10_000; //  genau dein Wunsch
-    setOpenPopup(null); 
+    suppressSessionPopupUntilRef.current = Date.now() + 10_000;
+    setOpenPopup(null);
   }, [onHeartbeat]);
 
   const manualLogout = useCallback(() => {
     setOpenPopup(null);
-    onAutoLogout();
-  }, [onAutoLogout]);
+    setLogoutDialogVisible(true);
+  }, []);
 
   const toggleSessionPopup = useCallback(() => {
     setOpenPopup((v) => (v === "session" ? null : "session"));
@@ -190,53 +186,68 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   }, [update.updateAvailable]);
 
   return (
-    <View style={[styles.toolBoxContainer]}>
-      <ColorSwitcher />
+    <>
+      <View style={[styles.toolBoxContainer]}>
+        <ColorSwitcher />
 
-      {/* SESSION / TIMER */}
-      {isWeb && showLogout ? (
-        <View style={styles.timerWrap} ref={sessionWrapRef}>
-          <Pressable onPress={toggleSessionPopup}>
-            <Feather
-              name={warning ? "alert-triangle" : "clock"}
-              size={22}
-              style={[styles.color, warning ? styles.warningIcon : undefined]}
+        {isWeb && showLogout ? (
+          <View style={styles.timerWrap} ref={sessionWrapRef}>
+            <Pressable
+              onPress={toggleSessionPopup}
+              accessibilityRole="button"
+              nativeID="session-activity-theme-toggle"
+            >
+              <Feather
+                name={warning ? "alert-triangle" : "clock"}
+                size={22}
+                style={[styles.color, warning ? styles.warningIcon : undefined]}
+              />
+            </Pressable>
+
+            <Text style={[styles.timerText, warning ? styles.warningText : undefined]}>
+              {formatMMSS(secondsLeft)}
+            </Text>
+
+            {openPopup === "session" ? (
+              <View style={styles.popup}>
+                <Text style={styles.popupTitle}>Sind Sie noch da?</Text>
+
+                <Text style={styles.popupBody}>
+                  Sie werden in{" "}
+                  <Text style={styles.popupCountdown}>{formatMMSS(secondsLeft)}</Text>{" "}
+                  automatisch abgemeldet.
+                </Text>
+
+                <ActionButton
+                  variant="secondary"
+                  onPress={stayLoggedIn}
+                  label="Weitermachen"
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {showLogout ? (
+          <Pressable
+            onPress={manualLogout}
+            accessibilityRole="button"
+             nativeID="session-activity-theme-toggle"
+          >
+            <AntDesign
+              name="logout"
+              size={24}
+              style={[styles.color]}
             />
           </Pressable>
+        ) : null}
+      </View>
 
-          <Text style={[styles.timerText, warning ? styles.warningText : undefined]}>
-            {formatMMSS(secondsLeft)}
-          </Text>
-
-          {openPopup === "session" ? (
-            <View style={styles.popup}>
-              <Text style={styles.popupTitle}>Sind Sie noch da?</Text>
-
-              <Text style={styles.popupBody}>
-                Sie werden in{" "}
-                <Text style={styles.popupCountdown}>{formatMMSS(secondsLeft)}</Text>{" "}
-                automatisch abgemeldet.
-              </Text>
-
-              <ActionButton variant="secondary" onPress={stayLoggedIn} label="Weitermachen" />
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {/* UPDATE ICON / POPUP (optional – wenn du es renderst) */}
-      {/* Hier könntest du deinen Update-Button + Popup mit updateWrapRef einbauen */}
-
-      {/* LOGOUT ICON */}
-      {showLogout ? (
-        <AntDesign
-          onPress={manualLogout}
-          name="logout"
-          size={24}
-          style={[styles.color]}
-        />
-      ) : null}
-    </View>
+      <LogoutDialog
+        visible={logoutDialogVisible}
+        onClose={() => setLogoutDialogVisible(false)}
+      />
+    </>
   );
 }
 

@@ -26,5 +26,6 @@
 
   "loading": "Lädt…",
   "successful": "Erfolgreich",
-  "failed": "Fehlgeschlagen"
+  "failed": "Fehlgeschlagen",
+  "loginfor": "Anmeldung für"
 }

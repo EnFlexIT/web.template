@@ -11,7 +11,7 @@ import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
 import { refreshServerStatus } from "./redux/slices/apiSlice";
-
+import { ServerSwitchOverlay } from "./screens/ServerSwitchOverlay";
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
 import { useIsWide } from "./hooks/useIsWide";
@@ -83,21 +83,23 @@ function getNumericIdFromPath(pathname: string): number | null {
 function RootStack() {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      dispatch(refreshServerStatus());
-      dispatch(checkAlive({ silent: true }));
-    }, 5000);
-
-    dispatch(refreshServerStatus());
-    dispatch(checkAlive({ silent: true }));
-
-    return () => clearInterval(id);
-  }, [dispatch]);
-
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
+ useEffect(() => {
+  if (isLoading) return;
+
+  const id = setInterval(() => {
+    dispatch(refreshServerStatus());
+    dispatch(checkAlive({ silent: true }));
+  }, 5000);
+
+  dispatch(refreshServerStatus());
+  dispatch(checkAlive({ silent: true }));
+
+  return () => clearInterval(id);
+}, [dispatch, isLoading]);
+
+
   const isWide = useIsWide();
 
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
@@ -305,6 +307,7 @@ function RootStack() {
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
             <OfflineOverlay />
+            <ServerSwitchOverlay />
             {children}
           </View>
         )}

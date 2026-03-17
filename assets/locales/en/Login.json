@@ -35,5 +35,6 @@
     "serverNameExists": "This server name already exists. Please choose another one.",
     "serverUrlExists": "This server URL already exists. Please choose another one.",
     "serverNotReachable": "Server is not reachable. Please use a different one."
-  }
+  },
+  "loginfor": "Login for"
 }

@@ -3,7 +3,10 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
-import { getApplicationMode, type ApplicationMode } from "../../util/applicationMode";
+import {
+  getApplicationMode,
+  type ApplicationMode,
+} from "../../util/applicationMode";
 import { RootState } from "../store";
 
 import {
@@ -19,9 +22,10 @@ import {
 } from "../../api/implementation/Dynamic-Content-Api";
 
 import { clearMenu, initializeMenu } from "./menuSlice";
+
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
-const jwtByServerKey = "jwtByServer" as const;
+export const jwtByServerKey = "jwtByServer" as const;
 const serversKey = "servers" as const;
 
 type AuthMethod = "jwt" | "oidc";
@@ -30,16 +34,33 @@ type JwtByServer = Record<string, string>;
 const defaultAuthenticationMethod: AuthMethod = "jwt";
 
 const fallbackDefaultIp: string = __DEV__
-  ? (process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8081")
-  : (process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "");
+  ? process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? ""
+  : process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "";
 
 const defaultJwt: string | null = null;
 
-function normalizeBaseUrl(url: string) {
+export function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
 
-async function loadJwtByServer(): Promise<JwtByServer> {
+function debugJwtStorage(label: string, map: Record<string, string>) {
+  console.log("===== JWT STORAGE DEBUG =====");
+  console.log("Context:", label);
+
+  const keys = Object.keys(map);
+
+  if (keys.length === 0) {
+    console.log("jwtByServer EMPTY");
+  } else {
+    keys.forEach((k) => {
+      console.log("server:", k, "token exists:", !!map[k]);
+    });
+  }
+
+  console.log("=============================");
+}
+
+export async function loadJwtByServer(): Promise<JwtByServer> {
   const raw = await AsyncStorage.getItem(jwtByServerKey);
 
   if (!raw) return {};
@@ -50,6 +71,33 @@ async function loadJwtByServer(): Promise<JwtByServer> {
     return {};
   }
 }
+
+export async function saveJwtByServer(map: JwtByServer): Promise<void> {
+  await AsyncStorage.setItem(jwtByServerKey, JSON.stringify(map));
+}
+
+export async function getJwtForServer(baseUrl: string): Promise<string | null> {
+  const normalized = normalizeBaseUrl(baseUrl);
+  const jwtByServer = await loadJwtByServer();
+  return jwtByServer[normalized] ?? null;
+}
+
+export async function setJwtForServer(
+  baseUrl: string,
+  jwt: string | null,
+): Promise<void> {
+  const normalized = normalizeBaseUrl(baseUrl);
+  const jwtByServer = await loadJwtByServer();
+
+  if (jwt) {
+    jwtByServer[normalized] = jwt;
+  } else {
+    delete jwtByServer[normalized];
+  }
+
+  await saveJwtByServer(jwtByServer);
+}
+
 async function loadSelectedServerBaseUrl(): Promise<string | null> {
   const raw = await AsyncStorage.getItem(serversKey);
 
@@ -63,7 +111,9 @@ async function loadSelectedServerBaseUrl(): Promise<string | null> {
 
     const servers = Array.isArray(parsed?.servers) ? parsed.servers : [];
     const selectedServerId =
-      typeof parsed?.selectedServerId === "string" ? parsed.selectedServerId : null;
+      typeof parsed?.selectedServerId === "string"
+        ? parsed.selectedServerId
+        : null;
 
     if (!selectedServerId) return null;
 
@@ -74,32 +124,33 @@ async function loadSelectedServerBaseUrl(): Promise<string | null> {
     return null;
   }
 }
-async function saveJwtByServer(map: JwtByServer): Promise<void> {
-  await AsyncStorage.setItem(jwtByServerKey, JSON.stringify(map));
-}
 
 function resolveActiveApiBaseUrl(params: {
   mode: ApplicationMode;
   runtimeBaseUrl: string | null;
   storedIp: string | null;
+  selectedServerBaseUrl: string | null;
   fallbackBaseUrl: string;
 }): string {
-  if (params.mode === "CENTRAL_SHELL") {
-    return normalizeBaseUrl(
-      params.storedIp ?? params.runtimeBaseUrl ?? params.fallbackBaseUrl,
-    );
-  }
-
+  // Wichtig:
+  // Beim Start / Reload muss der vom User ausgewählte Server Vorrang haben.
+  // Danach erst gespeicherte ip, dann runtimeBaseUrl.
   return normalizeBaseUrl(
-    params.runtimeBaseUrl ?? params.storedIp ?? params.fallbackBaseUrl,
+    params.selectedServerBaseUrl ??
+      params.storedIp ??
+      params.runtimeBaseUrl ??
+      params.fallbackBaseUrl,
   );
 }
 
 function getInitialBaseUrl() {
+  // Initial State ist nur Fallback für den allerersten Render.
+  // Der echte Wert kommt später in initializeApi().
   return resolveActiveApiBaseUrl({
     mode: getApplicationMode(),
     runtimeBaseUrl: resolveRuntimeBaseUrl(),
     storedIp: null,
+    selectedServerBaseUrl: null,
     fallbackBaseUrl: fallbackDefaultIp,
   });
 }
@@ -165,12 +216,6 @@ function buildApis(params: {
   };
 }
 
-/**
- * Detects:
- * - isPointingToServer: server reachable (200)
- * - authenticationMethod: jwt vs oidc via _ServerWideSecurityConfiguration
- * - isBaseMode: _Authenticated === false
- */
 async function detectServerAndMode(baseUrl: string): Promise<{
   isPointingToServer: boolean;
   authenticationMethod: AuthMethod;
@@ -256,32 +301,36 @@ export interface ApiState {
   isLoggedIn: boolean;
   isPointingToServer: boolean;
   isBaseMode: boolean;
+  isSwitchingServer: boolean;
 }
 
 export const initializeApi = createAsyncThunk(
   "api/initialize",
   async (): Promise<ApiState> => {
-  const storedIp = await AsyncStorage.getItem(ipKey);
-const storedJwt = await AsyncStorage.getItem(jwtKey);
-const jwtByServer = await loadJwtByServer();
-const selectedServerBaseUrl = await loadSelectedServerBaseUrl();
+    const storedIp = await AsyncStorage.getItem(ipKey);
+    const storedJwt = await AsyncStorage.getItem(jwtKey);
+    const jwtByServer = await loadJwtByServer();
+    const selectedServerBaseUrl = await loadSelectedServerBaseUrl();
 
-const runtimeBaseUrl = resolveRuntimeBaseUrl();
-const applicationMode = getApplicationMode();
+    const runtimeBaseUrl = resolveRuntimeBaseUrl();
+    const applicationMode = getApplicationMode();
 
-let ip = "";
+    const ip = resolveActiveApiBaseUrl({
+      mode: applicationMode,
+      runtimeBaseUrl,
+      storedIp,
+      selectedServerBaseUrl,
+      fallbackBaseUrl: fallbackDefaultIp,
+    });
 
-if (applicationMode === "CENTRAL_SHELL") {
-  ip = normalizeBaseUrl(
-    selectedServerBaseUrl ?? storedIp ?? runtimeBaseUrl ?? fallbackDefaultIp
-  );
-} else {
-  ip = normalizeBaseUrl(
-    runtimeBaseUrl ?? selectedServerBaseUrl ?? storedIp ?? fallbackDefaultIp
-  );
-}
+    console.log("[INITIALIZE API] runtimeBaseUrl:", runtimeBaseUrl);
+    console.log("[INITIALIZE API] selectedServerBaseUrl:", selectedServerBaseUrl);
+    console.log("[INITIALIZE API] storedIp:", storedIp);
+    console.log("[INITIALIZE API] resolved ip:", ip);
 
     const jwt = (jwtByServer[ip] ?? storedJwt ?? defaultJwt) as string | null;
+
+    console.log("[INITIALIZE API] jwt exists for resolved ip:", !!jwt);
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
@@ -311,6 +360,7 @@ if (applicationMode === "CENTRAL_SHELL") {
       isLoggedIn,
       isPointingToServer,
       isBaseMode,
+      isSwitchingServer: false,
     };
   },
 );
@@ -347,6 +397,15 @@ export const refreshServerStatus = createAsyncThunk(
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
 
+    if (state.api.isSwitchingServer) {
+      return {
+        isPointingToServer: state.api.isPointingToServer,
+        authenticationMethod: state.api.authenticationMethod,
+        isBaseMode: state.api.isBaseMode,
+        skipped: true,
+      };
+    }
+
     const ip = state.api.ip;
     const jwt = state.api.jwt;
 
@@ -363,23 +422,39 @@ export const refreshServerStatus = createAsyncThunk(
       }),
     );
 
-    return { isPointingToServer, authenticationMethod, isBaseMode };
+    return { isPointingToServer, authenticationMethod, isBaseMode, skipped: false };
   },
 );
 
 export const login = createAsyncThunk(
   "api/login",
-  async (jwt: string, thunkAPI) => {
+  async (
+    payload: { jwt: string; baseUrl?: string },
+    thunkAPI,
+  ) => {
     const state = thunkAPI.getState() as RootState;
-    const currentIp = normalizeBaseUrl(state.api.ip);
 
-    const jwtByServer = await loadJwtByServer();
-    jwtByServer[currentIp] = jwt;
+    const currentIp = normalizeBaseUrl(payload.baseUrl ?? state.api.ip);
 
-    await saveJwtByServer(jwtByServer);
-    await AsyncStorage.setItem(jwtKey, jwt);
+    console.log("[LOGIN] saving jwt for:", currentIp);
 
-    thunkAPI.dispatch(setJwtLocal(jwt));
+    await setJwtForServer(currentIp, payload.jwt);
+    await AsyncStorage.setItem(jwtKey, payload.jwt);
+    await AsyncStorage.setItem(ipKey, currentIp);
+
+    const debugMap = await loadJwtByServer();
+    debugJwtStorage("after login", debugMap);
+
+    thunkAPI.dispatch(
+      setConnectionLocal({
+        ip: currentIp,
+        jwt: payload.jwt,
+        isPointingToServer: state.api.isPointingToServer,
+        authenticationMethod: state.api.authenticationMethod,
+        isBaseMode: state.api.isBaseMode,
+      }),
+    );
+
     await thunkAPI.dispatch(initializeMenu());
   },
 );
@@ -390,9 +465,12 @@ export const logoutAsync = createAsyncThunk(
     const state = thunkAPI.getState() as RootState;
     const currentIp = normalizeBaseUrl(state.api.ip);
 
-    const jwtByServer = await loadJwtByServer();
-    delete jwtByServer[currentIp];
-    await saveJwtByServer(jwtByServer);
+    console.log("[LOGOUT] removing jwt for:", currentIp);
+
+    await setJwtForServer(currentIp, null);
+
+    const debugMap = await loadJwtByServer();
+    debugJwtStorage("after logout", debugMap);
 
     await AsyncStorage.removeItem(jwtKey);
 
@@ -401,13 +479,39 @@ export const logoutAsync = createAsyncThunk(
   },
 );
 
+type SwitchServerArg =
+  | string
+  | {
+      url: string;
+      initializeMenu?: boolean;
+      providedJwt?: string | null;
+    };
+
 export const switchServer = createAsyncThunk(
   "api/switchServer",
-  async (rawUrl: string, thunkAPI) => {
+  async (arg: SwitchServerArg, thunkAPI) => {
+    const rawUrl = typeof arg === "string" ? arg : arg.url;
+    const initializeMenuAfter =
+      typeof arg === "string" ? true : arg.initializeMenu !== false;
+    const providedJwt =
+      typeof arg === "string" ? undefined : arg.providedJwt;
+
     const newUrl = normalizeBaseUrl(rawUrl);
 
-    const jwtByServer = await loadJwtByServer();
-    const nextJwt = jwtByServer[newUrl] ?? null;
+    let nextJwt: string | null;
+
+    if (providedJwt !== undefined) {
+      nextJwt = providedJwt;
+      await setJwtForServer(newUrl, providedJwt);
+    } else {
+      nextJwt = await getJwtForServer(newUrl);
+    }
+
+    console.log("[SWITCH SERVER] switching to:", newUrl);
+    console.log("[SWITCH SERVER] jwt exists:", !!nextJwt);
+
+    const debugMap = await loadJwtByServer();
+    debugJwtStorage("after switchServer", debugMap);
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(newUrl);
@@ -432,7 +536,9 @@ export const switchServer = createAsyncThunk(
       }),
     );
 
-    await thunkAPI.dispatch(initializeMenu());
+    if (initializeMenuAfter && nextJwt) {
+      await thunkAPI.dispatch(initializeMenu());
+    }
   },
 );
 
@@ -452,6 +558,7 @@ const initialState: ApiState = {
   isLoggedIn: false,
   isPointingToServer: false,
   isBaseMode: false,
+  isSwitchingServer: false,
 };
 
 export const apiSlice = createSlice({
@@ -534,10 +641,23 @@ export const apiSlice = createSlice({
       state.isLoggedIn = action.payload.isLoggedIn;
       state.isPointingToServer = action.payload.isPointingToServer;
       state.isBaseMode = action.payload.isBaseMode;
+      state.isSwitchingServer = false;
     });
 
     builder.addCase(login.fulfilled, (state) => {
       state.isLoggedIn = true;
+    });
+
+    builder.addCase(switchServer.pending, (state) => {
+      state.isSwitchingServer = true;
+    });
+
+    builder.addCase(switchServer.fulfilled, (state) => {
+      state.isSwitchingServer = false;
+    });
+
+    builder.addCase(switchServer.rejected, (state) => {
+      state.isSwitchingServer = false;
     });
   },
 });
@@ -554,5 +674,7 @@ export const selectIsLoggedIn = (state: RootState) => state.api.isLoggedIn;
 export const selectIsPointingToServer = (state: RootState) =>
   state.api.isPointingToServer;
 export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
+export const selectIsSwitchingServer = (state: RootState) =>
+  state.api.isSwitchingServer;
 
 export default apiSlice.reducer;
