@@ -9,11 +9,8 @@ import {
   getJwtForServer,
   normalizeBaseUrl,
 } from "./apiSlice";
-import { getJwtRemainingMs } from "../../util/jwtTime";
 
 const JWT_KEY = "jwt";
-
-// Cooldown pro Server
 const lastRenewAttemptByServer: Record<string, number> = {};
 
 function extractBearerToken(value: unknown): string | null {
@@ -30,16 +27,15 @@ function toBase64(str: string) {
 
 export const renewJwtForSpecificServer = createAsyncThunk<
   { renewed: boolean; reason: string; baseUrl: string; newJwt?: string | null },
-  { baseUrl: string; thresholdMs?: number; cooldownMs?: number; force?: boolean },
+  { baseUrl: string; cooldownMs?: number; force?: boolean },
   { state: RootState }
 >(
   "api/renewJwtForSpecificServer",
   async (
-    { baseUrl, thresholdMs = 35_000, cooldownMs = 15_000, force = false },
+    { baseUrl, cooldownMs = 10_000, force = true },
     thunkAPI,
   ) => {
     const state = thunkAPI.getState();
-
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 
     console.log("[JWT RENEW] --------------------------------------");
@@ -83,36 +79,6 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       thunkAPI.dispatch(setJwtLocal(jwt));
     }
 
-    const remaining = getJwtRemainingMs(jwt);
-
-    console.log("[JWT RENEW] remaining ms:", remaining);
-    console.log("[JWT RENEW] threshold ms:", thresholdMs);
-
-    if (!Number.isFinite(remaining) || remaining <= 0) {
-      console.log("[JWT RENEW] token expired -> removing token for", normalizedBaseUrl);
-      await setJwtForServer(normalizedBaseUrl, null);
-
-      if (state.api.ip === normalizedBaseUrl) {
-        await AsyncStorage.removeItem(JWT_KEY);
-        thunkAPI.dispatch(logoutAsync());
-      }
-
-      return {
-        renewed: false,
-        reason: "expired",
-        baseUrl: normalizedBaseUrl,
-      };
-    }
-
-    if (!force && remaining > thresholdMs) {
-      console.log("[JWT RENEW] skipped because not needed yet");
-      return {
-        renewed: false,
-        reason: "not-needed",
-        baseUrl: normalizedBaseUrl,
-      };
-    }
-
     const now = Date.now();
     const lastAttempt = lastRenewAttemptByServer[normalizedBaseUrl] ?? 0;
 
@@ -139,8 +105,6 @@ export const renewJwtForSpecificServer = createAsyncThunk<
           Authorization: `Basic ${basic}`,
           Accept: "application/json",
         },
-        // Nur aktivieren, wenn dein Backend es wirklich braucht:
-        // credentials: "include",
       });
 
       console.log("[JWT RENEW] response status:", res.status, "for", normalizedBaseUrl);
@@ -214,12 +178,12 @@ export const renewJwtForSpecificServer = createAsyncThunk<
 
 export const renewAllServerJwtsIfNeeded = createAsyncThunk<
   Array<{ renewed: boolean; reason: string; baseUrl: string; newJwt?: string | null }>,
-  { thresholdMs?: number; cooldownMs?: number; force?: boolean } | undefined,
+  { cooldownMs?: number; force?: boolean } | undefined,
   { state: RootState }
 >(
   "api/renewAllServerJwtsIfNeeded",
   async (
-    { thresholdMs = 35_000, cooldownMs = 15_000, force = false } = {},
+    { cooldownMs = 10_000, force = true } = {},
     thunkAPI,
   ) => {
     const state = thunkAPI.getState();
@@ -244,7 +208,6 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
           .dispatch(
             renewJwtForSpecificServer({
               baseUrl,
-              thresholdMs,
               cooldownMs,
               force,
             }),
@@ -262,12 +225,12 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
 
 export const renewJwtIfNeeded = createAsyncThunk<
   { renewed: boolean; reason: string },
-  { thresholdMs?: number; cooldownMs?: number; force?: boolean } | undefined,
+  { cooldownMs?: number; force?: boolean } | undefined,
   { state: RootState }
 >(
   "api/renewJwtIfNeeded",
   async (
-    { thresholdMs = 35_000, cooldownMs = 15_000, force = false } = {},
+    { cooldownMs = 10_000, force = true } = {},
     thunkAPI,
   ) => {
     const state = thunkAPI.getState();
@@ -281,7 +244,6 @@ export const renewJwtIfNeeded = createAsyncThunk<
       .dispatch(
         renewJwtForSpecificServer({
           baseUrl: activeBaseUrl,
-          thresholdMs,
           cooldownMs,
           force,
         }),

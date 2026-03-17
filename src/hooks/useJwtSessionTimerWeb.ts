@@ -137,8 +137,8 @@ export function useJwtSessionTimerWeb({
       // automatisch alle Server-JWTs prüfen/verlängern
       store.dispatch(
         renewAllServerJwtsIfNeeded({
-          thresholdMs: 35_000,
-          cooldownMs: 15_000,
+          force: true,
+          cooldownMs: 10_000,
         }) as any,
       );
     };

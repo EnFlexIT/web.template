@@ -12,7 +12,6 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { logoutAsync, selectJwt } from "../redux/slices/apiSlice";
 import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
-import { renewJwtIfNeeded } from "../redux/slices/apiRefreshThunks";
 
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { Text } from "./stylistic/Text";
@@ -49,7 +48,7 @@ function ColorSwitcher() {
         )
       }
       accessibilityRole="button"
-       nativeID="session-activity-theme-toggle"
+      nativeID="session-activity-theme-toggle"
     >
       <Feather
         name={currentTheme === "dark" ? "moon" : "sun"}
@@ -92,21 +91,12 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  const onHeartbeat = useCallback(() => {
-    dispatch(
-      renewJwtIfNeeded({
-        force: true,
-        cooldownMs: 10_000,
-      }),
-    );
-  }, [dispatch]);
-
   const { secondsLeft, warning } = useJwtSessionTimerWeb({
     enabled: isWeb && showLogout,
     jwt,
     warnMs: 30_000,
     onLogout: onAutoLogout,
-    onHeartbeat,
+    onHeartbeat: undefined,
   });
 
   useEffect(() => {
@@ -156,10 +146,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   }, [isWeb]);
 
   const stayLoggedIn = useCallback(() => {
-    onHeartbeat();
     suppressSessionPopupUntilRef.current = Date.now() + 10_000;
     setOpenPopup(null);
-  }, [onHeartbeat]);
+  }, []);
 
   const manualLogout = useCallback(() => {
     setOpenPopup(null);
@@ -168,10 +157,6 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
   const toggleSessionPopup = useCallback(() => {
     setOpenPopup((v) => (v === "session" ? null : "session"));
-  }, []);
-
-  const toggleUpdatePopup = useCallback(() => {
-    setOpenPopup((v) => (v === "update" ? null : "update"));
   }, []);
 
   const updateTitle = useMemo(() => {
@@ -195,7 +180,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
             <Pressable
               onPress={toggleSessionPopup}
               accessibilityRole="button"
-              nativeID="session-activity-theme-toggle"
+              nativeID="session-activity-session-toggle"
             >
               <Feather
                 name={warning ? "alert-triangle" : "clock"}
@@ -232,13 +217,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
           <Pressable
             onPress={manualLogout}
             accessibilityRole="button"
-             nativeID="session-activity-theme-toggle"
+            nativeID="session-activity-logout"
           >
-            <AntDesign
-              name="logout"
-              size={24}
-              style={[styles.color]}
-            />
+            <AntDesign name="logout" size={24} style={[styles.color]} />
           </Pressable>
         ) : null}
       </View>
