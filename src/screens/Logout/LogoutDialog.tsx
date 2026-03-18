@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { FlatList, Modal, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { ScrollView } from "react-native-gesture-handler";
+import { useTranslation } from "react-i18next";
 
 import { ThemedText } from "../../components/themed/ThemedText";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
@@ -12,11 +12,12 @@ import { useAppSelector } from "../../hooks/useAppSelector";
 import {
   logoutAsync,
   selectIp,
-  loadJwtByServer,
   setJwtForServer,
   normalizeBaseUrl,
+  getJwtForServer,
 } from "../../redux/slices/apiSlice";
 import { selectServers } from "../../redux/slices/serverSlice";
+import { checkServerReachable } from "../login/serverCheck";
 
 type Props = {
   visible: boolean;
@@ -33,10 +34,40 @@ type LogoutServerItem = {
 
 const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
+async function checkServerAuthenticated(
+  baseUrl: string,
+  jwt: string | null,
+): Promise<boolean> {
+  const normalized = normalizeBaseUrl(baseUrl);
+
+  try {
+    const res = await fetch(`${normalized}/api/alive`, {
+      method: "GET",
+      cache: "no-store",
+      headers: jwt
+        ? {
+            Authorization: `Bearer ${jwt}`,
+            Accept: "application/json",
+          }
+        : {
+            Accept: "application/json",
+          },
+    });
+
+    if (res.status === 200) return true;
+    if (res.status === 401) return false;
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
   const currentIp = useAppSelector(selectIp);
   const serversState = useAppSelector(selectServers);
+  const { t } = useTranslation(["Login"]);
 
   const [loading, setLoading] = useState(false);
   const [selectedServerIds, setSelectedServerIds] = useState<string[]>([]);
@@ -55,28 +86,38 @@ export function LogoutDialog({ visible, onClose }: Props) {
     }
 
     let mounted = true;
-
     setServersLoaded(false);
 
     (async () => {
-      const jwtMap = await loadJwtByServer();
-
-      const allLoggedInServers = servers
-        .filter((server) => {
-          const normalized = normalizeBaseUrl(server.baseUrl);
-          return !!jwtMap[normalized];
-        })
-        .map<LogoutServerItem>((server) => {
+      const entries = await Promise.all(
+        servers.map(async (server) => {
           const normalized = normalizeBaseUrl(server.baseUrl);
 
-          return {
-            id: server.id,
-            name: server.name?.trim() || server.baseUrl,
-            baseUrl: server.baseUrl,
-            normalizedBaseUrl: normalized,
-            isCurrent: normalized === currentNormalizedIp,
-          };
-        })
+          try {
+            const reachable = await checkServerReachable(server.baseUrl);
+            if (!reachable.ok) return null;
+
+            const jwt = await getJwtForServer(server.baseUrl);
+            if (!jwt) return null;
+
+            const authenticated = await checkServerAuthenticated(server.baseUrl, jwt);
+            if (!authenticated) return null;
+
+            return {
+              id: server.id,
+              name: server.name?.trim() || server.baseUrl,
+              baseUrl: server.baseUrl,
+              normalizedBaseUrl: normalized,
+              isCurrent: normalized === currentNormalizedIp,
+            } satisfies LogoutServerItem;
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      const allLoggedInServers = entries
+        .filter((server): server is LogoutServerItem => server !== null)
         .sort((a, b) => {
           if (a.isCurrent) return -1;
           if (b.isCurrent) return 1;
@@ -88,8 +129,8 @@ export function LogoutDialog({ visible, onClose }: Props) {
       setLoggedInServers(allLoggedInServers);
 
       const currentServer = allLoggedInServers.find((server) => server.isCurrent);
-
       setSelectedServerIds(currentServer ? [currentServer.id] : []);
+
       setServersLoaded(true);
     })();
 
@@ -178,18 +219,18 @@ export function LogoutDialog({ visible, onClose }: Props) {
     ? serversLoaded && !loading && selectedServerIds.length > 0
     : serversLoaded && !loading;
 
-  const logoutLabel = loading ? "Abmelden..." : "Abmelden";
+  const logoutLabel = loading ? t("Abmelden...") : t("Abmelden");
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.card} onPress={() => {}}>
-          <ThemedText style={styles.title}>Abmelden</ThemedText>
+          <ThemedText style={styles.title}>{t("Abmelden")}</ThemedText>
 
           <ThemedText style={styles.body}>
             {hasMultipleLoggedInServers
-              ? "Wähle aus, von welchen Servern du dich abmelden möchtest."
-              : "Möchtest du dich vom aktuellen Server abmelden?"}
+              ? t("Wählen Sie aus, von welchen Servern Sie sich abmelden möchten.")
+              : t("Möchten Sie sich vom aktuellen Server abmelden?")}
           </ThemedText>
 
           {hasMultipleLoggedInServers ? (
@@ -210,23 +251,24 @@ export function LogoutDialog({ visible, onClose }: Props) {
                   </View>
 
                   <ThemedText style={styles.selectAllText}>
-                    Alle auswählen
+                    {t("Alle auswählen")}
                   </ThemedText>
                 </Pressable>
 
                 <View style={styles.divider} />
 
-                <ScrollView
+                <FlatList
+                  data={serversToRender}
+                  keyExtractor={(item) => item.id}
                   style={styles.scroll}
                   contentContainerStyle={styles.scrollContent}
                   showsVerticalScrollIndicator
-                >
-                  {serversToRender.map((server) => {
+                  nestedScrollEnabled
+                  renderItem={({ item: server }) => {
                     const checked = selectedServerIds.includes(server.id);
 
                     return (
                       <Pressable
-                        key={server.id}
                         style={styles.row}
                         onPress={() => toggleServer(server.id)}
                       >
@@ -252,15 +294,15 @@ export function LogoutDialog({ visible, onClose }: Props) {
                         </View>
                       </Pressable>
                     );
-                  })}
-                </ScrollView>
+                  }}
+                />
               </Card>
             </View>
           ) : null}
 
           <View style={styles.actions}>
             <ActionButton
-              label="Abbrechen"
+              label={t("Abbrechen")}
               variant="secondary"
               onPress={onClose}
               size="sm"
@@ -309,27 +351,8 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.9,
   },
 
-  currentInfo: {
-    gap: 4,
-  },
-
-  currentInfoLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    opacity: 0.7,
-  },
-
-  currentInfoValue: {
-    fontSize: 13,
-  },
-
   section: {
     gap: 10,
-  },
-
-  linkLike: {
-    fontSize: 14,
-    textDecorationLine: "underline",
   },
 
   listCard: {
@@ -358,6 +381,7 @@ const styles = StyleSheet.create((theme) => ({
 
   scroll: {
     maxHeight: 210,
+    flexGrow: 0,
   },
 
   scrollContent: {

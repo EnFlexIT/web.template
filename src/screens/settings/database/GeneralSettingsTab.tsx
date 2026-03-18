@@ -1,129 +1,288 @@
+import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
-import { useMemo, useState } from "react";
+
 import { H4 } from "../../../components/stylistic/H4";
 import { TextInput } from "../../../components/ui-elements/TextInput";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { Screen } from "../../../components/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { H2 } from "../../../components/stylistic/H2";
 
-type DatabaseSystem = "derby_embedded" | "derby_network" | "mysql" | "MairaDB";
+type DatabaseSystem =
+  | "derby_embedded"
+  | "derby_network"
+  | "mysql"
+  | "mariadb";
 
 const DATABASE_SYSTEMS: Record<DatabaseSystem, string> = {
   derby_embedded: "Apache Derby (Embedded)",
   derby_network: "Apache Derby (Network)",
   mysql: "MySQL",
-  MairaDB: "MairaDB",
+  mariadb: "MariaDB",
 };
 
 export function GeneralSettingsTab() {
   const { theme } = useUnistyles();
 
-  const [applyAll, setApplyAll] = useState(true);
+  const [applyAll, setApplyAll] = useState(false);
   const [dbSystem, setDbSystem] = useState<DatabaseSystem>("derby_embedded");
-  const [database, setDatabase] = useState("ems");
+  const [database, setDatabase] = useState("agentWorkbench");
   const [params, setParams] = useState("create=true");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const resultingUrl = useMemo(() => {
-    if (dbSystem === "derby_embedded") return `jdbc:derby:${database};${params}`;
-    if (dbSystem === "derby_network")
+    if (dbSystem === "derby_embedded") {
+      return `jdbc:derby:${database};${params}`;
+    }
+
+    if (dbSystem === "derby_network") {
       return `jdbc:derby://localhost:1527/${database};${params}`;
-    if (dbSystem === "mysql")
+    }
+
+    if (dbSystem === "mysql") {
       return `jdbc:mysql://localhost:3306/${database}?${params}`;
-    if (dbSystem === "MairaDB")
-      return `jdbc:MairaDB://localhost:5432/${database}?${params}`;
+    }
+
+    if (dbSystem === "mariadb") {
+      return `jdbc:mariadb://localhost:3306/${database}?${params}`;
+    }
+
     return "";
   }, [dbSystem, database, params]);
 
   return (
-    
+    <Card style={styles.outerCard} padding="md">
       <View style={styles.container}>
-        {/* Apply to all */}
-        <Checkbox
-          value={applyAll}
-          onChange={setApplyAll}
-          label="Use settings below for every database connection"
-        />
+        <H2 style={styles.mainTitle}>
+          General Database Connection Settings
+        </H2>
+         <View style={styles.separator} />
 
-        {/* Database system */}
-        <H4 style={styles.sectionTitle}>Database System</H4>
-        <Dropdown  size="sm"value={dbSystem} options={DATABASE_SYSTEMS} onChange={setDbSystem} />
-
-        {/* Database */}
-        <Field label="Database">
-          <TextInput
-            size="sm"
-            value={database}
-            onChangeText={setDatabase}
-            placeholder="e.g. ems"
+        <View style={styles.checkboxRow}>
+          <Checkbox
+            value={applyAll}
+            onChange={setApplyAll}
+            label="Use settings below for every database connection"
           />
-        </Field>
+        </View>
 
-        {/* Params */}
-        <Field label="Add. URL-Params.">
-          <TextInput
-            size="sm"
-            value={params}
-            onChangeText={setParams}
-            placeholder="e.g. create=true"
-          />
-        </Field>
+        <ThemedText style={styles.sectionTitle}>Database Settings</ThemedText>
 
-        {/* Resulting URL */}
-        <Field label="Resulting URL">
-          <TextInput
-            size="sm"
-            value={resultingUrl}
-            onChangeText={() => {}}
-            disabled
-          />
-        </Field>
+        <View style={styles.systemRow}>
+          <View style={styles.leftLabelWrap}>
+            <ThemedText style={styles.leftLabel}>Database System:</ThemedText>
+          </View>
 
-        {/* Buttons */}
-        <View style={styles.buttons}>
+          <View style={styles.rightFieldWrap}>
+            <Dropdown
+              size="sm"
+              value={dbSystem}
+              options={DATABASE_SYSTEMS}
+              onChange={(value) => setDbSystem(value as DatabaseSystem)}
+            />
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.settingsBox,
+            {
+              borderColor: theme.colors.border,
+           
+            },
+          ]}
+        >
+          <FieldRow label="Database">
+            <TextInput
+              size="sm"
+              value={database}
+              onChangeText={setDatabase}
+              placeholder="Database"
+            />
+          </FieldRow>
+
+          <FieldRow label="Add. URL-Params.">
+            <TextInput
+              size="sm"
+              value={params}
+              onChangeText={setParams}
+              placeholder="create=true"
+            />
+          </FieldRow>
+
+          <FieldRow label="Resulting URL">
+            <TextInput
+              size="sm"
+              value={resultingUrl}
+              onChangeText={() => {}}
+              disabled
+            />
+          </FieldRow>
+
+          <FieldRow label="User Name">
+            <TextInput
+              size="sm"
+              value={username}
+              onChangeText={setUsername}
+              placeholder=""
+            />
+          </FieldRow>
+
+          <FieldRow label="Password">
+            <TextInput
+              size="sm"
+              value={password}
+              onChangeText={setPassword}
+              placeholder=""
+              secureTextEntry
+            />
+          </FieldRow>
+        </View>
+
+        <View style={styles.buttonRow}>
+         
+
           <ActionButton
             size="sm"
             label="Test Connection"
             onPress={() => {
-              console.log("Test Connection", { applyAll, dbSystem, database, params });
+              console.log("Test Connection", {
+                applyAll,
+                dbSystem,
+                database,
+                params,
+                username,
+                password,
+              });
             }}
           />
 
-          <ActionButton
+           <ActionButton
             size="sm"
             label="Save"
             variant="secondary"
             onPress={() => {
-              console.log("Save Settings", { applyAll, dbSystem, database, params });
+              console.log("Save Settings", {
+                applyAll,
+                dbSystem,
+                database,
+                params,
+                username,
+                password,
+              });
             }}
           />
         </View>
       </View>
-   
+    </Card>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <View style={{ gap: 6 }}>
-      <H4 style={{ opacity: 0.8 }}>{label}</H4>
-      {children}
+    <View style={styles.fieldRow}>
+      <View style={styles.leftLabelWrap}>
+        <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
+      </View>
+
+      <View style={styles.rightFieldWrap}>{children}</View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
+  outerCard: {
+    width: "100%",
+    height: 505,
+  },
+
   container: {
-    gap: 12,
+    gap: 18,
   },
+
+  mainTitle: {
+   
+    fontWeight: "700",
+  },
+
+  checkboxRow: {
+    marginTop: 2,
+  },
+
   sectionTitle: {
-    marginTop: 6,
+  
+    fontWeight: "700",
+   
+   
   },
-  buttons: {
+
+  systemRow: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
+    alignItems: "center",
+    gap: 20,
+    marginTop: 4,
   },
-});
+
+  settingsBox: {
+    marginTop: 2,
+    borderWidth: 1,
+    paddingTop: 10,
+    paddingBottom: 26,
+    paddingHorizontal: 10,
+    gap: 10,
+    Height: 400,
+  
+  },
+
+  fieldRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+  },
+
+  leftLabelWrap: {
+    width: 190,
+    justifyContent: "center",
+  },
+
+  rightFieldWrap: {
+    flex: 1,
+  },
+
+  leftLabel: {
+   
+    fontWeight: "700",
+   
+  },
+
+  fieldLabel: {
+   
+    fontWeight: "700",
+   
+  },
+
+  buttonRow: {
+    flexDirection: "row",
+    
+    alignItems: "center",
+    marginTop: -5,
+    
+    gap: 15,
+  },
+    separator: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    opacity: 0.9,
+  },
+}));

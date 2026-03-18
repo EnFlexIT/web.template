@@ -26,6 +26,8 @@ import { getAppEnvironment } from "../util/appEnvironment";
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
 import { checkServerReachable } from "../screens/login/serverCheck";
 
+import { useTranslation } from "react-i18next";
+
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
@@ -82,6 +84,7 @@ const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
 export function Footer() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation(["Login"]);
 
   const isBaseMode = useAppSelector(selectIsBaseMode);
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
@@ -89,6 +92,7 @@ export function Footer() {
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+
 
   const env = getAppEnvironment();
 
@@ -131,8 +135,8 @@ export function Footer() {
       setServerOptionMeta({});
       return;
     }
-
     const entries = await Promise.all(
+      
       servers.map(async (server) => {
         try {
           const reachable = await checkServerReachable(server.baseUrl);
@@ -158,7 +162,7 @@ export function Footer() {
               server.id,
               {
                 tone: "green" as const,
-                subtitle: "Eingeloggt",
+                subtitle:  t("Eingeloggt") ,
               },
             ] as const;
           }
@@ -167,7 +171,7 @@ export function Footer() {
             server.id,
             {
               tone: "yellow" as const,
-              subtitle: "Erreichbar – nicht eingeloggt",
+              subtitle:  t("erreichbarNichtEinloggt") ,
             },
           ] as const;
         } catch {
@@ -175,7 +179,7 @@ export function Footer() {
             server.id,
             {
               tone: "red" as const,
-              subtitle: "Nicht erreichbar / offline",
+              subtitle:  t("nichtErreichbar") ,
             },
           ] as const;
         }
@@ -363,7 +367,7 @@ export function Footer() {
             onChange={handleServerChange}
             size="xs"
             appearance="menu"
-            menuWidth={140}
+            menuWidth={180}
             disabled={isSwitchingServer || loginLoading}
             optionMeta={serverOptionMeta}
             showOptionToneDot

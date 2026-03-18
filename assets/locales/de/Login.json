@@ -27,5 +27,14 @@
   "loading": "Lädt…",
   "successful": "Erfolgreich",
   "failed": "Fehlgeschlagen",
-  "loginfor": "Anmeldung für"
+  "loginfor": "Anmeldung für",
+  "abmelden": "Abmelden",
+  "Abmelden...": "Abmelden...",
+  "Wählen Sie aus, von welchen Servern Sie sich abmelden möchten.": "Wählen Sie aus, von welchen Servern Sie sich abmelden möchten.",
+  "Möchten Sie sich vom aktuellen Server abmelden?": "Möchten Sie sich vom aktuellen Server abmelden?",
+  "Abbrechen": "Abbrechen",
+  "allesAuswählen": "Alle auswählen",
+  "einloggt": "Eingeloggt",
+  "erreichbarNichtEinloggt": "Erreichbar / nicht eingeloggt",
+  "nichtErreichbar": "Nicht erreichbar / offline"
 }
