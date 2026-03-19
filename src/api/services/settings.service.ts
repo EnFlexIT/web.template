@@ -1,28 +1,32 @@
-// src/api/services/settings.service.ts
-import { apiConfig } from "../apiConfig";
-import { DatabaseConnectionSettings } from "../config/DatabaseConnectionSettings";
-import { InfoApi } from "../implementation/AWB-RestAPI";
+import { RootState } from "../../redux/store";
 
+type PropertyEntry = {
+  key: string;
+  value: string;
+  valueType: "INTEGER" | "BOOLEAN" | "STRING" | "LONG" | "DOUBLE";
+};
 
-const api = new InfoApi(apiConfig);
+type PropertiesResponse = {
+  performative?: string | null;
+  propertyEntries?: PropertyEntry[];
+};
 
+export async function loadDbSettingsFromApi(state: RootState) {
+  const response = await state.api.awb_rest_api.infoApi.getAppSettings({
+    headers: {
+      "X-Performative": "GET_DB_SETTINGS",
+    },
+  } as any);
 
-export async function loadDbSettings() {
-  const res = await api.getAppSettings({
-    headers: { "X-Performative": "GET_DB_SETTINGS" },
-  });
-
-  return DatabaseConnectionSettings.fromPropertyEntries(
-    res.data.propertyEntries
-  );
+  return response.data as PropertiesResponse;
 }
 
-export async function saveDbSettings(settings: DatabaseConnectionSettings) {
-  const body = {
+export async function saveDbSettingsToApi(
+  state: RootState,
+  propertyEntries: PropertyEntry[],
+) {
+  return state.api.awb_rest_api.infoApi.setAppSettings({
     performative: "SET_DB_SETTINGS",
-    propertyEntries: settings.toPropertyEntries(),
-  };
-
-  return api.setAppSettings(body as any);
+    propertyEntries,
+  } as any);
 }
-

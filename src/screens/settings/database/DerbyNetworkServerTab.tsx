@@ -1,111 +1,198 @@
-import { View, Modal, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Pressable } from "react-native";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import { useUnistyles } from "react-native-unistyles";
+
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { TextInput } from "../../../components/ui-elements/TextInput";
-import { useState } from "react";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import { ThemedView } from "../../../components/themed/ThemedView";
-import { useUnistyles } from "react-native-unistyles";
 import { H4 } from "../../../components/stylistic/H4";
 import { H2 } from "../../../components/stylistic/H2";
-import { Screen } from "../../../components/Screen";
 import { Card } from "../../../components/ui-elements/Card";
+import { ThemedText } from "../../../components/themed/ThemedText";
+
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import {
+  fetchDbSettings,
+  saveDerbyNetworkServerSettings,
+  selectDerbyNetworkServer,
+  selectDbSettingsLoading,
+  selectDbSettingsSaving,
+  selectDbSettingsError,
+  setDerbyField,
+  clearDbSettingsError,
+} from "../../../redux/slices/dbSettingsSlice";
+
 export function DerbyNetworkServerTab() {
-    const { theme } = useUnistyles();
+  const { theme } = useUnistyles();
+  const dispatch = useAppDispatch();
 
-    const [enabled, setEnabled] = useState(true);
-    const [host, setHost] = useState("localhost");
-    const [port, setPort] = useState("1527");
-    const [user, setUser] = useState("awb");
-    const [password, setPassword] = useState("");
+  const derby = useAppSelector(selectDerbyNetworkServer);
+  const isLoading = useAppSelector(selectDbSettingsLoading);
+  const isSaving = useAppSelector(selectDbSettingsSaving);
+  const error = useAppSelector(selectDbSettingsError);
 
-    const [showIpSelector, setShowIpSelector] = useState(false);
+  const [hasRequestedLoad, setHasRequestedLoad] = useState(false);
 
-    // Mock-Daten (später Redux / API)
-    const ipAddresses = [
-        "127.0.0.1 (Loopback)",
-        "192.168.1.105 (IPv4)",
-        "0:0:0:0:0:0:0:1 (IPv6)",
-    ];
+  useEffect(() => {
+    if (!hasRequestedLoad) {
+      setHasRequestedLoad(true);
+      dispatch(fetchDbSettings());
+    }
+  }, [dispatch, hasRequestedLoad]);
 
-    return (
-        
-    <Card style={{height: 505, width: "100%"}} >
-        
-        <H2 >Derby Network Server Settings</H2>
-         <View style={ {height: 1,backgroundColor: theme.colors.border,opacity: 0.9 ,margin:10 ,  width:"100%",left:-10}} />
-        <View style={{ borderWidth:1, borderColor: theme.colors.border, padding: 30, gap: 20,height: 390 }}>
+  const onSave = () => {
+    dispatch(
+      saveDerbyNetworkServerSettings({
+        isStartDerbyNetworkServer: derby.isStartDerbyNetworkServer,
+        hostIp: derby.hostIp,
+        port: Number(derby.port) || 1527,
+        userName: derby.userName,
+        password: derby.password,
+      }),
+    );
+  };
 
-            <Checkbox
-                label="Start a Derby database server that is accessible via network"
-                value={enabled}
-                onChange={setEnabled}
-            />
+  return (
+    <Card style={{ height: 600, width: "100%" }} padding="md">
+      <H2>Derby Network Server Settings</H2>
 
-            {/* Host + Edit */}
-            <View style={{ gap: 6 }}>
-                <H4>Host or IP</H4>
+      <View
+        style={{
+          height: 1,
+          backgroundColor: theme.colors.border,
+          opacity: 0.9,
+          marginVertical: 10,
+          width: "100%",
+        }}
+      />
 
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <View style={{ flex: 1 }}>
-                        <TextInput
-                            value={host}
-                            onChangeText={setHost}
-                            size="sm"
-                        />
-                    </View>
+      
 
-                    <Pressable onPress={() => setShowIpSelector(true)}>
-                        <AntDesign
-                            name="edit"
-                            size={22}
-                            color={theme.colors.text}
-                        />
-                    </Pressable>
-                </View>
+      {!!error && (
+        <Card padding="sm" style={{ marginBottom: 12 }}>
+          <ThemedText>{error}</ThemedText>
+        </Card>
+      )}
+
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          padding: 30,
+          gap: 20,
+          height: 390,
+        }}
+      >
+        <Checkbox
+          label="Start a Derby database server that is accessible via network"
+          value={derby.isStartDerbyNetworkServer}
+          onChange={(value) => {
+            dispatch(
+              setDerbyField({
+                key: "isStartDerbyNetworkServer",
+                value,
+              }),
+            );
+          }}
+        />
+
+        <View style={{ gap: 6 }}>
+          <H4>Host or IP</H4>
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ flex: 1 }}>
+              <TextInput
+                value={derby.hostIp}
+                onChangeText={(value) => {
+                  dispatch(
+                    setDerbyField({
+                      key: "hostIp",
+                      value,
+                    }),
+                  );
+                }}
+                size="sm"
+              />
             </View>
 
-            <TextInput
-                label="Port (default: 1527)"
-                value={port}
-                keyboardType="numeric"
-                onChangeText={setPort}
-                size="sm"
-            />
+            <Pressable
+              onPress={() => {
+                dispatch(clearDbSettingsError());
+              }}
+            >
+              <AntDesign
+                name="edit"
+                size={22}
+                color={theme.colors.text}
+              />
+            </Pressable>
+          </View>
+        </View>
 
-            <TextInput
-                label="User Name"
-                value={user}
-                onChangeText={setUser}
-                size="sm"
-            />
+        <TextInput
+          label="Port (default: 1527)"
+          value={String(derby.port)}
+          keyboardType="numeric"
+          onChangeText={(value) => {
+            const numericValue = value.replace(/[^\d]/g, "");
+            dispatch(
+              setDerbyField({
+                key: "port",
+                value: numericValue === "" ? 0 : Number(numericValue),
+              }),
+            );
+          }}
+          size="sm"
+        />
 
-            <TextInput
-                label="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                size="sm"
-            />
+        <TextInput
+          label="User Name"
+          value={derby.userName}
+          onChangeText={(value) => {
+            dispatch(
+              setDerbyField({
+                key: "userName",
+                value,
+              }),
+            );
+          }}
+          size="sm"
+        />
+
+        <TextInput
+          label="Password"
+          value={derby.password}
+          onChangeText={(value) => {
+            dispatch(
+              setDerbyField({
+                key: "password",
+                value,
+              }),
+            );
+          }}
+          secureTextEntry
+          size="sm"
+        />
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 15, marginTop:90}}>
+         <ActionButton
+          label="Test Connection"
+          onPress={() => console.log("Test Derby connection")}
+          size="sm"
+          disabled
+        />
+        <ActionButton
+          label={isSaving ? "Saving..." : "Save"}
+          onPress={onSave}
+          size="sm"
+          disabled={isSaving}
+        />
 
        
-         </View>
-             {/* Actions */}
-            <View style={{ flexDirection: "row", gap:15, marginTop:10}}>
-                  <ActionButton
-                    label="Test Connection"
-                    onPress={() => console.log("Test Derby connection")}
-                    size="sm"
-                />
-                <ActionButton
-                    label="Save"
-                  
-                    onPress={() => console.log("Save Derby settings")}
-                    size="sm"
-                />
-
-              
-            </View>
-       </Card>
-    );
+      </View>
+    </Card>
+  );
 }

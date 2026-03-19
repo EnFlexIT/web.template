@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from "react";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
@@ -11,13 +10,20 @@ import { Dropdown } from "../../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { H2 } from "../../../components/stylistic/H2";
 
-type DatabaseSystem = "derby_embedded" | "derby_network" | "mysql" | "mariadb";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import {
+  fetchDbSettings,
+  selectFactories,
+  selectFactoryStates,
+  selectDbSettingsLoading,
+} from "../../../redux/slices/dbSettingsSlice";
 
-const FACTORY_OPTIONS = {
-  "de.enflexit.awb.bgSystem.db": "de.enflexit.awb.bgSystem.db",
-  "de.enflexit.awb.factory.one": "de.enflexit.awb.factory.one",
-  "de.enflexit.awb.factory.two": "de.enflexit.awb.factory.two",
-};
+type DatabaseSystem =
+  | "derby_embedded"
+  | "derby_network"
+  | "mysql"
+  | "mariadb";
 
 const DATABASE_SYSTEMS: Record<DatabaseSystem, string> = {
   derby_embedded: "Apache Derby (Embedded)",
@@ -27,13 +33,42 @@ const DATABASE_SYSTEMS: Record<DatabaseSystem, string> = {
 };
 
 export function FactorySettingsTab() {
-  const [factoryId, setFactoryId] = useState("de.enflexit.awb.bgSystem.db");
+  const dispatch = useAppDispatch();
+
+  const factories = useAppSelector(selectFactories);
+  const factoryStates = useAppSelector(selectFactoryStates);
+  const isLoading = useAppSelector(selectDbSettingsLoading);
+
+  const [factoryId, setFactoryId] = useState("");
   const [databaseSystem, setDatabaseSystem] =
     useState<DatabaseSystem>("derby_embedded");
   const [database, setDatabase] = useState("agentWorkbench");
   const [urlParams, setUrlParams] = useState("create=true");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (factories.length === 0) {
+      dispatch(fetchDbSettings());
+    }
+  }, [dispatch, factories.length]);
+
+  useEffect(() => {
+    if (!factoryId && factories.length > 0) {
+      setFactoryId(factories[0]);
+    }
+  }, [factories, factoryId]);
+
+  const factoryOptions = useMemo(() => {
+    return factories.reduce<Record<string, string>>((acc, factory) => {
+      acc[factory] = factory;
+      return acc;
+    }, {});
+  }, [factories]);
+
+  const selectedFactoryState = factoryId
+    ? factoryStates[factoryId] ?? "NotAvailableYet"
+    : "-";
 
   const resultingUrl = useMemo(() => {
     if (databaseSystem === "derby_embedded") {
@@ -59,17 +94,25 @@ export function FactorySettingsTab() {
           <View style={styles.separator} />
         </View>
 
+        {isLoading && <ThemedText>Loading...</ThemedText>}
+
         <View style={styles.topSection}>
-         
           <View style={styles.topFields}>
             <View style={styles.topField}>
               <H4 style={styles.topLabel}>Factory-ID</H4>
               <Dropdown
                 size="sm"
                 value={factoryId}
-                options={FACTORY_OPTIONS}
+                options={factoryOptions}
                 onChange={(value) => setFactoryId(String(value))}
               />
+            </View>
+
+            <View style={styles.topField}>
+              <H4 style={styles.topLabel}>Factory Status</H4>
+              <Card padding="sm">
+                <ThemedText>{selectedFactoryState}</ThemedText>
+              </Card>
             </View>
 
             <View style={styles.topField}>
@@ -125,11 +168,11 @@ export function FactorySettingsTab() {
         </View>
 
         <View style={styles.actions}>
-              <ActionButton
+          <ActionButton
             label="Test Connection"
             size="sm"
             onPress={() => {
-              console.log("Test factory DB connection");
+              console.log("Test factory DB connection for:", factoryId);
             }}
           />
           <ActionButton
@@ -137,9 +180,9 @@ export function FactorySettingsTab() {
             size="sm"
             variant="secondary"
             onPress={() => {
-              console.log("Save factory DB settings");
+              console.log("Save factory DB settings for:", factoryId);
             }}
-          />    
+          />
         </View>
       </View>
     </Card>
@@ -167,7 +210,7 @@ function FieldRow({
 const styles = StyleSheet.create((theme) => ({
   card: {
     width: "100%",
-    height: 505,
+    height: 600,
   },
 
   container: {
@@ -187,51 +230,39 @@ const styles = StyleSheet.create((theme) => ({
   topSection: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginVertical:-15,
-    
-  },
-
-  iconWrap: {
-    width: 36,
-    paddingTop: 34,
-    alignItems: "center",
+    marginVertical: -15,
   },
 
   topFields: {
     flex: 1,
     flexDirection: "column",
     gap: 10,
-  marginBottom:10
+    marginBottom: 10,
   },
 
   topField: {
     flex: 1,
     gap: 8,
-
   },
 
   topLabel: {
-   
     fontWeight: "700",
   },
 
   settingsBox: {
     borderWidth: 1,
     borderColor: theme.colors.border,
-    
     paddingHorizontal: 18,
     paddingTop: 20,
     paddingBottom: 24,
     gap: 12,
     height: 245,
-
   },
 
   fieldRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 18,
-   
   },
 
   fieldLabelWrap: {
@@ -239,7 +270,6 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   fieldLabel: {
-
     fontWeight: "700",
   },
 
@@ -252,6 +282,6 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "flex-start",
     alignItems: "center",
     gap: 12,
-    marginTop:-10
+    marginTop: -10,
   },
 }));

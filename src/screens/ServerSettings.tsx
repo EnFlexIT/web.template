@@ -206,7 +206,9 @@ export function ServerSettingsScreen() {
     return result.ok;
   }
 
-  async function validateAndSaveOnly(): Promise<{
+  async function validateAndSaveOnly(
+    options?: { forceCreate?: boolean },
+  ): Promise<{
     ok: boolean;
     baseUrl?: string;
     serverLabel?: string;
@@ -215,6 +217,7 @@ export function ServerSettingsScreen() {
     resetErrors();
 
     const { name, baseUrl } = getCurrentInputsNormalized();
+    const forceCreate = options?.forceCreate ?? false;
 
     if (!baseUrl) {
       setUrlError(t("errors.serverUrlRequired"));
@@ -227,10 +230,13 @@ export function ServerSettingsScreen() {
     }
 
     const currentDraftServer = servers.find((s) => s.id === draftServerId);
-    const currentDraftServerId = currentDraftServer?.id ?? null;
+    const currentDraftServerId =
+      !forceCreate && editMode && currentDraftServer
+        ? currentDraftServer.id
+        : null;
 
     const nameExists = servers.some((s) => {
-      if (editMode && currentDraftServerId && s.id === currentDraftServerId) {
+      if (currentDraftServerId && s.id === currentDraftServerId) {
         return false;
       }
       return normalizeName(s.name ?? "").toLowerCase() === name.toLowerCase();
@@ -242,7 +248,7 @@ export function ServerSettingsScreen() {
     }
 
     const urlExists = servers.some((s) => {
-      if (editMode && currentDraftServerId && s.id === currentDraftServerId) {
+      if (currentDraftServerId && s.id === currentDraftServerId) {
         return false;
       }
       return normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase();
@@ -262,7 +268,7 @@ export function ServerSettingsScreen() {
       return { ok: false };
     }
 
-    if (editMode && currentDraftServer) {
+    if (!forceCreate && editMode && currentDraftServer) {
       dispatch(updateServer({ id: currentDraftServer.id, name, baseUrl }));
       return {
         ok: true,
@@ -297,7 +303,7 @@ export function ServerSettingsScreen() {
   async function handleAddByPlus() {
     if (busy || loginLoading) return;
 
-    const result = await validateAndSaveOnly();
+    const result = await validateAndSaveOnly({ forceCreate: true });
     if (!result.ok || !result.baseUrl || !result.id) return;
 
     setDraftServerId(result.id);
@@ -309,7 +315,7 @@ export function ServerSettingsScreen() {
   async function handleSaveSide() {
     if (busy || loginLoading) return;
 
-    const result = await validateAndSaveOnly();
+    const result = await validateAndSaveOnly({ forceCreate: false });
     if (!result.ok) return;
 
     resetErrors();
@@ -334,7 +340,7 @@ export function ServerSettingsScreen() {
   async function handleUseServer() {
     if (busy || loginLoading) return;
 
-    const saveResult = await validateAndSaveOnly();
+    const saveResult = await validateAndSaveOnly({ forceCreate: false });
     if (!saveResult.ok || !saveResult.baseUrl) return;
 
     const newUrl = normalizeBaseUrl(saveResult.baseUrl);
