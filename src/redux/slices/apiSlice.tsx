@@ -676,5 +676,12 @@ export const selectIsPointingToServer = (state: RootState) =>
 export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
 export const selectIsSwitchingServer = (state: RootState) =>
   state.api.isSwitchingServer;
+export const selectIsBaseModule = (state: RootState) =>
+  state.api.isPointingToServer && state.api.isBaseMode;
+
+export const selectIsCustomerModule = (state: RootState) =>
+  state.api.isPointingToServer &&
+  state.api.isLoggedIn &&
+  !state.api.isBaseMode;
 
 export default apiSlice.reducer;

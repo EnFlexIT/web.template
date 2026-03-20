@@ -8,7 +8,8 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 
 import {
-  selectIsBaseMode,
+  selectIsBaseModule,
+  selectIsCustomerModule,
   selectIsSwitchingServer,
   switchServer,
   getJwtForServer,
@@ -86,7 +87,8 @@ export function Footer() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Login"]);
 
-  const isBaseMode = useAppSelector(selectIsBaseMode);
+const isBaseModule = useAppSelector(selectIsBaseModule);
+const isCustomerModule = useAppSelector(selectIsCustomerModule);
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
   const { isOffline } = useAppSelector(selectConnectivity);
   const selectedServer = useAppSelector(selectSelectedServer);
@@ -112,7 +114,11 @@ export function Footer() {
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
 
-  const deviceMode = isBaseMode ? "Base Application" : "User Mode";
+  const deviceMode = isBaseModule
+  ? "Base Application"
+  : isCustomerModule
+    ? "HEMS"
+    : "Unknown / Not authenticated";
   const status = isSwitchingServer
     ? "Switching server..."
     : isOffline
@@ -224,58 +230,62 @@ export function Footer() {
   }, [refreshServerStatuses]);
 
   async function handleServerChange(serverId: string) {
-    if (isSwitchingServer || loginLoading) return;
+  if (isSwitchingServer || loginLoading) return;
 
-    const server = servers.find((s) => s.id === serverId);
-    if (!server) return;
-    if (server.id === selectedServer?.id) return;
+  // 🔴 Nicht erreichbare Server im Footer unklickbar machen
+  const meta = serverOptionMeta[serverId];
+  if (meta?.tone === "red") return;
 
-    const newUrl = normalizeBaseUrl(server.baseUrl);
-    const existingJwt = await getJwtForServer(newUrl);
-    const alreadyAuthenticated = await checkServerAuthenticated(
-      newUrl,
-      existingJwt,
-    );
+  const server = servers.find((s) => s.id === serverId);
+  if (!server) return;
+  if (server.id === selectedServer?.id) return;
 
-    if (!alreadyAuthenticated) {
-      if (isLoginPage) {
-        dispatch(selectServer(server.id));
+  const newUrl = normalizeBaseUrl(server.baseUrl);
+  const existingJwt = await getJwtForServer(newUrl);
+  const alreadyAuthenticated = await checkServerAuthenticated(
+    newUrl,
+    existingJwt,
+  );
 
-        await dispatch(
-          switchServer({
-            url: newUrl,
-            initializeMenu: false,
-          }),
-        );
+  if (!alreadyAuthenticated) {
+    if (isLoginPage) {
+      dispatch(selectServer(server.id));
 
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-        }
+      await dispatch(
+        switchServer({
+          url: newUrl,
+          initializeMenu: false,
+        }),
+      );
 
-        return;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
       }
 
-      setPendingServerId(server.id);
-      setPendingServerUrl(newUrl);
-      setPendingServerLabel(server.name?.trim() || server.baseUrl);
-      setLoginError(null);
-      setLoginModalVisible(true);
       return;
     }
 
-    dispatch(selectServer(server.id));
-
-    await dispatch(
-      switchServer({
-        url: newUrl,
-        initializeMenu: true,
-      }),
-    );
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-    }
+    setPendingServerId(server.id);
+    setPendingServerUrl(newUrl);
+    setPendingServerLabel(server.name?.trim() || server.baseUrl);
+    setLoginError(null);
+    setLoginModalVisible(true);
+    return;
   }
+
+  dispatch(selectServer(server.id));
+
+  await dispatch(
+    switchServer({
+      url: newUrl,
+      initializeMenu: true,
+    }),
+  );
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+  }
+}
 
   async function handleServerLoginSubmit(params: {
     username: string;

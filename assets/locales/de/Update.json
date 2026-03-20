@@ -20,5 +20,7 @@
       "updateAvailable": "Neues Update verfügbar",
       "updateAcceptedNative": "Update akzeptiert (native)"
     }
-  }
+
+  },
+  "InstalledFeatures":"Installierte Features"
 }

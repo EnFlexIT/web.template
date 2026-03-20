@@ -38,19 +38,21 @@ function fmtRelease(v: ApiVersion | null | undefined) {
   return `${major}.${minor}.${micro}`;
 }
 function fmtFull(v: ApiVersion | null | undefined) {
-  const r = fmtRelease(v);
+  const major = v?.major ?? 0;
+  const minor = v?.minor ?? 0;
+  const micro = v?.micro ?? 0;
+
+  const base = `${major}.${minor}.${micro}`;
   const q = String(v?.qualifier ?? "").trim();
 
-  if (!q) return r;
+  if (!q) return base;
 
-  const parts = q.split("-").filter(Boolean);
-  const last = parts[parts.length - 1]; // "1539"
+  const normalizedQualifier = q
+    .replace(/[^0-9A-Za-z]+/g, ".") // alles Trennzeichen -> Punkt
+    .replace(/\.+/g, ".")           // doppelte Punkte vermeiden
+    .replace(/^\.|\.$/g, "");       // Punkte am Anfang/Ende entfernen
 
-  // if last is numeric, append with dot: "0.0.4.1539"
-  if (last && /^\d+$/.test(last)) return `${r}.${last}`;
-
-  // fallback: keep old behavior
-  return `${r}-${q}`;
+  return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
 
 function extractServerWebApp(data: any): {
@@ -251,8 +253,6 @@ export function UpdateWebAppTab() {
     <Card>
       <View style={s.container}>
         <H3>{t("serverWeb.title", "Web-App")}</H3>
-      
-        <Row label={t("serverWeb.fields.releaseVersion")} value={serverRelease} />
         <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
         <Row label={t("serverWeb.fields.status")} value={updateStatus} />
 

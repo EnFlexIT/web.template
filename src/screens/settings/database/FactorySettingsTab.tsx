@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import AntDesign_ from "@expo/vector-icons/AntDesign";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { TextInput } from "../../../components/ui-elements/TextInput";
@@ -14,44 +15,94 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
   fetchDbSettings,
+  selectDbSettingsLoading,
+  selectDbSystems,
   selectFactories,
   selectFactoryStates,
-  selectDbSettingsLoading,
 } from "../../../redux/slices/dbSettingsSlice";
 
-type DatabaseSystem =
-  | "derby_embedded"
-  | "derby_network"
-  | "mysql"
-  | "mariadb";
+const AntDesign = withUnistyles(AntDesign_);
 
-const DATABASE_SYSTEMS: Record<DatabaseSystem, string> = {
-  derby_embedded: "Apache Derby (Embedded)",
-  derby_network: "Apache Derby (Network)",
-  mysql: "MySQL",
-  mariadb: "MariaDB",
+type FactoryStateMeta = {
+  label: string;
+  color: string;
+  iconName: React.ComponentProps<typeof AntDesign>["name"];
 };
+
+function getFactoryStateMeta(state: string): FactoryStateMeta {
+  switch (state) {
+    case "Destroyed":
+      return {
+        label: "SessionFactory was destroyed",
+        color: "#9CA3AF",
+        iconName: "database",
+      };
+
+    case "CheckDBConnection":
+      return {
+        label: "Checking database connection ...",
+        color: "#2563EB",
+        iconName: "database",
+      };
+
+    case "CheckDBConectionFailed":
+      return {
+        label: "Database connection test failed!",
+        color: "#DC2626",
+        iconName: "database",
+      };
+
+    case "InitializationProcessStarted":
+      return {
+        label: "Initialize SessionFactory",
+        color: "#14B8A6",
+        iconName: "database",
+      };
+
+    case "InitializationProcessFailed":
+      return {
+        label: "Initialization of SessionFactory failed",
+        color: "#DC2626",
+        iconName: "database",
+      };
+
+    case "Created":
+      return {
+        label: "Successfully Initialized",
+        color: "#16A34A",
+        iconName: "database",
+      };
+
+    case "NotAvailableYet":
+    default:
+      return {
+        label: "Not available yet",
+        color: "#9CA3AF",
+        iconName: "database",
+      };
+  }
+}
 
 export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
 
+  const dbSystems = useAppSelector(selectDbSystems);
   const factories = useAppSelector(selectFactories);
   const factoryStates = useAppSelector(selectFactoryStates);
   const isLoading = useAppSelector(selectDbSettingsLoading);
 
-  const [factoryId, setFactoryId] = useState("");
-  const [databaseSystem, setDatabaseSystem] =
-    useState<DatabaseSystem>("derby_embedded");
-  const [database, setDatabase] = useState("agentWorkbench");
-  const [urlParams, setUrlParams] = useState("create=true");
-  const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
+  const [factoryId, setFactoryId] = useState<string>("");
+  const [databaseSystem, setDatabaseSystem] = useState<string>("");
+  const [database, setDatabase] = useState<string>("agentWorkbench");
+  const [urlParams, setUrlParams] = useState<string>("");
+  const [user, setUser] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
   useEffect(() => {
-    if (factories.length === 0) {
+    if (factories.length === 0 || dbSystems.length === 0) {
       dispatch(fetchDbSettings());
     }
-  }, [dispatch, factories.length]);
+  }, [dispatch, factories.length, dbSystems.length]);
 
   useEffect(() => {
     if (!factoryId && factories.length > 0) {
@@ -59,32 +110,33 @@ export function FactorySettingsTab() {
     }
   }, [factories, factoryId]);
 
-  const factoryOptions = useMemo(() => {
+  useEffect(() => {
+    if (!databaseSystem && dbSystems.length > 0) {
+      setDatabaseSystem(dbSystems[0]);
+    }
+  }, [dbSystems, databaseSystem]);
+
+  const factoryOptions = useMemo<Record<string, string>>(() => {
     return factories.reduce<Record<string, string>>((acc, factory) => {
       acc[factory] = factory;
       return acc;
     }, {});
   }, [factories]);
 
+  const databaseSystemOptions = useMemo<Record<string, string>>(() => {
+    return dbSystems.reduce<Record<string, string>>((acc, system) => {
+      acc[system] = system;
+      return acc;
+    }, {});
+  }, [dbSystems]);
+
   const selectedFactoryState = factoryId
     ? factoryStates[factoryId] ?? "NotAvailableYet"
-    : "-";
+    : "NotAvailableYet";
 
-  const resultingUrl = useMemo(() => {
-    if (databaseSystem === "derby_embedded") {
-      return `jdbc:derby:${database};${urlParams}`;
-    }
-
-    if (databaseSystem === "derby_network") {
-      return `jdbc:derby://localhost:1527/${database};${urlParams}`;
-    }
-
-    if (databaseSystem === "mysql") {
-      return `jdbc:mysql://localhost:3306/${database}?${urlParams}`;
-    }
-
-    return `jdbc:mariadb://localhost:3306/${database}?${urlParams}`;
-  }, [databaseSystem, database, urlParams]);
+  const selectedFactoryStateMeta = useMemo(() => {
+    return getFactoryStateMeta(selectedFactoryState);
+  }, [selectedFactoryState]);
 
   return (
     <Card style={styles.card} padding="md">
@@ -94,12 +146,21 @@ export function FactorySettingsTab() {
           <View style={styles.separator} />
         </View>
 
-        {isLoading && <ThemedText>Loading...</ThemedText>}
+        {isLoading ? <ThemedText>Loading...</ThemedText> : null}
 
         <View style={styles.topSection}>
           <View style={styles.topFields}>
             <View style={styles.topField}>
-              <H4 style={styles.topLabel}>Factory-ID</H4>
+             
+              <View style={styles.inlineLabel}>
+                <H4 style={styles.topLabel}>Factory-ID</H4>
+                <AntDesign
+                  name={selectedFactoryStateMeta.iconName}
+                  size={14}
+                  color={selectedFactoryStateMeta.color}
+                />
+              </View>
+            
               <Dropdown
                 size="sm"
                 value={factoryId}
@@ -107,50 +168,36 @@ export function FactorySettingsTab() {
                 onChange={(value) => setFactoryId(String(value))}
               />
             </View>
-
-            <View style={styles.topField}>
-              <H4 style={styles.topLabel}>Factory Status</H4>
-              <Card padding="sm">
-                <ThemedText>{selectedFactoryState}</ThemedText>
-              </Card>
-            </View>
-
             <View style={styles.topField}>
               <H4 style={styles.topLabel}>Database System</H4>
               <Dropdown
                 size="sm"
                 value={databaseSystem}
-                options={DATABASE_SYSTEMS}
-                onChange={(value) => setDatabaseSystem(value as DatabaseSystem)}
+                options={databaseSystemOptions}
+                onChange={(value) => setDatabaseSystem(String(value))}
               />
             </View>
           </View>
         </View>
 
         <View style={styles.settingsBox}>
-          <FieldRow label="Database">
-            <TextInput
-              size="sm"
-              value={database}
-              onChangeText={setDatabase}
-            />
+          <FieldRow
+            label={
+              <View style={styles.inlineLabel}>
+                <ThemedText style={styles.fieldLabel}>Database</ThemedText>
+              
+              </View>
+            }
+          >
+            <TextInput size="sm" value={database} onChangeText={setDatabase} />
           </FieldRow>
 
           <FieldRow label="Add. URL-Params">
-            <TextInput
-              size="sm"
-              value={urlParams}
-              onChangeText={setUrlParams}
-            />
+            <TextInput size="sm" value={urlParams} onChangeText={setUrlParams} />
           </FieldRow>
 
           <FieldRow label="Resulting URL">
-            <TextInput
-              size="sm"
-              value={resultingUrl}
-              onChangeText={() => {}}
-              disabled
-            />
+            <TextInput size="sm" value="-" onChangeText={() => {}} disabled />
           </FieldRow>
 
           <FieldRow label="User Name">
@@ -193,13 +240,17 @@ function FieldRow({
   label,
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <View style={styles.fieldRow}>
       <View style={styles.fieldLabelWrap}>
-        <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
+        {typeof label === "string" ? (
+          <ThemedText style={styles.fieldLabel}>{label}</ThemedText>
+        ) : (
+          label
+        )}
       </View>
 
       <View style={styles.fieldInputWrap}>{children}</View>
@@ -247,6 +298,18 @@ const styles = StyleSheet.create((theme) => ({
 
   topLabel: {
     fontWeight: "700",
+  },
+
+  statusBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  inlineLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   settingsBox: {
