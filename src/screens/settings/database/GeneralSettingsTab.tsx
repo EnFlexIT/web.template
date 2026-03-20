@@ -26,11 +26,11 @@ export function GeneralSettingsTab() {
   const isLoading = useAppSelector(selectDbSettingsLoading);
 
   const [useForEveryConnection, setUseForEveryConnection] = useState(false);
-  const [databaseSystem, setDatabaseSystem] = useState("");
-  const [database, setDatabase] = useState("agentWorkbench");
-  const [urlParams, setUrlParams] = useState("create=true");
-  const [userName, setUserName] = useState("");
-  const [password, setPassword] = useState("");
+  const [databaseSystem, setDatabaseSystem] = useState<string>("");
+  const [database, setDatabase] = useState<string>("agentWorkbench");
+  const [urlParams, setUrlParams] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
   useEffect(() => {
     if (dbSystems.length === 0) {
@@ -44,38 +44,12 @@ export function GeneralSettingsTab() {
     }
   }, [dbSystems, databaseSystem]);
 
-  const databaseSystemOptions = useMemo(() => {
+  const databaseSystemOptions = useMemo<Record<string, string>>(() => {
     return dbSystems.reduce<Record<string, string>>((acc, system) => {
       acc[system] = system;
       return acc;
     }, {});
   }, [dbSystems]);
-
-  const resultingUrl = useMemo(() => {
-    const system = databaseSystem.toLowerCase();
-
-    if (system.includes("derby") && system.includes("network")) {
-      return `jdbc:derby://localhost:1527/${database};${urlParams}`;
-    }
-
-    if (system.includes("derby")) {
-      return `jdbc:derby:${database};${urlParams}`;
-    }
-
-    if (system.includes("mysql")) {
-      return `jdbc:mysql://localhost:3306/${database}?${urlParams}`;
-    }
-
-    if (system.includes("mariadb")) {
-      return `jdbc:mariadb://localhost:3306/${database}?${urlParams}`;
-    }
-
-    if (system.includes("postgres")) {
-      return `jdbc:postgresql://localhost:5432/${database}?${urlParams}`;
-    }
-
-    return database;
-  }, [databaseSystem, database, urlParams]);
 
   return (
     <Card style={styles.card} padding="md">
@@ -85,7 +59,7 @@ export function GeneralSettingsTab() {
           <View style={styles.separator} />
         </View>
 
-        {isLoading && <ThemedText>Loading...</ThemedText>}
+        {isLoading ? <ThemedText>Loading...</ThemedText> : null}
 
         <Checkbox
           label="Use settings below for every database connection"
@@ -127,7 +101,7 @@ export function GeneralSettingsTab() {
           <FieldRow label="Resulting URL">
             <TextInput
               size="sm"
-              value={resultingUrl}
+              value="-"
               onChangeText={() => {}}
               disabled
             />
