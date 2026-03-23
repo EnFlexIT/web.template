@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-
+import AntDesign_ from "@expo/vector-icons/AntDesign";
+import {withUnistyles } from "react-native-unistyles";
 import { ThemedText } from "./themed/ThemedText";
 import { Dropdown } from "./ui-elements/Dropdown";
 import { useAppSelector } from "../hooks/useAppSelector";
@@ -95,6 +96,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
   const serversState = useAppSelector(selectServers);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
 
+   const AntDesign = withUnistyles(AntDesign_);
 
   const env = getAppEnvironment();
 
@@ -355,14 +357,13 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
   return (
     <>
       <View style={styles.footer}>
-        <View style={[styles.badge, styles[getEnvStyleKey(env)]]}>
-          <ThemedText style={styles.badgeText}>{env}</ThemedText>
-        </View>
+       
+          <ThemedText>{env}</ThemedText>
+       
 
         <ThemedText style={styles.separator}>|</ThemedText>
-        <ThemedText style={styles.text}>{deviceMode}</ThemedText>
-
-        <ThemedText style={styles.separator}>|</ThemedText>
+   
+       
 
         <View
           style={[
@@ -389,7 +390,8 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
 
         <View style={styles.statusWrap}>
           {isSwitchingServer ? <ActivityIndicator size="small" /> : null}
-          <ThemedText style={styles.text}>{status}</ThemedText>
+                  <AntDesign name="alert" size={15} style={[styles.color]} />
+
         </View>
       </View>
 
@@ -443,6 +445,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
+  },
+
+    color: {
+    color: theme.colors.text,
   },
 
   devBadge: {

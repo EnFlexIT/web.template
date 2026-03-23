@@ -200,8 +200,10 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     borderWidth: 1,
-    padding: 6,
+    padding: 5,
     overflow: "hidden",
+  
+    
   },
   search: {
     borderWidth: 1,
@@ -210,8 +212,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   itemBase: {
+
+   marginBottom:-3
    
-    justifyContent: "center",
   },
   inlineRow: {
     flexDirection: "row",
@@ -222,7 +225,7 @@ const styles = StyleSheet.create({
 const itemSizeStyles = {
   xs0: {
   
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     minHeight: 20,
   },
   xs: {

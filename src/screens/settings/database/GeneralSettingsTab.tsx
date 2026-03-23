@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-
 import { Card } from "../../../components/ui-elements/Card";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
@@ -10,7 +9,6 @@ import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { H2 } from "../../../components/stylistic/H2";
 import { H4 } from "../../../components/stylistic/H4";
 import { ThemedText } from "../../../components/themed/ThemedText";
-
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
