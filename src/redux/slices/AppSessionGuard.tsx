@@ -5,9 +5,9 @@ import { checkAlive } from "./connectivitySlice";
 import {
   refreshServerStatus,
   selectIsLoggedIn,
+  logoutAsync,
 } from "../../redux/slices/apiSlice";
-import { logoutAsync } from "../../redux/slices/apiSlice";
-import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
+import { renewJwtIfNeeded } from "../../redux/slices/jwtRenewSlice";
 
 function shouldLogoutFromRenewReason(reason?: string) {
   return (
@@ -28,14 +28,15 @@ export function AppSessionGuard() {
   useEffect(() => {
     if (!isLoggedIn) {
       loginStartedAtRef.current = 0;
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+
       return;
     }
 
-    // Zeitpunkt merken, wann Session aktiv wurde
     loginStartedAtRef.current = Date.now();
 
     let cancelled = false;
@@ -43,7 +44,6 @@ export function AppSessionGuard() {
     const run = async () => {
       if (runningRef.current || cancelled) return;
 
-      // 12 Sekunden Schonfrist nach Login
       const elapsed = Date.now() - loginStartedAtRef.current;
       if (elapsed < 12_000) {
         return;
@@ -52,7 +52,7 @@ export function AppSessionGuard() {
       runningRef.current = true;
 
       try {
-        dispatch(refreshServerStatus());
+        await dispatch(refreshServerStatus());
 
         const aliveRes = await dispatch(
           checkAlive({ silent: true })
@@ -60,13 +60,15 @@ export function AppSessionGuard() {
 
         if (cancelled) return;
 
-        // solange Server offline ist -> noch nicht logout
+        // Wenn Server wirklich offline ist:
+        // nicht sofort logout, sondern weiter warten
         if (!aliveRes.isOnline) {
           return;
         }
 
+        // Nur den aktiven Server prüfen
         const renewRes = await dispatch(
-          renewAllServerJwtsIfNeeded({
+          renewJwtIfNeeded({
             force: false,
             cooldownMs: 10_000,
           }) as any
@@ -74,12 +76,9 @@ export function AppSessionGuard() {
 
         if (cancelled) return;
 
-        const reason =
-          renewRes?.reason ??
-          renewRes?.[0]?.reason;
-
-        if (shouldLogoutFromRenewReason(reason)) {
+        if (shouldLogoutFromRenewReason(renewRes?.reason)) {
           await dispatch(logoutAsync());
+          return;
         }
       } catch (error) {
         console.log("[AppSessionGuard] failed:", error);
@@ -94,6 +93,7 @@ export function AppSessionGuard() {
 
     return () => {
       cancelled = true;
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;

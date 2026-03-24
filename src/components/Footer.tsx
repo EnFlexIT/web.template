@@ -390,7 +390,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
 
         <View style={styles.statusWrap}>
           {isSwitchingServer ? <ActivityIndicator size="small" /> : null}
-                  <AntDesign name="alert" size={15} style={[styles.color]} />
+                  <AntDesign name="build" size={15} style={[styles.color]} />
 
         </View>
       </View>

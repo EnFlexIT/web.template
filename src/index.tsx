@@ -26,7 +26,7 @@ import {
   selectOrganizations,
 } from "./redux/slices/organizationsSlice";
 import { selectReady } from "./redux/slices/readySlice";
-
+import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import { NotAvailableScreen } from "./screens/NotAvailableScreen";
@@ -85,19 +85,7 @@ function RootStack() {
   const { theme } = useUnistyles();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
- useEffect(() => {
-  if (isLoading) return;
 
-  const id = setInterval(() => {
-    dispatch(refreshServerStatus());
-    dispatch(checkAlive({ silent: true }));
-  }, 5000);
-
-  dispatch(refreshServerStatus());
-  dispatch(checkAlive({ silent: true }));
-
-  return () => clearInterval(id);
-}, [dispatch, isLoading]);
 
 
   const isWide = useIsWide();
@@ -285,6 +273,8 @@ function RootStack() {
         </View>
       }
     >
+    <AppSessionGuard />
+
       <Drawer.Navigator
         screenOptions={{
           drawerType: isWide ? "permanent" : "front",
