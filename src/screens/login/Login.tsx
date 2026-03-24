@@ -12,7 +12,7 @@ import {
 
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-
+import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
 import { H1 } from "../../components/stylistic/H1";
@@ -83,6 +83,9 @@ export function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const shouldPromptPasswordChange =
+  username.trim().toLowerCase() === "admin" &&
+  password === "admin";
 
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
   const [loginRequestStatus, setLoginRequestStatus] = useState<
@@ -124,19 +127,23 @@ export function LoginScreen() {
             extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
 
       if (response.status === 200 && bearerToken) {
-          console.log("[LOGIN SCREEN] switching to server with token:", selectedBaseUrl);
+            console.log("[LOGIN SCREEN] switching to server with token:", selectedBaseUrl);
 
-          await dispatch(
-            switchServer({
-              url: selectedBaseUrl,
-              providedJwt: bearerToken,
-              initializeMenu: true,
-            }),
-          );
+            await dispatch(
+              switchServer({
+                url: selectedBaseUrl,
+                providedJwt: bearerToken,
+                initializeMenu: true,
+              }),
+            );
 
-          setLoginRequestStatus("successful");
-          return;
-        }
+            if (shouldPromptPasswordChange) {
+              dispatch(openInitialPasswordChangeDialog());
+            }
+
+            setLoginRequestStatus("successful");
+            return;
+          }
 
           console.warn("[LOGIN SCREEN] login failed - no bearer token", {
             status: response.status,

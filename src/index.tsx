@@ -30,7 +30,7 @@ import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import { NotAvailableScreen } from "./screens/NotAvailableScreen";
-
+import { InitialPasswordChangeDialog } from "./screens/login/InitialPasswordChangeDialog";
 import {
   hasId,
   initializeMenu,
@@ -298,6 +298,7 @@ function RootStack() {
             <DataPermissionsDialog />
             <OfflineOverlay />
             <ServerSwitchOverlay />
+            <InitialPasswordChangeDialog />
             {children}
           </View>
         )}

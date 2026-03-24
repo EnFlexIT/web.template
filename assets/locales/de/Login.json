@@ -36,5 +36,8 @@
   "allesAuswählen": "Alle auswählen",
   "einloggt": "Eingeloggt",
   "erreichbarNichtEinloggt": "Erreichbar / nicht eingeloggt",
-  "nichtErreichbar": "Nicht erreichbar / offline"
+  "nichtErreichbar": "Nicht erreichbar / offline",
+  "StandardPasswort":"Du bist mit dem Standard-Passwort angemeldet. Du kannst jetzt direkt ein neues Passwort setzen oder diesen Schrit überspringen.",
+  "skip":"Überspringen",
+  "changepassword":"Passwort ändern"
 }

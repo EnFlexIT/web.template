@@ -45,6 +45,10 @@
   "allesAuswählen": "Select all",
   "Eingeloggt": "Logged in",
   "erreichbarNichtEinloggt": "Reachable / not logged in",
-  "nichtErreichbar": "Not reachable / offline"
+  "nichtErreichbar": "Not reachable / offline",
+  "StandardPasswort":"You are logged in with the default password. You can now set a new password directly or skip this step.",
+  "skip":"skip",
+  "changepassword":"Change password"
+
 
 }
