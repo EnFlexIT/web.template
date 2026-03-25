@@ -11,6 +11,7 @@ import serversReducer from "./slices/serverSlice";
 import connectivityReducer from "./slices/connectivitySlice";
 import dbSettingsReducer from "./slices/dbSettingsSlice";
 import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
+import notificationsReducer from "./slices/notificationSlice";
 export const store = configureStore({
   reducer: {
     language: languageReducer,
@@ -25,6 +26,8 @@ export const store = configureStore({
     connectivity: connectivityReducer,
     dbSettings: dbSettingsReducer,
     passwordChangePrompt: passwordChangePromptReducer,
+    notifications: notificationsReducer,
+
   },
 });
 

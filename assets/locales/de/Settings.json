@@ -38,6 +38,10 @@
       "title": "Update",
       "description": "Aktuelle Version anzeigen, Updates prüfen und neu laden."
     },
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "description": "Sieh dir deine aktuellen Benachrichtigungen an und die wichtige Ereignisse ."
+    },
     "search": "Suchen…"
   }
 }

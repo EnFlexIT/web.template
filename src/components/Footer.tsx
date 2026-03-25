@@ -1,28 +1,30 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import AntDesign_ from "@expo/vector-icons/AntDesign";
-import {withUnistyles } from "react-native-unistyles";
+import Feather_ from "@expo/vector-icons/Feather";
+import { withUnistyles } from "react-native-unistyles";
 import { ThemedText } from "./themed/ThemedText";
 import { Dropdown } from "./ui-elements/Dropdown";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { useAppDispatch } from "../hooks/useAppDispatch";
-
 import {
-  selectIsBaseModule,
-  selectIsCustomerModule,
   selectIsSwitchingServer,
   switchServer,
   getJwtForServer,
 } from "../redux/slices/apiSlice";
 
-import { selectConnectivity } from "../redux/slices/connectivitySlice";
 import {
   selectSelectedServer,
   selectServers,
   selectServer,
 } from "../redux/slices/serverSlice";
 import { selectAuthenticationMethod } from "../redux/slices/apiSlice";
+
+import {
+  closeNotificationPopup,
+  selectUnreadNotificationCount,
+  toggleNotificationPopup,
+} from "../redux/slices/notificationSlice";
 
 import { getAppEnvironment } from "../util/appEnvironment";
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
@@ -87,17 +89,12 @@ const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 export function Footer() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Login"]);
-
-const isBaseModule = useAppSelector(selectIsBaseModule);
-const isCustomerModule = useAppSelector(selectIsCustomerModule);
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
-  const { isOffline } = useAppSelector(selectConnectivity);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-
-   const AntDesign = withUnistyles(AntDesign_);
-
+  const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
+  const Feather = withUnistyles(Feather_);
   const env = getAppEnvironment();
 
   const [loginModalVisible, setLoginModalVisible] = useState(false);
@@ -111,21 +108,13 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
     Record<string, ServerOptionMeta>
   >({});
 
+  const [dropdownInteractionLock, setDropdownInteractionLock] = useState(false);
+  const dropdownLockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isLoginPage =
     typeof window !== "undefined" &&
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
-
-  const deviceMode = isBaseModule
-  ? "Base Application"
-  : isCustomerModule
-    ? "HEMS"
-    : "Unknown / Not authenticated";
-  const status = isSwitchingServer
-    ? "Switching server..."
-    : isOffline
-      ? "Offline"
-      : "Online";
 
   const servers = serversState?.servers ?? [];
 
@@ -143,8 +132,8 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
       setServerOptionMeta({});
       return;
     }
+
     const entries = await Promise.all(
-      
       servers.map(async (server) => {
         try {
           const reachable = await checkServerReachable(server.baseUrl);
@@ -170,7 +159,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
               server.id,
               {
                 tone: "green" as const,
-                subtitle:  t("Eingeloggt") ,
+                subtitle: t("Eingeloggt"),
               },
             ] as const;
           }
@@ -179,7 +168,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
             server.id,
             {
               tone: "yellow" as const,
-              subtitle:  t("erreichbarNichtEinloggt") ,
+              subtitle: t("erreichbarNichtEinloggt"),
             },
           ] as const;
         } catch {
@@ -187,7 +176,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
             server.id,
             {
               tone: "red" as const,
-              subtitle:  t("nichtErreichbar") ,
+              subtitle: t("nichtErreichbar"),
             },
           ] as const;
         }
@@ -195,7 +184,7 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
     );
 
     setServerOptionMeta(Object.fromEntries(entries));
-  }, [servers]);
+  }, [servers, t]);
 
   useEffect(() => {
     let active = true;
@@ -224,6 +213,10 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
       active = false;
       clearInterval(intervalId);
 
+      if (dropdownLockTimeoutRef.current) {
+        clearTimeout(dropdownLockTimeoutRef.current);
+      }
+
       if (typeof window !== "undefined") {
         window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
         window.removeEventListener("focus", onRefreshEvent);
@@ -231,63 +224,86 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
     };
   }, [refreshServerStatuses]);
 
+  function startDropdownInteractionLock() {
+    dispatch(closeNotificationPopup());
+    setDropdownInteractionLock(true);
+
+    if (dropdownLockTimeoutRef.current) {
+      clearTimeout(dropdownLockTimeoutRef.current);
+    }
+
+    dropdownLockTimeoutRef.current = setTimeout(() => {
+      setDropdownInteractionLock(false);
+    }, 800);
+  }
+
+  function releaseDropdownInteractionLock() {
+    if (dropdownLockTimeoutRef.current) {
+      clearTimeout(dropdownLockTimeoutRef.current);
+      dropdownLockTimeoutRef.current = null;
+    }
+    setDropdownInteractionLock(false);
+  }
+
   async function handleServerChange(serverId: string) {
-  if (isSwitchingServer || loginLoading) return;
+    dispatch(closeNotificationPopup());
+    releaseDropdownInteractionLock();
 
-  // 🔴 Nicht erreichbare Server im Footer unklickbar machen
-  const meta = serverOptionMeta[serverId];
-  if (meta?.tone === "red") return;
+    if (isSwitchingServer || loginLoading) return;
 
-  const server = servers.find((s) => s.id === serverId);
-  if (!server) return;
-  if (server.id === selectedServer?.id) return;
+    const meta = serverOptionMeta[serverId];
+    if (meta?.tone === "red") return;
 
-  const newUrl = normalizeBaseUrl(server.baseUrl);
-  const existingJwt = await getJwtForServer(newUrl);
-  const alreadyAuthenticated = await checkServerAuthenticated(
-    newUrl,
-    existingJwt,
-  );
+    const server = servers.find((s) => s.id === serverId);
+    if (!server) return;
+    if (server.id === selectedServer?.id) return;
 
-  if (!alreadyAuthenticated) {
-    if (isLoginPage) {
-      dispatch(selectServer(server.id));
+    const newUrl = normalizeBaseUrl(server.baseUrl);
+    const existingJwt = await getJwtForServer(newUrl);
+    const alreadyAuthenticated = await checkServerAuthenticated(
+      newUrl,
+      existingJwt,
+    );
 
-      await dispatch(
-        switchServer({
-          url: newUrl,
-          initializeMenu: false,
-        }),
-      );
+    if (!alreadyAuthenticated) {
+      if (isLoginPage) {
+        dispatch(selectServer(server.id));
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        await dispatch(
+          switchServer({
+            url: newUrl,
+            initializeMenu: false,
+          }),
+        );
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        }
+
+        return;
       }
 
+      setPendingServerId(server.id);
+      setPendingServerUrl(newUrl);
+      setPendingServerLabel(server.name?.trim() || server.baseUrl);
+      setLoginError(null);
+      setLoginModalVisible(true);
       return;
     }
 
-    setPendingServerId(server.id);
-    setPendingServerUrl(newUrl);
-    setPendingServerLabel(server.name?.trim() || server.baseUrl);
-    setLoginError(null);
-    setLoginModalVisible(true);
-    return;
+    dispatch(selectServer(server.id));
+
+    await dispatch(
+      switchServer({
+        url: newUrl,
+        initializeMenu: true,
+      }),
+    );
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+    }
   }
-
-  dispatch(selectServer(server.id));
-
-  await dispatch(
-    switchServer({
-      url: newUrl,
-      initializeMenu: true,
-    }),
-  );
-
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-  }
-}
 
   async function handleServerLoginSubmit(params: {
     username: string;
@@ -320,7 +336,8 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
         res.headers.get("Authorization");
 
       const bodyText = await res.text();
-      const bearerToken = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
+      const bearerToken =
+        extractBearerToken(hdr) ?? extractBearerToken(bodyText);
 
       if (!bearerToken) {
         throw new Error("Anmeldung fehlgeschlagen.");
@@ -354,18 +371,20 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
     }
   }
 
+  function handleNotificationButtonPress() {
+    if (loginLoading || dropdownInteractionLock) return;
+    dispatch(toggleNotificationPopup());
+  }
+
   return (
     <>
       <View style={styles.footer}>
-       
-          <ThemedText>{env}</ThemedText>
-       
-
+        <ThemedText>{env}</ThemedText>
         <ThemedText style={styles.separator}>|</ThemedText>
-   
-       
 
-        <View
+        <Pressable
+          onPressIn={startDropdownInteractionLock}
+          onPressOut={releaseDropdownInteractionLock}
           style={[
             styles.serverDropdownWrap,
             (isSwitchingServer || loginLoading) &&
@@ -384,14 +403,31 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
             showOptionToneDot
             menuOffsetY={49}
           />
-        </View>
+        </Pressable>
 
         <ThemedText style={styles.separator}>|</ThemedText>
 
         <View style={styles.statusWrap}>
-          {isSwitchingServer ? <ActivityIndicator size="small" /> : null}
-                  <AntDesign name="build" size={15} style={[styles.color]} />
+          <Pressable
+            onPress={handleNotificationButtonPress}
+            style={[
+              styles.notificationButton,
+              dropdownInteractionLock && styles.notificationButtonDisabled,
+            ]}
+            disabled={loginLoading}
+          >
+            <Feather name="bookmark" size={15} style={styles.color} />
 
+            {unreadNotificationCount > 0 ? (
+              <View style={styles.notificationBadge}>
+                <ThemedText style={styles.notificationBadgeText}>
+                  {unreadNotificationCount > 99
+                    ? "99+"
+                    : String(unreadNotificationCount)}
+                </ThemedText>
+              </View>
+            ) : null}
+          </Pressable>
         </View>
       </View>
 
@@ -412,18 +448,6 @@ const isCustomerModule = useAppSelector(selectIsCustomerModule);
       />
     </>
   );
-}
-
-function getEnvStyleKey(env: "DEV" | "TEST" | "PROD") {
-  switch (env) {
-    case "TEST":
-      return "testBadge";
-    case "PROD":
-      return "prodBadge";
-    case "DEV":
-    default:
-      return "devBadge";
-  }
 }
 
 const styles = StyleSheet.create((theme) => ({
@@ -447,7 +471,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: 999,
   },
 
-    color: {
+  color: {
     color: theme.colors.text,
   },
 
@@ -486,5 +510,37 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+
+  notificationButton: {
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 22,
+    minHeight: 22,
+  },
+
+  notificationButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  notificationBadge: {
+    position: "absolute",
+    top: -6,
+    right: -10,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: "#dc2626",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+
+  notificationBadgeText: {
+    color: "#ffffff",
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: "700",
   },
 }));

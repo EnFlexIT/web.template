@@ -5,9 +5,10 @@ import { checkAlive } from "./connectivitySlice";
 import {
   refreshServerStatus,
   selectIsLoggedIn,
+  selectIp,
   logoutAsync,
 } from "../../redux/slices/apiSlice";
-import { renewJwtIfNeeded } from "../../redux/slices/jwtRenewSlice";
+import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
 
 function shouldLogoutFromRenewReason(reason?: string) {
   return (
@@ -20,6 +21,7 @@ function shouldLogoutFromRenewReason(reason?: string) {
 export function AppSessionGuard() {
   const dispatch = useAppDispatch();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const activeBaseUrl = useAppSelector(selectIp);
 
   const runningRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -60,23 +62,33 @@ export function AppSessionGuard() {
 
         if (cancelled) return;
 
-        // Wenn Server wirklich offline ist:
-        // nicht sofort logout, sondern weiter warten
+        // Solange Server offline ist: nichts tun
         if (!aliveRes.isOnline) {
           return;
         }
 
-        // Nur den aktiven Server prüfen
-        const renewRes = await dispatch(
-          renewJwtIfNeeded({
-            force: false,
+        // Nur wenn die Verbindung gerade zurückgekommen ist:
+        // genau EIN Renew-Versuch
+        if (!aliveRes.wentOnline) {
+          return;
+        }
+
+        const renewResults = await dispatch(
+          renewAllServerJwtsIfNeeded({
+            force: true,
             cooldownMs: 10_000,
           }) as any
         ).unwrap();
 
         if (cancelled) return;
 
-        if (shouldLogoutFromRenewReason(renewRes?.reason)) {
+        const activeResult = Array.isArray(renewResults)
+          ? renewResults.find((r) => r?.baseUrl === activeBaseUrl)
+          : undefined;
+
+        const activeReason = activeResult?.reason;
+
+        if (shouldLogoutFromRenewReason(activeReason)) {
           await dispatch(logoutAsync());
           return;
         }
@@ -99,7 +111,7 @@ export function AppSessionGuard() {
         intervalRef.current = null;
       }
     };
-  }, [dispatch, isLoggedIn]);
+  }, [dispatch, isLoggedIn, activeBaseUrl]);
 
   return null;
 }

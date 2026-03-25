@@ -3,21 +3,29 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "./useAppDispatch";
 import { selectApi } from "../redux/slices/apiSlice";
+import { addNotification } from "../redux/slices/notificationSlice";
 
 const API_PREFIX = "/api";
-const LAST_ACCEPTED_KEY = "update_lastAcceptedServerWebAppVersionFull"; // kannst du mit deinem Key matchen
+const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
 
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
+
 function joinUrl(base: string, path: string) {
   const b = normalizeBaseUrl(base);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${b}${p}`;
 }
 
-type ApiVersion = { major?: number; minor?: number; micro?: number; qualifier?: string };
+type ApiVersion = {
+  major?: number;
+  minor?: number;
+  micro?: number;
+  qualifier?: string;
+};
 
 function fmtRelease(v: ApiVersion | null | undefined) {
   const major = v?.major ?? 0;
@@ -25,10 +33,23 @@ function fmtRelease(v: ApiVersion | null | undefined) {
   const micro = v?.micro ?? 0;
   return `${major}.${minor}.${micro}`;
 }
+
 function fmtFull(v: ApiVersion | null | undefined) {
-  const r = fmtRelease(v);
+  const major = v?.major ?? 0;
+  const minor = v?.minor ?? 0;
+  const micro = v?.micro ?? 0;
+
+  const base = `${major}.${minor}.${micro}`;
   const q = String(v?.qualifier ?? "").trim();
-  return q ? `${r}-${q}` : r;
+
+  if (!q) return base;
+
+  const normalizedQualifier = q
+    .replace(/[^0-9A-Za-z]+/g, ".")
+    .replace(/\.+/g, ".")
+    .replace(/^\.|\.$/g, "");
+
+  return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
 
 function extractServerWebApp(data: any): { versionFull: string } | null {
@@ -36,7 +57,9 @@ function extractServerWebApp(data: any): { versionFull: string } | null {
   if (!Array.isArray(list) || list.length === 0) return null;
 
   const item =
-    list.find((x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP") ?? list[0];
+    list.find(
+      (x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP",
+    ) ?? list[0];
 
   const version = item?.version ?? item?.Version;
   if (!version || typeof version !== "object") return null;
@@ -56,8 +79,13 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
     const res = await fetch(params.url, {
       method: "GET",
       cache: "no-store" as any,
-      headers: params.jwt ? { Authorization: `Bearer ${params.jwt}` } : undefined,
+      headers: params.jwt
+        ? {
+            Authorization: `Bearer ${params.jwt}`,
+          }
+        : undefined,
     });
+
     if (!res.ok) return { __status: res.status };
     return await res.json();
   } catch {
@@ -67,6 +95,7 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
 
 function hardReloadWeb(cacheKey: string) {
   if (typeof window === "undefined") return;
+
   const u = new URL(window.location.href);
   u.searchParams.set("_v", cacheKey);
   u.searchParams.set("_ts", String(Date.now()));
@@ -74,6 +103,7 @@ function hardReloadWeb(cacheKey: string) {
 }
 
 export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
+  const dispatch = useAppDispatch();
   const intervalMs = opts?.intervalMs ?? 5 * 60 * 1000;
 
   const api = useAppSelector(selectApi);
@@ -102,6 +132,7 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
       setStatus("Network error");
       return;
     }
+
     if ((data as any)?.__status) {
       const st = Number((data as any).__status);
       setStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
@@ -117,8 +148,8 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
     setCurrentFull(parsed.versionFull);
 
     const accepted = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
+
     if (!accepted) {
-      // baseline setzen, kein Popup
       await AsyncStorage.setItem(LAST_ACCEPTED_KEY, parsed.versionFull);
       setAcceptedFull(parsed.versionFull);
       setUpdateAvailable(false);
@@ -130,37 +161,55 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
 
     if (accepted !== parsed.versionFull) {
       setUpdateAvailable(true);
-      setStatus(`Update available: ${accepted} → ${parsed.versionFull}`);
+      setStatus(`Update verfügbar: ${accepted} → ${parsed.versionFull}`);
+
+      dispatch(
+        addNotification({
+          id: `web-update-${parsed.versionFull}`,
+          type: "update",
+          title: "Neue Version verfügbar",
+          message: `Neue Version verfügbar: ${parsed.versionFull}`,
+          createdAt: new Date().toISOString(),
+          read: false,
+          severity: "info",
+          action: {
+            type: "navigate",
+            menuId: 3014,
+          },
+        }),
+      );
+
       return;
     }
 
     setUpdateAvailable(false);
     setStatus("Up to date");
-  }, [isWeb, ip, jwt]);
+  }, [dispatch, ip, isWeb, jwt]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!isWeb) return;
     if (!currentFull) return;
 
-    // Wichtig: erst speichern (gegen reload loop), dann reload
     await AsyncStorage.setItem(LAST_ACCEPTED_KEY, currentFull);
+    setAcceptedFull(currentFull);
+    setUpdateAvailable(false);
     hardReloadWeb(currentFull);
-  }, [isWeb, currentFull]);
+  }, [currentFull, isWeb]);
 
   useEffect(() => {
     if (!isWeb) return;
 
-    // initial check
     checkNow();
 
-    // interval
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => checkNow(), intervalMs);
+    timerRef.current = setInterval(() => {
+      checkNow();
+    }, intervalMs);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isWeb, checkNow, intervalMs]);
+  }, [checkNow, intervalMs, isWeb]);
 
   return {
     updateAvailable,

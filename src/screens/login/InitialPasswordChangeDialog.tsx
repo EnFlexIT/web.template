@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, View, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
+import { addNotification } from "../../redux/slices/notificationSlice";
 import { Card } from "../../components/ui-elements/Card";
 import { H4 } from "../../components/stylistic/H4";
 import { ThemedText } from "../../components/themed/ThemedText";
@@ -23,10 +23,27 @@ export function InitialPasswordChangeDialog() {
   const navigation = useNavigation<any>();
   const isOpen = useAppSelector(selectInitialPasswordChangeDialogOpen);
   const { t } = useTranslation(["Login"]);
+  
 
-  function onSkip() {
-    dispatch(closeInitialPasswordChangeDialog());
-  }
+ function onSkip() {
+  dispatch(
+    addNotification({
+      id: `password-skip-${Date.now()}`,
+      type: "password",
+      title: "Password change recommended",
+      message: "You are still using the default password. Please change it soon.",
+      createdAt: new Date().toISOString(),
+      read: false,
+      severity: "warning",
+      action: {
+        type: "navigate",
+        menuId: 3013,
+      },
+    }),
+  );
+
+  dispatch(closeInitialPasswordChangeDialog());
+}
 
   function onOpenChangePassword() {
     dispatch(closeInitialPasswordChangeDialog());

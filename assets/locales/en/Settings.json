@@ -38,6 +38,10 @@
       "title": "Update",
       "description": "View current version, check for updates, and reload."
       },
+     "notifications": {
+      "title": "Notifications",
+      "description": "View your current notifications and stay informed about important updates."
+      },
       "search": "Search…"
 }
 }

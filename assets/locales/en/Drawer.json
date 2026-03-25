@@ -13,7 +13,8 @@
   "databaseConnectionsAndSettings": "Database",
   "devHome": "Dev Home",
   "appInfo":"Update",
-  "changeOrganization": "Server Settings"
+  "changeOrganization": "Server Settings",
+  "notifications":"notifications"
 
 
 }

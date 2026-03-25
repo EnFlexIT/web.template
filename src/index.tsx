@@ -25,6 +25,7 @@ import {
   initializeOrganizations,
   selectOrganizations,
 } from "./redux/slices/organizationsSlice";
+import { NotificationPopup } from "./components/NotificationPopup";
 import { selectReady } from "./redux/slices/readySlice";
 import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
@@ -38,7 +39,7 @@ import {
   setActiveMenuId,
   isDynamicMenuItem,
 } from "./redux/slices/menuSlice";
-
+import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 
@@ -299,6 +300,8 @@ function RootStack() {
             <OfflineOverlay />
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
+            <UpdateNotificationWatcher />
+             <NotificationPopup />
             {children}
           </View>
         )}

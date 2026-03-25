@@ -8,7 +8,7 @@ import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
-
+import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
 
@@ -140,6 +140,12 @@ export function getStaticMenu(): StaticMenuItem[] {
       parentID: 3003, 
       Screen: UpdateWebAppTab 
     },
+    {
+      caption: "notifications",
+      menuID: 3015,
+      parentID: 3003,
+      Screen: NotificationsScreen,
+    }
   ];
 
   /**
