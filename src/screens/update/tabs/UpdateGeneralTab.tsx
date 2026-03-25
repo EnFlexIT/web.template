@@ -9,10 +9,14 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
 import { H3 } from "../../../components/stylistic/H3";
+import {
+  getServerScopedStorageKey,
+  normalizeServerKey,
+} from "../../../redux/selectors/serverSelectors";
 
 const API_PREFIX = "/api";
 
-const LAST_ACCEPTED_WEB_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
+const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
 const LAST_ACCEPTED_BACKEND_KEY = "appInfo_lastAcceptedBackendVersionRelease";
 
 type ApiVersion = {
@@ -22,42 +26,63 @@ type ApiVersion = {
   qualifier?: string;
 };
 
-function normalizeBaseUrl(url: string) {
-  return (url ?? "").trim().replace(/\/+$/, "");
-}
-
 function joinUrl(base: string, path: string) {
-  const b = normalizeBaseUrl(base);
+  const b = normalizeServerKey(base);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${b}${p}`;
 }
 
-function fmtRelease(v?: ApiVersion | null) {
-  return `${v?.major ?? 0}.${v?.minor ?? 0}.${v?.micro ?? 0}`;
+function fmtRelease(v: ApiVersion | null | undefined) {
+  const major = v?.major ?? 0;
+  const minor = v?.minor ?? 0;
+  const micro = v?.micro ?? 0;
+  return `${major}.${minor}.${micro}`;
 }
 
-function normalizeQualifier(q?: string | null) {
-  return String(q ?? "")
-    .trim()
+function fmtFull(v: ApiVersion | null | undefined) {
+  const major = v?.major ?? 0;
+  const minor = v?.minor ?? 0;
+  const micro = v?.micro ?? 0;
+
+  const base = `${major}.${minor}.${micro}`;
+  const q = String(v?.qualifier ?? "").trim();
+
+  if (!q) return base;
+
+  const normalizedQualifier = q
     .replace(/[^0-9A-Za-z]+/g, ".")
     .replace(/\.+/g, ".")
     .replace(/^\.|\.$/g, "");
+
+  return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
 
-function fmtFull(v?: ApiVersion | null) {
-  const base = fmtRelease(v);
-  const qualifier = normalizeQualifier(v?.qualifier);
-  return qualifier ? `${base}.${qualifier}` : base;
-}
+function extractServerWebApp(data: any): {
+  bundleName: string;
+  version: ApiVersion;
+  id?: string;
+} | null {
+  const list = data?.SoftwareComponentList ?? data?.softwareComponentList;
+  if (!Array.isArray(list) || list.length === 0) return null;
 
-function normalizeStoredVersion(value: string | null) {
-  if (!value) return null;
+  const item =
+    list.find(
+      (x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP",
+    ) ?? list[0];
 
-  return String(value)
-    .trim()
-    .replace(/-/g, ".")
-    .replace(/\.+/g, ".")
-    .replace(/^\.|\.$/g, "");
+  const version = item?.version ?? item?.Version;
+  if (!version || typeof version !== "object") return null;
+
+  return {
+    bundleName: String(item?.name ?? item?.Name ?? "-"),
+    version: {
+      major: Number(version?.major ?? version?.Major ?? 0),
+      minor: Number(version?.minor ?? version?.Minor ?? 0),
+      micro: Number(version?.micro ?? version?.Micro ?? 0),
+      qualifier: String(version?.qualifier ?? version?.Qualifier ?? ""),
+    },
+    id: String(item?.ID ?? item?.id ?? ""),
+  };
 }
 
 function parseVersionObject(version: any): ApiVersion | null {
@@ -76,27 +101,6 @@ function getSoftwareComponentList(data: any): any[] {
   return Array.isArray(list) ? list : [];
 }
 
-function findWebAppComponent(data: any) {
-  const list = getSoftwareComponentList(data);
-
-  return (
-    list.find(
-      (x: any) =>
-        String(x?.componentType ?? x?.ComponentType ?? "").toUpperCase() === "WEBAPP"
-    ) ?? null
-  );
-}
-
-function getWebAppVersionFull(data: any): string | null {
-  const item = findWebAppComponent(data);
-  if (!item) return null;
-
-  const version = parseVersionObject(item?.version ?? item?.Version);
-  if (!version) return null;
-
-  return fmtFull(version);
-}
-
 function getBundleVersionRelease(data: any, bundleId: string): string | null {
   const list = getSoftwareComponentList(data);
 
@@ -109,24 +113,31 @@ function getBundleVersionRelease(data: any, bundleId: string): string | null {
   return fmtRelease(version);
 }
 
-async function fetchJsonNoCache(url: string, jwt: string | null) {
+async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   try {
-    const res = await fetch(url, {
+    const res = await fetch(params.url, {
       method: "GET",
       cache: "no-store" as any,
-      headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
+      headers: params.jwt
+        ? { Authorization: `Bearer ${params.jwt}` }
+        : undefined,
     });
 
-    if (!res.ok) {
-      console.log("[UpdateGeneralTab] HTTP error", res.status, url);
-      return null;
-    }
-
+    if (!res.ok) return { __status: res.status };
     return await res.json();
-  } catch (err) {
-    console.log("[UpdateGeneralTab] Network error", url, err);
+  } catch {
     return null;
   }
+}
+
+function normalizeStoredVersion(value: string | null) {
+  if (!value) return null;
+
+  return String(value)
+    .trim()
+    .replace(/-/g, ".")
+    .replace(/\.+/g, ".")
+    .replace(/^\.|\.$/g, "");
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -144,6 +155,7 @@ export function UpdateGeneralTab() {
 
   const ip = api.ip;
   const jwt = api.jwt;
+  const webStorageKey = getServerScopedStorageKey(LAST_ACCEPTED_KEY_PREFIX, ip);
 
   const [webStatus, setWebStatus] = useState("-");
   const [backendStatus, setBackendStatus] = useState("-");
@@ -158,45 +170,43 @@ export function UpdateGeneralTab() {
     try {
       /* -----------------------
          WEBAPP Status
+         exakt wie UpdateWebAppTab
          ----------------------- */
-      const webUrl = joinUrl(ip, `${API_PREFIX}/version?type=WEBAPP&_ts=${Date.now()}`);
-      const webData = await fetchJsonNoCache(webUrl, jwt);
+      const query = new URLSearchParams();
+      query.set("_ts", String(Date.now()));
 
-      const serverWebFullRaw = getWebAppVersionFull(webData);
-      const serverWebFull = normalizeStoredVersion(serverWebFullRaw);
+      const webUrl = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
+      const webData = await fetchJsonNoCache({ url: webUrl, jwt });
 
-      console.log("[WEB] server raw:", serverWebFullRaw);
-      console.log("[WEB] server normalized:", serverWebFull);
-
-      if (!serverWebFull) {
-        setWebStatus("-");
+      if (webData === null) {
+        setWebStatus(t("serverWeb.statusTexts.networkError"));
+      } else if ((webData as any)?.__status) {
+        const st = Number((webData as any).__status);
+        setWebStatus(
+          st === 401
+            ? t("serverWeb.statusTexts.unauthorized")
+            : t("serverWeb.statusTexts.httpError", { status: st }),
+        );
       } else {
-        const acceptedWebRaw = await AsyncStorage.getItem(LAST_ACCEPTED_WEB_KEY);
-        const acceptedWeb = normalizeStoredVersion(acceptedWebRaw);
+        const parsed = extractServerWebApp(webData);
 
-        console.log("[WEB] accepted raw:", acceptedWebRaw);
-        console.log("[WEB] accepted normalized:", acceptedWeb);
-
-        // alte gespeicherte Formate direkt angleichen
-        if (acceptedWebRaw && acceptedWeb && acceptedWebRaw !== acceptedWeb) {
-          await AsyncStorage.setItem(LAST_ACCEPTED_WEB_KEY, acceptedWeb);
-        }
-
-        if (!acceptedWeb) {
-          await AsyncStorage.setItem(LAST_ACCEPTED_WEB_KEY, serverWebFull);
-          console.log("[WEB] baseline set:", serverWebFull);
-          setWebStatus(t("serverWeb.statusTexts.upToDate"));
-        } else if (acceptedWeb === serverWebFull) {
-          console.log("[WEB] status: upToDate");
-          setWebStatus(t("serverWeb.statusTexts.upToDate"));
+        if (!parsed) {
+          setWebStatus(t("serverWeb.statusTexts.unexpectedFormat"));
         } else {
-          console.log("[WEB] status: updateAvailable", {
-            acceptedWeb,
-            serverWebFull,
-          });
-          setWebStatus(
-            t("serverWeb.statusTexts.updateAvailable", { version: serverWebFull })
-          );
+          const full = fmtFull(parsed.version);
+          const acceptedStored =
+            (await AsyncStorage.getItem(webStorageKey)) ?? null;
+
+          if (!acceptedStored) {
+            await AsyncStorage.setItem(webStorageKey, full);
+            setWebStatus(t("serverWeb.statusTexts.upToDate"));
+          } else if (acceptedStored !== full) {
+            setWebStatus(
+              t("serverWeb.statusTexts.updateAvailable", { version: full }),
+            );
+          } else {
+            setWebStatus(t("serverWeb.statusTexts.upToDate"));
+          }
         }
       }
 
@@ -204,10 +214,20 @@ export function UpdateGeneralTab() {
          BACKEND Status
          ----------------------- */
       const backendUrl = joinUrl(ip, `${API_PREFIX}/version?_ts=${Date.now()}`);
-      const backendData = await fetchJsonNoCache(backendUrl, jwt);
+      const backendData = await fetchJsonNoCache({ url: backendUrl, jwt });
 
-      if (!backendData) {
-        setBackendStatus("-");
+      if (backendData === null) {
+        setBackendStatus(t("serverWeb.statusTexts.networkError"));
+        return;
+      }
+
+      if ((backendData as any)?.__status) {
+        const st = Number((backendData as any).__status);
+        setBackendStatus(
+          st === 401
+            ? t("serverWeb.statusTexts.unauthorized")
+            : t("serverWeb.statusTexts.httpError", { status: st }),
+        );
         return;
       }
 
@@ -216,42 +236,40 @@ export function UpdateGeneralTab() {
         getBundleVersionRelease(backendData, "org.eclipse.rcp") ??
         getBundleVersionRelease(backendData, "org.eclipse.sdk");
 
-      const serverBackendRelease = normalizeStoredVersion(serverBackendReleaseRaw);
-
-      console.log("[BACKEND] server raw:", serverBackendReleaseRaw);
-      console.log("[BACKEND] server normalized:", serverBackendRelease);
+      const serverBackendRelease = normalizeStoredVersion(
+        serverBackendReleaseRaw,
+      );
 
       if (!serverBackendRelease) {
-        setBackendStatus("-");
+        setBackendStatus(t("--"));
         return;
       }
 
-      const acceptedBackendRaw = await AsyncStorage.getItem(LAST_ACCEPTED_BACKEND_KEY);
+      const acceptedBackendRaw =
+        await AsyncStorage.getItem(LAST_ACCEPTED_BACKEND_KEY);
       const acceptedBackend = normalizeStoredVersion(acceptedBackendRaw);
 
-      console.log("[BACKEND] accepted raw:", acceptedBackendRaw);
-      console.log("[BACKEND] accepted normalized:", acceptedBackend);
-
-      if (acceptedBackendRaw && acceptedBackend && acceptedBackendRaw !== acceptedBackend) {
+      if (
+        acceptedBackendRaw &&
+        acceptedBackend &&
+        acceptedBackendRaw !== acceptedBackend
+      ) {
         await AsyncStorage.setItem(LAST_ACCEPTED_BACKEND_KEY, acceptedBackend);
       }
 
       if (!acceptedBackend) {
-        await AsyncStorage.setItem(LAST_ACCEPTED_BACKEND_KEY, serverBackendRelease);
-        console.log("[BACKEND] baseline set:", serverBackendRelease);
+        await AsyncStorage.setItem(
+          LAST_ACCEPTED_BACKEND_KEY,
+          serverBackendRelease,
+        );
         setBackendStatus(t("serverWeb.statusTexts.upToDate"));
       } else if (acceptedBackend === serverBackendRelease) {
-        console.log("[BACKEND] status: upToDate");
         setBackendStatus(t("serverWeb.statusTexts.upToDate"));
       } else {
-        console.log("[BACKEND] status: updateAvailable", {
-          acceptedBackend,
-          serverBackendRelease,
-        });
         setBackendStatus(
           t("serverWeb.statusTexts.updateAvailable", {
             version: serverBackendRelease,
-          })
+          }),
         );
       }
     } catch (err) {
@@ -259,7 +277,7 @@ export function UpdateGeneralTab() {
       setWebStatus("-");
       setBackendStatus("-");
     }
-  }, [ip, jwt, t]);
+  }, [ip, jwt, t, webStorageKey]);
 
   useEffect(() => {
     load();
@@ -271,13 +289,20 @@ export function UpdateGeneralTab() {
         <H3>{t("general.title", "General")}</H3>
 
         <View style={s.block}>
-          <ThemedText style={s.blockTitle}>{t("general.webapp", "Web-App")}</ThemedText>
+          <ThemedText style={s.blockTitle}>
+            {t("general.webapp", "Web-App")}
+          </ThemedText>
           <Row label={t("general.webStatus", "Status")} value={webStatus} />
         </View>
 
         <View style={s.block}>
-          <ThemedText style={s.blockTitle}>{t("general.backend", "Backend")}</ThemedText>
-          <Row label={t("general.backendStatus", "Status")} value={backendStatus} />
+          <ThemedText style={s.blockTitle}>
+            {t("general.backend", "Backend")}
+          </ThemedText>
+          <Row
+            label={t("general.backendStatus", "Status")}
+            value={backendStatus}
+          />
         </View>
       </View>
     </Card>
