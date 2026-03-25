@@ -27,14 +27,14 @@ function renderContent(Content: TabContent) {
 export function TabScreen({ menuID }: TabScreenProps) {
   const { theme } = useUnistyles();
   const { activeMenuId } = useAppSelector(selectMenu);
-  const ready = useAppSelector(selectReady);
+ 
 
   const effectiveMenuId = menuID ?? activeMenuId;
 
   const tabs = useMemo(() => {
-    if (!ready || !effectiveMenuId) return [];
+    if ( !effectiveMenuId) return [];
     return getTabsForMenu(effectiveMenuId);
-  }, [ready, effectiveMenuId]);
+  }, [ effectiveMenuId]);
 
   const items = useMemo(
     () => tabs.map((t) => ({ key: t.tabKey, label: t.caption })),
@@ -44,32 +44,21 @@ export function TabScreen({ menuID }: TabScreenProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!ready) return;
+  
 
     if (items.length > 0) {
       setActiveKey(items[0].key);
     } else {
       setActiveKey(null);
     }
-  }, [ready, effectiveMenuId, items]);
+  }, [ effectiveMenuId, items]);
 
   const activeTab = useMemo(() => {
     if (!activeKey) return null;
     return tabs.find((t) => t.tabKey === activeKey) ?? null;
   }, [tabs, activeKey]);
 
-  if (!ready) {
-    return (
-      <Screen>
-        <View
-          style={[
-            styles.container,
-            { backgroundColor: theme.colors.background },
-          ]}
-        />
-      </Screen>
-    );
-  }
+ 
 
   return (
     <Screen>

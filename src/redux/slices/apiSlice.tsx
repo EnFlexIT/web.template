@@ -490,17 +490,17 @@ type SwitchServerArg =
 export const switchServer = createAsyncThunk(
   "api/switchServer",
   async (arg: SwitchServerArg, thunkAPI) => {
-    const rawUrl = typeof arg === "string" ? arg : arg.url;
-    const initializeMenuAfter =
-      typeof arg === "string" ? true : arg.initializeMenu !== false;
-    const providedJwt =
-      typeof arg === "string" ? undefined : arg.providedJwt;
-
-    const newUrl = normalizeBaseUrl(rawUrl);
-
     thunkAPI.dispatch(setReady(false));
 
     try {
+      const rawUrl = typeof arg === "string" ? arg : arg.url;
+      const initializeMenuAfter =
+        typeof arg === "string" ? true : arg.initializeMenu !== false;
+      const providedJwt =
+        typeof arg === "string" ? undefined : arg.providedJwt;
+
+      const newUrl = normalizeBaseUrl(rawUrl);
+
       let nextJwt: string | null;
 
       if (providedJwt !== undefined) {
