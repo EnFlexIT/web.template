@@ -1,3 +1,4 @@
+import React from "react";
 import { ComponentClass, FunctionComponent } from "react";
 import { hasTabsForMenu } from "../../redux/slices/staticTabs";
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
@@ -16,9 +17,12 @@ export function withAutoTabs(items: StaticMenuItem[]): StaticMenuItem[] {
     // Hubs nie in Tabs umwandeln
     if (it.Screen === MenuHubScreen) return it;
 
-    // Wenn es Tabs gibt -> TabScreen
+    // Wenn es Tabs gibt -> TabScreen mit fixer menuID
     if (hasTabsForMenu(it.menuID)) {
-      return { ...it, Screen: TabScreen };
+      return {
+        ...it,
+        Screen: () => <TabScreen menuID={it.menuID} />,
+      };
     }
 
     return it;

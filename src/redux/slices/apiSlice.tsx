@@ -8,7 +8,7 @@ import {
   type ApplicationMode,
 } from "../../util/applicationMode";
 import { RootState } from "../store";
-
+import { setReady } from "./readySlice";
 import {
   AdminsApi,
   Configuration as RestApiConfiguration,
@@ -498,46 +498,52 @@ export const switchServer = createAsyncThunk(
 
     const newUrl = normalizeBaseUrl(rawUrl);
 
-    let nextJwt: string | null;
+    thunkAPI.dispatch(setReady(false));
 
-    if (providedJwt !== undefined) {
-      nextJwt = providedJwt;
-      await setJwtForServer(newUrl, providedJwt);
-    } else {
-      nextJwt = await getJwtForServer(newUrl);
-    }
+    try {
+      let nextJwt: string | null;
 
-    console.log("[SWITCH SERVER] switching to:", newUrl);
-    console.log("[SWITCH SERVER] jwt exists:", !!nextJwt);
+      if (providedJwt !== undefined) {
+        nextJwt = providedJwt;
+        await setJwtForServer(newUrl, providedJwt);
+      } else {
+        nextJwt = await getJwtForServer(newUrl);
+      }
 
-    const debugMap = await loadJwtByServer();
-    debugJwtStorage("after switchServer", debugMap);
+      console.log("[SWITCH SERVER] switching to:", newUrl);
+      console.log("[SWITCH SERVER] jwt exists:", !!nextJwt);
 
-    const { isPointingToServer, authenticationMethod, isBaseMode } =
-      await detectServerAndMode(newUrl);
+      const debugMap = await loadJwtByServer();
+      debugJwtStorage("after switchServer", debugMap);
 
-    await AsyncStorage.setItem(ipKey, newUrl);
+      const { isPointingToServer, authenticationMethod, isBaseMode } =
+        await detectServerAndMode(newUrl);
 
-    if (nextJwt) {
-      await AsyncStorage.setItem(jwtKey, nextJwt);
-    } else {
-      await AsyncStorage.removeItem(jwtKey);
-    }
+      await AsyncStorage.setItem(ipKey, newUrl);
 
-    thunkAPI.dispatch(clearMenu());
+      if (nextJwt) {
+        await AsyncStorage.setItem(jwtKey, nextJwt);
+      } else {
+        await AsyncStorage.removeItem(jwtKey);
+      }
 
-    thunkAPI.dispatch(
-      setConnectionLocal({
-        ip: newUrl,
-        jwt: nextJwt,
-        isPointingToServer,
-        authenticationMethod,
-        isBaseMode,
-      }),
-    );
+      thunkAPI.dispatch(clearMenu());
 
-    if (initializeMenuAfter && nextJwt) {
-      await thunkAPI.dispatch(initializeMenu());
+      thunkAPI.dispatch(
+        setConnectionLocal({
+          ip: newUrl,
+          jwt: nextJwt,
+          isPointingToServer,
+          authenticationMethod,
+          isBaseMode,
+        }),
+      );
+
+      if (initializeMenuAfter && nextJwt) {
+        await thunkAPI.dispatch(initializeMenu());
+      }
+    } finally {
+      thunkAPI.dispatch(setReady(true));
     }
   },
 );

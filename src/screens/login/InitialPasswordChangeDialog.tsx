@@ -7,7 +7,8 @@ import { H4 } from "../../components/stylistic/H4";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";
-
+import { selectApi } from "../../redux/slices/apiSlice";
+import { normalizeServerKey } from "../../redux/selectors/serverSelectors";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import {
@@ -23,12 +24,12 @@ export function InitialPasswordChangeDialog() {
   const navigation = useNavigation<any>();
   const isOpen = useAppSelector(selectInitialPasswordChangeDialogOpen);
   const { t } = useTranslation(["Login"]);
-  
-
- function onSkip() {
+  const api = useAppSelector(selectApi);
+function onSkip() {
   dispatch(
     addNotification({
       id: `password-skip-${Date.now()}`,
+      serverKey: normalizeServerKey(api.ip),
       type: "password",
       title: "Password change recommended",
       message: "You are still using the default password. Please change it soon.",

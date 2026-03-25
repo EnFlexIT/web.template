@@ -1,5 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
+import {
+  normalizeServerKey,
+  selectActiveServerKey,
+} from "../selectors/serverSelectors";
 
 export type NotificationType = "update" | "password" | "system";
 
@@ -12,6 +16,7 @@ export type NotificationAction = {
 
 export type AppNotification = {
   id: string;
+  serverKey: string;
   type: NotificationType;
   title: string;
   message: string;
@@ -61,12 +66,27 @@ const notificationSlice = createSlice({
       });
     },
 
+    markServerNotificationsRead: (state, action: PayloadAction<string>) => {
+      const serverKey = normalizeServerKey(action.payload);
+
+      state.items.forEach((item) => {
+        if (item.serverKey === serverKey) {
+          item.read = true;
+        }
+      });
+    },
+
     removeNotification: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
 
     clearNotifications: (state) => {
       state.items = [];
+    },
+
+    clearServerNotifications: (state, action: PayloadAction<string>) => {
+      const serverKey = normalizeServerKey(action.payload);
+      state.items = state.items.filter((item) => item.serverKey !== serverKey);
     },
 
     openNotificationPopup: (state) => {
@@ -87,8 +107,10 @@ export const {
   addNotification,
   markNotificationRead,
   markAllNotificationsRead,
+  markServerNotificationsRead,
   removeNotification,
   clearNotifications,
+  clearServerNotifications,
   openNotificationPopup,
   closeNotificationPopup,
   toggleNotificationPopup,
@@ -97,19 +119,39 @@ export const {
 export const selectNotificationsState = (state: RootState) =>
   state.notifications;
 
-export const selectAllNotifications = (state: RootState) =>
-  state.notifications.items;
+export const selectAllNotifications = (state: RootState) => {
+  const activeServerKey = selectActiveServerKey(state);
 
-export const selectUnreadNotifications = (state: RootState) =>
-  state.notifications.items.filter((item) => !item.read);
+  return state.notifications.items.filter(
+    (item) => item.serverKey === activeServerKey,
+  );
+};
 
-export const selectUnreadNotificationCount = (state: RootState) =>
-  state.notifications.items.filter((item) => !item.read).length;
+export const selectUnreadNotifications = (state: RootState) => {
+  const activeServerKey = selectActiveServerKey(state);
+
+  return state.notifications.items.filter(
+    (item) => item.serverKey === activeServerKey && !item.read,
+  );
+};
+
+export const selectUnreadNotificationCount = (state: RootState) => {
+  const activeServerKey = selectActiveServerKey(state);
+
+  return state.notifications.items.filter(
+    (item) => item.serverKey === activeServerKey && !item.read,
+  ).length;
+};
 
 export const selectLatestNotifications =
   (limit = 5) =>
-  (state: RootState) =>
-    state.notifications.items.slice(0, limit);
+  (state: RootState) => {
+    const activeServerKey = selectActiveServerKey(state);
+
+    return state.notifications.items
+      .filter((item) => item.serverKey === activeServerKey)
+      .slice(0, limit);
+  };
 
 export const selectNotificationPopupOpen = (state: RootState) =>
   state.notifications.popupOpen;

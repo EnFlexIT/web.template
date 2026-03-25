@@ -10,6 +10,7 @@ import { ThemedText } from "./themed/ThemedText";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
+import { selectApi } from "../redux/slices/apiSlice";
 import {
   closeNotificationPopup,
   markAllNotificationsRead,
@@ -17,6 +18,8 @@ import {
   selectLatestNotifications,
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
+   markServerNotificationsRead,
+  selectAllNotifications,
 } from "../redux/slices/notificationSlice";
 import { setActiveMenuId } from "../redux/slices/menuSlice";
 
@@ -47,6 +50,9 @@ function getSeverityTone(severity?: string) {
 export function NotificationPopup() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
+
+  const api = useAppSelector(selectApi);
+  const activeServerIp = api.ip;
 
   const isOpen = useAppSelector(selectNotificationPopupOpen);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
@@ -139,8 +145,8 @@ export function NotificationPopup() {
   }
 
   function onMarkAllRead() {
-    dispatch(markAllNotificationsRead());
-  }
+  dispatch(markServerNotificationsRead(activeServerIp));
+}
 
   function onMore() {
     dispatch(closeNotificationPopup());
@@ -336,7 +342,7 @@ const styles = StyleSheet.create((theme) => ({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    marginBlockEnd:-200
+    marginBlockEnd: -200,
   },
 
   popupWrap: {

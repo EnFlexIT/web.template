@@ -1,5 +1,3 @@
-// src/screens/NotificationsScreen.tsx
-
 import React, { useMemo } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -15,8 +13,9 @@ import { H1 } from "../../components/stylistic/H1";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
+import { selectApi } from "../../redux/slices/apiSlice";
 import {
-  markAllNotificationsRead,
+  markServerNotificationsRead,
   markNotificationRead,
   selectAllNotifications,
   selectUnreadNotificationCount,
@@ -49,6 +48,9 @@ export function NotificationsScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
 
+  const api = useAppSelector(selectApi);
+  const activeServerIp = api.ip;
+
   const notifications = useAppSelector(selectAllNotifications);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
 
@@ -60,7 +62,7 @@ export function NotificationsScreen() {
   }, [notifications.length, unreadCount]);
 
   function onMarkAllRead() {
-    dispatch(markAllNotificationsRead());
+    dispatch(markServerNotificationsRead(activeServerIp));
   }
 
   function onItemPress(item: (typeof notifications)[number]) {
@@ -78,7 +80,7 @@ export function NotificationsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconBubble}>
-              <Feather name="bookmark" size={16} />
+              <Feather name="bookmark" size={16} style={styles.color} />
             </View>
 
             <View style={styles.headerTextWrap}>
@@ -103,7 +105,7 @@ export function NotificationsScreen() {
           {notifications.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Feather name="bookmark" size={20} style={[styles.color]}/>
+                <Feather name="bookmark" size={20} style={styles.color} />
               </View>
 
               <ThemedText style={styles.emptyTitle}>
@@ -174,7 +176,11 @@ export function NotificationsScreen() {
                           <ThemedText style={styles.openHintText}>
                             Öffnen
                           </ThemedText>
-                          <Feather name="arrow-right" size={12} />
+                          <Feather
+                            name="arrow-right"
+                            size={12}
+                            style={styles.color}
+                          />
                         </View>
                       ) : null}
                     </View>
@@ -191,7 +197,6 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-   
     padding: 16,
     gap: 14,
   },
@@ -202,7 +207,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: 12,
     flexWrap: "wrap",
-    marginBottom:12
+    marginBottom: 12,
   },
 
   headerLeft: {
@@ -211,6 +216,17 @@ const styles = StyleSheet.create((theme) => ({
     gap: 12,
     flex: 1,
     minWidth: 220,
+  },
+
+  headerTextWrap: {
+    flex: 1,
+    minWidth: 160,
+  },
+
+  subtitle: {
+    opacity: 0.7,
+    marginTop: 2,
+    fontSize: 13,
   },
 
   iconBubble: {
@@ -224,15 +240,8 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.background,
   },
 
-  headerTextWrap: {
-    flex: 1,
-    minWidth: 160,
-  },
-
-  subtitle: {
-    opacity: 0.7,
-    marginTop: 2,
-    fontSize: 13,
+  color: {
+    color: theme.colors.text,
   },
 
   list: {
@@ -274,7 +283,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     borderWidth: 1,
     borderColor: theme.colors.border,
-
     backgroundColor: theme.colors.background,
     overflow: "hidden",
   },
@@ -306,9 +314,8 @@ const styles = StyleSheet.create((theme) => ({
   itemContent: {
     flex: 1,
     paddingHorizontal: 14,
-    paddingVertical:10,
+    paddingVertical: 10,
     gap: 8,
-
   },
 
   itemHeader: {
@@ -319,7 +326,6 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    height:5,
   },
 
   title: {
@@ -360,7 +366,6 @@ const styles = StyleSheet.create((theme) => ({
   statusBadge: {
     borderWidth: 1,
     borderColor: theme.colors.border,
-  
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -380,8 +385,4 @@ const styles = StyleSheet.create((theme) => ({
   openHintText: {
     fontSize: 12,
   },
-    color: {
-    color: theme.colors.text,
-  },
-
 }));

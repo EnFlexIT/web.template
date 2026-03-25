@@ -1,4 +1,3 @@
-// src/screens/AppInfoScreen.tsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,16 +9,17 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
+import {
+  getServerScopedStorageKey,
+  normalizeServerKey,
+} from "../../../redux/selectors/serverSelectors";
 import { H3 } from "../../../components/stylistic/H3";
 
-const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
+const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
 const API_PREFIX = "/api";
 
-function normalizeBaseUrl(url: string) {
-  return (url ?? "").trim().replace(/\/+$/, "");
-}
 function joinUrl(base: string, path: string) {
-  const b = normalizeBaseUrl(base);
+  const b = normalizeServerKey(base);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${b}${p}`;
 }
@@ -28,7 +28,7 @@ type ApiVersion = {
   major?: number;
   minor?: number;
   micro?: number;
-  qualifier?: string; // build / timestamp etc.
+  qualifier?: string;
 };
 
 function fmtRelease(v: ApiVersion | null | undefined) {
@@ -37,6 +37,7 @@ function fmtRelease(v: ApiVersion | null | undefined) {
   const micro = v?.micro ?? 0;
   return `${major}.${minor}.${micro}`;
 }
+
 function fmtFull(v: ApiVersion | null | undefined) {
   const major = v?.major ?? 0;
   const minor = v?.minor ?? 0;
@@ -48,9 +49,9 @@ function fmtFull(v: ApiVersion | null | undefined) {
   if (!q) return base;
 
   const normalizedQualifier = q
-    .replace(/[^0-9A-Za-z]+/g, ".") // alles Trennzeichen -> Punkt
-    .replace(/\.+/g, ".")           // doppelte Punkte vermeiden
-    .replace(/^\.|\.$/g, "");       // Punkte am Anfang/Ende entfernen
+    .replace(/[^0-9A-Za-z]+/g, ".")
+    .replace(/\.+/g, ".")
+    .replace(/^\.|\.$/g, "");
 
   return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
@@ -64,8 +65,9 @@ function extractServerWebApp(data: any): {
   if (!Array.isArray(list) || list.length === 0) return null;
 
   const item =
-    list.find((x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP") ??
-    list[0];
+    list.find(
+      (x: any) => String(x?.componentType ?? "").toUpperCase() === "WEBAPP",
+    ) ?? list[0];
 
   const version = item?.version ?? item?.Version;
   if (!version || typeof version !== "object") return null;
@@ -87,13 +89,15 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
     const res = await fetch(params.url, {
       method: "GET",
       cache: "no-store" as any,
-      headers: params.jwt ? { Authorization: `Bearer ${params.jwt}` } : undefined,
+      headers: params.jwt
+        ? { Authorization: `Bearer ${params.jwt}` }
+        : undefined,
     });
 
     if (!res.ok) return { __status: res.status };
     return await res.json();
   } catch {
-    return null; // network error
+    return null;
   }
 }
 
@@ -101,18 +105,22 @@ function hardReloadWeb(cacheKey: string) {
   if (typeof window === "undefined") return;
 
   const u = new URL(window.location.href);
-  u.searchParams.set("_v", cacheKey); // version-based buster
-  u.searchParams.set("_ts", String(Date.now())); // extra safety
+  u.searchParams.set("_v", cacheKey);
+  u.searchParams.set("_ts", String(Date.now()));
   window.location.replace(u.toString());
 }
 
 export function UpdateWebAppTab() {
- 
   const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
 
   const ip = api.ip;
   const jwt = api.jwt;
+  const activeServerKey = normalizeServerKey(ip);
+  const storageKey = getServerScopedStorageKey(
+    LAST_ACCEPTED_KEY_PREFIX,
+    ip,
+  );
 
   const intervalRef = useRef<any>(null);
 
@@ -127,6 +135,17 @@ export function UpdateWebAppTab() {
   const [updateStatus, setUpdateStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
 
+  const resetLocalState = useCallback(() => {
+    setServerBundle("-");
+    setServerRelease("-");
+    setServerFull("-");
+    setLastAccepted("-");
+    setPendingUpdateFull(null);
+    setLastCheckedAt("-");
+    setUpdateStatus("-");
+    setIsChecking(false);
+  }, []);
+
   const checkNow = useCallback(async () => {
     if (!ip) return;
 
@@ -139,7 +158,6 @@ export function UpdateWebAppTab() {
     const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
     const data = await fetchJsonNoCache({ url, jwt });
 
-    // Network error
     if (data === null) {
       setUpdateStatus(t("serverWeb.statusTexts.networkError"));
       setServerBundle("-");
@@ -150,13 +168,12 @@ export function UpdateWebAppTab() {
       return;
     }
 
-    // HTTP error
     if ((data as any)?.__status) {
       const st = Number((data as any).__status);
       setUpdateStatus(
         st === 401
           ? t("serverWeb.statusTexts.unauthorized")
-          : t("serverWeb.statusTexts.httpError", { status: st })
+          : t("serverWeb.statusTexts.httpError", { status: st }),
       );
       setServerBundle("-");
       setServerRelease("-");
@@ -184,11 +201,10 @@ export function UpdateWebAppTab() {
     setServerRelease(release);
     setServerFull(full);
 
-    // read stored accepted baseline
-    const acceptedStored = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
+    const acceptedStored = (await AsyncStorage.getItem(storageKey)) ?? null;
 
     if (!acceptedStored) {
-      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, full);
+      await AsyncStorage.setItem(storageKey, full);
       setLastAccepted(full);
       setPendingUpdateFull(null);
       setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
@@ -200,7 +216,9 @@ export function UpdateWebAppTab() {
 
     if (acceptedStored !== full) {
       setPendingUpdateFull(full);
-      setUpdateStatus(t("serverWeb.statusTexts.updateAvailable", { version: full }));
+      setUpdateStatus(
+        t("serverWeb.statusTexts.updateAvailable", { version: full }),
+      );
       setIsChecking(false);
       return;
     }
@@ -208,12 +226,12 @@ export function UpdateWebAppTab() {
     setPendingUpdateFull(null);
     setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
     setIsChecking(false);
-  }, [ip, jwt, t]);
+  }, [ip, jwt, storageKey, t]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!pendingUpdateFull) return;
 
-    await AsyncStorage.setItem(LAST_ACCEPTED_KEY, pendingUpdateFull);
+    await AsyncStorage.setItem(storageKey, pendingUpdateFull);
     setLastAccepted(pendingUpdateFull);
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -221,38 +239,46 @@ export function UpdateWebAppTab() {
       return;
     }
 
-    // Native: hier könntest du optional eine Meldung anzeigen
     setPendingUpdateFull(null);
     setUpdateStatus(t("serverWeb.statusTexts.updateAcceptedNative"));
-  }, [pendingUpdateFull, t]);
+  }, [pendingUpdateFull, storageKey, t]);
 
-  // On mount: load lastAccepted and check once
   useEffect(() => {
+    if (!ip) {
+      resetLocalState();
+      return;
+    }
+
+    resetLocalState();
+
     (async () => {
-      const acceptedRaw = await AsyncStorage.getItem(LAST_ACCEPTED_KEY);
-      if (acceptedRaw) setLastAccepted(acceptedRaw);
+      const acceptedRaw = await AsyncStorage.getItem(storageKey);
+      if (acceptedRaw) {
+        setLastAccepted(acceptedRaw);
+      }
       await checkNow();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeServerKey, storageKey, checkNow, ip, resetLocalState]);
 
-  // Regular check
   useEffect(() => {
+    if (!ip) return;
+
     if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
-      checkNow();
+      void checkNow();
     }, 5 * 60 * 1000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [checkNow]);
+  }, [checkNow, ip, activeServerKey]);
 
   return (
     <Card>
       <View style={s.container}>
         <H3>{t("serverWeb.title", "Web-App")}</H3>
+
         <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
         <Row label={t("serverWeb.fields.status")} value={updateStatus} />
 
@@ -268,6 +294,7 @@ export function UpdateWebAppTab() {
             onPress={checkNow}
             disabled={isChecking || !ip}
           />
+
           {pendingUpdateFull ? (
             <ActionButton
               label={t("serverWeb.actions.reloadNow")}
@@ -307,7 +334,12 @@ const s = StyleSheet.create({
   label: { fontSize: 12, opacity: 0.75, flex: 1 },
   value: { fontSize: 13, fontWeight: "600" },
 
-  btnRow: { flexDirection: "row", gap: 5, justifyContent: "flex-end", padding: 5 },
+  btnRow: {
+    flexDirection: "row",
+    gap: 5,
+    justifyContent: "flex-end",
+    padding: 5,
+  },
   bottom: { paddingTop: 8, paddingHorizontal: 14, paddingBottom: 14 },
   fixedBox: { minHeight: 120 },
   container: { gap: 14 },

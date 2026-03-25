@@ -6,12 +6,13 @@ import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Conten
 import { internalSetLanguage } from "./languageSlice";
 import { getStaticMenu } from "../slices/staticMenu";
 import { isMenuEnabled } from "./featureFlags";
+
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
   position?: number;
   caption: string;
-  Screen?: any; // Screen ist nur für static items gesetzt
+  Screen?: any;
 }
 
 interface DynamicMenuItem extends BaseMenuItem {
@@ -71,7 +72,6 @@ export function rawListToTrees(xs: MenuItem[]): MenuTree[] {
 }
 
 /**
- * wieder rein, weil Header/Breadcrumb es braucht
  * Pfad von Root -> id
  */
 export function getIdPath(xs: MenuItem[], xId: number): undefined | number[] {
@@ -99,11 +99,18 @@ export function hasId(tree: MenuTree, id: number): boolean {
     )
   );
 }
+
+function getFirstUsableMenuId(items: MenuItem[]): number {
+  const first = items.find((m) => m.menuID && isMenuEnabled(m.menuID));
+  return first?.menuID ?? 3003;
+}
+
 const staticMenu = getStaticMenu();
+
 const initialState: MenuState = {
-menu: rawListToTrees(staticMenu),
-rawMenu: staticMenu,
-activeMenuId: 3003,
+  menu: rawListToTrees(staticMenu),
+  rawMenu: staticMenu,
+  activeMenuId: getFirstUsableMenuId(staticMenu),
 };
 
 export const initializeMenu = createAsyncThunk<MenuItem[]>(
@@ -113,27 +120,22 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
     const lang = state.language.language;
 
     if (!state.api.isPointingToServer) return [];
-
-    // nur wenn Login aktiv ist
     if (state.api.isLoggedIn !== true) return [];
 
     try {
       const response = await state.api.dynamic_content_api.defaultApi.menuGet(lang);
-
       const raw = response?.data as any;
 
-      //  akzeptiere mehrere mögliche Shapes
       const data: ApiMenuItem[] = Array.isArray(raw)
         ? raw
         : Array.isArray(raw?.data)
-        ? raw.data
-        : Array.isArray(raw?.items)
-        ? raw.items
-        : Array.isArray(raw?.menu)
-        ? raw.menu
-        : [];
+          ? raw.data
+          : Array.isArray(raw?.items)
+            ? raw.items
+            : Array.isArray(raw?.menu)
+              ? raw.menu
+              : [];
 
-      // falls Server was Komisches liefert -> einfach kein dynamic menu
       if (!Array.isArray(data) || data.length === 0) return [];
 
       return data.map((node) => ({
@@ -144,7 +146,6 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
         Screen: undefined,
       }));
     } catch (e) {
-      // 401 / Netzwerk / Format -> kein Crash, einfach fallback auf static
       console.warn("initializeMenu failed, fallback to static menu", e);
       return [];
     }
@@ -169,43 +170,40 @@ export const menuSlice = createSlice({
     setActiveMenuId: (state, action: PayloadAction<number>) => {
       state.activeMenuId = action.payload;
     },
+
     clearMenu: (state) => {
-    const staticMenu = getStaticMenu();
+      const staticMenu = getStaticMenu();
 
-    state.rawMenu = staticMenu;
-    state.menu = rawListToTrees(staticMenu);
-    state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
+      state.rawMenu = staticMenu;
+      state.menu = rawListToTrees(staticMenu);
+      state.activeMenuId = getFirstUsableMenuId(staticMenu);
+    },
   },
+
+  extraReducers: (builder) => {
+    builder.addCase(initializeMenu.fulfilled, (state, action) => {
+      const staticMenu = getStaticMenu();
+
+      const dynamic = Array.isArray(action.payload) ? action.payload : [];
+      const filteredDynamic = dynamic.filter((m) => isMenuEnabled(m.menuID));
+
+      state.rawMenu = [...filteredDynamic, ...staticMenu];
+      state.menu = rawListToTrees(state.rawMenu);
+
+      const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
+
+      if (!stillValid) {
+        state.activeMenuId = getFirstUsableMenuId(state.rawMenu);
+      }
+    });
+
+    builder.addCase(internalSetLanguage, () => {
+      // bleibt leer wie vorher
+    });
   },
-extraReducers: (builder) => {
-  builder.addCase(initializeMenu.fulfilled, (state, action) => {
-    const staticMenu = getStaticMenu();
-
-    // dynamic Menü vom Server
-    const dynamic = Array.isArray(action.payload) ? action.payload : [];
-
-    //  Dynamic Menü nach Feature-Flags filtern
-    const filteredDynamic = dynamic.filter((m) => isMenuEnabled(m.menuID));
-
-    // static Menü ist bereits in getStaticMenu() gefiltert
-    state.rawMenu = [...filteredDynamic, ...staticMenu];
-
-    state.menu = rawListToTrees(state.rawMenu);
-
-    // falls aktueller aktiver Screen nicht mehr existiert → fallback
-    const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
-    if (!stillValid) {
-      state.activeMenuId = staticMenu[0]?.menuID ?? 3003;
-    }
-  });
-
-  builder.addCase(internalSetLanguage, () => {
-    // bleibt leer wie vorher
-  });
-},
 });
 
-export const { setActiveMenuId,clearMenu } = menuSlice.actions;
+export const { setActiveMenuId, clearMenu } = menuSlice.actions;
 export const selectMenu = (state: RootState) => state.menu;
 
 export default menuSlice.reducer;

@@ -7,42 +7,96 @@ import { TabsBar } from "../components/ui-elements/TabsBar";
 
 import { useAppSelector } from "../hooks/useAppSelector";
 import { selectMenu } from "../redux/slices/menuSlice";
+import { selectReady } from "../redux/slices/readySlice";
 
-import { getTabsForMenu, TabContent} from "../redux/slices/staticTabs";
+import { getTabsForMenu, TabContent } from "../redux/slices/staticTabs";
+
+type TabScreenProps = {
+  menuID?: number;
+};
 
 function renderContent(Content: TabContent) {
-  const isFactoryFn = typeof Content === "function" && (Content as any).prototype == null;
+  const isFactoryFn =
+    typeof Content === "function" && (Content as any).prototype == null;
+
   if (isFactoryFn) return (Content as () => React.ReactNode)();
+
   return React.createElement(Content as any);
 }
 
-export function TabScreen() {
+export function TabScreen({ menuID }: TabScreenProps) {
   const { theme } = useUnistyles();
   const { activeMenuId } = useAppSelector(selectMenu);
+  const ready = useAppSelector(selectReady);
 
-  const tabs = useMemo(() => (activeMenuId ? getTabsForMenu(activeMenuId) : []), [activeMenuId]);
-  const items = useMemo(() => tabs.map((t) => ({ key: t.tabKey, label: t.caption })), [tabs]);
+  const effectiveMenuId = menuID ?? activeMenuId;
 
-  const [activeKey, setActiveKey] = useState<string | null>(items[0]?.key ?? null);
+  const tabs = useMemo(() => {
+    if (!ready || !effectiveMenuId) return [];
+    return getTabsForMenu(effectiveMenuId);
+  }, [ready, effectiveMenuId]);
+
+  const items = useMemo(
+    () => tabs.map((t) => ({ key: t.tabKey, label: t.caption })),
+    [tabs]
+  );
+
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   useEffect(() => {
-    setActiveKey(items[0]?.key ?? null);
-  }, [activeMenuId, items]);
+    if (!ready) return;
 
-  const activeTab = useMemo(
-    () => (activeKey ? tabs.find((t) => t.tabKey === activeKey) ?? null : null),
-    [tabs, activeKey]
-  );
+    if (items.length > 0) {
+      setActiveKey(items[0].key);
+    } else {
+      setActiveKey(null);
+    }
+  }, [ready, effectiveMenuId, items]);
+
+  const activeTab = useMemo(() => {
+    if (!activeKey) return null;
+    return tabs.find((t) => t.tabKey === activeKey) ?? null;
+  }, [tabs, activeKey]);
+
+  if (!ready) {
+    return (
+      <Screen>
+        <View
+          style={[
+            styles.container,
+            { backgroundColor: theme.colors.background },
+          ]}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         {items.length === 0 ? (
-          <View />
+          <View style={styles.emptyWrap}>
+            <View>
+              <TabsDebugText text={`Keine Tabs verfügbar (menuID=${String(effectiveMenuId)})`} />
+            </View>
+          </View>
         ) : (
           <>
-            <TabsBar items={items} activeKey={(activeKey ?? items[0].key) as any} onChange={setActiveKey} />
-            <View style={styles.content}>{activeTab?.Content ? renderContent(activeTab.Content) : null}</View>
+            <TabsBar
+              key={`tabs-${effectiveMenuId}`}
+              items={items}
+              activeKey={activeKey ?? items[0].key}
+              onChange={setActiveKey}
+            />
+
+            <View style={styles.content} key={`content-${effectiveMenuId}-${activeKey}`}>
+              {activeTab?.Content ? renderContent(activeTab.Content) : null}
+            </View>
           </>
         )}
       </View>
@@ -50,7 +104,23 @@ export function TabScreen() {
   );
 }
 
+function TabsDebugText({ text }: { text: string }) {
+  return <>{/* optional debug placeholder */}</>;
+}
+
 const styles = StyleSheet.create(() => ({
-  container: { flex: 1, padding: 24, gap: 16 },
-  content: { paddingTop: 12 },
+  container: {
+    flex: 1,
+    padding: 24,
+    gap: 16,
+  },
+  content: {
+    paddingTop: 12,
+    flex: 1,
+  },
+  emptyWrap: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 }));

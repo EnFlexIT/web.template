@@ -1,26 +1,26 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { UnistylesRuntime } from "react-native-unistyles";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "../store";
 
 export interface ReadyState {
   ready: boolean;
 }
 
-const initialState: ReadyState = { ready: false };
+const initialState: ReadyState = {
+  ready: false,
+};
 
 export const readySlice = createSlice({
   name: "ready",
   initialState,
   reducers: {
-    setReady: (state, action: PayloadAction<ReadyState>) => {
-      state.ready = action.payload.ready;
+    setReady: (state, action: PayloadAction<boolean>) => {
+      state.ready = action.payload;
     },
   },
 });
 
 export const { setReady } = readySlice.actions;
 
-export const selectReady = (state: RootState) => state.ready;
+export const selectReady = (state: RootState) => state.ready.ready;
 
 export default readySlice.reducer;

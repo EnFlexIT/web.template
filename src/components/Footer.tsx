@@ -11,6 +11,8 @@ import {
   selectIsSwitchingServer,
   switchServer,
   getJwtForServer,
+  selectAuthenticationMethod,
+  selectIsLoggedIn,
 } from "../redux/slices/apiSlice";
 
 import {
@@ -18,7 +20,6 @@ import {
   selectServers,
   selectServer,
 } from "../redux/slices/serverSlice";
-import { selectAuthenticationMethod } from "../redux/slices/apiSlice";
 
 import {
   closeNotificationPopup,
@@ -90,6 +91,7 @@ export function Footer() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Login"]);
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
@@ -115,6 +117,8 @@ export function Footer() {
     typeof window !== "undefined" &&
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
+
+  const showNotificationButton = isLoggedIn && !isLoginPage;
 
   const servers = serversState?.servers ?? [];
 
@@ -372,7 +376,7 @@ export function Footer() {
   }
 
   function handleNotificationButtonPress() {
-    if (loginLoading || dropdownInteractionLock) return;
+    if (loginLoading || dropdownInteractionLock || !showNotificationButton) return;
     dispatch(toggleNotificationPopup());
   }
 
@@ -405,30 +409,34 @@ export function Footer() {
           />
         </Pressable>
 
-        <ThemedText style={styles.separator}>|</ThemedText>
+        {showNotificationButton ? (
+          <>
+            <ThemedText style={styles.separator}>|</ThemedText>
 
-        <View style={styles.statusWrap}>
-          <Pressable
-            onPress={handleNotificationButtonPress}
-            style={[
-              styles.notificationButton,
-              dropdownInteractionLock && styles.notificationButtonDisabled,
-            ]}
-            disabled={loginLoading}
-          >
-            <Feather name="bookmark" size={15} style={styles.color} />
+            <View style={styles.statusWrap}>
+              <Pressable
+                onPress={handleNotificationButtonPress}
+                style={[
+                  styles.notificationButton,
+                  dropdownInteractionLock && styles.notificationButtonDisabled,
+                ]}
+                disabled={loginLoading}
+              >
+                <Feather name="bookmark" size={15} style={styles.color} />
 
-            {unreadNotificationCount > 0 ? (
-              <View style={styles.notificationBadge}>
-                <ThemedText style={styles.notificationBadgeText}>
-                  {unreadNotificationCount > 99
-                    ? "99+"
-                    : String(unreadNotificationCount)}
-                </ThemedText>
-              </View>
-            ) : null}
-          </Pressable>
-        </View>
+                {unreadNotificationCount > 0 ? (
+                  <View style={styles.notificationBadge}>
+                    <ThemedText style={styles.notificationBadgeText}>
+                      {unreadNotificationCount > 99
+                        ? "99+"
+                        : String(unreadNotificationCount)}
+                    </ThemedText>
+                  </View>
+                ) : null}
+              </Pressable>
+            </View>
+          </>
+        ) : null}
       </View>
 
       <ServerLoginModal

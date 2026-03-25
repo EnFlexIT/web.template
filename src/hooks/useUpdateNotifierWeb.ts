@@ -6,16 +6,16 @@ import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { selectApi } from "../redux/slices/apiSlice";
 import { addNotification } from "../redux/slices/notificationSlice";
+import {
+  getServerScopedStorageKey,
+  normalizeServerKey,
+} from "../redux/selectors/serverSelectors";
 
 const API_PREFIX = "/api";
-const LAST_ACCEPTED_KEY = "appInfo_lastAcceptedServerWebAppVersionFull";
-
-function normalizeBaseUrl(url: string) {
-  return (url ?? "").trim().replace(/\/+$/, "");
-}
+const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
 
 function joinUrl(base: string, path: string) {
-  const b = normalizeBaseUrl(base);
+  const b = normalizeServerKey(base);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${b}${p}`;
 }
@@ -26,13 +26,6 @@ type ApiVersion = {
   micro?: number;
   qualifier?: string;
 };
-
-function fmtRelease(v: ApiVersion | null | undefined) {
-  const major = v?.major ?? 0;
-  const minor = v?.minor ?? 0;
-  const micro = v?.micro ?? 0;
-  return `${major}.${minor}.${micro}`;
-}
 
 function fmtFull(v: ApiVersion | null | undefined) {
   const major = v?.major ?? 0;
@@ -111,6 +104,11 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const jwt = api.jwt;
 
   const isWeb = Platform.OS === "web";
+  const serverKey = normalizeServerKey(ip);
+  const storageKey = getServerScopedStorageKey(
+    LAST_ACCEPTED_KEY_PREFIX,
+    ip,
+  );
 
   const timerRef = useRef<any>(null);
 
@@ -130,27 +128,30 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
 
     if (data === null) {
       setStatus("Network error");
+      setUpdateAvailable(false);
       return;
     }
 
     if ((data as any)?.__status) {
       const st = Number((data as any).__status);
       setStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
+      setUpdateAvailable(false);
       return;
     }
 
     const parsed = extractServerWebApp(data);
     if (!parsed) {
       setStatus("Unexpected format");
+      setUpdateAvailable(false);
       return;
     }
 
     setCurrentFull(parsed.versionFull);
 
-    const accepted = (await AsyncStorage.getItem(LAST_ACCEPTED_KEY)) ?? null;
+    const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
 
     if (!accepted) {
-      await AsyncStorage.setItem(LAST_ACCEPTED_KEY, parsed.versionFull);
+      await AsyncStorage.setItem(storageKey, parsed.versionFull);
       setAcceptedFull(parsed.versionFull);
       setUpdateAvailable(false);
       setStatus("OK (baseline stored)");
@@ -165,7 +166,8 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
 
       dispatch(
         addNotification({
-          id: `web-update-${parsed.versionFull}`,
+          id: `web-update-${serverKey}-${parsed.versionFull}`,
+          serverKey,
           type: "update",
           title: "Neue Version verfügbar",
           message: `Neue Version verfügbar: ${parsed.versionFull}`,
@@ -184,32 +186,37 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
 
     setUpdateAvailable(false);
     setStatus("Up to date");
-  }, [dispatch, ip, isWeb, jwt]);
+  }, [dispatch, ip, isWeb, jwt, serverKey, storageKey]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!isWeb) return;
     if (!currentFull) return;
 
-    await AsyncStorage.setItem(LAST_ACCEPTED_KEY, currentFull);
+    await AsyncStorage.setItem(storageKey, currentFull);
     setAcceptedFull(currentFull);
     setUpdateAvailable(false);
     hardReloadWeb(currentFull);
-  }, [currentFull, isWeb]);
+  }, [currentFull, isWeb, storageKey]);
 
   useEffect(() => {
     if (!isWeb) return;
 
-    checkNow();
+    setUpdateAvailable(false);
+    setCurrentFull(null);
+    setAcceptedFull(null);
+    setStatus("-");
+
+    void checkNow();
 
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      checkNow();
+      void checkNow();
     }, intervalMs);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [checkNow, intervalMs, isWeb]);
+  }, [checkNow, intervalMs, isWeb, serverKey]);
 
   return {
     updateAvailable,
