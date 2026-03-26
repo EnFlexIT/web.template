@@ -80,7 +80,7 @@ export function NotificationsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconBubble}>
-              <Feather name="bookmark" size={16} style={styles.color} />
+              <Feather name="bookmark" size={16}  color={styles.color.color} />
             </View>
 
             <View style={styles.headerTextWrap}>
@@ -105,7 +105,7 @@ export function NotificationsScreen() {
           {notifications.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Feather name="bookmark" size={20} style={styles.color} />
+                <Feather name="bookmark" size={20}  color={styles.color.color} />
               </View>
 
               <ThemedText style={styles.emptyTitle}>
@@ -179,7 +179,7 @@ export function NotificationsScreen() {
                           <Feather
                             name="arrow-right"
                             size={12}
-                            style={styles.color}
+                            color={styles.color.color}
                           />
                         </View>
                       ) : null}

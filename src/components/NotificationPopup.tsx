@@ -195,7 +195,7 @@ export function NotificationPopup() {
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <View style={styles.iconBubble}>
-                  <Feather name="bookmark" size={14} style={styles.color} />
+                  <Feather name="bookmark" size={14} color={styles.color.color} />
                 </View>
 
                 <View style={styles.headerTextWrap}>
@@ -209,7 +209,7 @@ export function NotificationPopup() {
               </View>
 
               <Pressable onPress={onClose} style={styles.closeButton}>
-                <Feather name="x" size={16} style={styles.color} />
+                <Feather name="x" size={16} color={styles.color.color} />
               </Pressable>
             </View>
 
@@ -217,7 +217,7 @@ export function NotificationPopup() {
               {!hasNotifications ? (
                 <View style={styles.emptyState}>
                   <View style={styles.emptyIconWrap}>
-                    <Feather name="bookmark" size={18} style={styles.color} />
+                    <Feather name="bookmark" size={18} color={styles.color.color} />
                   </View>
                   <ThemedText style={styles.emptyTitle}>
                     Noch keine Benachrichtigungen
@@ -281,7 +281,7 @@ export function NotificationPopup() {
                               <Feather
                                 name="arrow-right"
                                 size={11}
-                                style={styles.color}
+                               color={styles.color.color}
                               />
                               <ThemedText style={styles.actionHintText}>
                                 Öffnen
