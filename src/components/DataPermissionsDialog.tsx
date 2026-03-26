@@ -65,7 +65,9 @@ function Row({
         <AntDesign
           name={value ? "check" : "close"}
           size={26}
-          color="black"
+          color={styles.color.color}
+
+
         />
       </Pressable>
     </ThemedView>
@@ -239,6 +241,9 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     gap: 16,
     flexWrap: "wrap",
+  },
+  color: {
+    color: theme.colors.text,
   },
 
   title: {
