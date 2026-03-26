@@ -22,16 +22,13 @@ interface DropdownProps<T extends string> {
   size?: DropdownSize;
   appearance?: DropdownAppearance;
   menuWidth?: number;
-
   optionMeta?: Partial<Record<T, DropdownOptionMeta>>;
   showSelectedToneDot?: boolean;
   showOptionToneDot?: boolean;
-
-  /**
-   * Optionaler zusätzlicher Y-Abstand für das Menü.
-   * Besonders nützlich bei Footer-Dropdowns mit appearance="menu".
-   */
   menuOffsetY?: number;
+
+  onOpen?: () => void;
+  onClose?: () => void;
 }
 
 type AnchorRect = {
@@ -54,6 +51,8 @@ export function Dropdown<T extends string>({
   showSelectedToneDot = false,
   showOptionToneDot = false,
   menuOffsetY,
+  onOpen,
+  onClose,
 }: DropdownProps<T>) {
   const { theme } = useUnistyles();
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -68,21 +67,35 @@ export function Dropdown<T extends string>({
 
   const rowH = sizeStyles[size].menuItemMinHeight;
 
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    onClose?.();
+  }, [onClose]);
+
   const measureAndOpen = useCallback(() => {
-    if (!buttonRef.current) {
-      setOpen(true);
+    if (disabled) return;
+
+    if (open) {
+      handleClose();
       return;
     }
 
-    buttonRef.current.measureInWindow(
-      (x: number, y: number, w: number, h: number) => {
-        setAnchor({ x, y, width: w, height: h });
-        setOpen(true);
-      },
-    );
-  }, []);
+    onOpen?.();
 
-  const close = useCallback(() => setOpen(false), []);
+    requestAnimationFrame(() => {
+      if (!buttonRef.current) {
+        setOpen(true);
+        return;
+      }
+
+      buttonRef.current.measureInWindow(
+        (x: number, y: number, w: number, h: number) => {
+          setAnchor({ x, y, width: w, height: h });
+          setOpen(true);
+        },
+      );
+    });
+  }, [disabled, open, handleClose, onOpen]);
 
   const menuStyle = useMemo(() => {
     if (!anchor) return null;
@@ -182,8 +195,13 @@ export function Dropdown<T extends string>({
         </View>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
-        <Pressable style={styles.backdrop} onPress={close}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={handleClose}
+      >
+        <Pressable style={styles.backdrop} onPress={handleClose}>
           <Pressable
             onPress={() => {}}
             style={[
@@ -206,7 +224,7 @@ export function Dropdown<T extends string>({
                     key={key}
                     onPress={() => {
                       onChange(key);
-                      close();
+                      handleClose();
                     }}
                     style={[
                       styles.itemBase,

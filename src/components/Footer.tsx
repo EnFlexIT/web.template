@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
@@ -110,9 +110,6 @@ export function Footer() {
     Record<string, ServerOptionMeta>
   >({});
 
-  const [dropdownInteractionLock, setDropdownInteractionLock] = useState(false);
-  const dropdownLockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const isLoginPage =
     typeof window !== "undefined" &&
     (window.location.pathname === "/login" ||
@@ -217,10 +214,6 @@ export function Footer() {
       active = false;
       clearInterval(intervalId);
 
-      if (dropdownLockTimeoutRef.current) {
-        clearTimeout(dropdownLockTimeoutRef.current);
-      }
-
       if (typeof window !== "undefined") {
         window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
         window.removeEventListener("focus", onRefreshEvent);
@@ -228,30 +221,8 @@ export function Footer() {
     };
   }, [refreshServerStatuses]);
 
-  function startDropdownInteractionLock() {
-    dispatch(closeNotificationPopup());
-    setDropdownInteractionLock(true);
-
-    if (dropdownLockTimeoutRef.current) {
-      clearTimeout(dropdownLockTimeoutRef.current);
-    }
-
-    dropdownLockTimeoutRef.current = setTimeout(() => {
-      setDropdownInteractionLock(false);
-    }, 800);
-  }
-
-  function releaseDropdownInteractionLock() {
-    if (dropdownLockTimeoutRef.current) {
-      clearTimeout(dropdownLockTimeoutRef.current);
-      dropdownLockTimeoutRef.current = null;
-    }
-    setDropdownInteractionLock(false);
-  }
-
   async function handleServerChange(serverId: string) {
     dispatch(closeNotificationPopup());
-    releaseDropdownInteractionLock();
 
     if (isSwitchingServer || loginLoading) return;
 
@@ -376,7 +347,7 @@ export function Footer() {
   }
 
   function handleNotificationButtonPress() {
-    if (loginLoading || dropdownInteractionLock || !showNotificationButton) return;
+    if (loginLoading || !showNotificationButton) return;
     dispatch(toggleNotificationPopup());
   }
 
@@ -386,9 +357,7 @@ export function Footer() {
         <ThemedText>{env}</ThemedText>
         <ThemedText style={styles.separator}>|</ThemedText>
 
-        <Pressable
-          onPressIn={startDropdownInteractionLock}
-          onPressOut={releaseDropdownInteractionLock}
+        <View
           style={[
             styles.serverDropdownWrap,
             (isSwitchingServer || loginLoading) &&
@@ -406,8 +375,9 @@ export function Footer() {
             optionMeta={serverOptionMeta}
             showOptionToneDot
             menuOffsetY={49}
+            onOpen={() => dispatch(closeNotificationPopup())}
           />
-        </Pressable>
+        </View>
 
         {showNotificationButton ? (
           <>
@@ -416,10 +386,7 @@ export function Footer() {
             <View style={styles.statusWrap}>
               <Pressable
                 onPress={handleNotificationButtonPress}
-                style={[
-                  styles.notificationButton,
-                  dropdownInteractionLock && styles.notificationButtonDisabled,
-                ]}
+                style={styles.notificationButton}
                 disabled={loginLoading}
               >
                 <Feather name="bookmark" size={15} style={styles.color} />
@@ -526,10 +493,6 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     minWidth: 22,
     minHeight: 22,
-  },
-
-  notificationButtonDisabled: {
-    opacity: 0.5,
   },
 
   notificationBadge: {

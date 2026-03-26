@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Pressable, View } from "react-native";
+import {
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import Feather from "@expo/vector-icons/Feather";
@@ -13,13 +20,12 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { selectApi } from "../redux/slices/apiSlice";
 import {
   closeNotificationPopup,
-  markAllNotificationsRead,
   markNotificationRead,
   selectLatestNotifications,
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
-   markServerNotificationsRead,
-  selectAllNotifications,
+  markServerNotificationsRead,
+  markAllNotificationsRead
 } from "../redux/slices/notificationSlice";
 import { setActiveMenuId } from "../redux/slices/menuSlice";
 
@@ -50,6 +56,7 @@ function getSeverityTone(severity?: string) {
 export function NotificationPopup() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
+  const { width, height } = useWindowDimensions();
 
   const api = useAppSelector(selectApi);
   const activeServerIp = api.ip;
@@ -64,6 +71,9 @@ export function NotificationPopup() {
   const popupOpacity = useRef(new Animated.Value(0)).current;
   const popupTranslateY = useRef(new Animated.Value(12)).current;
   const popupScale = useRef(new Animated.Value(0.98)).current;
+
+  const popupWidth = Math.min(width - 24, 380);
+  const popupMaxHeight = Math.min(height * 0.78, 560);
 
   useEffect(() => {
     if (isOpen) {
@@ -144,10 +154,10 @@ export function NotificationPopup() {
     dispatch(closeNotificationPopup());
   }
 
-  function onMarkAllRead() {
+ function onMarkAllRead() {
+  //dispatch(markAllNotificationsRead());
   dispatch(markServerNotificationsRead(activeServerIp));
 }
-
   function onMore() {
     dispatch(closeNotificationPopup());
     dispatch(setActiveMenuId(NOTIFICATIONS_MENU_ID));
@@ -183,6 +193,8 @@ export function NotificationPopup() {
           style={[
             styles.popupWrap,
             {
+              width: popupWidth,
+              maxHeight: popupMaxHeight,
               opacity: popupOpacity,
               transform: [
                 { translateY: popupTranslateY },
@@ -213,7 +225,12 @@ export function NotificationPopup() {
               </Pressable>
             </View>
 
-            <View style={styles.body}>
+            <ScrollView
+              style={styles.body}
+              contentContainerStyle={styles.bodyContent}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
               {!hasNotifications ? (
                 <View style={styles.emptyState}>
                   <View style={styles.emptyIconWrap}>
@@ -281,7 +298,7 @@ export function NotificationPopup() {
                               <Feather
                                 name="arrow-right"
                                 size={11}
-                               color={styles.color.color}
+                                color={styles.color.color}
                               />
                               <ThemedText style={styles.actionHintText}>
                                 Öffnen
@@ -294,23 +311,27 @@ export function NotificationPopup() {
                   );
                 })
               )}
-            </View>
+            </ScrollView>
 
             <View style={styles.footer}>
-              <ActionButton
-                label="Alle als gelesen"
-                variant="secondary"
-                size="xs"
-                onPress={onMarkAllRead}
-                disabled={!hasNotifications || unreadCount === 0}
-              />
+              <View style={styles.footerButton}>
+                <ActionButton
+                  label="Alle als gelesen"
+                  variant="secondary"
+                  size="xs"
+                  onPress={onMarkAllRead}
+                  disabled={!hasNotifications || unreadCount === 0}
+                />
+              </View>
 
-              <ActionButton
-                label="Mehr anzeigen"
-                variant="primary"
-                size="xs"
-                onPress={onMore}
-              />
+              <View style={styles.footerButton}>
+                <ActionButton
+                  label="Mehr anzeigen"
+                  variant="primary"
+                  size="xs"
+                  onPress={onMore}
+                />
+              </View>
             </View>
           </Card>
         </Animated.View>
@@ -338,16 +359,17 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
 
-  centerWrap: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBlockEnd: -200,
-  },
+ centerWrap: {
+  ...StyleSheet.absoluteFillObject,
+  justifyContent: "flex-end",
+  alignItems: "center",
+  paddingHorizontal: 12,
+  paddingBottom: 10,
+  paddingTop: 24,
+},
 
   popupWrap: {
     width: "100%",
-    maxWidth: 380,
   },
 
   popupCard: {
@@ -408,9 +430,12 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   body: {
+    flexGrow: 0,
+  },
+
+  bodyContent: {
     padding: 12,
     gap: 8,
-    maxHeight: 380,
   },
 
   emptyState: {
@@ -518,6 +543,7 @@ const styles = StyleSheet.create((theme) => ({
   notificationTime: {
     opacity: 0.6,
     fontSize: 12,
+    flexShrink: 1,
   },
 
   actionHint: {
@@ -525,6 +551,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: 4,
     opacity: 0.7,
+    flexShrink: 0,
   },
 
   actionHintText: {
@@ -533,12 +560,15 @@ const styles = StyleSheet.create((theme) => ({
 
   footer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     gap: 10,
     paddingHorizontal: 12,
-    paddingTop: 4,
+    paddingTop: 8,
     paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
+  },
+
+  footerButton: {
+    flex: 1,
   },
 }));
