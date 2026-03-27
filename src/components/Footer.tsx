@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { withUnistyles } from "react-native-unistyles";
@@ -14,6 +14,7 @@ import {
   selectAuthenticationMethod,
   selectIsLoggedIn,
 } from "../redux/slices/apiSlice";
+import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
 
 import {
   selectSelectedServer,
@@ -115,7 +116,8 @@ export function Footer() {
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
 
-  const showNotificationButton = isLoggedIn && !isLoginPage;
+  const showNotificationButton =
+    !isLoginPage && (isLoggedIn || unreadNotificationCount > 0);
 
   const servers = serversState?.servers ?? [];
 
@@ -294,7 +296,12 @@ export function Footer() {
         throw new Error("Aktuell wird nur JWT-Login unterstützt.");
       }
 
-      const basic = toBase64(`${params.username}:${params.password}`);
+      const trimmedUsername = params.username.trim();
+      const shouldPromptPasswordChange =
+        trimmedUsername.toLowerCase() === "admin" &&
+        params.password === "admin";
+
+      const basic = toBase64(`${trimmedUsername}:${params.password}`);
 
       const res = await fetch(`${pendingServerUrl}/api/user/login`, {
         method: "GET",
@@ -329,6 +336,10 @@ export function Footer() {
           initializeMenu: true,
         }),
       );
+
+      if (shouldPromptPasswordChange) {
+        dispatch(openInitialPasswordChangeDialog());
+      }
 
       setLoginModalVisible(false);
       setPendingServerId(null);
