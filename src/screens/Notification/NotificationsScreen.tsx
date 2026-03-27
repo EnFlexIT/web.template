@@ -13,7 +13,6 @@ import { H1 } from "../../components/stylistic/H1";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-import { selectApi } from "../../redux/slices/apiSlice";
 import {
   markServerNotificationsRead,
   markNotificationRead,
@@ -21,6 +20,7 @@ import {
   selectUnreadNotificationCount,
 } from "../../redux/slices/notificationSlice";
 import { setActiveMenuId } from "../../redux/slices/menuSlice";
+import { selectActiveServerKey } from "../../redux/selectors/serverSelectors";
 
 function formatTime(value: string) {
   try {
@@ -48,9 +48,7 @@ export function NotificationsScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
 
-  const api = useAppSelector(selectApi);
-  const activeServerIp = api.ip;
-
+  const activeServerKey = useAppSelector(selectActiveServerKey);
   const notifications = useAppSelector(selectAllNotifications);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
 
@@ -62,7 +60,8 @@ export function NotificationsScreen() {
   }, [notifications.length, unreadCount]);
 
   function onMarkAllRead() {
-    dispatch(markServerNotificationsRead(activeServerIp));
+    if (!activeServerKey) return;
+    dispatch(markServerNotificationsRead(activeServerKey));
   }
 
   function onItemPress(item: (typeof notifications)[number]) {
@@ -80,7 +79,7 @@ export function NotificationsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconBubble}>
-              <Feather name="bookmark" size={16}  color={styles.color.color} />
+              <Feather name="bookmark" size={16} color={styles.color.color} />
             </View>
 
             <View style={styles.headerTextWrap}>
@@ -105,7 +104,7 @@ export function NotificationsScreen() {
           {notifications.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Feather name="bookmark" size={20}  color={styles.color.color} />
+                <Feather name="bookmark" size={20} color={styles.color.color} />
               </View>
 
               <ThemedText style={styles.emptyTitle}>

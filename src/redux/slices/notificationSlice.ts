@@ -57,6 +57,7 @@ const notificationSlice = createSlice({
     markNotificationRead: (state, action: PayloadAction<string>) => {
       const item = state.items.find((n) => n.id === action.payload);
       if (!item) return;
+
       item.read = true;
     },
 
@@ -70,7 +71,7 @@ const notificationSlice = createSlice({
       const serverKey = normalizeServerKey(action.payload);
 
       state.items.forEach((item) => {
-        if (item.serverKey === serverKey) {
+        if (normalizeServerKey(item.serverKey) === serverKey) {
           item.read = true;
         }
       });
@@ -86,7 +87,10 @@ const notificationSlice = createSlice({
 
     clearServerNotifications: (state, action: PayloadAction<string>) => {
       const serverKey = normalizeServerKey(action.payload);
-      state.items = state.items.filter((item) => item.serverKey !== serverKey);
+
+      state.items = state.items.filter(
+        (item) => normalizeServerKey(item.serverKey) !== serverKey,
+      );
     },
 
     openNotificationPopup: (state) => {
@@ -120,36 +124,41 @@ export const selectNotificationsState = (state: RootState) =>
   state.notifications;
 
 export const selectAllNotifications = (state: RootState) => {
-  const activeServerKey = selectActiveServerKey(state);
+  const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
-    (item) => item.serverKey === activeServerKey,
+    (item) => normalizeServerKey(item.serverKey) === activeServerKey,
   );
 };
 
 export const selectUnreadNotifications = (state: RootState) => {
-  const activeServerKey = selectActiveServerKey(state);
+  const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
-    (item) => item.serverKey === activeServerKey && !item.read,
+    (item) =>
+      normalizeServerKey(item.serverKey) === activeServerKey && !item.read,
   );
 };
 
 export const selectUnreadNotificationCount = (state: RootState) => {
-  const activeServerKey = selectActiveServerKey(state);
+  const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
-    (item) => item.serverKey === activeServerKey && !item.read,
+    (item) =>
+      normalizeServerKey(item.serverKey) === activeServerKey && !item.read,
   ).length;
 };
 
 export const selectLatestNotifications =
   (limit = 5) =>
   (state: RootState) => {
-    const activeServerKey = selectActiveServerKey(state);
+    const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
     return state.notifications.items
-      .filter((item) => item.serverKey === activeServerKey)
+      .filter(
+        (item) =>
+          normalizeServerKey(item.serverKey) === activeServerKey && !item.read,
+      )
       .slice(0, limit);
   };
 

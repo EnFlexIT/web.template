@@ -17,7 +17,6 @@ import { ThemedText } from "./themed/ThemedText";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { selectApi } from "../redux/slices/apiSlice";
 import {
   closeNotificationPopup,
   markNotificationRead,
@@ -25,9 +24,9 @@ import {
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
   markServerNotificationsRead,
-  markAllNotificationsRead
 } from "../redux/slices/notificationSlice";
 import { setActiveMenuId } from "../redux/slices/menuSlice";
+import { selectActiveServerKey } from "../redux/selectors/serverSelectors";
 
 const NOTIFICATIONS_MENU_ID = 3015;
 
@@ -58,9 +57,7 @@ export function NotificationPopup() {
   const navigation = useNavigation<any>();
   const { width, height } = useWindowDimensions();
 
-  const api = useAppSelector(selectApi);
-  const activeServerIp = api.ip;
-
+  const activeServerKey = useAppSelector(selectActiveServerKey);
   const isOpen = useAppSelector(selectNotificationPopupOpen);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
   const latestNotifications = useAppSelector(selectLatestNotifications(5));
@@ -154,10 +151,11 @@ export function NotificationPopup() {
     dispatch(closeNotificationPopup());
   }
 
- function onMarkAllRead() {
-  //dispatch(markAllNotificationsRead());
-  dispatch(markServerNotificationsRead(activeServerIp));
-}
+  function onMarkAllRead() {
+    if (!activeServerKey) return;
+    dispatch(markServerNotificationsRead(activeServerKey));
+  }
+
   function onMore() {
     dispatch(closeNotificationPopup());
     dispatch(setActiveMenuId(NOTIFICATIONS_MENU_ID));
@@ -196,10 +194,7 @@ export function NotificationPopup() {
               width: popupWidth,
               maxHeight: popupMaxHeight,
               opacity: popupOpacity,
-              transform: [
-                { translateY: popupTranslateY },
-                { scale: popupScale },
-              ],
+              transform: [{ translateY: popupTranslateY }, { scale: popupScale }],
             },
           ]}
         >
@@ -214,9 +209,7 @@ export function NotificationPopup() {
                   <ThemedText style={styles.title}>
                     Benachrichtigungen
                   </ThemedText>
-                  <ThemedText style={styles.subtitle}>
-                    {subtitle}
-                  </ThemedText>
+                  <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
                 </View>
               </View>
 
@@ -359,14 +352,14 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
 
- centerWrap: {
-  ...StyleSheet.absoluteFillObject,
-  justifyContent: "flex-end",
-  alignItems: "center",
-  paddingHorizontal: 12,
-  paddingBottom: 10,
-  paddingTop: 24,
-},
+  centerWrap: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    paddingTop: 24,
+  },
 
   popupWrap: {
     width: "100%",
