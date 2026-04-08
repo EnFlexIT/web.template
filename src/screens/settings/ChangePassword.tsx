@@ -26,8 +26,6 @@ type InlineState = {
   oldKey?: string | null;
   new1Key?: string | null;
   new2Key?: string | null;
-
-
   generalKey?: string | null;
   generalRaw?: string | null;
 };
@@ -55,10 +53,68 @@ function isStrongPassword(pw: string) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
 }
 
-function normalizeBackendMsg(data: any): string | null {
+function deepExtractMessage(data: any): string | null {
   if (!data) return null;
-  if (typeof data === "string") return data;
-  return data?.message || data?.error || data?.detail || null;
+
+  if (typeof data === "string") {
+    const msg = data.trim();
+    return msg.length ? msg : null;
+  }
+
+  if (typeof data === "number" || typeof data === "boolean") {
+    return String(data);
+  }
+
+  if (Array.isArray(data)) {
+    const parts = data
+      .map((item) => deepExtractMessage(item))
+      .filter(Boolean) as string[];
+    return parts.length ? parts.join(" | ") : null;
+  }
+
+  if (typeof data === "object") {
+    const directKeys = [
+      "message",
+      "error",
+      "detail",
+      "title",
+      "description",
+      "hint",
+      "msg",
+      "reason",
+    ];
+
+    for (const key of directKeys) {
+      const extracted = deepExtractMessage(data?.[key]);
+      if (extracted) return extracted;
+    }
+
+    for (const [key, value] of Object.entries(data)) {
+      const extracted = deepExtractMessage(value);
+      if (extracted) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean"
+        ) {
+          return `${key}: ${String(value)}`;
+        }
+        return extracted;
+      }
+    }
+
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function normalizeBackendMsg(data: any): string | null {
+  return deepExtractMessage(data);
 }
 
 function looksLikeWrongOldPassword(msg?: string | null) {
@@ -110,11 +166,18 @@ export function ChangePasswordScreen() {
   }
 
   function clearGeneralAndSuccess() {
-    if (inline.generalKey || inline.generalRaw) setInlinePatch({ generalKey: null, generalRaw: null });
+    if (inline.generalKey || inline.generalRaw) {
+      setInlinePatch({ generalKey: null, generalRaw: null });
+    }
     if (successKey) setSuccessKey(null);
   }
 
-  // ---------------- Validation (Keys) ----------------
+  function clearAllPasswords() {
+    setOldPassword("");
+    setNewPassword("");
+    setNewPassword2("");
+  }
+
   function validateOld(show: boolean) {
     const v = oldPassword.trim();
     const key = v.length === 0 ? "validation.old_required" : null;
@@ -157,7 +220,6 @@ export function ChangePasswordScreen() {
     return okOld && okNew1 && okNew2;
   }
 
-  // ---------------- Live validation (Debounced) ----------------
   React.useEffect(() => {
     if (!touched.old) return;
     const id = setTimeout(() => validateOld(true), 150);
@@ -182,7 +244,6 @@ export function ChangePasswordScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newPassword2, newPassword, touched.new2]);
 
-  // ---------------- Input handlers ----------------
   function onChangeOld(v: string) {
     setOldPassword(v);
     clearGeneralAndSuccess();
@@ -223,72 +284,94 @@ export function ChangePasswordScreen() {
     validateNew2(true);
   }
 
-  // ---------------- Save ----------------
-  async function onSave() {
+async function onSave() {
+  if (isSaving) return;
+
+  setActiveField(null);
+  setSuccessKey(null);
+  setInlinePatch({
+    generalKey: null,
+    generalRaw: null,
+    oldKey: null,
+    new1Key: null,
+    new2Key: null,
+  });
+
+  setTouched({ old: true, new1: true, new2: true });
+
+  const ok = validateAllAndShow();
+  if (!ok) return;
+
+  setIsSaving(true);
+
+  try {
+    const payload: PasswordChangePayload = {
+      password_old: oldPassword,
+      password_new: newPassword,
+    };
+
+    await api.awb_rest_api.userApi.changePassword(payload);
+
+    setInline({
+      oldKey: null,
+      new1Key: null,
+      new2Key: null,
+      generalKey: null,
+      generalRaw: null,
+    });
+
+    clearAllPasswords();
+    setTouched({ old: false, new1: false, new2: false });
+    setActiveField(null);
+    setSuccessKey("api.success");
+  } catch (e: any) {
+    const status = e?.response?.status;
+    const data = e?.response?.data;
+    const backendMsg = normalizeBackendMsg(data);
+
+    setActiveField(null);
     setSuccessKey(null);
-    setInlinePatch({ generalKey: null, generalRaw: null });
 
-    if (isSaving) return;
-
-    setTouched({ old: true, new1: true, new2: true });
-
-    const ok = validateAllAndShow();
-    if (!ok) return;
-
-    setIsSaving(true);
-
-    try {
-      const payload: PasswordChangePayload = {
-        password_old: oldPassword,
-        password_new: newPassword,
-      };
-
-      await api.awb_rest_api.userApi.changePassword(payload);
-
-      setInline({});
-      setSuccessKey("api.success");
-
-      setOldPassword("");
-      setNewPassword("");
-      setNewPassword2("");
-
-      setTouched({ old: false, new1: false, new2: false });
-      setActiveField(null);
-    } catch (e: any) {
-      const status = e?.response?.status;
-      const data = e?.response?.data;
-      const backendMsg = normalizeBackendMsg(data);
-
-      if (status === 401 || status === 403) {
-        if (looksLikeWrongOldPassword(backendMsg)) {
-          setInlinePatch({ oldKey: "api.wrong_password" });
-        } else {
-          setInlinePatch({ generalKey: "api.unauthorized", generalRaw: null });
-        }
-      } else if (status === 400) {
-        if (looksLikeWrongOldPassword(backendMsg)) {
-          setInlinePatch({ oldKey: "api.wrong_password" });
-        } else {
-          // Wenn BackendMsg kommt, zeigen wir den raw Text.
-          if (backendMsg) {
-            setInlinePatch({ generalRaw: backendMsg, generalKey: null });
-          } else {
-            setInlinePatch({ generalKey: "api.bad_request_fallback", generalRaw: null });
-          }
-        }
-      } else {
-        if (backendMsg) {
-          setInlinePatch({ generalRaw: backendMsg, generalKey: null });
-        } else {
-          setInlinePatch({ generalKey: "api.generic_error", generalRaw: null });
-        }
-      }
-    } finally {
-      setIsSaving(false);
+    if (
+      (status === 401 || status === 403 || status === 400) &&
+      looksLikeWrongOldPassword(backendMsg)
+    ) {
+      setTouched((p) => ({ ...p, old: true }));
+      setInlinePatch({
+        oldKey: "api.wrong_password",
+        generalKey: null,
+        generalRaw: null,
+      });
+    } else if (backendMsg) {
+      setInlinePatch({
+        oldKey: null,
+        generalRaw: backendMsg,
+        generalKey: null,
+      });
+    } else if (status === 401 || status === 403) {
+      setInlinePatch({
+        oldKey: null,
+        generalKey: "api.unauthorized",
+        generalRaw: null,
+      });
+    } else if (status === 400) {
+      setInlinePatch({
+        oldKey: null,
+        generalKey: "api.bad_request_fallback",
+        generalRaw: null,
+      });
+    } else {
+      setInlinePatch({
+        oldKey: null,
+        generalKey: "api.generic_error",
+        generalRaw: null,
+      });
     }
+  } finally {
+    setIsSaving(false);
   }
+}
 
-  // ---------------- Bottom Info content (Focus-Switch) ----------------
   const ruleLines = [
     { ok: checks.len, text: t("rules.len") },
     { ok: checks.upper, text: t("rules.upper") },
@@ -302,9 +385,11 @@ export function ChangePasswordScreen() {
   const generalText =
     inline.generalRaw ?? (inline.generalKey ? t(inline.generalKey) : null);
 
-  const boxState = (() => {
-    // General (no field active)
-    if (activeField === null && generalText) {
+   const boxState = (() => {
+    const oldFieldErrorText =
+      touched.old && inline.oldKey ? t(inline.oldKey) : null;
+
+    if (generalText) {
       return {
         tone: "danger" as const,
         title: t("infobox.hint_title"),
@@ -313,8 +398,7 @@ export function ChangePasswordScreen() {
       };
     }
 
-    // Success (no field active)
-    if (activeField === null && successKey) {
+    if (successKey) {
       return {
         tone: "success" as const,
         title: t("infobox.success_title"),
@@ -323,18 +407,27 @@ export function ChangePasswordScreen() {
       };
     }
 
-    // Focus: old password
-    if (activeField === "old") {
-      const errText = touched.old && inline.oldKey ? t(inline.oldKey) : null;
+    // Wichtig:
+    // Wenn altes Passwort falsch ist und gerade KEIN Feld aktiv ist,
+    // soll die Meldung unten in der Infobox erscheinen.
+    if (activeField === null && oldFieldErrorText) {
       return {
-        tone: errText ? ("danger" as const) : ("info" as const),
-        title: t("infobox.old.title"),
-        subtitle: errText ?? t("infobox.old.subtitle"),
+        tone: "danger" as const,
+        title: t("infobox.hint_title"),
+        subtitle: oldFieldErrorText,
         body: null as React.ReactNode,
       };
     }
 
-    // Focus: new password -> show rules
+    if (activeField === "old") {
+      return {
+        tone: oldFieldErrorText ? ("danger" as const) : ("info" as const),
+        title: t("infobox.old.title"),
+        subtitle: oldFieldErrorText ?? t("infobox.old.subtitle"),
+        body: null as React.ReactNode,
+      };
+    }
+
     if (activeField === "new1") {
       return {
         tone:
@@ -358,7 +451,6 @@ export function ChangePasswordScreen() {
       };
     }
 
-    // Focus: confirm
     if (activeField === "new2") {
       const errText = touched.new2 && inline.new2Key ? t(inline.new2Key) : null;
 
@@ -381,7 +473,6 @@ export function ChangePasswordScreen() {
       };
     }
 
-    // Idle
     return {
       tone: "info" as const,
       title: t("infobox.idle.title"),
@@ -390,10 +481,8 @@ export function ChangePasswordScreen() {
     };
   })();
 
-  // ---------------- UI ----------------
   const Content = (
     <View style={[styles.widget, styles.border, layout.widget]}>
-      {/* Title */}
       <View
         style={{
           flexDirection: "row",
@@ -407,7 +496,6 @@ export function ChangePasswordScreen() {
         <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
       </View>
 
-      {/* Inputs */}
       <View style={[styles.upperHalf]}>
         <TextInput
           style={[styles.border, styles.padding]}
@@ -463,7 +551,6 @@ export function ChangePasswordScreen() {
         />
       </View>
 
-      {/* Bottom Info */}
       <View style={layout.bottom}>
         <Infobox
           title={boxState.title}
