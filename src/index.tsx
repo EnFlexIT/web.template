@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
+
 import { checkAlive } from "./redux/slices/connectivitySlice";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
@@ -46,6 +47,7 @@ import { isMenuEnabled } from "./redux/slices/featureFlags";
 // Slug-Routing Helper
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
+
 /* =========================
    Unistyles Init
    ========================= */
@@ -86,8 +88,6 @@ function RootStack() {
   const { theme } = useUnistyles();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
-
-
 
   const isWide = useIsWide();
 
@@ -144,6 +144,61 @@ function RootStack() {
       alive = false;
     };
   }, [dispatch]);
+
+  /* =========================
+     Global Connectivity Watcher
+     ========================= */
+  useEffect(() => {
+    if (isLoading) return;
+
+    let active = true;
+
+    const runCheck = async () => {
+      if (!active) return;
+
+      try {
+        await dispatch(checkAlive({ silent: true })).unwrap();
+      } catch {
+        // absichtlich leer
+      }
+    };
+
+    runCheck();
+
+    const intervalId = setInterval(() => {
+      runCheck();
+    }, 10000);
+
+    const onFocus = () => {
+      runCheck();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", onFocus);
+    }
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", onFocus);
+      }
+    };
+  }, [dispatch, isLoading]);
+
+  /* =========================
+     Optional: Serverstatus refresh
+     ========================= */
+  useEffect(() => {
+    if (isLoading) return;
+
+    const intervalId = setInterval(() => {
+      dispatch(refreshServerStatus());
+    }, 15000);
+
+    return () => clearInterval(intervalId);
+  }, [dispatch, isLoading]);
 
   /* =========================
      Redirect Mapping (1x)
@@ -274,7 +329,7 @@ function RootStack() {
         </View>
       }
     >
-    <AppSessionGuard />
+      <AppSessionGuard />
 
       <Drawer.Navigator
         screenOptions={{
@@ -301,7 +356,7 @@ function RootStack() {
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
             <UpdateNotificationWatcher />
-             <NotificationPopup />
+            <NotificationPopup />
             {children}
           </View>
         )}
@@ -366,6 +421,7 @@ export default function App() {
     </Provider>
   );
 }
+
 /* =========================
    Styles
    ========================= */

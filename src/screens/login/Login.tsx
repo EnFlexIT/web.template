@@ -7,9 +7,10 @@ import {
   ScrollView,
   TextInput as RNTextInput,
   View,
-  StyleSheet as NativeStyleSheet,
+ StyleSheet as NativeStyleSheet,
 } from "react-native";
-
+import { withUnistyles } from "react-native-unistyles";
+import Feather_ from "@expo/vector-icons/Feather";
 import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
@@ -19,10 +20,8 @@ import { H1 } from "../../components/stylistic/H1";
 import { Text } from "../../components/stylistic/Text";
 import { ThemedAntDesign } from "../../components/themed/ThemedAntDesign";
 import { ThemedText } from "../../components/themed/ThemedText";
-
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-
 import { selectServers } from "../../redux/slices/serverSlice";
 import {
   selectApi,
@@ -58,9 +57,8 @@ function extractBearerToken(value: unknown): string | null {
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
-
+  const Feather = withUnistyles(Feather_);
   const { theme } = useUnistyles();
-
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const { isPointingToServer } = useAppSelector(selectApi);
   const ip = useAppSelector(selectIp);
@@ -83,20 +81,29 @@ export function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   const shouldPromptPasswordChange =
-  username.trim().toLowerCase() === "admin" &&
-  password === "admin";
+    username.trim().toLowerCase() === "admin" && password === "admin";
 
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
   const [loginRequestStatus, setLoginRequestStatus] = useState<
     "loading" | "successful" | "failed"
   >("loading");
 
+  const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
+
   styles.useVariants({ highlight });
 
   async function login() {
     setLoginRequestIssued(true);
     setLoginRequestStatus("loading");
+    setLoginFeedback(null);
+
+    if (!username.trim() || !password.trim()) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("Bitte Benutzername und Passwort eingeben.");
+      return;
+    }
 
     switch (authenticationMethod) {
       case "jwt": {
@@ -126,8 +133,11 @@ export function LoginScreen() {
           const bearerToken =
             extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
 
-      if (response.status === 200 && bearerToken) {
-            console.log("[LOGIN SCREEN] switching to server with token:", selectedBaseUrl);
+          if (response.status === 200 && bearerToken) {
+            console.log(
+              "[LOGIN SCREEN] switching to server with token:",
+              selectedBaseUrl,
+            );
 
             await dispatch(
               switchServer({
@@ -142,18 +152,34 @@ export function LoginScreen() {
             }
 
             setLoginRequestStatus("successful");
+            setLoginFeedback(null);
             return;
           }
 
-          console.warn("[LOGIN SCREEN] login failed - no bearer token", {
-            status: response.status,
-            wwwAuthenticate,
-            bodyText,
-          });
+          if (response.status === 401) {
+            setLoginRequestStatus("failed");
+            setLoginFeedback("Falscher Benutzername oder Passwort.");
+            return;
+          }
 
           setLoginRequestStatus("failed");
-        } catch (error) {
+          setLoginFeedback("Anmeldung fehlgeschlagen.");
+        } catch (error: any) {
           console.error("[LOGIN SCREEN] login failed:", error);
+
+          const msg = String(error?.message ?? "").toLowerCase();
+
+          if (
+            msg.includes("failed to fetch") ||
+            msg.includes("network") ||
+            msg.includes("load failed") ||
+            msg.includes("err_connection_refused")
+          ) {
+            setLoginFeedback("Server nicht erreichbar.");
+          } else {
+            setLoginFeedback("Anmeldung fehlgeschlagen.");
+          }
+
           setLoginRequestStatus("failed");
         }
         break;
@@ -164,6 +190,7 @@ export function LoginScreen() {
           "Login called while authenticationMethod=oidc. Implement OIDC flow here.",
         );
         setLoginRequestStatus("failed");
+        setLoginFeedback("OIDC-Login ist aktuell noch nicht verfügbar.");
         break;
       }
     }
@@ -194,13 +221,17 @@ export function LoginScreen() {
           <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
         </View>
 
+     
         <View style={[styles.upperHalf]}>
           <TextInput
             size="sm"
             style={[styles.border, styles.padding]}
             placeholder={t("username_placeholder")}
             textContentType="username"
-            onChangeText={setUsername}
+            onChangeText={(value) => {
+              setUsername(value);
+              setLoginFeedback(null);
+            }}
             value={username}
             returnKeyType="next"
             onSubmitEditing={() => passwordFieldRef.current?.focus()}
@@ -212,7 +243,10 @@ export function LoginScreen() {
             placeholder={t("password_placeholder")}
             textContentType="password"
             passwordToggle
-            onChangeText={setPassword}
+            onChangeText={(value) => {
+              setPassword(value);
+              setLoginFeedback(null);
+            }}
             value={password}
             returnKeyType="done"
             onSubmitEditing={() => {
@@ -232,6 +266,7 @@ export function LoginScreen() {
             size="xs"
           />
         </View>
+
 
         <View style={[styles.lowerHalf]}>
           <Pressable
@@ -296,7 +331,18 @@ export function LoginScreen() {
           )}
         </View>
       </View>
-
+   {!!loginFeedback && (
+          <View style={localStyles.feedbackWrap}>
+             <Feather
+                  name={"alert-triangle"}
+                  size={15}
+                  color={"#dc2626"}
+              />
+            <ThemedText style={localStyles.feedbackText}>
+              {loginFeedback}
+            </ThemedText>
+          </View>
+        )}
       <LoginRequestStatusIndicator
         issued={loginRequestIssued}
         status={loginRequestStatus}
@@ -344,10 +390,7 @@ function LoginRequestStatusIndicator({
   }
 
   return (
-    <View style={[styles.loginRequestIndicatorContainer]}>
-      <ThemedText>{t("failed")}</ThemedText>
-      <ThemedAntDesign name="close" />
-    </View>
+   null
   );
 }
 
@@ -356,5 +399,22 @@ const logoStyles = NativeStyleSheet.create({
     resizeMode: "contain",
     width: 38,
     height: 38,
+  },
+});
+
+const localStyles = NativeStyleSheet.create({
+  feedbackWrap: {
+    borderWidth:1,
+    flexDirection:"row",
+    borderColor:"#dc2626",
+    alignItems: "center",
+    gap:6,
+    padding:5
+  },
+  feedbackText: {
+    color: "#dc2626",
+    fontSize: 13,
+    textAlign: "center",
+   
   },
 });
