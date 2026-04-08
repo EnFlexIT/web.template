@@ -421,7 +421,6 @@ export default function App() {
     </Provider>
   );
 }
-
 /* =========================
    Styles
    ========================= */

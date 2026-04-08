@@ -14,7 +14,8 @@
   "devHome": "Dev Home",
   "appInfo":"Update",
   "changeOrganization": "Server Settings",
-  "notifications":"notifications"
+  "notifications":"notifications",
+  "serverSettings": "Server Settings"
 
 
 }

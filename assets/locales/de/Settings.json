@@ -22,7 +22,7 @@
       "title": "Datenbank",
       "description": "Server, IP-Adresse, Authentifizierung und Integrationen."
     },
-    "Server Settings": {
+    "serverSettings": {
       "title": "Servereinstellungen",
       "description": "Verbindungen und technische Konfiguration."
     },

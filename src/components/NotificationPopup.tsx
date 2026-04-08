@@ -29,6 +29,10 @@ import { setActiveMenuId } from "../redux/slices/menuSlice";
 import { selectActiveServerKey } from "../redux/selectors/serverSelectors";
 
 const NOTIFICATIONS_MENU_ID = 3015;
+const MAX_VISIBLE_NOTIFICATIONS = 3;
+const ESTIMATED_NOTIFICATION_ITEM_HEIGHT = 96;
+const NOTIFICATION_LIST_GAP = 8;
+const NOTIFICATION_LIST_PADDING_VERTICAL = 24;
 
 function formatTime(value: string) {
   try {
@@ -145,6 +149,15 @@ export function NotificationPopup() {
     return `${unreadCount} ungelesene Benachrichtigungen`;
   }, [hasNotifications, unreadCount]);
 
+  const shouldLimitBodyHeight =
+    latestNotifications.length >= MAX_VISIBLE_NOTIFICATIONS;
+
+  const notificationBodyMaxHeight = shouldLimitBodyHeight
+    ? MAX_VISIBLE_NOTIFICATIONS * ESTIMATED_NOTIFICATION_ITEM_HEIGHT +
+      (MAX_VISIBLE_NOTIFICATIONS - 1) * NOTIFICATION_LIST_GAP +
+      NOTIFICATION_LIST_PADDING_VERTICAL
+    : undefined;
+
   if (!mounted) return null;
 
   function onClose() {
@@ -219,7 +232,12 @@ export function NotificationPopup() {
             </View>
 
             <ScrollView
-              style={styles.body}
+              style={[
+                styles.body,
+                shouldLimitBodyHeight && {
+                  maxHeight: notificationBodyMaxHeight,
+                },
+              ]}
               contentContainerStyle={styles.bodyContent}
               showsVerticalScrollIndicator={false}
               bounces={false}

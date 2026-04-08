@@ -158,12 +158,12 @@ export function LoginScreen() {
 
           if (response.status === 401) {
             setLoginRequestStatus("failed");
-            setLoginFeedback("Falscher Benutzername oder Passwort.");
+            setLoginFeedback(t("invalid_credentials"));
             return;
           }
 
           setLoginRequestStatus("failed");
-          setLoginFeedback("Anmeldung fehlgeschlagen.");
+          setLoginFeedback(t("login_failed"));
         } catch (error: any) {
           console.error("[LOGIN SCREEN] login failed:", error);
 

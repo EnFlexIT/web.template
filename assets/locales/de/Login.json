@@ -39,5 +39,15 @@
   "nichtErreichbar": "Nicht erreichbar / offline",
   "StandardPasswort":"Du bist mit dem Standard-Passwort angemeldet. Du kannst jetzt direkt ein neues Passwort setzen oder diesen Schrit überspringen.",
   "skip":"Überspringen",
-  "changepassword":"Passwort ändern"
+  "changepassword":"Passwort ändern",
+  "invalid_credentials":"Falscher Benutzername oder Passwort.",
+  "login_failed":"Anmeldung fehlgeschlagen.",
+  "confirmSaveChanges": "Änderung speichern?",
+  "confirmSaveChangesMessage": "Möchtest du diese Änderung wirklich übernehmen?",
+  "yes": "Ja",
+  "cancel": "Abbrechen",
+  "confirmDeleteServer": "Server löschen?",
+  "confirmDeleteServerMessage": "Möchtest du diesen Server wirklich löschen?",
+  "delete": "Löschen"
+  
 }

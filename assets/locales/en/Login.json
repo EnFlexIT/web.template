@@ -48,7 +48,17 @@
   "nichtErreichbar": "Not reachable / offline",
   "StandardPasswort":"You are logged in with the default password. You can now set a new password directly or skip this step.",
   "skip":"skip",
-  "changepassword":"Change password"
+  "changepassword":"Change password",
+  "invalid_credentials":"Invalid username or password.",
+  "login_failed":"Login failed.",
+  "confirmSaveChanges": "Save changes?",
+  "confirmSaveChangesMessage": "Do you really want to apply this change?",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "confirmDeleteServer": "Delete server?",
+  "confirmDeleteServerMessage": "Do you really want to delete this server?",
+  "delete": "Delete"
+  
 
 
 }

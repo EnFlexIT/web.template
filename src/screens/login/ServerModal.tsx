@@ -6,7 +6,6 @@ import {
   Pressable,
   View,
   Platform,
-  Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
@@ -15,6 +14,7 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Icon } from "../../components/ui-elements/Icon/Icon";
+import { ConfirmModal } from "../../components/ui-elements/ConfirmModal";
 import {
   SelectableList,
   SelectableItem,
@@ -55,51 +55,6 @@ type Props = {
   selectedBaseUrl: string;
 };
 
-function confirmDialog(
-  title: string,
-  message: string,
-  okText = "OK",
-  cancelText = "Abbrechen",
-): Promise<boolean> {
-  if (Platform.OS === "web") {
-    // eslint-disable-next-line no-alert
-    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
-  }
-
-  return new Promise((resolve) => {
-    Alert.alert(title, message, [
-      { text: cancelText, style: "cancel", onPress: () => resolve(false) },
-      { text: okText, style: "default", onPress: () => resolve(true) },
-    ]);
-  });
-}
-
-function askSaveBeforeUse(): Promise<boolean> {
-  if (Platform.OS === "web") {
-    // eslint-disable-next-line no-alert
-    return Promise.resolve(
-      window.confirm(
-        "Du hast Änderungen gemacht.\n\nMöchtest du die Änderungen speichern und den Server verwenden?",
-      ),
-    );
-  }
-
-  return new Promise((resolve) => {
-    Alert.alert(
-      "Änderungen speichern?",
-      "Du hast Änderungen gemacht.\n\nMöchtest du speichern und den Server verwenden?",
-      [
-        { text: "Abbrechen", style: "cancel", onPress: () => resolve(false) },
-        {
-          text: "Speichern & verwenden",
-          style: "default",
-          onPress: () => resolve(true),
-        },
-      ],
-    );
-  });
-}
-
 export function ServerModal({
   visible,
   onClose,
@@ -122,6 +77,10 @@ export function ServerModal({
   const [urlInput, setUrlInput] = useState("");
   const [editMode, setEditMode] = useState(false);
 
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showUseSaveConfirm, setShowUseSaveConfirm] = useState(false);
+
   const serverItems = useMemo<SelectableItem<string>[]>(() => {
     return servers.map((s) => ({
       id: s.id,
@@ -131,13 +90,13 @@ export function ServerModal({
   }, [servers]);
 
   const firstError = urlError || nameError || generalError;
-  function detectEnvironment(url: string): ServerEnvironment {
-          if (url.includes("localhost") || url.includes("dev")) return "DEV";
-          if (url.includes("test") || url.includes("staging")) return "TEST";
-          return "PROD";
-        }
 
-  
+  function detectEnvironment(url: string): ServerEnvironment {
+    if (url.includes("localhost") || url.includes("dev")) return "DEV";
+    if (url.includes("test") || url.includes("staging")) return "TEST";
+    return "PROD";
+  }
+
   function resetErrors() {
     setNameError(null);
     setUrlError(null);
@@ -185,22 +144,11 @@ export function ServerModal({
       setUrlInput(selectedBaseUrl ?? "");
     }
 
+    setShowSaveConfirm(false);
+    setShowDeleteConfirm(false);
+    setShowUseSaveConfirm(false);
     resetErrors();
   }, [visible, selectedServerId, selectedServer, selectedBaseUrl]);
-
-  async function handleDeleteSelected() {
-    if (!selectedServer) return;
-
-    const ok = await confirmDialog(
-      "Server löschen?",
-      `${selectedServer.name} (${selectedServer.baseUrl})`,
-      "Löschen",
-      "Abbrechen",
-    );
-    if (!ok) return;
-
-    dispatch(removeServer(selectedServer.id));
-  }
 
   async function ensureSelectedServerOnline(url: string): Promise<boolean> {
     setBusy(true);
@@ -266,8 +214,16 @@ export function ServerModal({
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl, environment: detectEnvironment(baseUrl) }));
+    dispatch(
+      addServer({
+        id,
+        name,
+        baseUrl,
+        environment: detectEnvironment(baseUrl),
+      }),
+    );
     dispatch(selectServer(id));
+
     return { ok: true, baseUrl, serverLabel: name };
   }
 
@@ -311,7 +267,14 @@ export function ServerModal({
     const id =
       normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
 
-    dispatch(addServer({ id, name, baseUrl, environment: detectEnvironment(baseUrl) }));
+    dispatch(
+      addServer({
+        id,
+        name,
+        baseUrl,
+        environment: detectEnvironment(baseUrl),
+      }),
+    );
     dispatch(selectServer(id));
 
     setEditMode(true);
@@ -319,151 +282,95 @@ export function ServerModal({
     setUrlInput(baseUrl);
   }
 
-  async function handleSaveSide() {
+  function handleSaveSide() {
+    if (!hasUnsavedChanges()) return;
+    setShowSaveConfirm(true);
+  }
+
+  async function confirmSaveSide() {
+    setShowSaveConfirm(false);
+
     const res = await validateAndSaveOnly();
     if (!res.ok || !res.baseUrl) return;
+
     setEditMode(true);
   }
 
-async function handleUseServer() {
-  let url = "";
-
-  if (hasUnsavedChanges()) {
-    const proceed = await askSaveBeforeUse();
-    if (!proceed) return;
-
-    const saved = await validateAndSaveOnly();
-    if (!saved.ok || !saved.baseUrl) return;
-
-    url = normalizeBaseUrl(saved.baseUrl);
-  } else {
-    const currentSelected = servers.find((s) => s.id === selectedServerId);
-    url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+  function handleDeleteSelected() {
+    if (!selectedServer) return;
+    setShowDeleteConfirm(true);
   }
 
-  const online = await ensureSelectedServerOnline(url);
-  if (!online) return;
+  function confirmDeleteSelected() {
+    if (!selectedServer) return;
 
-  await dispatch(switchServer(url));
+    dispatch(removeServer(selectedServer.id));
+    setShowDeleteConfirm(false);
+  }
 
-  const applicationMode = getApplicationMode();
+  async function proceedUseServerAfterOptionalSave(skipSave = false) {
+    let url = "";
 
-  // CENTRAL_SHELL:
-  // App bleibt auf der Haupt-WebApp und nutzt nur neuen API-Server
-  if (applicationMode === "CENTRAL_SHELL") {
+    if (hasUnsavedChanges() && !skipSave) {
+      const saved = await validateAndSaveOnly();
+      if (!saved.ok || !saved.baseUrl) return;
+
+      url = normalizeBaseUrl(saved.baseUrl);
+    } else {
+      const currentSelected = servers.find((s) => s.id === selectedServerId);
+      url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+    }
+
+    const online = await ensureSelectedServerOnline(url);
+    if (!online) return;
+
+    await dispatch(switchServer(url));
+
+    const applicationMode = getApplicationMode();
+
+    if (applicationMode === "CENTRAL_SHELL") {
+      onClose();
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      window.location.assign(`${url}/login`);
+      return;
+    }
+
     onClose();
-    return;
   }
 
-  // STANDALONE:
-  // App und Backend laufen auf derselben Instanz
-  if (Platform.OS === "web") {
-    window.location.assign(`${url}/login`);
-    return;
+  function handleUseServer() {
+    if (hasUnsavedChanges()) {
+      setShowUseSaveConfirm(true);
+      return;
+    }
+
+    proceedUseServerAfterOptionalSave(true);
   }
 
-  onClose();
-}
+  async function confirmUseWithSave() {
+    setShowUseSaveConfirm(false);
+    await proceedUseServerAfterOptionalSave(false);
+  }
+
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={modalStyles.backdrop} onPress={onClose}>
-        <Pressable
-          onPress={() => {}}
-          style={{
-            width: 500,
-            maxWidth: "100%",
-            padding: 16,
-            gap: 14,
-            borderWidth: 1,
-            backgroundColor: theme.colors.card,
-            borderColor: theme.colors.border,
-          }}
-        >
-          {/* Header */}
-          <View
+    <>
+      <Modal visible={visible} transparent animationType="fade">
+        <Pressable style={modalStyles.backdrop} onPress={onClose}>
+          <Pressable
+            onPress={() => {}}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
+              width: 500,
+              maxWidth: "100%",
+              padding: 16,
+              gap: 14,
+              borderWidth: 1,
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border,
             }}
           >
-            <H1>{t("changeOrganization")}</H1>
-
-            <Pressable onPress={onClose} hitSlop={10}>
-              <Icon name="close" size={20} color={theme.colors.text} />
-            </Pressable>
-          </View>
-
-          {/* Inputs */}
-          <View style={{ gap: 12 }}>
-            <H4>{t("addServer")}</H4>
-
-            {/* Name row */}
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-              <StylisticTextInput
-                style={{
-                  flex: 1,
-                  padding: 5,
-                  borderWidth: 1,
-                  borderColor: nameError ? "red" : theme.colors.border,
-                }}
-                placeholder={t("serverLabel")}
-                value={nameInput}
-                onChangeText={(v) => {
-                  setNameInput(v);
-                  setNameError(null);
-                  setGeneralError(null);
-                }}
-              />
-              <ActionButton
-                variant="secondary"
-                icon="plus"
-                onPress={handleAddByPlus}
-                size="sm"
-              />
-            </View>
-
-            {/* URL row */}
-            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-              <StylisticTextInput
-                style={{
-                  flex: 1,
-                  padding: 5,
-                  borderWidth: 1,
-                  borderColor: urlError ? "red" : theme.colors.border,
-                }}
-                placeholder={t("serverUrl")}
-                value={urlInput}
-                onChangeText={(v) => {
-                  setUrlInput(v);
-                  setUrlError(null);
-                  setGeneralError(null);
-                }}
-              />
-              <ActionButton
-                variant="secondary"
-                icon="save"
-                onPress={handleSaveSide}
-                size="sm"
-              />
-            </View>
-          </View>
-
-          <View style={{ minHeight: 5, justifyContent: "center" }}>
-            {firstError ? (
-              <ThemedText
-                style={{ color: "red", fontSize: 12, lineHeight: 16 }}
-                numberOfLines={2}
-              >
-                {firstError}
-              </ThemedText>
-            ) : (
-              <ThemedText style={{ fontSize: 12, opacity: 0 }}> </ThemedText>
-            )}
-          </View>
-
-          {/* Liste */}
-          <View style={{ gap: 10, marginTop: -20 }}>
             <View
               style={{
                 flexDirection: "row",
@@ -471,52 +378,180 @@ async function handleUseServer() {
                 justifyContent: "space-between",
               }}
             >
-              <H4>{t("savedServers")}</H4>
+              <H1>{t("changeOrganization")}</H1>
 
-              <ActionButton
-                variant="secondary"
-                icon="delete"
-                onPress={handleDeleteSelected}
-                size="sm"
-                disabled={!selectedServer}
-              />
+              <Pressable onPress={onClose} hitSlop={10}>
+                <Icon name="close" size={20} color={theme.colors.text} />
+              </Pressable>
             </View>
 
-            <SelectableList
-              variant="secondary"
-              size="xs0"
-              items={serverItems}
-              value={selectedServerId}
-              onChange={(id) => {
-                dispatch(selectServer(id));
+            <View style={{ gap: 12 }}>
+              <H4>{t("addServer")}</H4>
 
-                const s = servers.find((x) => x.id === id);
-                if (s) {
-                  setEditMode(true);
-                  setNameInput(s.name ?? "");
-                  setUrlInput(s.baseUrl ?? "");
-                } else {
-                  startAddNew();
-                }
+              <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                <StylisticTextInput
+                  style={{
+                    flex: 1,
+                    padding: 5,
+                    borderWidth: 1,
+                    borderColor: nameError ? "red" : theme.colors.border,
+                  }}
+                  placeholder={t("serverLabel")}
+                  value={nameInput}
+                  onChangeText={(v) => {
+                    setNameInput(v);
+                    setNameError(null);
+                    setGeneralError(null);
+                  }}
+                />
+                <ActionButton
+                  variant="secondary"
+                  icon="plus"
+                  onPress={handleAddByPlus}
+                  size="sm"
+                />
+              </View>
 
-                resetErrors();
+              <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                <StylisticTextInput
+                  style={{
+                    flex: 1,
+                    padding: 5,
+                    borderWidth: 1,
+                    borderColor: urlError ? "red" : theme.colors.border,
+                  }}
+                  placeholder={t("serverUrl")}
+                  value={urlInput}
+                  onChangeText={(v) => {
+                    setUrlInput(v);
+                    setUrlError(null);
+                    setGeneralError(null);
+                  }}
+                />
+                <ActionButton
+                  variant="secondary"
+                  icon="form"
+                  onPress={handleSaveSide}
+                  size="sm"
+                />
+              </View>
+            </View>
+
+            <View
+              style={{
+                minHeight: 24,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
               }}
-              maxHeight={260}
-              showSearch={false}
-              searchPlaceholder={t("search") ?? "Server suchen…"}
-              emptyText={t("noServers") ?? "Keine Server gefunden"}
-            />
+            >
+              {busy && <ActivityIndicator size="small" />}
 
-            <ActionButton
-              label={t("useServer")}
-              variant="secondary"
-              icon="check"
-              onPress={handleUseServer}
-              size="sm"
-            />
-          </View>
+              {firstError ? (
+                <ThemedText
+                  style={{ color: "red", fontSize: 12, lineHeight: 16, flex: 1 }}
+                  numberOfLines={2}
+                >
+                  {firstError}
+                </ThemedText>
+              ) : (
+                <ThemedText style={{ fontSize: 12, opacity: 0, flex: 1 }}>
+                  Platzhalter
+                </ThemedText>
+              )}
+            </View>
+
+            <View style={{ gap: 10, marginTop: -10 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <H4>{t("savedServers")}</H4>
+
+                <ActionButton
+                  variant="secondary"
+                  icon="delete"
+                  onPress={handleDeleteSelected}
+                  size="sm"
+                  disabled={!selectedServer}
+                />
+              </View>
+
+              <SelectableList
+                variant="secondary"
+                size="xs0"
+                items={serverItems}
+                value={selectedServerId}
+                onChange={(id) => {
+                  dispatch(selectServer(id));
+
+                  const s = servers.find((x) => x.id === id);
+                  if (s) {
+                    setEditMode(true);
+                    setNameInput(s.name ?? "");
+                    setUrlInput(s.baseUrl ?? "");
+                  } else {
+                    startAddNew();
+                  }
+
+                  resetErrors();
+                }}
+                maxHeight={260}
+                showSearch={false}
+                searchPlaceholder={t("search") ?? "Server suchen…"}
+                emptyText={t("noServers") ?? "Keine Server gefunden"}
+              />
+
+              <ActionButton
+                label={t("useServer")}
+                variant="secondary"
+                icon="check"
+                onPress={handleUseServer}
+                size="sm"
+              />
+            </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Modal>
+
+      <ConfirmModal
+        visible={showSaveConfirm}
+        title={t("confirmSaveChanges")}
+        message={t("confirmSaveChangesMessage")}
+        confirmLabel={t("yes")}
+        cancelLabel={t("cancel")}
+        onConfirm={confirmSaveSide}
+        onCancel={() => setShowSaveConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title={t("confirmDeleteServer")}
+        message={
+          selectedServer
+            ? `${selectedServer.name} (${selectedServer.baseUrl})`
+            : t("confirmDeleteServerMessage")
+        }
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+        confirmIcon="delete"
+        onConfirm={confirmDeleteSelected}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showUseSaveConfirm}
+        title={t("confirmSaveChanges")}
+        message={t("confirmSaveChangesMessage")}
+        confirmLabel={t("yes")}
+        cancelLabel={t("cancel")}
+     
+        onConfirm={confirmUseWithSave}
+        onCancel={() => setShowUseSaveConfirm(false)}
+      />
+    </>
   );
 }
