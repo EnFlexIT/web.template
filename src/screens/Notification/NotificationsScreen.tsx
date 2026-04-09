@@ -3,7 +3,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
-
+import { useTranslation } from "react-i18next";
 import { Screen } from "../../components/Screen";
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
@@ -47,16 +47,16 @@ function getSeverityTone(severity?: string) {
 export function NotificationsScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
-
+  const { t } = useTranslation(["Notifications"]);
   const activeServerKey = useAppSelector(selectActiveServerKey);
   const notifications = useAppSelector(selectAllNotifications);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
 
   const subtitle = useMemo(() => {
-    if (notifications.length === 0) return "Keine Benachrichtigungen vorhanden";
-    if (unreadCount === 0) return "Alle Benachrichtigungen wurden gelesen";
-    if (unreadCount === 1) return "1 ungelesene Benachrichtigung";
-    return `${unreadCount} ungelesene Benachrichtigungen`;
+    if (notifications.length === 0) return t("Nonotificationsyet");
+    if (unreadCount === 0) return t("Allread");
+    if (unreadCount === 1) return t("Oneunread");
+    return `${unreadCount} ${t("Unreadnotifications")}`;
   }, [notifications.length, unreadCount]);
 
   function onMarkAllRead() {
@@ -83,13 +83,13 @@ export function NotificationsScreen() {
             </View>
 
             <View style={styles.headerTextWrap}>
-              <H1>Benachrichtigungen</H1>
+              <H1>{t("Notifications")}</H1>
               <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
             </View>
           </View>
 
           <ActionButton
-            label="Alle als gelesen"
+            label={t("Markallasread")}
             size="xs"
             variant="secondary"
             onPress={onMarkAllRead}
@@ -108,11 +108,11 @@ export function NotificationsScreen() {
               </View>
 
               <ThemedText style={styles.emptyTitle}>
-                Noch keine Benachrichtigungen
+               {t("Nonotificationsyet")}
               </ThemedText>
 
               <ThemedText style={styles.emptyText}>
-                Neue Hinweise, Updates und wichtige Meldungen erscheinen hier.
+                {t("Newhints")}
               </ThemedText>
             </View>
           ) : (

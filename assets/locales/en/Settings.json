@@ -16,7 +16,7 @@
     },
     "changePassword": {
       "title": "Change Password",
-      "description": "Update your account password securely."
+      "description": "Change your account password."
     },
     "databaseConnectionsAndSettings": {
       "title": "Database",

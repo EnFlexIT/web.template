@@ -16,7 +16,7 @@
     },
     "changePassword": {
       "title": "Passwort ändern",
-      "description": "Dein Kontopasswort sicher aktualisieren."
+      "description": " Kontopasswort ändern."
     },
     "databaseConnectionsAndSettings": {
       "title": "Datenbank",

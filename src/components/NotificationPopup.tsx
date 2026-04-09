@@ -10,7 +10,7 @@ import {
 import { StyleSheet } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import Feather from "@expo/vector-icons/Feather";
-
+import { useTranslation } from "react-i18next";
 import { Card } from "./ui-elements/Card";
 import { ActionButton } from "./ui-elements/ActionButton";
 import { ThemedText } from "./themed/ThemedText";
@@ -60,19 +60,16 @@ export function NotificationPopup() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
   const { width, height } = useWindowDimensions();
-
+  const { t } = useTranslation(["Notifications"]);
   const activeServerKey = useAppSelector(selectActiveServerKey);
   const isOpen = useAppSelector(selectNotificationPopupOpen);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
   const latestNotifications = useAppSelector(selectLatestNotifications(5));
-
   const [mounted, setMounted] = useState(isOpen);
-
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const popupOpacity = useRef(new Animated.Value(0)).current;
   const popupTranslateY = useRef(new Animated.Value(12)).current;
   const popupScale = useRef(new Animated.Value(0.98)).current;
-
   const popupWidth = Math.min(width - 24, 380);
   const popupMaxHeight = Math.min(height * 0.78, 560);
 
@@ -143,10 +140,10 @@ export function NotificationPopup() {
   const hasNotifications = latestNotifications.length > 0;
 
   const subtitle = useMemo(() => {
-    if (!hasNotifications) return "Keine neuen Benachrichtigungen";
-    if (unreadCount <= 0) return "Alle Benachrichtigungen wurden gelesen";
-    if (unreadCount === 1) return "1 ungelesene Benachrichtigung";
-    return `${unreadCount} ungelesene Benachrichtigungen`;
+    if (!hasNotifications) return t("Nonotificationsyet");
+    if (unreadCount <= 0) return t("Allread");
+    if (unreadCount === 1) return t("Oneunread");
+    return `${unreadCount} ${t("Unreadnotifications")}`;
   }, [hasNotifications, unreadCount]);
 
   const shouldLimitBodyHeight =
@@ -220,7 +217,7 @@ export function NotificationPopup() {
 
                 <View style={styles.headerTextWrap}>
                   <ThemedText style={styles.title}>
-                    Benachrichtigungen
+                    {t("Notifications")}
                   </ThemedText>
                   <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
                 </View>
@@ -248,10 +245,10 @@ export function NotificationPopup() {
                     <Feather name="bookmark" size={18} color={styles.color.color} />
                   </View>
                   <ThemedText style={styles.emptyTitle}>
-                    Noch keine Benachrichtigungen
+                    {t("Nonotificationsyet")}
                   </ThemedText>
                   <ThemedText style={styles.emptyText}>
-                    Neue Hinweise und wichtige Meldungen erscheinen hier.
+                    {t("Newhints")}
                   </ThemedText>
                 </View>
               ) : (
@@ -312,7 +309,7 @@ export function NotificationPopup() {
                                 color={styles.color.color}
                               />
                               <ThemedText style={styles.actionHintText}>
-                                Öffnen
+                                {t("Open")}
                               </ThemedText>
                             </View>
                           ) : null}
@@ -327,7 +324,7 @@ export function NotificationPopup() {
             <View style={styles.footer}>
               <View style={styles.footerButton}>
                 <ActionButton
-                  label="Alle als gelesen"
+                  label={t("Markallasread")}
                   variant="secondary"
                   size="xs"
                   onPress={onMarkAllRead}
@@ -337,7 +334,7 @@ export function NotificationPopup() {
 
               <View style={styles.footerButton}>
                 <ActionButton
-                  label="Mehr anzeigen"
+                  label={t("Showmore")}
                   variant="primary"
                   size="xs"
                   onPress={onMore}
