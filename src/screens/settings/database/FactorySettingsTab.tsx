@@ -14,14 +14,32 @@ import { H2 } from "../../../components/stylistic/H2";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
+  clearDbSettingsError,
   fetchDbSettings,
+  fetchDbSystemParameters,
+  fetchFactoryDbConnectionSettings,
+  saveFactoryDbConnectionSettings,
+  selectDbSettingsError,
   selectDbSettingsLoading,
+  selectDbSettingsSaving,
+  selectDbSystemParameters,
   selectDbSystems,
   selectFactories,
   selectFactoryStates,
+  selectSelectedFactoryConnection,
+  selectSelectedFactoryId,
+  setSelectedFactoryConnectionField,
+  setSelectedFactoryId,
 } from "../../../redux/slices/dbSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
+
+type LocalMessage =
+  | {
+      type: "info" | "success";
+      text: string;
+    }
+  | null;
 
 type FactoryStateMeta = {
   label: string;
@@ -87,34 +105,35 @@ export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
 
   const dbSystems = useAppSelector(selectDbSystems);
+  const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const factories = useAppSelector(selectFactories);
   const factoryStates = useAppSelector(selectFactoryStates);
+  const selectedFactoryId = useAppSelector(selectSelectedFactoryId);
+  const selectedFactoryConnection = useAppSelector(
+    selectSelectedFactoryConnection,
+  );
   const isLoading = useAppSelector(selectDbSettingsLoading);
+  const isSaving = useAppSelector(selectDbSettingsSaving);
+  const error = useAppSelector(selectDbSettingsError);
 
-  const [factoryId, setFactoryId] = useState<string>("");
-  const [databaseSystem, setDatabaseSystem] = useState<string>("");
-  const [database, setDatabase] = useState<string>("agentWorkbench");
-  const [urlParams, setUrlParams] = useState<string>("");
-  const [user, setUser] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
 
   useEffect(() => {
-    if (factories.length === 0 || dbSystems.length === 0) {
-      dispatch(fetchDbSettings());
-    }
-  }, [dispatch, factories.length, dbSystems.length]);
+    dispatch(fetchDbSettings());
+    dispatch(fetchDbSystemParameters());
+  }, [dispatch]);
 
   useEffect(() => {
-    if (!factoryId && factories.length > 0) {
-      setFactoryId(factories[0]);
+    if (!selectedFactoryId && factories.length > 0) {
+      dispatch(setSelectedFactoryId(factories[0]));
     }
-  }, [factories, factoryId]);
+  }, [dispatch, factories, selectedFactoryId]);
 
   useEffect(() => {
-    if (!databaseSystem && dbSystems.length > 0) {
-      setDatabaseSystem(dbSystems[0]);
+    if (selectedFactoryId) {
+      dispatch(fetchFactoryDbConnectionSettings(selectedFactoryId));
     }
-  }, [dbSystems, databaseSystem]);
+  }, [dispatch, selectedFactoryId]);
 
   const factoryOptions = useMemo<Record<string, string>>(() => {
     return factories.reduce<Record<string, string>>((acc, factory) => {
@@ -130,13 +149,131 @@ export function FactorySettingsTab() {
     }, {});
   }, [dbSystems]);
 
-  const selectedFactoryState = factoryId
-    ? factoryStates[factoryId] ?? "NotAvailableYet"
+  const selectedFactoryState = selectedFactoryId
+    ? factoryStates[selectedFactoryId] ?? "NotAvailableYet"
     : "NotAvailableYet";
 
   const selectedFactoryStateMeta = useMemo(() => {
     return getFactoryStateMeta(selectedFactoryState);
   }, [selectedFactoryState]);
+
+  const activeDbSystemDefinition = useMemo(() => {
+    if (!selectedFactoryConnection.dbSystem) return undefined;
+    return dbSystemParameters[selectedFactoryConnection.dbSystem];
+  }, [dbSystemParameters, selectedFactoryConnection.dbSystem]);
+
+  const resolvedDriverClass =
+    selectedFactoryConnection.driverClass ||
+    activeDbSystemDefinition?.driverClass ||
+    "";
+
+  const resolvedUrl =
+    selectedFactoryConnection.url || activeDbSystemDefinition?.url || "";
+
+  const resolvedDefaultCatalog =
+    selectedFactoryConnection.defaultCatalog ||
+    activeDbSystemDefinition?.defaultCatalog ||
+    "";
+
+  const resolvedUserName =
+    selectedFactoryConnection.userName || activeDbSystemDefinition?.userName || "";
+
+  const resolvedPassword =
+    selectedFactoryConnection.password || activeDbSystemDefinition?.password || "";
+
+  const isFormDisabled = !selectedFactoryId || isLoading;
+
+  const clearMessages = () => {
+    if (error) {
+      dispatch(clearDbSettingsError());
+    }
+    if (localMessage) {
+      setLocalMessage(null);
+    }
+  };
+
+  const onFactoryChange = (factoryId: string) => {
+    clearMessages();
+    dispatch(setSelectedFactoryId(factoryId));
+  };
+
+  const onDbSystemChange = (dbSystem: string) => {
+    clearMessages();
+
+    const definition = dbSystemParameters[dbSystem];
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "dbSystem",
+        value: dbSystem,
+      }),
+    );
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "driverClass",
+        value: definition?.driverClass ?? "",
+      }),
+    );
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "url",
+        value: definition?.url ?? "",
+      }),
+    );
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "defaultCatalog",
+        value: definition?.defaultCatalog ?? "",
+      }),
+    );
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "userName",
+        value: definition?.userName ?? "",
+      }),
+    );
+
+    dispatch(
+      setSelectedFactoryConnectionField({
+        key: "password",
+        value: definition?.password ?? "",
+      }),
+    );
+  };
+
+  const onSave = async () => {
+    if (!selectedFactoryId) return;
+
+    clearMessages();
+
+    await dispatch(
+      saveFactoryDbConnectionSettings({
+        factoryId: selectedFactoryId,
+        dbSystem: selectedFactoryConnection.dbSystem,
+        driverClass: selectedFactoryConnection.driverClass,
+        url: selectedFactoryConnection.url,
+        defaultCatalog: selectedFactoryConnection.defaultCatalog,
+        userName: selectedFactoryConnection.userName,
+        password: selectedFactoryConnection.password,
+      }),
+    );
+
+    setLocalMessage({
+      type: "success",
+      text: "Factory Database Connection Settings wurden gespeichert.",
+    });
+  };
+
+  const onTestConnection = () => {
+    setLocalMessage({
+      type: "info",
+      text: "Test Connection ist aktuell nur als UI vorbereitet und noch nicht an einen echten Backend-Endpunkt angebunden.",
+    });
+  };
 
   return (
     <Card style={styles.card} padding="md">
@@ -148,10 +285,31 @@ export function FactorySettingsTab() {
 
         {isLoading ? <ThemedText>Loading...</ThemedText> : null}
 
+        <View style={styles.feedbackSlot}>
+          {!!error && (
+            <Card padding="sm" style={styles.errorCard}>
+              <ThemedText>{error}</ThemedText>
+            </Card>
+          )}
+
+          {!error && !!localMessage && (
+            <Card
+              padding="sm"
+              style={[
+                styles.messageCard,
+                localMessage.type === "success"
+                  ? styles.successCard
+                  : styles.infoCard,
+              ]}
+            >
+              <ThemedText>{localMessage.text}</ThemedText>
+            </Card>
+          )}
+        </View>
+
         <View style={styles.topSection}>
           <View style={styles.topFields}>
             <View style={styles.topField}>
-             
               <View style={styles.inlineLabel}>
                 <H4 style={styles.topLabel}>Factory-ID</H4>
                 <AntDesign
@@ -160,75 +318,131 @@ export function FactorySettingsTab() {
                   color={selectedFactoryStateMeta.color}
                 />
               </View>
-            
+
               <Dropdown
                 size="sm"
-                value={factoryId}
+                value={selectedFactoryId}
                 options={factoryOptions}
-                onChange={(value) => setFactoryId(String(value))}
+                onChange={(value) => onFactoryChange(String(value))}
               />
             </View>
+
             <View style={styles.topField}>
               <H4 style={styles.topLabel}>Database System</H4>
               <Dropdown
                 size="sm"
-                value={databaseSystem}
+                value={selectedFactoryConnection.dbSystem}
                 options={databaseSystemOptions}
-                onChange={(value) => setDatabaseSystem(String(value))}
+                onChange={(value) => onDbSystemChange(String(value))}
+                disabled={isFormDisabled}
               />
             </View>
           </View>
         </View>
 
         <View style={styles.settingsBox}>
-          <FieldRow
-            label={
-              <View style={styles.inlineLabel}>
-                <ThemedText style={styles.fieldLabel}>Database</ThemedText>
-              
-              </View>
-            }
-          >
-            <TextInput size="sm" value={database} onChangeText={setDatabase} />
-          </FieldRow>
-
-          <FieldRow label="Add. URL-Params">
-            <TextInput size="sm" value={urlParams} onChangeText={setUrlParams} />
+          <FieldRow label="Database">
+            <TextInput
+              size="sm"
+              value={resolvedDefaultCatalog}
+              onChangeText={(value) => {
+                clearMessages();
+                dispatch(
+                  setSelectedFactoryConnectionField({
+                    key: "defaultCatalog",
+                    value,
+                  }),
+                );
+              }}
+              disabled={isFormDisabled}
+            />
           </FieldRow>
 
           <FieldRow label="Resulting URL">
-            <TextInput size="sm" value="-" onChangeText={() => {}} disabled />
+            <TextInput
+              size="sm"
+              value={resolvedUrl}
+              onChangeText={(value) => {
+                clearMessages();
+                dispatch(
+                  setSelectedFactoryConnectionField({
+                    key: "url",
+                    value,
+                  }),
+                );
+              }}
+              disabled={isFormDisabled}
+            />
+          </FieldRow>
+
+          <FieldRow label="Driver Class">
+            <TextInput
+              size="sm"
+              value={resolvedDriverClass}
+              onChangeText={(value) => {
+                clearMessages();
+                dispatch(
+                  setSelectedFactoryConnectionField({
+                    key: "driverClass",
+                    value,
+                  }),
+                );
+              }}
+              disabled={isFormDisabled}
+            />
           </FieldRow>
 
           <FieldRow label="User Name">
-            <TextInput size="sm" value={user} onChangeText={setUser} />
+            <TextInput
+              size="sm"
+              value={resolvedUserName}
+              onChangeText={(value) => {
+                clearMessages();
+                dispatch(
+                  setSelectedFactoryConnectionField({
+                    key: "userName",
+                    value,
+                  }),
+                );
+              }}
+              disabled={isFormDisabled}
+            />
           </FieldRow>
 
           <FieldRow label="Password">
             <TextInput
               size="sm"
-              value={password}
-              onChangeText={setPassword}
+              value={resolvedPassword}
+              onChangeText={(value) => {
+                clearMessages();
+                dispatch(
+                  setSelectedFactoryConnectionField({
+                    key: "password",
+                    value,
+                  }),
+                );
+              }}
               secureTextEntry
+              disabled={isFormDisabled}
             />
           </FieldRow>
         </View>
+
 
         <View style={styles.actions}>
           <ActionButton
             label="Test Connection"
             size="sm"
-            onPress={() => {
-              console.log("Test factory DB connection for:", factoryId);
-            }}
+            onPress={onTestConnection}
+            disabled={isFormDisabled || isSaving}
           />
+
           <ActionButton
-            label="Save"
+            label={isSaving ? "Saving..." : "Save"}
             size="sm"
             variant="secondary"
-            onPress={() => {
-              console.log("Save factory DB settings for:", factoryId);
-            }}
+            onPress={onSave}
+            disabled={isSaving || isFormDisabled}
           />
         </View>
       </View>
@@ -261,11 +475,11 @@ function FieldRow({
 const styles = StyleSheet.create((theme) => ({
   card: {
     width: "100%",
-    height: 600,
+    minHeight: 640,
   },
 
   container: {
-    gap: 20,
+    gap: 18,
   },
 
   header: {
@@ -278,17 +492,38 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.9,
   },
 
+  feedbackSlot: {
+    minHeight: 64,
+    justifyContent: "flex-start",
+  },
+
+  errorCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+
+  messageCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+
+  successCard: {
+    opacity: 0.98,
+  },
+
+  infoCard: {
+    opacity: 0.98,
+  },
+
   topSection: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginVertical: -15,
   },
 
   topFields: {
     flex: 1,
     flexDirection: "column",
-    gap: 10,
-    marginBottom: 10,
+    gap: 16,
   },
 
   topField: {
@@ -298,12 +533,6 @@ const styles = StyleSheet.create((theme) => ({
 
   topLabel: {
     fontWeight: "700",
-  },
-
-  statusBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
   },
 
   inlineLabel: {
@@ -317,9 +546,9 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.border,
     paddingHorizontal: 18,
     paddingTop: 20,
-    paddingBottom: 24,
-    gap: 12,
-    height: 245,
+    paddingBottom: 20,
+    gap: 14,
+    minHeight: 270,
   },
 
   fieldRow: {
@@ -340,11 +569,19 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
 
+  statusRow: {
+    marginTop: -2,
+  },
+
+  statusText: {
+    opacity: 0.75,
+  },
+
   actions: {
     flexDirection: "row",
     justifyContent: "flex-start",
     alignItems: "center",
     gap: 12,
-    marginTop: -10,
+    marginTop: 2,
   },
 }));
