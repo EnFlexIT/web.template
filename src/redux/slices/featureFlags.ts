@@ -4,7 +4,7 @@ export const menuFeatureFlags: Record<number, boolean> = {
   3012: true,   // serverSettings
   3013: true,  // changePassword 
   3014: true,  // featureFlagForNewFeature
-  3010: true,   // databaseConnectionsAndSettings
+  3010: false,   // databaseConnectionsAndSettings
 
 };
 
