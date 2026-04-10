@@ -1,0 +1,19 @@
+{
+    "labelHostOrIP": "Host or IP",
+    "labelPort": "Port",
+    "labelDatabaseName": "Database Name",
+    "labelUserName": "User Name",
+    "labelPassword": "Password",
+    "labelResultingUrl": "Resulting URL",
+    "labelUseForEveryFactory": "Use settings for every database connection",
+    "labelTestConnection": "Test Connection",
+    "labelSave": "Save Changes",
+    "messageSettingsSaved": "General database connection settings have been saved.",
+    "messageConnectionSuccessful": "Connection successful!",
+    "messageConnectionFailed": "Connection failed: {{error}}",
+    "labelGeneralDatabaseConnectionSettings": "General Database Connection Settings",
+    "labelDatabaseSystem": "Database System"
+        
+
+        
+}

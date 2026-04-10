@@ -10,7 +10,7 @@ import { Card } from "../../../components/ui-elements/Card";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { H2 } from "../../../components/stylistic/H2";
-
+import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
@@ -104,6 +104,7 @@ function getFactoryStateMeta(state: string): FactoryStateMeta {
 export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
 
+  const {t} = useTranslation(["DataBase"]);
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const factories = useAppSelector(selectFactories);
@@ -264,14 +265,14 @@ export function FactorySettingsTab() {
 
     setLocalMessage({
       type: "success",
-      text: "Factory Database Connection Settings wurden gespeichert.",
+      text: t("messageSettingsSaved"),
     });
   };
 
   const onTestConnection = () => {
     setLocalMessage({
       type: "info",
-      text: "Test Connection ist aktuell nur als UI vorbereitet und noch nicht an einen echten Backend-Endpunkt angebunden.",
+      text: t("messageTestConnection"),
     });
   };
 
@@ -279,7 +280,7 @@ export function FactorySettingsTab() {
     <Card style={styles.card} padding="md">
       <View style={styles.container}>
         <View style={styles.header}>
-          <H2>Individual Database Connections & Settings</H2>
+          <H2>{t("labelGeneralDatabaseConnectionSettings")}</H2>
           <View style={styles.separator} />
         </View>
 
@@ -328,7 +329,7 @@ export function FactorySettingsTab() {
             </View>
 
             <View style={styles.topField}>
-              <H4 style={styles.topLabel}>Database System</H4>
+              <H4 style={styles.topLabel}>{t("labelDatabaseSystem")}</H4>
               <Dropdown
                 size="sm"
                 value={selectedFactoryConnection.dbSystem}
@@ -341,7 +342,7 @@ export function FactorySettingsTab() {
         </View>
 
         <View style={styles.settingsBox}>
-          <FieldRow label="Database">
+          <FieldRow label={t("labelDatabaseName")}>
             <TextInput
               size="sm"
               value={resolvedDefaultCatalog}
@@ -392,7 +393,7 @@ export function FactorySettingsTab() {
             />
           </FieldRow>
 
-          <FieldRow label="User Name">
+          <FieldRow label={t("labelUserName")}>
             <TextInput
               size="sm"
               value={resolvedUserName}
@@ -409,7 +410,7 @@ export function FactorySettingsTab() {
             />
           </FieldRow>
 
-          <FieldRow label="Password">
+          <FieldRow label={t("labelPassword")}>
             <TextInput
               size="sm"
               value={resolvedPassword}
@@ -431,14 +432,14 @@ export function FactorySettingsTab() {
 
         <View style={styles.actions}>
           <ActionButton
-            label="Test Connection"
+            label={t("labelTestConnection")}
             size="sm"
             onPress={onTestConnection}
             disabled={isFormDisabled || isSaving}
           />
 
           <ActionButton
-            label={isSaving ? "Saving..." : "Save"}
+            label={t("labelSave")}
             size="sm"
             variant="secondary"
             onPress={onSave}

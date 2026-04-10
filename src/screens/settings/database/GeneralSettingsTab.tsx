@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-
 import { Card } from "../../../components/ui-elements/Card";
 import { Checkbox } from "../../../components/ui-elements/Checkbox";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
@@ -10,7 +9,6 @@ import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { H2 } from "../../../components/stylistic/H2";
 import { H4 } from "../../../components/stylistic/H4";
 import { ThemedText } from "../../../components/themed/ThemedText";
-
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
@@ -27,7 +25,7 @@ import {
   selectGeneralConnection,
   setGeneralConnectionField,
 } from "../../../redux/slices/dbSettingsSlice";
-
+import { useTranslation } from "react-i18next";
 type LocalMessage =
   | {
       type: "info" | "success";
@@ -200,7 +198,7 @@ function inferVisibleFields(urlMask: string, currentUrl: string) {
 
 export function GeneralSettingsTab() {
   const dispatch = useAppDispatch();
-
+  const {t}= useTranslation(["DataBase"])
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const generalConnection = useAppSelector(selectGeneralConnection);
@@ -405,7 +403,7 @@ export function GeneralSettingsTab() {
   const onTestConnection = () => {
     setLocalMessage({
       type: "info",
-      text: "Test Connection ist aktuell nur als UI vorbereitet und noch nicht an einen echten Backend-Endpunkt angebunden.",
+      text: t("messageTestingConnection"),
     });
   };
 
@@ -416,7 +414,7 @@ export function GeneralSettingsTab() {
 
     setLocalMessage({
       type: "success",
-      text: "General Database Connection Settings wurden gespeichert.",
+      text: t("messageSettingsSaved"),
     });
   };
 
@@ -424,7 +422,7 @@ export function GeneralSettingsTab() {
     <Card style={styles.card} padding="md">
       <View style={styles.container}>
         <View style={styles.header}>
-          <H2>General Database Connection Settings</H2>
+          <H2>{t("labelGeneralDatabaseConnectionSettings")}</H2>
           <View style={styles.separator} />
         </View>
 
@@ -453,7 +451,7 @@ export function GeneralSettingsTab() {
         </View>
 
         <Checkbox
-          label="Use settings below for every database connection"
+          label={t("labelUseForEveryFactory")}
           value={generalConnection.useForEveryFactory}
           onChange={onChangeCheckbox}
         />
@@ -477,7 +475,7 @@ export function GeneralSettingsTab() {
 
           <View style={styles.settingsBox}>
             {visibleFields.host && (
-              <FieldRow label="Host or IP">
+              <FieldRow label={t("labelHostOrIP")}>
                 <TextInput
                   size="sm"
                   value={parsedUrl.host}
@@ -535,7 +533,7 @@ export function GeneralSettingsTab() {
               </FieldRow>
             )}
 
-            <FieldRow label="Resulting URL">
+            <FieldRow label={t("labelResultingUrl")}>
               <TextInput
                 size="sm"
                 value={generalConnection.url}
@@ -560,7 +558,7 @@ export function GeneralSettingsTab() {
             </FieldRow>
 
             {visibleFields.username && (
-              <FieldRow label="User Name">
+              <FieldRow label={t("labelUserName")}>
                 <TextInput
                   size="sm"
                   value={generalConnection.userName}
@@ -574,7 +572,7 @@ export function GeneralSettingsTab() {
             )}
 
             {visibleFields.password && (
-              <FieldRow label="Password">
+              <FieldRow label={t("labelPassword")}>
                 <TextInput
                   size="sm"
                   value={generalConnection.password}
@@ -592,14 +590,14 @@ export function GeneralSettingsTab() {
 
         <View style={styles.actions}>
           <ActionButton
-            label="Test Connection"
+            label={t("labelTestConnection")}
             size="sm"
             onPress={onTestConnection}
             disabled={!isFieldsEnabled || isSaving}
           />
 
           <ActionButton
-            label={isSaving ? "Saving..." : "Save"}
+            label={t("labelSave")}
             size="sm"
             variant="secondary"
             onPress={onSave}

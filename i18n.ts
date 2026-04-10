@@ -17,6 +17,7 @@ const resources = {
         Update: require('./assets/locales/en/Update.json'),
        // changePassword: require('./assets/locales/en/changePassword.json'),
        Notifications: require('./assets/locales/en/Notification.json'),
+       DataBase: require('./assets/locales/en/DataBase.json'),
     },
     de: {
         Login: require('./assets/locales/de/Login.json'),
@@ -32,6 +33,7 @@ const resources = {
         Update: require('./assets/locales/de/Update.json'),
        // changePassword: require('./assets/locales/de/changePassword.json'),
          Notifications: require('./assets/locales/de/Notification.json'),
+        DataBase: require('./assets/locales/de/DataBase.json'),
     },
 };
 
