@@ -1,4 +1,3 @@
-// src/redux/slices/apiSlice.ts
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
@@ -132,9 +131,6 @@ function resolveActiveApiBaseUrl(params: {
   selectedServerBaseUrl: string | null;
   fallbackBaseUrl: string;
 }): string {
-  // Wichtig:
-  // Beim Start / Reload muss der vom User ausgewählte Server Vorrang haben.
-  // Danach erst gespeicherte ip, dann runtimeBaseUrl.
   return normalizeBaseUrl(
     params.selectedServerBaseUrl ??
       params.storedIp ??
@@ -144,8 +140,6 @@ function resolveActiveApiBaseUrl(params: {
 }
 
 function getInitialBaseUrl() {
-  // Initial State ist nur Fallback für den allerersten Render.
-  // Der echte Wert kommt später in initializeApi().
   return resolveActiveApiBaseUrl({
     mode: getApplicationMode(),
     runtimeBaseUrl: resolveRuntimeBaseUrl(),
@@ -283,6 +277,14 @@ function isJwtStillValid(jwt: string | null) {
   }
 }
 
+function computeLoggedIn(params: {
+  authenticationMethod: AuthMethod;
+  jwt: string | null;
+}) {
+  if (params.authenticationMethod !== "jwt") return false;
+  return isJwtStillValid(params.jwt);
+}
+
 export interface ApiState {
   awb_rest_api: {
     adminsApi: AdminsApi;
@@ -302,13 +304,14 @@ export interface ApiState {
   isPointingToServer: boolean;
   isBaseMode: boolean;
   isSwitchingServer: boolean;
+  isLoggingOut: boolean;
+  isLogoutDialogOpen: boolean;
 }
 
 export const initializeApi = createAsyncThunk(
   "api/initialize",
   async (): Promise<ApiState> => {
     const storedIp = await AsyncStorage.getItem(ipKey);
-    const storedJwt = await AsyncStorage.getItem(jwtKey);
     const jwtByServer = await loadJwtByServer();
     const selectedServerBaseUrl = await loadSelectedServerBaseUrl();
 
@@ -328,7 +331,7 @@ export const initializeApi = createAsyncThunk(
     console.log("[INITIALIZE API] storedIp:", storedIp);
     console.log("[INITIALIZE API] resolved ip:", ip);
 
-    const jwt = (jwtByServer[ip] ?? storedJwt ?? defaultJwt) as string | null;
+    const jwt = (jwtByServer[ip] ?? defaultJwt) as string | null;
 
     console.log("[INITIALIZE API] jwt exists for resolved ip:", !!jwt);
 
@@ -341,8 +344,10 @@ export const initializeApi = createAsyncThunk(
       authenticationMethod,
     });
 
-    const isLoggedIn =
-      authenticationMethod === "jwt" ? isJwtStillValid(jwt) : false;
+    const isLoggedIn = computeLoggedIn({
+      authenticationMethod,
+      jwt,
+    });
 
     await AsyncStorage.setItem(ipKey, ip);
 
@@ -361,6 +366,8 @@ export const initializeApi = createAsyncThunk(
       isPointingToServer,
       isBaseMode,
       isSwitchingServer: false,
+      isLoggingOut: false,
+      isLogoutDialogOpen: false,
     };
   },
 );
@@ -369,9 +376,7 @@ export const setIpAsync = createAsyncThunk(
   "api/setIpAsync",
   async (rawIp: string, thunkAPI) => {
     const ip = normalizeBaseUrl(rawIp);
-
-    const state = thunkAPI.getState() as RootState;
-    const jwt = state.api.jwt;
+    const jwt = await getJwtForServer(ip);
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
@@ -387,6 +392,12 @@ export const setIpAsync = createAsyncThunk(
         isBaseMode,
       }),
     );
+
+    if (jwt) {
+      await AsyncStorage.setItem(jwtKey, jwt);
+    } else {
+      await AsyncStorage.removeItem(jwtKey);
+    }
 
     return { ip, isPointingToServer, authenticationMethod, isBaseMode };
   },
@@ -407,7 +418,7 @@ export const refreshServerStatus = createAsyncThunk(
     }
 
     const ip = state.api.ip;
-    const jwt = state.api.jwt;
+    const storedJwt = await getJwtForServer(ip);
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
@@ -415,7 +426,7 @@ export const refreshServerStatus = createAsyncThunk(
     thunkAPI.dispatch(
       setConnectionLocal({
         ip,
-        jwt,
+        jwt: storedJwt,
         isPointingToServer,
         authenticationMethod,
         isBaseMode,
@@ -451,7 +462,7 @@ export const login = createAsyncThunk(
         jwt: payload.jwt,
         isPointingToServer: state.api.isPointingToServer,
         authenticationMethod: state.api.authenticationMethod,
-        isBaseMode: state.api.isBaseMode,
+        isBaseMode: false,
       }),
     );
 
@@ -465,17 +476,23 @@ export const logoutAsync = createAsyncThunk(
     const state = thunkAPI.getState() as RootState;
     const currentIp = normalizeBaseUrl(state.api.ip);
 
-    console.log("[LOGOUT] removing jwt for:", currentIp);
+    thunkAPI.dispatch(setIsLoggingOut(true));
 
-    await setJwtForServer(currentIp, null);
+    try {
+      console.log("[LOGOUT] removing jwt for:", currentIp);
 
-    const debugMap = await loadJwtByServer();
-    debugJwtStorage("after logout", debugMap);
+      await setJwtForServer(currentIp, null);
+      await AsyncStorage.removeItem(jwtKey);
 
-    await AsyncStorage.removeItem(jwtKey);
+      const debugMap = await loadJwtByServer();
+      debugJwtStorage("after logout", debugMap);
 
-    thunkAPI.dispatch(logoutLocal());
-    thunkAPI.dispatch(clearMenu());
+      thunkAPI.dispatch(logoutLocal());
+      thunkAPI.dispatch(clearMenu());
+    } finally {
+      thunkAPI.dispatch(setIsLoggingOut(false));
+      thunkAPI.dispatch(setIsLogoutDialogOpen(false));
+    }
   },
 );
 
@@ -565,6 +582,8 @@ const initialState: ApiState = {
   isPointingToServer: false,
   isBaseMode: false,
   isSwitchingServer: false,
+  isLoggingOut: false,
+  isLogoutDialogOpen: false,
 };
 
 export const apiSlice = createSlice({
@@ -595,10 +614,10 @@ export const apiSlice = createSlice({
 
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
-      state.isLoggedIn =
-        action.payload.authenticationMethod === "jwt"
-          ? isJwtStillValid(action.payload.jwt)
-          : false;
+      state.isLoggedIn = computeLoggedIn({
+        authenticationMethod: action.payload.authenticationMethod,
+        jwt: action.payload.jwt,
+      });
     },
 
     setJwtLocal: (state, action: PayloadAction<string | null>) => {
@@ -615,10 +634,10 @@ export const apiSlice = createSlice({
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
 
-      state.isLoggedIn =
-        state.authenticationMethod === "jwt"
-          ? isJwtStillValid(action.payload)
-          : false;
+      state.isLoggedIn = computeLoggedIn({
+        authenticationMethod: state.authenticationMethod,
+        jwt: action.payload,
+      });
     },
 
     logoutLocal: (state) => {
@@ -633,6 +652,14 @@ export const apiSlice = createSlice({
 
       state.awb_rest_api = apis.awb_rest_api;
       state.dynamic_content_api = apis.dynamic_content_api;
+    },
+
+    setIsLoggingOut: (state, action: PayloadAction<boolean>) => {
+      state.isLoggingOut = action.payload;
+    },
+
+    setIsLogoutDialogOpen: (state, action: PayloadAction<boolean>) => {
+      state.isLogoutDialogOpen = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -652,6 +679,7 @@ export const apiSlice = createSlice({
 
     builder.addCase(login.fulfilled, (state) => {
       state.isLoggedIn = true;
+      state.isBaseMode = false;
     });
 
     builder.addCase(switchServer.pending, (state) => {
@@ -668,7 +696,13 @@ export const apiSlice = createSlice({
   },
 });
 
-export const { setConnectionLocal, setJwtLocal, logoutLocal } = apiSlice.actions;
+export const {
+  setConnectionLocal,
+  setJwtLocal,
+  logoutLocal,
+  setIsLoggingOut,
+  setIsLogoutDialogOpen,
+} = apiSlice.actions;
 
 export const selectApi = (state: RootState) => state.api;
 export const selectJwt = (state: RootState) => state.api.jwt;
@@ -682,6 +716,10 @@ export const selectIsPointingToServer = (state: RootState) =>
 export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
 export const selectIsSwitchingServer = (state: RootState) =>
   state.api.isSwitchingServer;
+export const selectIsLoggingOut = (state: RootState) => state.api.isLoggingOut;
+export const selectIsLogoutDialogOpen = (state: RootState) =>
+  state.api.isLogoutDialogOpen;
+
 export const selectIsBaseModule = (state: RootState) =>
   state.api.isPointingToServer && state.api.isBaseMode;
 

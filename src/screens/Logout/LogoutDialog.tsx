@@ -15,7 +15,9 @@ import {
   setJwtForServer,
   normalizeBaseUrl,
   getJwtForServer,
+  setIsLogoutDialogOpen,
 } from "../../redux/slices/apiSlice";
+import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
 import { checkServerReachable } from "../login/serverCheck";
 
@@ -34,6 +36,14 @@ type LogoutServerItem = {
 
 const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
+function getPropertyValue(
+  data: any,
+  key: string,
+): string | boolean | number | null | undefined {
+  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+  return entries.find((entry: any) => entry?.key === key)?.value;
+}
+
 async function checkServerAuthenticated(
   baseUrl: string,
   jwt: string | null,
@@ -41,7 +51,7 @@ async function checkServerAuthenticated(
   const normalized = normalizeBaseUrl(baseUrl);
 
   try {
-    const res = await fetch(`${normalized}/api/alive`, {
+    const res = await fetch(`${normalized}/api/app/settings/get`, {
       method: "GET",
       cache: "no-store",
       headers: jwt
@@ -52,12 +62,18 @@ async function checkServerAuthenticated(
         : {
             Accept: "application/json",
           },
+      credentials: "include",
     });
 
-    if (res.status === 200) return true;
-    if (res.status === 401) return false;
+    if (!res.ok) return false;
 
-    return false;
+    const data = await res.json();
+    const authenticatedRaw = getPropertyValue(data, "_Authenticated");
+
+    return (
+      authenticatedRaw === true ||
+      String(authenticatedRaw).toLowerCase() === "true"
+    );
   } catch {
     return false;
   }
@@ -76,6 +92,16 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   const servers = serversState?.servers ?? [];
   const currentNormalizedIp = normalizeBaseUrl(currentIp);
+
+  useEffect(() => {
+    setLogoutFlowActive(visible);
+    dispatch(setIsLogoutDialogOpen(visible));
+
+    return () => {
+      setLogoutFlowActive(false);
+      dispatch(setIsLogoutDialogOpen(false));
+    };
+  }, [dispatch, visible]);
 
   useEffect(() => {
     if (!visible) {
@@ -101,7 +127,10 @@ export function LogoutDialog({ visible, onClose }: Props) {
             if (!jwt) return null;
 
             const authenticated = await checkServerAuthenticated(server.baseUrl, jwt);
-            if (!authenticated) return null;
+            if (!authenticated) {
+              await setJwtForServer(server.baseUrl, null);
+              return null;
+            }
 
             return {
               id: server.id,
@@ -152,7 +181,16 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   const someSelected = selectedServerIds.length > 0 && !allSelected;
 
+  function handleClose() {
+    if (loading) return;
+    setLogoutFlowActive(false);
+    dispatch(setIsLogoutDialogOpen(false));
+    onClose();
+  }
+
   function toggleSelectAll() {
+    setLogoutFlowActive(true);
+
     if (allSelected) {
       setSelectedServerIds([]);
       return;
@@ -162,6 +200,8 @@ export function LogoutDialog({ visible, onClose }: Props) {
   }
 
   function toggleServer(serverId: string) {
+    setLogoutFlowActive(true);
+
     setSelectedServerIds((prev) =>
       prev.includes(serverId)
         ? prev.filter((id) => id !== serverId)
@@ -172,6 +212,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
   async function handleLogout() {
     if (loading) return;
 
+    setLogoutFlowActive(true);
     setLoading(true);
 
     try {
@@ -182,7 +223,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
           window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
         }
 
-        onClose();
+        handleClose();
         return;
       }
 
@@ -203,13 +244,15 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
       if (selectedCurrentServer) {
         await dispatch(logoutAsync()).unwrap();
+      } else {
+        dispatch(setIsLogoutDialogOpen(false));
       }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
       }
 
-      onClose();
+      handleClose();
     } finally {
       setLoading(false);
     }
@@ -223,7 +266,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={styles.backdrop} onPress={handleClose}>
         <Pressable style={styles.card} onPress={() => {}}>
           <ThemedText style={styles.title}>{t("Abmelden")}</ThemedText>
 
@@ -304,8 +347,9 @@ export function LogoutDialog({ visible, onClose }: Props) {
             <ActionButton
               label={t("Abbrechen")}
               variant="secondary"
-              onPress={onClose}
+              onPress={handleClose}
               size="sm"
+              disabled={loading}
             />
             <ActionButton
               label={logoutLabel}
