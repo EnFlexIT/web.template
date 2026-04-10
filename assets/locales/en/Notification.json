@@ -6,7 +6,15 @@
     "Allread": "All read",
     "Oneunread": "1 unread",
     "Unreadnotifications": "unread notifications",
-    "Open": "Open",
-    "Showmore": "Show more"
+    "Öffnen": "Open",
+    "Showmore": "Show more",
+    "Showless": "Show less",
+    "einloggt": "logged in",
+    "new_version_available": "New version available",
+    "update_now": "Update now",
+    "update_later": "Update later",
+    "Gelesen": "Read",
+    "Neu": "New"
+    
     
 }

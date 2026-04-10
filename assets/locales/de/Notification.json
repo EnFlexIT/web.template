@@ -8,5 +8,14 @@
     "Oneunread": "1 ungelesen",
     "Unreadnotifications": "ungelesene Benachrichtigungen",
     "Open": "Öffnen",
-    "Showmore": "Mehr anzeigen"
+    "Showmore": "Mehr anzeigen",
+    "Showless": "Weniger anzeigen",
+    "einloggt": "eingeloggt",
+    "new_version_available": "Neue Version verfügbar",
+    "update_now": "Jetzt aktualisieren",
+    "update_later": "Später aktualisieren",
+    "Gelesen": "Gelesen",
+    "Neu": "Neu"
+    
+
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { useTranslation } from "react-i18next";
 import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { selectApi } from "../redux/slices/apiSlice";
@@ -98,7 +98,7 @@ function hardReloadWeb(cacheKey: string) {
 export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const dispatch = useAppDispatch();
   const intervalMs = opts?.intervalMs ?? 5 * 60 * 1000;
-
+  const{t}= useTranslation(["Notifications"]);
   const api = useAppSelector(selectApi);
   const ip = api.ip;
   const jwt = api.jwt;
@@ -169,8 +169,8 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
           id: `web-update-${serverKey}-${parsed.versionFull}`,
           serverKey,
           type: "update",
-          title: "Neue Version verfügbar",
-          message: `Neue Version verfügbar: ${parsed.versionFull}`,
+          title: t("new_version_available"),
+          message: ` ${parsed.versionFull}`,
           createdAt: new Date().toISOString(),
           read: false,
           severity: "info",

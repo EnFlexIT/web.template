@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
@@ -7,6 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Screen } from "../components/Screen";
 import { Card } from "../components/ui-elements/Card";
 import { ActionButton } from "../components/ui-elements/ActionButton";
+import { ConfirmModal } from "../components/ui-elements/ConfirmModal";
 import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
 import { ThemedText } from "../components/themed/ThemedText";
 import { H1 } from "../components/stylistic/H1";
@@ -155,6 +156,10 @@ export function ServerSettingsScreen() {
   const [pendingServerLabel, setPendingServerLabel] = useState<string>("");
   const [pendingServerId, setPendingServerId] = useState<string | null>(null);
 
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showUseSaveConfirm, setShowUseSaveConfirm] = useState(false);
+
   useEffect(() => {
     const draftServer = servers.find((s) => s.id === draftServerId);
     if (!draftServer) return;
@@ -179,6 +184,7 @@ export function ServerSettingsScreen() {
   }, [servers]);
 
   const firstError = urlError || nameError || generalError;
+  const currentDraftServer = servers.find((s) => s.id === draftServerId);
 
   function resetErrors() {
     setNameError(null);
@@ -201,9 +207,29 @@ export function ServerSettingsScreen() {
     };
   }
 
+  function hasUnsavedChanges(): boolean {
+    const { name, baseUrl } = getCurrentInputsNormalized();
+
+    if (!normalizeName(nameInput) && !normalizeBaseUrl(urlInput)) return false;
+
+    if (editMode && currentDraftServer) {
+      const currentName = normalizeName(currentDraftServer.name ?? "") || "";
+      const currentUrl = normalizeBaseUrl(currentDraftServer.baseUrl ?? "");
+      return currentName !== name || currentUrl !== baseUrl;
+    }
+
+    return !!nameInput.trim() || !!urlInput.trim();
+  }
+
   async function ensureServerOnline(baseUrl: string): Promise<boolean> {
+    setBusy(true);
     const result = await checkServerReachable(baseUrl);
-    return result.ok;
+    setBusy(false);
+
+    if (result.ok) return true;
+
+    setGeneralError(t("errors.serverNotReachable"));
+    return false;
   }
 
   async function validateAndSaveOnly(
@@ -229,16 +255,13 @@ export function ServerSettingsScreen() {
       return { ok: false };
     }
 
-    const currentDraftServer = servers.find((s) => s.id === draftServerId);
-    const currentDraftServerId =
-      !forceCreate && editMode && currentDraftServer
-        ? currentDraftServer.id
-        : null;
+    const editableServer =
+      !forceCreate && editMode && currentDraftServer ? currentDraftServer : null;
+
+    const editableServerId = editableServer?.id ?? null;
 
     const nameExists = servers.some((s) => {
-      if (currentDraftServerId && s.id === currentDraftServerId) {
-        return false;
-      }
+      if (editableServerId && s.id === editableServerId) return false;
       return normalizeName(s.name ?? "").toLowerCase() === name.toLowerCase();
     });
 
@@ -248,9 +271,7 @@ export function ServerSettingsScreen() {
     }
 
     const urlExists = servers.some((s) => {
-      if (currentDraftServerId && s.id === currentDraftServerId) {
-        return false;
-      }
+      if (editableServerId && s.id === editableServerId) return false;
       return normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase();
     });
 
@@ -259,22 +280,19 @@ export function ServerSettingsScreen() {
       return { ok: false };
     }
 
-    setBusy(true);
     const online = await ensureServerOnline(baseUrl);
-    setBusy(false);
-
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return { ok: false };
     }
 
-    if (!forceCreate && editMode && currentDraftServer) {
-      dispatch(updateServer({ id: currentDraftServer.id, name, baseUrl }));
+    if (editableServer) {
+      dispatch(updateServer({ id: editableServer.id, name, baseUrl }));
       return {
         ok: true,
         baseUrl,
         serverLabel: name,
-        id: currentDraftServer.id,
+        id: editableServer.id,
       };
     }
 
@@ -312,8 +330,15 @@ export function ServerSettingsScreen() {
     resetErrors();
   }
 
-  async function handleSaveSide() {
+  function handleSaveSide() {
     if (busy || loginLoading) return;
+    if (!hasUnsavedChanges()) return;
+
+    setShowSaveConfirm(true);
+  }
+
+  async function confirmSaveSide() {
+    setShowSaveConfirm(false);
 
     const result = await validateAndSaveOnly({ forceCreate: false });
     if (!result.ok) return;
@@ -321,14 +346,19 @@ export function ServerSettingsScreen() {
     resetErrors();
   }
 
-  async function handleDeleteSelected() {
-    const currentDraftServer = servers.find((s) => s.id === draftServerId);
+  function handleDeleteSelected() {
     if (!currentDraftServer || busy || loginLoading) return;
+    setShowDeleteConfirm(true);
+  }
+
+  function confirmDeleteSelected() {
+    if (!currentDraftServer) return;
 
     dispatch(removeServer(currentDraftServer.id));
+    setShowDeleteConfirm(false);
     startAddNew();
 
-    const local = servers.find((s) => s.id === "local");
+    const local = servers.find((s) => s.id === "local" && s.id !== currentDraftServer.id);
     if (local) {
       setDraftServerId(local.id);
       setNameInput(local.name ?? "");
@@ -337,26 +367,49 @@ export function ServerSettingsScreen() {
     }
   }
 
-  async function handleUseServer() {
-    if (busy || loginLoading) return;
+  async function proceedUseServerAfterOptionalSave(skipSave = false) {
+    let targetUrl = "";
+    let targetId: string | null = null;
+    let targetLabel = "";
 
-    const saveResult = await validateAndSaveOnly({ forceCreate: false });
-    if (!saveResult.ok || !saveResult.baseUrl) return;
+    if (hasUnsavedChanges() && !skipSave) {
+      const saveResult = await validateAndSaveOnly({ forceCreate: false });
+      if (!saveResult.ok || !saveResult.baseUrl) return;
 
-    const newUrl = normalizeBaseUrl(saveResult.baseUrl);
+      targetUrl = normalizeBaseUrl(saveResult.baseUrl);
+      targetId = saveResult.id ?? null;
+      targetLabel = saveResult.serverLabel ?? saveResult.baseUrl;
+    } else {
+      const draftServer = servers.find((s) => s.id === draftServerId);
+
+      targetUrl = normalizeBaseUrl(draftServer?.baseUrl ?? urlInput);
+      targetId = draftServer?.id ?? null;
+      targetLabel = draftServer?.name ?? draftServer?.baseUrl ?? targetUrl;
+
+      if (!targetUrl) {
+        setUrlError(t("errors.serverUrlRequired"));
+        return;
+      }
+
+      const online = await ensureServerOnline(targetUrl);
+      if (!online) {
+        setUrlError(t("errors.serverNotReachable"));
+        return;
+      }
+    }
 
     setBusy(true);
-    const existingJwt = await getJwtForServer(newUrl);
+    const existingJwt = await getJwtForServer(targetUrl);
     const alreadyAuthenticated = await checkServerAuthenticated(
-      newUrl,
+      targetUrl,
       existingJwt,
     );
     setBusy(false);
 
     if (!alreadyAuthenticated) {
-      setPendingServerUrl(newUrl);
-      setPendingServerLabel(saveResult.serverLabel ?? saveResult.baseUrl);
-      setPendingServerId(saveResult.id ?? null);
+      setPendingServerUrl(targetUrl);
+      setPendingServerLabel(targetLabel);
+      setPendingServerId(targetId);
       setLoginError(null);
       setLoginModalVisible(true);
       return;
@@ -364,17 +417,33 @@ export function ServerSettingsScreen() {
 
     await dispatch(
       switchServer({
-        url: newUrl,
+        url: targetUrl,
         initializeMenu: true,
       }),
     );
 
-    if (saveResult.id) {
-      dispatch(selectServer(saveResult.id));
-      setDraftServerId(saveResult.id);
+    if (targetId) {
+      dispatch(selectServer(targetId));
+      setDraftServerId(targetId);
     }
 
     navigation.goBack();
+  }
+
+  function handleUseServer() {
+    if (busy || loginLoading) return;
+
+    if (hasUnsavedChanges()) {
+      setShowUseSaveConfirm(true);
+      return;
+    }
+
+    proceedUseServerAfterOptionalSave(true);
+  }
+
+  async function confirmUseWithSave() {
+    setShowUseSaveConfirm(false);
+    await proceedUseServerAfterOptionalSave(false);
   }
 
   async function handleServerLoginSubmit(params: {
@@ -516,7 +585,7 @@ export function ServerSettingsScreen() {
 
               <ActionButton
                 variant="secondary"
-                icon="save"
+                icon="form"
                 onPress={handleSaveSide}
                 size="sm"
                 disabled={busy || loginLoading}
@@ -524,20 +593,27 @@ export function ServerSettingsScreen() {
             </View>
           </View>
 
-          <View style={{ minHeight: 20, justifyContent: "center" }}>
-            {busy ? (
-              <ThemedText style={{ fontSize: 12 }}>
-                Server wird geprüft...
-              </ThemedText>
-            ) : firstError ? (
+          <View
+            style={{
+              minHeight: 24,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {busy && <ActivityIndicator size="small" />}
+
+            {firstError ? (
               <ThemedText
-                style={{ color: "red", fontSize: 12, lineHeight: 16 }}
+                style={{ color: "red", fontSize: 12, lineHeight: 16, flex: 1 }}
                 numberOfLines={2}
               >
                 {firstError}
               </ThemedText>
             ) : (
-              <ThemedText style={{ fontSize: 12, opacity: 0 }}> </ThemedText>
+              <ThemedText style={{ fontSize: 12, opacity: 0, flex: 1 }}>
+                Platzhalter
+              </ThemedText>
             )}
           </View>
 
@@ -556,9 +632,7 @@ export function ServerSettingsScreen() {
                 icon="delete"
                 onPress={handleDeleteSelected}
                 size="sm"
-                disabled={
-                  !servers.find((s) => s.id === draftServerId) || busy || loginLoading
-                }
+                disabled={!currentDraftServer || busy || loginLoading}
               />
             </View>
 
@@ -615,6 +689,41 @@ export function ServerSettingsScreen() {
           setPendingServerId(null);
         }}
         onSubmit={handleServerLoginSubmit}
+      />
+
+      <ConfirmModal
+        visible={showSaveConfirm}
+        title={t("confirmSaveChanges")}
+        message={t("confirmSaveChangesMessage")}
+        confirmLabel={t("yes")}
+        cancelLabel={t("cancel")}
+        onConfirm={confirmSaveSide}
+        onCancel={() => setShowSaveConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title={t("confirmDeleteServer")}
+        message={
+          currentDraftServer
+            ? `${currentDraftServer.name} (${currentDraftServer.baseUrl})`
+            : t("confirmDeleteServerMessage")
+        }
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+        confirmIcon="delete"
+        onConfirm={confirmDeleteSelected}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showUseSaveConfirm}
+        title={t("confirmSaveChanges")}
+        message={t("confirmSaveChangesMessage")}
+        confirmLabel={t("yes")}
+        cancelLabel={t("cancel")}
+        onConfirm={confirmUseWithSave}
+        onCancel={() => setShowUseSaveConfirm(false)}
       />
     </>
   );

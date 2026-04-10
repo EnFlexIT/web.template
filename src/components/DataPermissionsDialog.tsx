@@ -51,10 +51,7 @@ function Row({
 }) {
   return (
     <ThemedView style={rowStyles.container}>
-      <ThemedText
-        numberOfLines={2}
-        style={rowStyles.text}
-      >
+      <ThemedText numberOfLines={2} style={rowStyles.text}>
         {label}
       </ThemedText>
 
@@ -66,8 +63,6 @@ function Row({
           name={value ? "check" : "close"}
           size={26}
           color={styles.color.color}
-
-
         />
       </Pressable>
     </ThemedView>
@@ -109,22 +104,26 @@ export function DataPermissionsDialog() {
   const language = useAppSelector(selectLanguage);
 
   const visible = hasSeenDialog !== true;
+  const currentLanguage = (language?.language as "de" | "en") ?? "de";
 
   const languageOptions = useMemo(
     () =>
       ({
         de: "Deutsch",
         en: "English",
-      } as const),
+      }) as const,
     []
   );
 
   React.useEffect(() => {
-    const lng = (language?.language as "de" | "en") ?? "de";
-    if (i18n.language !== lng) {
-      i18n.changeLanguage(lng);
+    if (i18n.resolvedLanguage !== currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
     }
-  }, [language?.language, i18n]);
+  }, [currentLanguage, i18n]);
+
+  if (i18n.resolvedLanguage !== currentLanguage) {
+    return null;
+  }
 
   const togglePermission = (id: number, nextValue: boolean) => {
     dispatch(setPermissionValue({ id, value: nextValue }));
@@ -155,7 +154,7 @@ export function DataPermissionsDialog() {
 
             <View style={styles.langBox}>
               <Dropdown<"de" | "en">
-                value={(language?.language as "de" | "en") ?? "de"}
+                value={currentLanguage}
                 options={languageOptions}
                 size="xs"
                 onChange={(lng) => {
@@ -203,7 +202,10 @@ export function DataPermissionsDialog() {
               </ThemedText>
             </Pressable>
 
-            <Pressable onPress={einstellungenSpeichern} style={styles.actionButton}>
+            <Pressable
+              onPress={einstellungenSpeichern}
+              style={styles.actionButton}
+            >
               <ThemedText style={styles.actionText}>
                 {t("apply", { defaultValue: "Bestätigen" })}
               </ThemedText>
@@ -242,6 +244,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: 16,
     flexWrap: "wrap",
   },
+
   color: {
     color: theme.colors.text,
   },

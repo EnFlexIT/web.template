@@ -80,7 +80,7 @@ function ServerEntry({ name, ip }: ServerEntryProps) {
       onHoverIn={() => setOver(true)}
       onHoverOut={() => setOver(false)}
       onPress={() => {
-        dispatch(setReady({ ready: true }));
+        
         dispatch(setCurrentOrganization({ name }));
        // dispatch(setIpLocal( ip ));
 

@@ -166,14 +166,14 @@ export function NotificationsScreen() {
                     <View style={styles.metaRow}>
                       <View style={styles.statusBadge}>
                         <ThemedText style={styles.statusBadgeText}>
-                          {item.read ? "Gelesen" : "Neu"}
+                          {item.read ? t("Gelesen") : t("Neu")}
                         </ThemedText>
                       </View>
 
                       {item.action?.type === "navigate" ? (
                         <View style={styles.openHint}>
                           <ThemedText style={styles.openHintText}>
-                            Öffnen
+                            {t("Öffnen")}
                           </ThemedText>
                           <Feather
                             name="arrow-right"

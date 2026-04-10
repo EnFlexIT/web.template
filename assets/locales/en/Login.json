@@ -43,7 +43,7 @@
   "Möchten Sie sich vom aktuellen Server abmelden?": "Do you want to log out from the current server?",
   "Abbrechen": "Cancel",
   "allesAuswählen": "Select all",
-  "Eingeloggt": "Logged in",
+  "einloggt": "Logged in",
   "erreichbarNichtEinloggt": "Reachable / not logged in",
   "nichtErreichbar": "Not reachable / offline",
   "StandardPasswort":"You are logged in with the default password. You can now set a new password directly or skip this step.",
