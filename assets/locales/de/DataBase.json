@@ -1,4 +1,4 @@
-{
+{   
     "labelHostOrIP": "Host oder IP",
     "labelPort": "Port",
     "labelDatabaseName": "Datenbankname",
@@ -12,7 +12,21 @@
     "messageConnectionSuccessful": "Verbindung erfolgreich!",
     "messageConnectionFailed": "Verbindung fehlgeschlagen: {{error}}",
     "labelGeneralDatabaseConnectionSettings": "Allgemeine Datenbankverbindungseinstellungen",
-    "labelDatabaseSystem": "Datenbanksystem"
-        
-  
+    "labelDatabaseSystem": "Datenbanksystem",
+    "labelDerbyNetworkServer": "Derby Network Server",
+    "labelDerbyEmbedded": "Derby Embedded",
+    "labelPostgreSQL": "PostgreSQL",
+    "labelMySQL": "MySQL",
+    "labelSQLite": "SQLite",
+    "labelOracle": "Oracle",
+    "labelSQLServer": "SQL Server",
+    "labelFactorySpecificSettings": "Einstellungen für jede Datenbankverbindung",
+    "labelDerbyNetworkServerSettings": "Einstellungen für Derby Network Server",
+    "labelDerbyEmbeddedSettings": "Einstellungen für Derby Embedded",
+    "labelPostgreSQLSettings": "Einstellungen für PostgreSQL",
+    "labelMySQLSettings": "Einstellungen für MySQL",
+    "labelSQLiteSettings": "Einstellungen für SQLite",
+    "labelOracleSettings": "Einstellungen für Oracle",
+    "labelSQLServerSettings": "Einstellungen für SQL Server",
+    "messageInfoBoxDefault": "Info Box"
 }

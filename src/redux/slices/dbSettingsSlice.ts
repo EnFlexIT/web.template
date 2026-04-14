@@ -248,8 +248,12 @@ function mapFactoryConnection(
   entries: PropertyEntry[],
   requestedFactoryId: string,
 ): FactoryDbConnectionSettings {
-  const find = (key: string) =>
-    entries.find((entry) => entry.key === key)?.value ?? "";
+  const find = (suffix: string) =>
+    entries.find(
+      (entry) =>
+        entry.key === suffix ||
+        entry.key.endsWith(`.${suffix}`),
+    )?.value ?? "";
 
   return {
     factoryId: requestedFactoryId,
@@ -267,6 +271,23 @@ function buildGeneralConnectionEntries(
 ): PropertyEntry[] {
   return [
     toPropertyEntry("useForEveryFactory", payload.useForEveryFactory, "BOOLEAN"),
+    toPropertyEntry("dbSystem", payload.dbSystem, "STRING"),
+    toPropertyEntry(
+      "hibernate.connection.driver_class",
+      payload.driverClass,
+      "STRING",
+    ),
+    toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
+    toPropertyEntry("hibernate.default_catalog", payload.defaultCatalog, "STRING"),
+    toPropertyEntry("hibernate.connection.username", payload.userName, "STRING"),
+    toPropertyEntry("hibernate.connection.password", payload.password, "STRING"),
+  ];
+}
+
+function buildTestConnectionEntries(
+  payload: GeneralDbConnectionSettings | FactoryDbConnectionSettings,
+): PropertyEntry[] {
+  return [
     toPropertyEntry("dbSystem", payload.dbSystem, "STRING"),
     toPropertyEntry(
       "hibernate.connection.driver_class",
@@ -416,6 +437,26 @@ export const saveGeneralDbConnectionSettings = createAsyncThunk(
   },
 );
 
+export const testGeneralDbConnection = createAsyncThunk(
+  "dbSettings/testGeneralDbConnection",
+  async (payload: GeneralDbConnectionSettings, thunkAPI) => {
+    const api = getApi(thunkAPI);
+
+    await api.setAppSettings(
+      {
+        propertyEntries: buildTestConnectionEntries(payload),
+      } as any,
+      {
+        headers: {
+          "X-Performative": "DB.CONN.TEST",
+        },
+      },
+    );
+
+    return true;
+  },
+);
+
 export const fetchFactoryDbConnectionSettings = createAsyncThunk(
   "dbSettings/fetchFactoryDbConnectionSettings",
   async (factoryId: string, thunkAPI) => {
@@ -450,6 +491,26 @@ export const saveFactoryDbConnectionSettings = createAsyncThunk(
     );
 
     return payload;
+  },
+);
+
+export const testFactoryDbConnection = createAsyncThunk(
+  "dbSettings/testFactoryDbConnection",
+  async (payload: FactoryDbConnectionSettings, thunkAPI) => {
+    const api = getApi(thunkAPI);
+
+    await api.setAppSettings(
+      {
+        propertyEntries: buildTestConnectionEntries(payload),
+      } as any,
+      {
+        headers: {
+          "X-Performative": "DB.CONN.TEST",
+        },
+      },
+    );
+
+    return true;
   },
 );
 
@@ -658,6 +719,19 @@ const dbSettingsSlice = createSlice({
           "General DB-Settings konnten nicht gespeichert werden.";
       })
 
+      .addCase(testGeneralDbConnection.pending, (state) => {
+        state.isSaving = true;
+        state.error = null;
+      })
+      .addCase(testGeneralDbConnection.fulfilled, (state) => {
+        state.isSaving = false;
+      })
+      .addCase(testGeneralDbConnection.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error =
+          action.error.message ?? "DB Connection Test fehlgeschlagen.";
+      })
+
       .addCase(saveFactoryDbConnectionSettings.pending, (state) => {
         state.isSaving = true;
         state.error = null;
@@ -672,6 +746,19 @@ const dbSettingsSlice = createSlice({
         state.error =
           action.error.message ??
           "Factory-DB-Settings konnten nicht gespeichert werden.";
+      })
+
+      .addCase(testFactoryDbConnection.pending, (state) => {
+        state.isSaving = true;
+        state.error = null;
+      })
+      .addCase(testFactoryDbConnection.fulfilled, (state) => {
+        state.isSaving = false;
+      })
+      .addCase(testFactoryDbConnection.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error =
+          action.error.message ?? "Factory DB Connection Test fehlgeschlagen.";
       });
   },
 });

@@ -12,7 +12,8 @@
     "messageConnectionSuccessful": "Connection successful!",
     "messageConnectionFailed": "Connection failed: {{error}}",
     "labelGeneralDatabaseConnectionSettings": "General Database Connection Settings",
-    "labelDatabaseSystem": "Database System"
+    "labelDatabaseSystem": "Database System",
+    "massageInfoBoxDefault": "Info Box"
         
 
         

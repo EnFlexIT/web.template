@@ -17,6 +17,7 @@ import {
   fetchDbSystemParameters,
   fetchGeneralDbConnectionSettings,
   saveGeneralDbConnectionSettings,
+  testGeneralDbConnection,
   selectDbSettingsError,
   selectDbSettingsLoading,
   selectDbSettingsSaving,
@@ -26,9 +27,10 @@ import {
   setGeneralConnectionField,
 } from "../../../redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
+
 type LocalMessage =
   | {
-      type: "info" | "success";
+      type: "info" | "success" | "error";
       text: string;
     }
   | null;
@@ -71,7 +73,6 @@ function splitUrlAndParams(url: string): { baseUrl: string; params: string } {
 function extractParamsDelimiter(mask: string, currentUrl: string): "?" | ";" {
   if (mask.includes("?")) return "?";
   if (mask.includes(";")) return ";";
-
   if (currentUrl.includes("?")) return "?";
   return ";";
 }
@@ -198,7 +199,7 @@ function inferVisibleFields(urlMask: string, currentUrl: string) {
 
 export function GeneralSettingsTab() {
   const dispatch = useAppDispatch();
-  const {t}= useTranslation(["DataBase"])
+  const { t } = useTranslation(["DataBase"]);
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const generalConnection = useAppSelector(selectGeneralConnection);
@@ -207,6 +208,10 @@ export function GeneralSettingsTab() {
   const error = useAppSelector(selectDbSettingsError);
 
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
+
+  const fallbackInfoText = t("messageInfoBoxDefault", {
+    defaultValue: "Info Box !",
+  });
 
   useEffect(() => {
     dispatch(fetchDbSettings());
@@ -219,8 +224,6 @@ export function GeneralSettingsTab() {
       const fallbackDbSystem = dbSystems[0];
       const fallbackDefinition = dbSystemParameters[fallbackDbSystem];
 
-      const parsedFallbackUrl = parseConnectionUrl(fallbackDefinition?.url ?? "");
-
       dispatch(
         setGeneralConnectionField({
           key: "dbSystem",
@@ -229,6 +232,8 @@ export function GeneralSettingsTab() {
       );
 
       if (fallbackDefinition) {
+        const parsedFallbackUrl = parseConnectionUrl(fallbackDefinition.url ?? "");
+
         dispatch(
           setGeneralConnectionField({
             key: "driverClass",
@@ -268,9 +273,7 @@ export function GeneralSettingsTab() {
                 port: parsedFallbackUrl.port,
                 catalog: fallbackDefinition.defaultCatalog ?? "",
                 params: parsedFallbackUrl.params,
-              }) ||
-              fallbackDefinition.url ||
-              "",
+              }) || fallbackDefinition.url || "",
           }),
         );
       }
@@ -301,13 +304,29 @@ export function GeneralSettingsTab() {
 
   const isFieldsEnabled = generalConnection.useForEveryFactory;
 
+  const displayedMessage = useMemo(() => {
+    if (error) {
+      return {
+        type: "error" as const,
+        text: error,
+      };
+    }
+
+    if (localMessage) {
+      return localMessage;
+    }
+
+    return {
+      type: "info" as const,
+      text: fallbackInfoText,
+    };
+  }, [error, localMessage, fallbackInfoText]);
+
   const clearMessages = () => {
     if (error) {
       dispatch(clearDbSettingsError());
     }
-    if (localMessage) {
-      setLocalMessage(null);
-    }
+    setLocalMessage(null);
   };
 
   const updateConnection = (
@@ -400,22 +419,59 @@ export function GeneralSettingsTab() {
     });
   };
 
-  const onTestConnection = () => {
+  const onTestConnection = async () => {
+    clearMessages();
+
     setLocalMessage({
       type: "info",
-      text: t("messageTestingConnection"),
+      text: t("messageTestingConnection", {
+        defaultValue: "Teste Verbindung...",
+      }),
     });
+
+    try {
+      await dispatch(testGeneralDbConnection(generalConnection)).unwrap();
+
+      setLocalMessage({
+        type: "success",
+        text: t("messageConnectionTestSuccess", {
+          defaultValue: "Verbindung erfolgreich.",
+        }),
+      });
+    } catch (err: any) {
+      setLocalMessage({
+        type: "error",
+        text:
+          err?.message ||
+          t("messageConnectionTestError", {
+            defaultValue: "Verbindung fehlgeschlagen.",
+          }),
+      });
+    }
   };
 
   const onSave = async () => {
     clearMessages();
 
-    await dispatch(saveGeneralDbConnectionSettings(generalConnection));
+    try {
+      await dispatch(saveGeneralDbConnectionSettings(generalConnection)).unwrap();
 
-    setLocalMessage({
-      type: "success",
-      text: t("messageSettingsSaved"),
-    });
+      setLocalMessage({
+        type: "success",
+        text: t("messageSettingsSaved", {
+          defaultValue: "Einstellungen gespeichert.",
+        }),
+      });
+    } catch (err: any) {
+      setLocalMessage({
+        type: "error",
+        text:
+          err?.message ||
+          t("messageSettingsSaveError", {
+            defaultValue: "Speichern fehlgeschlagen.",
+          }),
+      });
+    }
   };
 
   return (
@@ -426,28 +482,18 @@ export function GeneralSettingsTab() {
           <View style={styles.separator} />
         </View>
 
-        {isLoading ? <ThemedText>Loading...</ThemedText> : null}
-
         <View style={styles.feedbackSlot}>
-          {!!error && (
-            <Card padding="sm" style={styles.errorCard}>
-              <ThemedText>{error}</ThemedText>
-            </Card>
-          )}
-
-          {!error && !!localMessage && (
-            <Card
-              padding="sm"
-              style={[
-                styles.messageCard,
-                localMessage.type === "success"
-                  ? styles.successCard
-                  : styles.infoCard,
-              ]}
-            >
-              <ThemedText>{localMessage.text}</ThemedText>
-            </Card>
-          )}
+          <Card
+            padding="sm"
+            style={[
+              styles.messageCard,
+              displayedMessage.type === "error" && styles.errorCard,
+              displayedMessage.type === "success" && styles.successCard,
+              displayedMessage.type === "info" && styles.infoCard,
+            ]}
+          >
+            <ThemedText>{displayedMessage.text}</ThemedText>
+          </Card>
         </View>
 
         <Checkbox
@@ -469,7 +515,7 @@ export function GeneralSettingsTab() {
               value={generalConnection.dbSystem}
               options={databaseSystemOptions}
               onChange={(value) => onChangeDbSystem(String(value))}
-              disabled={!isFieldsEnabled}
+              disabled={!isFieldsEnabled || isLoading || isSaving}
             />
           </View>
 
@@ -483,7 +529,7 @@ export function GeneralSettingsTab() {
                     clearMessages();
                     rebuildUrl({ host: value });
                   }}
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -499,7 +545,7 @@ export function GeneralSettingsTab() {
                     const numericValue = value.replace(/[^\d]/g, "");
                     rebuildUrl({ port: numericValue });
                   }}
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -514,7 +560,7 @@ export function GeneralSettingsTab() {
                     updateConnection({ defaultCatalog: value });
                     rebuildUrl({ catalog: value });
                   }}
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -528,7 +574,7 @@ export function GeneralSettingsTab() {
                     clearMessages();
                     rebuildUrl({ params: value });
                   }}
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -541,7 +587,7 @@ export function GeneralSettingsTab() {
                   clearMessages();
                   updateConnection({ url: value });
                 }}
-                disabled={!isFieldsEnabled}
+                disabled={!isFieldsEnabled || isLoading || isSaving}
               />
             </FieldRow>
 
@@ -553,7 +599,7 @@ export function GeneralSettingsTab() {
                   clearMessages();
                   updateConnection({ driverClass: value });
                 }}
-                disabled={!isFieldsEnabled}
+                disabled={!isFieldsEnabled || isLoading || isSaving}
               />
             </FieldRow>
 
@@ -566,7 +612,7 @@ export function GeneralSettingsTab() {
                     clearMessages();
                     updateConnection({ userName: value });
                   }}
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -581,7 +627,7 @@ export function GeneralSettingsTab() {
                     updateConnection({ password: value });
                   }}
                   secureTextEntry
-                  disabled={!isFieldsEnabled}
+                  disabled={!isFieldsEnabled || isLoading || isSaving}
                 />
               </FieldRow>
             )}
@@ -593,7 +639,7 @@ export function GeneralSettingsTab() {
             label={t("labelTestConnection")}
             size="sm"
             onPress={onTestConnection}
-            disabled={!isFieldsEnabled || isSaving}
+            disabled={!isFieldsEnabled || isSaving || isLoading}
           />
 
           <ActionButton
@@ -601,7 +647,7 @@ export function GeneralSettingsTab() {
             size="sm"
             variant="secondary"
             onPress={onSave}
-            disabled={!isFieldsEnabled || isSaving}
+            disabled={!isFieldsEnabled || isSaving || isLoading}
           />
         </View>
       </View>

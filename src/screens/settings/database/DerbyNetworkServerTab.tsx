@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
@@ -22,7 +22,7 @@ import {
 
 type LocalMessage =
   | {
-      type: "info" | "success";
+      type: "info" | "success" | "error";
       text: string;
     }
   | null;
@@ -36,52 +36,81 @@ export function DerbyNetworkServerTab() {
   const isSaving = useAppSelector(selectDbSettingsSaving);
   const error = useAppSelector(selectDbSettingsError);
 
-  const [hasRequestedLoad, setHasRequestedLoad] = useState(false);
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
 
+  const fallbackInfoText = "Info Box !";
+
   useEffect(() => {
-    if (!hasRequestedLoad) {
-      setHasRequestedLoad(true);
-      dispatch(fetchDbSettings());
+    dispatch(fetchDbSettings());
+  }, [dispatch]);
+
+  const displayedMessage = useMemo(() => {
+    if (error) {
+      return {
+        type: "error" as const,
+        text: error,
+      };
     }
-  }, [dispatch, hasRequestedLoad]);
+
+    if (localMessage) {
+      return localMessage;
+    }
+
+    return {
+      type: "info" as const,
+      text: fallbackInfoText,
+    };
+  }, [error, localMessage, fallbackInfoText]);
 
   const clearMessages = () => {
     if (error) {
       dispatch(clearDbSettingsError());
     }
-    if (localMessage) {
-      setLocalMessage(null);
-    }
+    setLocalMessage(null);
   };
+
+  const normalizedPort =
+    Number.isFinite(Number(derby.port)) && Number(derby.port) > 0
+      ? Number(derby.port)
+      : 1527;
 
   const onSave = async () => {
     clearMessages();
 
-    await dispatch(
+    const resultAction = await dispatch(
       saveDerbyNetworkServerSettings({
         isStartDerbyNetworkServer: derby.isStartDerbyNetworkServer,
-        hostIp: derby.hostIp,
-        port: Number(derby.port) || 1527,
+        hostIp: derby.hostIp.trim(),
+        port: normalizedPort,
         userName: derby.userName,
         password: derby.password,
       }),
     );
 
+    if (saveDerbyNetworkServerSettings.fulfilled.match(resultAction)) {
+      setLocalMessage({
+        type: "success",
+        text: "Derby Network Server Settings wurden gespeichert.",
+      });
+      return;
+    }
+
     setLocalMessage({
-      type: "success",
-      text: "Derby Network Server Settings wurden gespeichert.",
+      type: "error",
+      text: "Speichern der Derby Network Server Settings ist fehlgeschlagen.",
     });
   };
 
   const onTestConnection = () => {
+    clearMessages();
+
     setLocalMessage({
       type: "info",
-      text: "Test Connection ist aktuell nur als UI vorbereitet und noch nicht an einen echten Backend-Endpunkt angebunden.",
-    });
+   text: "Für Derby Network Server gibt es aktuell keinen separaten Test-Endpunkt im Backend. Die Einstellungen können gespeichert werden, ein echter Verbindungstest ist hier derzeit jedoch nicht verfügbar.",    });
   };
 
   const isFormEnabled = derby.isStartDerbyNetworkServer;
+  const isFormDisabled = isLoading || !isFormEnabled;
 
   return (
     <Card style={styles.card} padding="md">
@@ -96,28 +125,18 @@ export function DerbyNetworkServerTab() {
           />
         </View>
 
-        {isLoading ? <ThemedText>Loading...</ThemedText> : null}
-
         <View style={styles.feedbackSlot}>
-          {!!error && (
-            <Card padding="sm" style={styles.errorCard}>
-              <ThemedText>{error}</ThemedText>
-            </Card>
-          )}
-
-          {!error && !!localMessage && (
-            <Card
-              padding="sm"
-              style={[
-                styles.messageCard,
-                localMessage.type === "success"
-                  ? styles.successCard
-                  : styles.infoCard,
-              ]}
-            >
-              <ThemedText>{localMessage.text}</ThemedText>
-            </Card>
-          )}
+          <Card
+            padding="sm"
+            style={[
+              styles.messageCard,
+              displayedMessage.type === "error" && styles.errorCard,
+              displayedMessage.type === "success" && styles.successCard,
+              displayedMessage.type === "info" && styles.infoCard,
+            ]}
+          >
+            <ThemedText>{displayedMessage.text}</ThemedText>
+          </Card>
         </View>
 
         <View style={styles.settingsBox}>
@@ -154,16 +173,17 @@ export function DerbyNetworkServerTab() {
                 );
               }}
               size="sm"
-              disabled={!isFormEnabled}
+              disabled={isFormDisabled}
             />
 
             <TextInput
               label="Port (default: 1527)"
-              value={String(derby.port)}
+              value={derby.port ? String(derby.port) : ""}
               keyboardType="numeric"
               onChangeText={(value) => {
                 clearMessages();
                 const numericValue = value.replace(/[^\d]/g, "");
+
                 dispatch(
                   setDerbyField({
                     key: "port",
@@ -172,7 +192,7 @@ export function DerbyNetworkServerTab() {
                 );
               }}
               size="sm"
-              disabled={!isFormEnabled}
+              disabled={isFormDisabled}
             />
 
             <TextInput
@@ -188,7 +208,7 @@ export function DerbyNetworkServerTab() {
                 );
               }}
               size="sm"
-              disabled={!isFormEnabled}
+              disabled={isFormDisabled}
             />
 
             <TextInput
@@ -205,7 +225,7 @@ export function DerbyNetworkServerTab() {
               }}
               secureTextEntry
               size="sm"
-              disabled={!isFormEnabled}
+              disabled={isFormDisabled}
             />
           </View>
         </View>
@@ -215,7 +235,7 @@ export function DerbyNetworkServerTab() {
             label="Test Connection"
             onPress={onTestConnection}
             size="sm"
-            disabled={!isFormEnabled || isSaving}
+            disabled={true}
           />
 
           <ActionButton
@@ -223,7 +243,7 @@ export function DerbyNetworkServerTab() {
             onPress={onSave}
             size="sm"
             variant="secondary"
-            disabled={!isFormEnabled || isSaving}
+            disabled={isFormDisabled || isSaving}
           />
         </View>
       </View>

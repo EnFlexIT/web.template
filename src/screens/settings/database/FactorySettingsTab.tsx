@@ -19,6 +19,7 @@ import {
   fetchDbSystemParameters,
   fetchFactoryDbConnectionSettings,
   saveFactoryDbConnectionSettings,
+  testFactoryDbConnection,
   selectDbSettingsError,
   selectDbSettingsLoading,
   selectDbSettingsSaving,
@@ -36,7 +37,7 @@ const AntDesign = withUnistyles(AntDesign_);
 
 type LocalMessage =
   | {
-      type: "info" | "success";
+      type: "info" | "success" | "error";
       text: string;
     }
   | null;
@@ -104,7 +105,7 @@ function getFactoryStateMeta(state: string): FactoryStateMeta {
 export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
 
-  const {t} = useTranslation(["DataBase"]);
+  const { t } = useTranslation(["DataBase"]);
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const factories = useAppSelector(selectFactories);
@@ -118,6 +119,8 @@ export function FactorySettingsTab() {
   const error = useAppSelector(selectDbSettingsError);
 
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
+
+  const fallbackInfoText = t("Info Box !");
 
   useEffect(() => {
     dispatch(fetchDbSettings());
@@ -184,13 +187,29 @@ export function FactorySettingsTab() {
 
   const isFormDisabled = !selectedFactoryId || isLoading;
 
+  const displayedMessage = useMemo(() => {
+    if (error) {
+      return {
+        type: "error" as const,
+        text: error,
+      };
+    }
+
+    if (localMessage) {
+      return localMessage;
+    }
+
+    return {
+      type: "info" as const,
+      text: fallbackInfoText,
+    };
+  }, [error, localMessage, fallbackInfoText]);
+
   const clearMessages = () => {
     if (error) {
       dispatch(clearDbSettingsError());
     }
-    if (localMessage) {
-      setLocalMessage(null);
-    }
+    setLocalMessage(null);
   };
 
   const onFactoryChange = (factoryId: string) => {
@@ -251,28 +270,60 @@ export function FactorySettingsTab() {
 
     clearMessages();
 
-    await dispatch(
+    const resultAction = await dispatch(
       saveFactoryDbConnectionSettings({
         factoryId: selectedFactoryId,
         dbSystem: selectedFactoryConnection.dbSystem,
-        driverClass: selectedFactoryConnection.driverClass,
-        url: selectedFactoryConnection.url,
-        defaultCatalog: selectedFactoryConnection.defaultCatalog,
-        userName: selectedFactoryConnection.userName,
-        password: selectedFactoryConnection.password,
+        driverClass: resolvedDriverClass,
+        url: resolvedUrl,
+        defaultCatalog: resolvedDefaultCatalog,
+        userName: resolvedUserName,
+        password: resolvedPassword,
       }),
     );
 
+    if (saveFactoryDbConnectionSettings.fulfilled.match(resultAction)) {
+      setLocalMessage({
+        type: "success",
+        text: t("messageSettingsSaved"),
+      });
+      return;
+    }
+
     setLocalMessage({
-      type: "success",
-      text: t("messageSettingsSaved"),
+      type: "error",
+      text: "Saving factory DB settings failed.",
     });
   };
 
-  const onTestConnection = () => {
+  const onTestConnection = async () => {
+    if (!selectedFactoryId) return;
+
+    clearMessages();
+
+    const resultAction = await dispatch(
+      testFactoryDbConnection({
+        factoryId: selectedFactoryId,
+        dbSystem: selectedFactoryConnection.dbSystem,
+        driverClass: resolvedDriverClass,
+        url: resolvedUrl,
+        defaultCatalog: resolvedDefaultCatalog,
+        userName: resolvedUserName,
+        password: resolvedPassword,
+      }),
+    );
+
+    if (testFactoryDbConnection.fulfilled.match(resultAction)) {
+      setLocalMessage({
+        type: "success",
+        text: "DB connection test was successful.",
+      });
+      return;
+    }
+
     setLocalMessage({
-      type: "info",
-      text: t("messageTestConnection"),
+      type: "error",
+      text: "DB connection test failed.",
     });
   };
 
@@ -284,28 +335,18 @@ export function FactorySettingsTab() {
           <View style={styles.separator} />
         </View>
 
-        {isLoading ? <ThemedText>Loading...</ThemedText> : null}
-
         <View style={styles.feedbackSlot}>
-          {!!error && (
-            <Card padding="sm" style={styles.errorCard}>
-              <ThemedText>{error}</ThemedText>
-            </Card>
-          )}
-
-          {!error && !!localMessage && (
-            <Card
-              padding="sm"
-              style={[
-                styles.messageCard,
-                localMessage.type === "success"
-                  ? styles.successCard
-                  : styles.infoCard,
-              ]}
-            >
-              <ThemedText>{localMessage.text}</ThemedText>
-            </Card>
-          )}
+          <Card
+            padding="sm"
+            style={[
+              styles.messageCard,
+              displayedMessage.type === "error" && styles.errorCard,
+              displayedMessage.type === "success" && styles.successCard,
+              displayedMessage.type === "info" && styles.infoCard,
+            ]}
+          >
+            <ThemedText>{displayedMessage.text}</ThemedText>
+          </Card>
         </View>
 
         <View style={styles.topSection}>
@@ -428,7 +469,6 @@ export function FactorySettingsTab() {
             />
           </FieldRow>
         </View>
-
 
         <View style={styles.actions}>
           <ActionButton
