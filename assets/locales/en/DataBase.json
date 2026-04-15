@@ -8,12 +8,35 @@
     "labelUseForEveryFactory": "Use settings for every database connection",
     "labelTestConnection": "Test Connection",
     "labelSave": "Save Changes",
-    "messageSettingsSaved": "General database connection settings have been saved.",
+    "messageSettingsSaved": " Database connection settings have been saved.",
     "messageConnectionSuccessful": "Connection successful!",
     "messageConnectionFailed": "Connection failed: {{error}}",
-    "labelGeneralDatabaseConnectionSettings": "General Database Connection Settings",
+    "labelGeneralDatabaseConnectionSettings": " Database Connection Settings",
     "labelDatabaseSystem": "Database System",
-    "massageInfoBoxDefault": "Info Box"
+    "massageInfoBoxDefault": "Info Box",
+    "labelDerbyNetworkServer": "Derby Network Server",
+    "messageDerbyNetworkServerTestInfo": "Currently, there is no separate test endpoint in the backend for Derby Network Server. The settings can be saved, but a real connection test is not available at this time.",
+    "messageConnectionTestSuccess": "Connection test successful!",
+    "messageTestingConnection": "Testing connection...",
+    "messageConnectionTestError": "Connection test failed: {{error}}",
+    "messageSettingsSaveError": "Error saving settings: {{error}}",
+    "labelDerbyEmbedded": "Derby Embedded",
+    "labelPostgreSQL": "PostgreSQL",
+    "labelMySQL": "MySQL",
+    "labelSQLite": "SQLite",
+    "labelOracle": "Oracle",
+    "labelSQLServer": "SQL Server",
+    "labelFactorySpecificSettings": "Settings for each database connection",
+    "labelDerbyNetworkServerSettings": "Settings for Derby Network Server",
+    "labelDerbyEmbeddedSettings": "Settings for Derby Embedded",
+    "labelPostgreSQLSettings": "Settings for PostgreSQL",
+    "labelMySQLSettings": "Settings for MySQL",
+    "labelSQLiteSettings": "Settings for SQLite",
+    "labelOracleSettings": "Settings for Oracle",
+    "labelSQLServerSettings": "Settings for SQL Server"
+    
+
+        
         
 
         

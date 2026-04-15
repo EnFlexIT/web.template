@@ -424,9 +424,7 @@ export function GeneralSettingsTab() {
 
     setLocalMessage({
       type: "info",
-      text: t("messageTestingConnection", {
-        defaultValue: "Teste Verbindung...",
-      }),
+      text: t("messageTestingConnection"),
     });
 
     try {
@@ -434,18 +432,14 @@ export function GeneralSettingsTab() {
 
       setLocalMessage({
         type: "success",
-        text: t("messageConnectionTestSuccess", {
-          defaultValue: "Verbindung erfolgreich.",
-        }),
+        text: t("messageConnectionTestSuccess"),
       });
     } catch (err: any) {
       setLocalMessage({
         type: "error",
         text:
           err?.message ||
-          t("messageConnectionTestError", {
-            defaultValue: "Verbindung fehlgeschlagen.",
-          }),
+          t("messageConnectionTestError"),
       });
     }
   };
@@ -458,18 +452,14 @@ export function GeneralSettingsTab() {
 
       setLocalMessage({
         type: "success",
-        text: t("messageSettingsSaved", {
-          defaultValue: "Einstellungen gespeichert.",
-        }),
+        text: t("messageSettingsSaved"),
       });
     } catch (err: any) {
       setLocalMessage({
         type: "error",
         text:
           err?.message ||
-          t("messageSettingsSaveError", {
-            defaultValue: "Speichern fehlgeschlagen.",
-          }),
+          t("messageSettingsSaveError"),
       });
     }
   };

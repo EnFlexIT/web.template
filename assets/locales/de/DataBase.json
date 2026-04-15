@@ -8,10 +8,10 @@
     "labelUseForEveryFactory": "Einstellungen für jede Datenbankverbindung verwenden",
     "labelTestConnection": "Verbindung testen",
     "labelSave": "Änderungen speichern",
-    "messageSettingsSaved": "Allgemeine Datenbankverbindungseinstellungen wurden gespeichert.",
+    "messageSettingsSaved": " Datenbank wurden gespeichert.",
     "messageConnectionSuccessful": "Verbindung erfolgreich!",
     "messageConnectionFailed": "Verbindung fehlgeschlagen: {{error}}",
-    "labelGeneralDatabaseConnectionSettings": "Allgemeine Datenbankverbindungseinstellungen",
+    "labelGeneralDatabaseConnectionSettings": " Datenbankverbindungseinstellungen",
     "labelDatabaseSystem": "Datenbanksystem",
     "labelDerbyNetworkServer": "Derby Network Server",
     "labelDerbyEmbedded": "Derby Embedded",
@@ -28,5 +28,10 @@
     "labelSQLiteSettings": "Einstellungen für SQLite",
     "labelOracleSettings": "Einstellungen für Oracle",
     "labelSQLServerSettings": "Einstellungen für SQL Server",
-    "messageInfoBoxDefault": "Info Box"
+    "messageInfoBoxDefault": "Info Box",
+    "messageDerbyNetworkServerTestInfo": "Derzeit gibt es keinen separaten Testendpunkt im Backend für Derby Network Server. Die Einstellungen können gespeichert werden, aber ein echter Verbindungstest ist derzeit nicht verfügbar.",
+    "messageConnectionTestSuccess": "Verbindungstest erfolgreich!",
+    "messageTestingConnection": "Teste Verbindung...",
+    "messageConnectionTestError": "Verbindungstest fehlgeschlagen: {{error}}",
+    "messageSettingsSaveError": "Fehler beim Speichern der Einstellungen: {{error}}"
 }
