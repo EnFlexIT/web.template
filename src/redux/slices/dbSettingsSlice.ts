@@ -142,19 +142,13 @@ function ensureSuccessfulResponse(response: any): BackendResponse {
 }
 
 function normalizeDbSystemName(dbSystem: string) {
-  const normalized = dbSystem.trim();
-
-  if (normalized === "Apache Derby (Embedded)") {
-    return "Apache Derby";
-  }
-
-  return normalized;
+  return dbSystem.trim();
 }
 
 function isDerbyDbSystem(dbSystem: string) {
-  return normalizeDbSystemName(dbSystem) === "Apache Derby";
+  const normalized = dbSystem.trim().toLowerCase();
+  return normalized === "apache derby" || normalized === "apache derby (embedded)";
 }
-
 
 function normalizeDriverClass(dbSystem: string, driverClass: string) {
   const trimmed = driverClass.trim();
@@ -523,13 +517,9 @@ export const saveGeneralDbConnectionSettings = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
+          performative: "db.conn.general",
           propertyEntries,
         } as any,
-        {
-          headers: {
-            "X-Performative": "DB.CONN.GENERAL",
-          },
-        },
       );
 
       console.log("DB.CONN.GENERAL response:", response?.data);
@@ -562,13 +552,9 @@ export const testGeneralDbConnection = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
+          performative: "db.conn.test",
           propertyEntries,
         } as any,
-        {
-          headers: {
-            "X-Performative": "DB.CONN.TEST",
-          },
-        },
       );
 
       console.log("DB.CONN.TEST response:", response?.data);
@@ -624,13 +610,9 @@ export const saveFactoryDbConnectionSettings = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
+          performative: "db.conn.factory.set",
           propertyEntries,
         } as any,
-        {
-          headers: {
-            "X-Performative": "DB.CONN.FACTORY.SET",
-          },
-        },
       );
 
       console.log("DB.CONN.FACTORY.SET response:", response?.data);
@@ -663,13 +645,9 @@ export const testFactoryDbConnection = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
+          performative: "db.conn.test",
           propertyEntries,
         } as any,
-        {
-          headers: {
-            "X-Performative": "DB.CONN.TEST",
-          },
-        },
       );
 
       console.log("DB.CONN.TEST (factory) response:", response?.data);
@@ -710,13 +688,9 @@ export const saveDerbyNetworkServerSettings = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
+          performative: "db.derby.networkserver",
           propertyEntries,
         } as any,
-        {
-          headers: {
-            "X-Performative": "DB.DERBY.NETWORKSERVER",
-          },
-        },
       );
 
       console.log("DB.DERBY.NETWORKSERVER response:", response?.data);
