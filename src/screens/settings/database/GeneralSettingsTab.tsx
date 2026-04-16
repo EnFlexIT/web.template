@@ -319,7 +319,7 @@ export function GeneralSettingsTab() {
     if (isDerby) {
       return {
         type: "info" as const,
-        text: "Für Apache Derby wird beim Verbindungstest ohne Benutzername und Passwort getestet.",
+        text: "Info Box !",
       };
     }
 
