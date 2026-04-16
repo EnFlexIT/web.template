@@ -42,6 +42,20 @@ type ParsedConnectionUrl = {
   params: string;
 };
 
+function normalizeDbSystemName(dbSystem: string) {
+  const normalized = dbSystem.trim();
+
+  if (normalized === "Apache Derby (Embedded)") {
+    return "Apache Derby";
+  }
+
+  return normalized;
+}
+
+function isApacheDerby(dbSystem: string) {
+  return normalizeDbSystemName(dbSystem) === "Apache Derby";
+}
+
 function splitUrlAndParams(url: string): { baseUrl: string; params: string } {
   if (!url) {
     return { baseUrl: "", params: "" };
@@ -79,8 +93,8 @@ function extractParamsDelimiter(mask: string, currentUrl: string): "?" | ";" {
 
 function parseConnectionUrl(url: string): ParsedConnectionUrl {
   const { baseUrl, params } = splitUrlAndParams(url);
-
   const working = baseUrl.trim();
+
   let host = "";
   let port = "";
   let catalog = "";
@@ -145,31 +159,24 @@ function buildConnectionUrlFromMask(args: {
 }): string {
   const { mask, currentUrl, host, port, catalog, params } = args;
 
-  if (!mask) {
-    const delimiter = extractParamsDelimiter(mask, currentUrl);
-
-    if (host || port) {
-      const base = `jdbc://${host}${port ? `:${port}` : ""}/${catalog}`;
-      return params ? `${base}${delimiter}${params}` : base;
-    }
-
-    return params ? `${catalog}${delimiter}${params}` : catalog;
+  if (!mask || !mask.includes("[Catalog]")) {
+    return currentUrl;
   }
 
   const delimiter = extractParamsDelimiter(mask, currentUrl);
 
-  const splitByQuestion = mask.split("?");
-  const splitBySemicolon = mask.split(";");
+  const questionIndex = mask.indexOf("?");
+  const semicolonIndex = mask.indexOf(";");
 
   let baseMask = mask;
 
   if (
-    splitByQuestion.length > 1 &&
-    splitByQuestion[0].length <= splitBySemicolon[0].length
+    questionIndex !== -1 &&
+    (semicolonIndex === -1 || questionIndex < semicolonIndex)
   ) {
-    baseMask = splitByQuestion[0];
-  } else if (splitBySemicolon.length > 1) {
-    baseMask = splitBySemicolon[0];
+    baseMask = mask.slice(0, questionIndex);
+  } else if (semicolonIndex !== -1) {
+    baseMask = mask.slice(0, semicolonIndex);
   }
 
   const builtBase = baseMask
@@ -200,6 +207,7 @@ function inferVisibleFields(urlMask: string, currentUrl: string) {
 export function GeneralSettingsTab() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["DataBase"]);
+
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const generalConnection = useAppSelector(selectGeneralConnection);
@@ -223,6 +231,8 @@ export function GeneralSettingsTab() {
     if (!generalConnection.dbSystem && dbSystems.length > 0) {
       const fallbackDbSystem = dbSystems[0];
       const fallbackDefinition = dbSystemParameters[fallbackDbSystem];
+      const fallbackUrl = fallbackDefinition?.url ?? "";
+      const parsedFallbackUrl = parseConnectionUrl(fallbackUrl);
 
       dispatch(
         setGeneralConnectionField({
@@ -231,52 +241,41 @@ export function GeneralSettingsTab() {
         }),
       );
 
-      if (fallbackDefinition) {
-        const parsedFallbackUrl = parseConnectionUrl(fallbackDefinition.url ?? "");
+      dispatch(
+        setGeneralConnectionField({
+          key: "driverClass",
+          value: fallbackDefinition?.driverClass ?? "",
+        }),
+      );
 
-        dispatch(
-          setGeneralConnectionField({
-            key: "driverClass",
-            value: fallbackDefinition.driverClass ?? "",
-          }),
-        );
+      dispatch(
+        setGeneralConnectionField({
+          key: "defaultCatalog",
+          value:
+            fallbackDefinition?.defaultCatalog ?? parsedFallbackUrl.catalog ?? "",
+        }),
+      );
 
-        dispatch(
-          setGeneralConnectionField({
-            key: "defaultCatalog",
-            value: fallbackDefinition.defaultCatalog ?? "",
-          }),
-        );
+      dispatch(
+        setGeneralConnectionField({
+          key: "userName",
+          value: fallbackDefinition?.userName ?? "",
+        }),
+      );
 
-        dispatch(
-          setGeneralConnectionField({
-            key: "userName",
-            value: fallbackDefinition.userName ?? "",
-          }),
-        );
+      dispatch(
+        setGeneralConnectionField({
+          key: "password",
+          value: fallbackDefinition?.password ?? "",
+        }),
+      );
 
-        dispatch(
-          setGeneralConnectionField({
-            key: "password",
-            value: fallbackDefinition.password ?? "",
-          }),
-        );
-
-        dispatch(
-          setGeneralConnectionField({
-            key: "url",
-            value:
-              buildConnectionUrlFromMask({
-                mask: fallbackDefinition.urlMask ?? "",
-                currentUrl: fallbackDefinition.url ?? "",
-                host: parsedFallbackUrl.host,
-                port: parsedFallbackUrl.port,
-                catalog: fallbackDefinition.defaultCatalog ?? "",
-                params: parsedFallbackUrl.params,
-              }) || fallbackDefinition.url || "",
-          }),
-        );
-      }
+      dispatch(
+        setGeneralConnectionField({
+          key: "url",
+          value: fallbackUrl,
+        }),
+      );
     }
   }, [dispatch, dbSystems, dbSystemParameters, generalConnection.dbSystem]);
 
@@ -303,6 +302,7 @@ export function GeneralSettingsTab() {
   }, [selectedDbSystemDefinition?.urlMask, generalConnection.url]);
 
   const isFieldsEnabled = generalConnection.useForEveryFactory;
+  const isDerby = isApacheDerby(generalConnection.dbSystem);
 
   const displayedMessage = useMemo(() => {
     if (error) {
@@ -316,11 +316,18 @@ export function GeneralSettingsTab() {
       return localMessage;
     }
 
+    if (isDerby) {
+      return {
+        type: "info" as const,
+        text: "Für Apache Derby wird beim Verbindungstest ohne Benutzername und Passwort getestet.",
+      };
+    }
+
     return {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText]);
+  }, [error, localMessage, fallbackInfoText, isDerby]);
 
   const clearMessages = () => {
     if (error) {
@@ -356,10 +363,12 @@ export function GeneralSettingsTab() {
   };
 
   const rebuildUrl = (partial: Partial<ParsedConnectionUrl>) => {
-    const nextHost = partial.host ?? parsedUrl.host;
-    const nextPort = partial.port ?? parsedUrl.port;
+    const currentParsed = parseConnectionUrl(generalConnection.url);
+
+    const nextHost = partial.host ?? currentParsed.host;
+    const nextPort = partial.port ?? currentParsed.port;
     const nextCatalog = partial.catalog ?? generalConnection.defaultCatalog;
-    const nextParams = partial.params ?? parsedUrl.params;
+    const nextParams = partial.params ?? currentParsed.params;
 
     const nextUrl = buildConnectionUrlFromMask({
       mask: selectedDbSystemDefinition?.urlMask ?? "",
@@ -370,12 +379,28 @@ export function GeneralSettingsTab() {
       params: nextParams,
     });
 
+    if (!nextUrl) {
+      return;
+    }
+
     dispatch(
       setGeneralConnectionField({
         key: "url",
         value: nextUrl,
       }),
     );
+  };
+
+  const buildTestPayload = () => {
+    if (!isDerby) {
+      return generalConnection;
+    }
+
+    return {
+      ...generalConnection,
+      userName: "",
+      password: "",
+    };
   };
 
   const onChangeCheckbox = (value: boolean) => {
@@ -393,53 +418,84 @@ export function GeneralSettingsTab() {
     clearMessages();
 
     const nextDefinition = dbSystemParameters[value];
-    const parsedDefinitionUrl = parseConnectionUrl(nextDefinition?.url ?? "");
-
-    const nextCatalog = nextDefinition?.defaultCatalog ?? "";
-    const nextUserName = nextDefinition?.userName ?? "";
-    const nextPassword = nextDefinition?.password ?? "";
-    const nextDriverClass = nextDefinition?.driverClass ?? "";
-
-    const nextUrl = buildConnectionUrlFromMask({
-      mask: nextDefinition?.urlMask ?? "",
-      currentUrl: nextDefinition?.url ?? "",
-      host: parsedDefinitionUrl.host,
-      port: parsedDefinitionUrl.port,
-      catalog: nextCatalog,
-      params: parsedDefinitionUrl.params,
-    });
+    const nextUrl = nextDefinition?.url ?? "";
+    const parsedDefinitionUrl = parseConnectionUrl(nextUrl);
+    const nextIsDerby = isApacheDerby(value);
 
     updateConnection({
       dbSystem: value,
-      driverClass: nextDriverClass,
-      defaultCatalog: nextCatalog,
-      userName: nextUserName,
-      password: nextPassword,
-      url: nextUrl || nextDefinition?.url || "",
+      driverClass: nextDefinition?.driverClass ?? "",
+      defaultCatalog:
+        nextDefinition?.defaultCatalog ?? parsedDefinitionUrl.catalog ?? "",
+      userName: nextIsDerby ? "" : nextDefinition?.userName ?? "",
+      password: nextIsDerby ? "" : nextDefinition?.password ?? "",
+      url: nextUrl,
+    });
+  };
+
+  const logCurrentPayload = (context: "TEST" | "SAVE", payloadOverride?: any) => {
+    const payload = payloadOverride ?? generalConnection;
+
+    console.log(`[GeneralSettingsTab:${context}] payload`, {
+      useForEveryFactory: payload.useForEveryFactory,
+      dbSystem: payload.dbSystem,
+      driverClass: payload.driverClass,
+      url: payload.url,
+      defaultCatalog: payload.defaultCatalog,
+      userName: payload.userName,
+      password: payload.password ? "***" : "",
     });
   };
 
   const onTestConnection = async () => {
     clearMessages();
 
+    if (!generalConnection.defaultCatalog.trim()) {
+      setLocalMessage({
+        type: "error",
+        text: "Bitte ein Database/Catalog angeben.",
+      });
+      return;
+    }
+
+    if (!generalConnection.url.trim()) {
+      setLocalMessage({
+        type: "error",
+        text: "Bitte eine gültige JDBC-URL angeben.",
+      });
+      return;
+    }
+
+    const payload = buildTestPayload();
+
     setLocalMessage({
       type: "info",
-      text: t("messageTestingConnection"),
+      text: isDerby
+        ? "Testing Apache Derby connection without username/password..."
+        : t("messageTestingConnection", {
+            defaultValue: "Testing connection...",
+          }),
     });
 
+    logCurrentPayload("TEST", payload);
+
     try {
-      await dispatch(testGeneralDbConnection(generalConnection)).unwrap();
+      await dispatch(testGeneralDbConnection(payload)).unwrap();
 
       setLocalMessage({
         type: "success",
-        text: t("messageConnectionTestSuccess"),
+        text: t("messageConnectionTestSuccess", {
+          defaultValue: "Connection test was successful.",
+        }),
       });
     } catch (err: any) {
       setLocalMessage({
         type: "error",
         text:
           err?.message ||
-          t("messageConnectionTestError"),
+          t("messageConnectionTestError", {
+            defaultValue: "Connection test failed.",
+          }),
       });
     }
   };
@@ -447,19 +503,25 @@ export function GeneralSettingsTab() {
   const onSave = async () => {
     clearMessages();
 
+    logCurrentPayload("SAVE");
+
     try {
       await dispatch(saveGeneralDbConnectionSettings(generalConnection)).unwrap();
 
       setLocalMessage({
         type: "success",
-        text: t("messageSettingsSaved"),
+        text: t("messageSettingsSaved", {
+          defaultValue: "Settings saved successfully.",
+        }),
       });
     } catch (err: any) {
       setLocalMessage({
         type: "error",
         text:
           err?.message ||
-          t("messageSettingsSaveError"),
+          t("messageSettingsSaveError", {
+            defaultValue: "Saving settings failed.",
+          }),
       });
     }
   };

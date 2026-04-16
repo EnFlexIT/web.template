@@ -7,6 +7,13 @@ type PropertyEntry = {
   valueType: "INTEGER" | "BOOLEAN" | "STRING" | "LONG" | "DOUBLE";
 };
 
+type BackendResponse = {
+  dateTime?: string;
+  messageType?: string;
+  message?: string;
+  propertyEntries?: PropertyEntry[];
+};
+
 export type FactoryState =
   | "NotAvailableYet"
   | "Destroyed"
@@ -112,6 +119,58 @@ const initialState: DbSettingsState = {
 function getApi(thunkAPI: { getState: () => unknown }) {
   const state = thunkAPI.getState() as RootState;
   return state.api.awb_rest_api.infoApi;
+}
+
+function getBackendErrorMessage(error: unknown, fallback: string) {
+  const maybeAxiosError = error as any;
+
+  return (
+    maybeAxiosError?.response?.data?.message ||
+    maybeAxiosError?.message ||
+    fallback
+  );
+}
+
+function ensureSuccessfulResponse(response: any): BackendResponse {
+  const data: BackendResponse = response?.data ?? {};
+
+  if (String(data?.messageType ?? "").toUpperCase() === "ERROR") {
+    throw new Error(data.message || "Backend returned an error.");
+  }
+
+  return data;
+}
+
+function normalizeDbSystemName(dbSystem: string) {
+  const normalized = dbSystem.trim();
+
+  if (normalized === "Apache Derby (Embedded)") {
+    return "Apache Derby";
+  }
+
+  return normalized;
+}
+
+function isDerbyDbSystem(dbSystem: string) {
+  return normalizeDbSystemName(dbSystem) === "Apache Derby";
+}
+
+
+function normalizeDriverClass(dbSystem: string, driverClass: string) {
+  const trimmed = driverClass.trim();
+
+  if (!isDerbyDbSystem(dbSystem)) {
+    return trimmed;
+  }
+
+  if (
+    trimmed === "" ||
+    trimmed === "org.apache.derby.jdbc.EmbeddedDriver"
+  ) {
+    return "org.apache.derby.iapi.jdbc.AutoloadedDriver";
+  }
+
+  return trimmed;
 }
 
 function sortIndexedEntries(entries: PropertyEntry[]) {
@@ -250,9 +309,7 @@ function mapFactoryConnection(
 ): FactoryDbConnectionSettings {
   const find = (suffix: string) =>
     entries.find(
-      (entry) =>
-        entry.key === suffix ||
-        entry.key.endsWith(`.${suffix}`),
+      (entry) => entry.key === suffix || entry.key.endsWith(`.${suffix}`),
     )?.value ?? "";
 
   return {
@@ -271,10 +328,14 @@ function buildGeneralConnectionEntries(
 ): PropertyEntry[] {
   return [
     toPropertyEntry("useForEveryFactory", payload.useForEveryFactory, "BOOLEAN"),
-    toPropertyEntry("dbSystem", payload.dbSystem, "STRING"),
+    toPropertyEntry(
+      "dbSystem",
+      normalizeDbSystemName(payload.dbSystem),
+      "STRING",
+    ),
     toPropertyEntry(
       "hibernate.connection.driver_class",
-      payload.driverClass,
+      normalizeDriverClass(payload.dbSystem, payload.driverClass),
       "STRING",
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
@@ -288,10 +349,14 @@ function buildTestConnectionEntries(
   payload: GeneralDbConnectionSettings | FactoryDbConnectionSettings,
 ): PropertyEntry[] {
   return [
-    toPropertyEntry("dbSystem", payload.dbSystem, "STRING"),
+    toPropertyEntry(
+      "dbSystem",
+      normalizeDbSystemName(payload.dbSystem),
+      "STRING",
+    ),
     toPropertyEntry(
       "hibernate.connection.driver_class",
-      payload.driverClass,
+      normalizeDriverClass(payload.dbSystem, payload.driverClass),
       "STRING",
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
@@ -306,10 +371,14 @@ function buildFactoryConnectionEntries(
 ): PropertyEntry[] {
   return [
     toPropertyEntry("factoryID", payload.factoryId, "STRING"),
-    toPropertyEntry("dbSystem", payload.dbSystem, "STRING"),
+    toPropertyEntry(
+      "dbSystem",
+      normalizeDbSystemName(payload.dbSystem),
+      "STRING",
+    ),
     toPropertyEntry(
       "hibernate.connection.driver_class",
-      payload.driverClass,
+      normalizeDriverClass(payload.dbSystem, payload.driverClass),
       "STRING",
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
@@ -334,7 +403,8 @@ export const fetchDbSettings = createAsyncThunk(
       const dbSystemsRes = await api.getAppSettings({
         headers: { "X-Performative": "DB.SYSTEMS" },
       });
-      dbEntries = dbSystemsRes.data?.propertyEntries ?? [];
+      const data = ensureSuccessfulResponse(dbSystemsRes);
+      dbEntries = data.propertyEntries ?? [];
     } catch (error) {
       console.error("DB.SYSTEMS FAILED:", error);
     }
@@ -343,7 +413,8 @@ export const fetchDbSettings = createAsyncThunk(
       const dbSystemParametersRes = await api.getAppSettings({
         headers: { "X-Performative": "DB.SYSTEMS.PARAMETER" },
       });
-      dbSystemParameterEntries = dbSystemParametersRes.data?.propertyEntries ?? [];
+      const data = ensureSuccessfulResponse(dbSystemParametersRes);
+      dbSystemParameterEntries = data.propertyEntries ?? [];
     } catch (error) {
       console.error("DB.SYSTEMS.PARAMETER FAILED:", error);
     }
@@ -352,7 +423,8 @@ export const fetchDbSettings = createAsyncThunk(
       const factoriesRes = await api.getAppSettings({
         headers: { "X-Performative": "DB.FACTORIES" },
       });
-      factoryEntries = factoriesRes.data?.propertyEntries ?? [];
+      const data = ensureSuccessfulResponse(factoriesRes);
+      factoryEntries = data.propertyEntries ?? [];
     } catch (error) {
       console.error("DB.FACTORIES FAILED:", error);
     }
@@ -361,7 +433,8 @@ export const fetchDbSettings = createAsyncThunk(
       const derbyRes = await api.getAppSettings({
         headers: { "X-Performative": "DB.DERBY.NETWORKSERVER" },
       });
-      derbyEntries = derbyRes.data?.propertyEntries ?? [];
+      const data = ensureSuccessfulResponse(derbyRes);
+      derbyEntries = data.propertyEntries ?? [];
     } catch (error) {
       console.error("DB.DERBY.NETWORKSERVER FAILED:", error);
     }
@@ -370,7 +443,8 @@ export const fetchDbSettings = createAsyncThunk(
       const generalRes = await api.getAppSettings({
         headers: { "X-Performative": "DB.CONN.GENERAL" },
       });
-      generalEntries = generalRes.data?.propertyEntries ?? [];
+      const data = ensureSuccessfulResponse(generalRes);
+      generalEntries = data.propertyEntries ?? [];
     } catch (error) {
       console.error("DB.CONN.GENERAL FAILED:", error);
     }
@@ -394,12 +468,21 @@ export const fetchDbSystemParameters = createAsyncThunk(
   async (_, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    const response = await api.getAppSettings({
-      headers: { "X-Performative": "DB.SYSTEMS.PARAMETER" },
-    });
+    try {
+      const response = await api.getAppSettings({
+        headers: { "X-Performative": "DB.SYSTEMS.PARAMETER" },
+      });
 
-    const entries = response.data?.propertyEntries ?? [];
-    return mapDbSystemParameters(entries);
+      const data = ensureSuccessfulResponse(response);
+      return mapDbSystemParameters(data.propertyEntries ?? []);
+    } catch (error) {
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "DB-System-Parameter konnten nicht geladen werden.",
+        ),
+      );
+    }
   },
 );
 
@@ -408,12 +491,21 @@ export const fetchGeneralDbConnectionSettings = createAsyncThunk(
   async (_, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    const response = await api.getAppSettings({
-      headers: { "X-Performative": "DB.CONN.GENERAL" },
-    });
+    try {
+      const response = await api.getAppSettings({
+        headers: { "X-Performative": "DB.CONN.GENERAL" },
+      });
 
-    const entries = response.data?.propertyEntries ?? [];
-    return mapGeneralConnection(entries);
+      const data = ensureSuccessfulResponse(response);
+      return mapGeneralConnection(data.propertyEntries ?? []);
+    } catch (error) {
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "General DB-Settings konnten nicht geladen werden.",
+        ),
+      );
+    }
   },
 );
 
@@ -422,18 +514,37 @@ export const saveGeneralDbConnectionSettings = createAsyncThunk(
   async (payload: GeneralDbConnectionSettings, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    await api.setAppSettings(
-      {
-        propertyEntries: buildGeneralConnectionEntries(payload),
-      } as any,
-      {
-        headers: {
-          "X-Performative": "DB.CONN.GENERAL",
-        },
-      },
-    );
+    try {
+      const propertyEntries = buildGeneralConnectionEntries(payload);
+      console.log(
+        "DB.CONN.GENERAL propertyEntries:",
+        JSON.stringify(propertyEntries, null, 2),
+      );
 
-    return payload;
+      const response = await api.setAppSettings(
+        {
+          propertyEntries,
+        } as any,
+        {
+          headers: {
+            "X-Performative": "DB.CONN.GENERAL",
+          },
+        },
+      );
+
+      console.log("DB.CONN.GENERAL response:", response?.data);
+
+      ensureSuccessfulResponse(response);
+      return payload;
+    } catch (error) {
+      console.log("DB.CONN.GENERAL error:", error);
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "General DB-Settings konnten nicht gespeichert werden.",
+        ),
+      );
+    }
   },
 );
 
@@ -442,18 +553,34 @@ export const testGeneralDbConnection = createAsyncThunk(
   async (payload: GeneralDbConnectionSettings, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    await api.setAppSettings(
-      {
-        propertyEntries: buildTestConnectionEntries(payload),
-      } as any,
-      {
-        headers: {
-          "X-Performative": "DB.CONN.TEST",
-        },
-      },
-    );
+    try {
+      const propertyEntries = buildTestConnectionEntries(payload);
+      console.log(
+        "DB.CONN.TEST propertyEntries:",
+        JSON.stringify(propertyEntries, null, 2),
+      );
 
-    return true;
+      const response = await api.setAppSettings(
+        {
+          propertyEntries,
+        } as any,
+        {
+          headers: {
+            "X-Performative": "DB.CONN.TEST",
+          },
+        },
+      );
+
+      console.log("DB.CONN.TEST response:", response?.data);
+
+      ensureSuccessfulResponse(response);
+      return true;
+    } catch (error) {
+      console.log("DB.CONN.TEST error:", error);
+      throw new Error(
+        getBackendErrorMessage(error, "DB Connection Test fehlgeschlagen."),
+      );
+    }
   },
 );
 
@@ -462,15 +589,24 @@ export const fetchFactoryDbConnectionSettings = createAsyncThunk(
   async (factoryId: string, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    const response = await api.getAppSettings({
-      headers: {
-        "X-Performative": "DB.CONN.FACTORY.GET",
-        "X-Factory-ID": factoryId,
-      },
-    });
+    try {
+      const response = await api.getAppSettings({
+        headers: {
+          "X-Performative": "DB.CONN.FACTORY.GET",
+          "X-Factory-ID": factoryId,
+        },
+      });
 
-    const entries = response.data?.propertyEntries ?? [];
-    return mapFactoryConnection(entries, factoryId);
+      const data = ensureSuccessfulResponse(response);
+      return mapFactoryConnection(data.propertyEntries ?? [], factoryId);
+    } catch (error) {
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "Factory-DB-Settings konnten nicht geladen werden.",
+        ),
+      );
+    }
   },
 );
 
@@ -479,18 +615,37 @@ export const saveFactoryDbConnectionSettings = createAsyncThunk(
   async (payload: FactoryDbConnectionSettings, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    await api.setAppSettings(
-      {
-        propertyEntries: buildFactoryConnectionEntries(payload),
-      } as any,
-      {
-        headers: {
-          "X-Performative": "DB.CONN.FACTORY.SET",
-        },
-      },
-    );
+    try {
+      const propertyEntries = buildFactoryConnectionEntries(payload);
+      console.log(
+        "DB.CONN.FACTORY.SET propertyEntries:",
+        JSON.stringify(propertyEntries, null, 2),
+      );
 
-    return payload;
+      const response = await api.setAppSettings(
+        {
+          propertyEntries,
+        } as any,
+        {
+          headers: {
+            "X-Performative": "DB.CONN.FACTORY.SET",
+          },
+        },
+      );
+
+      console.log("DB.CONN.FACTORY.SET response:", response?.data);
+
+      ensureSuccessfulResponse(response);
+      return payload;
+    } catch (error) {
+      console.log("DB.CONN.FACTORY.SET error:", error);
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "Factory-DB-Settings konnten nicht gespeichert werden.",
+        ),
+      );
+    }
   },
 );
 
@@ -499,18 +654,34 @@ export const testFactoryDbConnection = createAsyncThunk(
   async (payload: FactoryDbConnectionSettings, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    await api.setAppSettings(
-      {
-        propertyEntries: buildTestConnectionEntries(payload),
-      } as any,
-      {
-        headers: {
-          "X-Performative": "DB.CONN.TEST",
-        },
-      },
-    );
+    try {
+      const propertyEntries = buildTestConnectionEntries(payload);
+      console.log(
+        "DB.CONN.TEST (factory) propertyEntries:",
+        JSON.stringify(propertyEntries, null, 2),
+      );
 
-    return true;
+      const response = await api.setAppSettings(
+        {
+          propertyEntries,
+        } as any,
+        {
+          headers: {
+            "X-Performative": "DB.CONN.TEST",
+          },
+        },
+      );
+
+      console.log("DB.CONN.TEST (factory) response:", response?.data);
+
+      ensureSuccessfulResponse(response);
+      return true;
+    } catch (error) {
+      console.log("DB.CONN.TEST (factory) error:", error);
+      throw new Error(
+        getBackendErrorMessage(error, "Factory DB Connection Test fehlgeschlagen."),
+      );
+    }
   },
 );
 
@@ -519,28 +690,48 @@ export const saveDerbyNetworkServerSettings = createAsyncThunk(
   async (payload: DerbyNetworkServerSettings, thunkAPI) => {
     const api = getApi(thunkAPI);
 
-    await api.setAppSettings(
-      {
-        propertyEntries: [
-          toPropertyEntry(
-            "isStartDerbyNetworkServer",
-            payload.isStartDerbyNetworkServer,
-            "BOOLEAN",
-          ),
-          toPropertyEntry("host-IP", payload.hostIp, "STRING"),
-          toPropertyEntry("port", payload.port, "INTEGER"),
-          toPropertyEntry("userName", payload.userName, "STRING"),
-          toPropertyEntry("password", payload.password, "STRING"),
-        ],
-      } as any,
-      {
-        headers: {
-          "X-Performative": "DB.DERBY.NETWORKSERVER",
-        },
-      },
-    );
+    try {
+      const propertyEntries = [
+        toPropertyEntry(
+          "isStartDerbyNetworkServer",
+          payload.isStartDerbyNetworkServer,
+          "BOOLEAN",
+        ),
+        toPropertyEntry("host-IP", payload.hostIp, "STRING"),
+        toPropertyEntry("port", payload.port, "INTEGER"),
+        toPropertyEntry("userName", payload.userName, "STRING"),
+        toPropertyEntry("password", payload.password, "STRING"),
+      ];
 
-    return payload;
+      console.log(
+        "DB.DERBY.NETWORKSERVER propertyEntries:",
+        JSON.stringify(propertyEntries, null, 2),
+      );
+
+      const response = await api.setAppSettings(
+        {
+          propertyEntries,
+        } as any,
+        {
+          headers: {
+            "X-Performative": "DB.DERBY.NETWORKSERVER",
+          },
+        },
+      );
+
+      console.log("DB.DERBY.NETWORKSERVER response:", response?.data);
+
+      ensureSuccessfulResponse(response);
+      return payload;
+    } catch (error) {
+      console.log("DB.DERBY.NETWORKSERVER error:", error);
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "Derby-Network-Server-Settings konnten nicht gespeichert werden.",
+        ),
+      );
+    }
   },
 );
 
