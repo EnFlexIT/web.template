@@ -19,6 +19,7 @@ import {
   selectDbSettingsSaving,
   setDerbyField,
 } from "../../../redux/slices/dbSettingsSlice";
+import { useTranslation } from "react-i18next";
 
 type LocalMessage =
   | {
@@ -27,9 +28,53 @@ type LocalMessage =
     }
   | null;
 
+function translateBackendMessage(
+  message: string,
+  t: (key: string, options?: any) => string,
+) {
+  const normalized = String(message ?? "").trim();
+
+  if (!normalized) {
+    return normalized;
+  }
+
+  if (normalized === "Done") {
+    return t("backendMessageDone");
+  }
+
+  if (normalized === "Properties could not be applied.") {
+    return t("backendMessagePropertiesCouldNotBeApplied");
+  }
+
+  if (
+    normalized === "Permission denied!!" ||
+    normalized === "Permission denied!"
+  ) {
+    return t("backendMessagePermissionDenied");
+  }
+
+  let translated = normalized;
+
+  translated = translated.replaceAll(
+    "Properties could not be applied.",
+    t("backendMessagePropertiesCouldNotBeApplied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!!",
+    t("backendMessagePermissionDenied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!",
+    t("backendMessagePermissionDenied"),
+  );
+
+  return translated;
+}
+
 export function DerbyNetworkServerTab() {
   const { theme } = useUnistyles();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation(["DataBase"]);
 
   const derby = useAppSelector(selectDerbyNetworkServer);
   const isLoading = useAppSelector(selectDbSettingsLoading);
@@ -38,7 +83,9 @@ export function DerbyNetworkServerTab() {
 
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
 
-  const fallbackInfoText = "Info Box !";
+  const fallbackInfoText = t("messageInfoBoxDefault", {
+    defaultValue: "Info Box",
+  });
 
   useEffect(() => {
     dispatch(fetchDbSettings());
@@ -48,19 +95,22 @@ export function DerbyNetworkServerTab() {
     if (error) {
       return {
         type: "error" as const,
-        text: error,
+        text: translateBackendMessage(error, t),
       };
     }
 
     if (localMessage) {
-      return localMessage;
+      return {
+        ...localMessage,
+        text: translateBackendMessage(localMessage.text, t),
+      };
     }
 
     return {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText]);
+  }, [error, localMessage, fallbackInfoText, t]);
 
   const clearMessages = () => {
     if (error) {
@@ -77,28 +127,33 @@ export function DerbyNetworkServerTab() {
   const onSave = async () => {
     clearMessages();
 
-    const resultAction = await dispatch(
-      saveDerbyNetworkServerSettings({
-        isStartDerbyNetworkServer: derby.isStartDerbyNetworkServer,
-        hostIp: derby.hostIp.trim(),
-        port: normalizedPort,
-        userName: derby.userName,
-        password: derby.password,
-      }),
-    );
+    try {
+      await dispatch(
+        saveDerbyNetworkServerSettings({
+          isStartDerbyNetworkServer: derby.isStartDerbyNetworkServer,
+          hostIp: derby.hostIp.trim(),
+          port: normalizedPort,
+          userName: derby.userName,
+          password: derby.password,
+        }),
+      ).unwrap();
 
-    if (saveDerbyNetworkServerSettings.fulfilled.match(resultAction)) {
       setLocalMessage({
         type: "success",
-        text: "Derby Network Server Settings wurden gespeichert.",
+        text: t("messageSettingsSaved"),
       });
-      return;
+    } catch (err: any) {
+      setLocalMessage({
+        type: "error",
+        text: translateBackendMessage(
+          err?.message ||
+            t("messageSettingsSaveError", {
+              defaultValue: "Fehler beim Speichern der Einstellungen.",
+            }),
+          t,
+        ),
+      });
     }
-
-    setLocalMessage({
-      type: "error",
-      text: "Speichern der Derby Network Server Settings ist fehlgeschlagen.",
-    });
   };
 
   const onTestConnection = () => {
@@ -106,7 +161,8 @@ export function DerbyNetworkServerTab() {
 
     setLocalMessage({
       type: "info",
-   text: "Für Derby Network Server gibt es aktuell keinen separaten Test-Endpunkt im Backend. Die Einstellungen können gespeichert werden, ein echter Verbindungstest ist hier derzeit jedoch nicht verfügbar.",    });
+      text: t("messageDerbyNetworkServerTestInfo"),
+    });
   };
 
   const isFormEnabled = derby.isStartDerbyNetworkServer;
@@ -116,7 +172,7 @@ export function DerbyNetworkServerTab() {
     <Card style={styles.card} padding="md">
       <View style={styles.container}>
         <View style={styles.header}>
-          <H2>Derby Network Server Settings</H2>
+          <H2>{t("labelDerbyNetworkServerSettings")}</H2>
           <View
             style={[
               styles.separator,
@@ -161,7 +217,7 @@ export function DerbyNetworkServerTab() {
             ]}
           >
             <TextInput
-              label="Host or IP"
+              label={t("labelHostOrIP")}
               value={derby.hostIp}
               onChangeText={(value) => {
                 clearMessages();
@@ -177,7 +233,7 @@ export function DerbyNetworkServerTab() {
             />
 
             <TextInput
-              label="Port (default: 1527)"
+              label={`${t("labelPort")} (default: 1527)`}
               value={derby.port ? String(derby.port) : ""}
               keyboardType="numeric"
               onChangeText={(value) => {
@@ -196,7 +252,7 @@ export function DerbyNetworkServerTab() {
             />
 
             <TextInput
-              label="User Name"
+              label={t("labelUserName")}
               value={derby.userName}
               onChangeText={(value) => {
                 clearMessages();
@@ -212,7 +268,7 @@ export function DerbyNetworkServerTab() {
             />
 
             <TextInput
-              label="Password"
+              label={t("labelPassword")}
               value={derby.password}
               onChangeText={(value) => {
                 clearMessages();
@@ -232,14 +288,14 @@ export function DerbyNetworkServerTab() {
 
         <View style={styles.actions}>
           <ActionButton
-            label="Test Connection"
+            label={t("labelTestConnection")}
             onPress={onTestConnection}
             size="sm"
             disabled={true}
           />
 
           <ActionButton
-            label={isSaving ? "Saving..." : "Save"}
+            label={isSaving ? "Saving..." : t("labelSave")}
             onPress={onSave}
             size="sm"
             variant="secondary"

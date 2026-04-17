@@ -190,6 +190,88 @@ function inferVisibleFields(urlMask: string, currentUrl: string) {
   };
 }
 
+function translateBackendMessage(
+  message: string,
+  t: (key: string, options?: any) => string,
+) {
+  const normalized = String(message ?? "").trim();
+
+  if (!normalized) {
+    return normalized;
+  }
+
+  if (normalized === "Done") {
+    return t("backendMessageDone");
+  }
+
+  if (normalized === "Connection test failed.") {
+    return t("backendMessageConnectionTestFailed");
+  }
+
+  if (normalized === "Connection test successful.") {
+    return t("backendMessageConnectionTestSuccessful");
+  }
+
+  if (normalized === "The user name is empty.") {
+    return t("backendMessageUserNameEmpty");
+  }
+
+  if (normalized === "The password is empty.") {
+    return t("backendMessagePasswordEmpty");
+  }
+
+  if (
+    normalized === "The user name is empty., The password is empty." ||
+    normalized === "The user name is empty. The password is empty."
+  ) {
+    return t("backendMessageCombinedUserPasswordEmpty");
+  }
+
+  if (normalized === "Properties could not be applied.") {
+    return t("backendMessagePropertiesCouldNotBeApplied");
+  }
+
+  if (
+    normalized === "Permission denied!!" ||
+    normalized === "Permission denied!"
+  ) {
+    return t("backendMessagePermissionDenied");
+  }
+
+  let translated = normalized;
+
+  translated = translated.replaceAll(
+    "Connection test failed.",
+    t("backendMessageConnectionTestFailed"),
+  );
+  translated = translated.replaceAll(
+    "Connection test successful.",
+    t("backendMessageConnectionTestSuccessful"),
+  );
+  translated = translated.replaceAll(
+    "The user name is empty.",
+    t("backendMessageUserNameEmpty"),
+  );
+  translated = translated.replaceAll(
+    "The password is empty.",
+    t("backendMessagePasswordEmpty"),
+  );
+  translated = translated.replaceAll(
+    "Properties could not be applied.",
+    t("backendMessagePropertiesCouldNotBeApplied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!!",
+    t("backendMessagePermissionDenied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!",
+    t("backendMessagePermissionDenied"),
+  );
+
+  return translated;
+}
+
 export function GeneralSettingsTab() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["DataBase"]);
@@ -204,7 +286,7 @@ export function GeneralSettingsTab() {
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
 
   const fallbackInfoText = t("messageInfoBoxDefault", {
-    defaultValue: "Info Box !",
+    defaultValue: "Info Box",
   });
 
   useEffect(() => {
@@ -293,19 +375,22 @@ export function GeneralSettingsTab() {
     if (error) {
       return {
         type: "error" as const,
-        text: error,
+        text: translateBackendMessage(error, t),
       };
     }
 
     if (localMessage) {
-      return localMessage;
+      return {
+        ...localMessage,
+        text: translateBackendMessage(localMessage.text, t),
+      };
     }
 
     return {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText]);
+  }, [error, localMessage, fallbackInfoText, t]);
 
   const clearMessages = () => {
     if (error) {
@@ -420,7 +505,7 @@ export function GeneralSettingsTab() {
     setLocalMessage({
       type: "info",
       text: t("messageTestingConnection", {
-        defaultValue: "Testing connection...",
+        defaultValue: "Teste Verbindung...",
       }),
     });
 
@@ -431,16 +516,21 @@ export function GeneralSettingsTab() {
 
       setLocalMessage({
         type: "success",
-        text: backendMessage || "Connection test was successful.",
+        text: translateBackendMessage(
+          backendMessage || "Connection test was successful.",
+          t,
+        ),
       });
     } catch (err: any) {
       setLocalMessage({
         type: "error",
-        text:
+        text: translateBackendMessage(
           err?.message ||
-          t("messageConnectionTestError", {
-            defaultValue: "Connection test failed.",
-          }),
+            t("messageConnectionTestError", {
+              defaultValue: "Connection test failed.",
+            }),
+          t,
+        ),
       });
     }
   };
@@ -460,11 +550,13 @@ export function GeneralSettingsTab() {
     } catch (err: any) {
       setLocalMessage({
         type: "error",
-        text:
+        text: translateBackendMessage(
           err?.message ||
-          t("messageSettingsSaveError", {
-            defaultValue: "Saving settings failed.",
-          }),
+            t("messageSettingsSaveError", {
+              defaultValue: "Saving settings failed.",
+            }),
+          t,
+        ),
       });
     }
   };
@@ -504,7 +596,7 @@ export function GeneralSettingsTab() {
           ]}
         >
           <View style={styles.topField}>
-            <H4 style={styles.topLabel}>Database System</H4>
+            <H4 style={styles.topLabel}>{t("labelDatabaseSystem")}</H4>
             <Dropdown
               size="sm"
               value={generalConnection.dbSystem}
@@ -530,7 +622,7 @@ export function GeneralSettingsTab() {
             )}
 
             {visibleFields.port && (
-              <FieldRow label="Port">
+              <FieldRow label={t("labelPort")}>
                 <TextInput
                   size="sm"
                   value={parsedUrl.port}
@@ -546,7 +638,7 @@ export function GeneralSettingsTab() {
             )}
 
             {visibleFields.catalog && (
-              <FieldRow label="Database">
+              <FieldRow label={t("labelDatabaseName")}>
                 <TextInput
                   size="sm"
                   value={generalConnection.defaultCatalog}

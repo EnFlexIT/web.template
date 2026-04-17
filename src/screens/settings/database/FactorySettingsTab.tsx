@@ -102,6 +102,104 @@ function getFactoryStateMeta(state: string): FactoryStateMeta {
   }
 }
 
+function translateBackendMessage(
+  message: string,
+  t: (key: string, options?: any) => string,
+) {
+  const normalized = String(message ?? "").trim();
+
+  if (!normalized) {
+    return normalized;
+  }
+
+  if (normalized === "Done") {
+    return t("backendMessageDone");
+  }
+
+  if (normalized === "Connection test failed.") {
+    return t("backendMessageConnectionTestFailed");
+  }
+
+  if (normalized === "Connection test successful.") {
+    return t("backendMessageConnectionTestSuccessful");
+  }
+
+  if (normalized === "DB connection test failed.") {
+    return t("backendMessageConnectionTestFailed");
+  }
+
+  if (normalized === "DB connection test was successful.") {
+    return t("backendMessageConnectionTestSuccessful");
+  }
+
+  if (normalized === "The user name is empty.") {
+    return t("backendMessageUserNameEmpty");
+  }
+
+  if (normalized === "The password is empty.") {
+    return t("backendMessagePasswordEmpty");
+  }
+
+  if (
+    normalized === "The user name is empty., The password is empty." ||
+    normalized === "The user name is empty. The password is empty."
+  ) {
+    return t("backendMessageCombinedUserPasswordEmpty");
+  }
+
+  if (normalized === "Properties could not be applied.") {
+    return t("backendMessagePropertiesCouldNotBeApplied");
+  }
+
+  if (
+    normalized === "Permission denied!!" ||
+    normalized === "Permission denied!"
+  ) {
+    return t("backendMessagePermissionDenied");
+  }
+
+  let translated = normalized;
+
+  translated = translated.replaceAll(
+    "Connection test failed.",
+    t("backendMessageConnectionTestFailed"),
+  );
+  translated = translated.replaceAll(
+    "Connection test successful.",
+    t("backendMessageConnectionTestSuccessful"),
+  );
+  translated = translated.replaceAll(
+    "DB connection test failed.",
+    t("backendMessageConnectionTestFailed"),
+  );
+  translated = translated.replaceAll(
+    "DB connection test was successful.",
+    t("backendMessageConnectionTestSuccessful"),
+  );
+  translated = translated.replaceAll(
+    "The user name is empty.",
+    t("backendMessageUserNameEmpty"),
+  );
+  translated = translated.replaceAll(
+    "The password is empty.",
+    t("backendMessagePasswordEmpty"),
+  );
+  translated = translated.replaceAll(
+    "Properties could not be applied.",
+    t("backendMessagePropertiesCouldNotBeApplied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!!",
+    t("backendMessagePermissionDenied"),
+  );
+  translated = translated.replaceAll(
+    "Permission denied!",
+    t("backendMessagePermissionDenied"),
+  );
+
+  return translated;
+}
+
 export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
 
@@ -120,7 +218,9 @@ export function FactorySettingsTab() {
 
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
 
-  const fallbackInfoText = t("Info Box !");
+  const fallbackInfoText = t("messageInfoBoxDefault", {
+    defaultValue: "Info Box",
+  });
 
   useEffect(() => {
     dispatch(fetchDbSettings());
@@ -180,10 +280,10 @@ export function FactorySettingsTab() {
     "";
 
   const resolvedUserName =
-    selectedFactoryConnection.userName || activeDbSystemDefinition?.userName || "";
+    selectedFactoryConnection.userName || activeDbSystemDefinition?.userName || "admin";
 
   const resolvedPassword =
-    selectedFactoryConnection.password || activeDbSystemDefinition?.password || "";
+    selectedFactoryConnection.password || activeDbSystemDefinition?.password || "admin";
 
   const isFormDisabled = !selectedFactoryId || isLoading;
 
@@ -191,19 +291,22 @@ export function FactorySettingsTab() {
     if (error) {
       return {
         type: "error" as const,
-        text: error,
+        text: translateBackendMessage(error, t),
       };
     }
 
     if (localMessage) {
-      return localMessage;
+      return {
+        ...localMessage,
+        text: translateBackendMessage(localMessage.text, t),
+      };
     }
 
     return {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText]);
+  }, [error, localMessage, fallbackInfoText, t]);
 
   const clearMessages = () => {
     if (error) {
@@ -253,14 +356,14 @@ export function FactorySettingsTab() {
     dispatch(
       setSelectedFactoryConnectionField({
         key: "userName",
-        value: definition?.userName ?? "",
+        value: definition?.userName ?? "admin",
       }),
     );
 
     dispatch(
       setSelectedFactoryConnectionField({
         key: "password",
-        value: definition?.password ?? "",
+        value: definition?.password ?? "admin",
       }),
     );
   };
@@ -270,30 +373,35 @@ export function FactorySettingsTab() {
 
     clearMessages();
 
-    const resultAction = await dispatch(
-      saveFactoryDbConnectionSettings({
-        factoryId: selectedFactoryId,
-        dbSystem: selectedFactoryConnection.dbSystem,
-        driverClass: resolvedDriverClass,
-        url: resolvedUrl,
-        defaultCatalog: resolvedDefaultCatalog,
-        userName: resolvedUserName,
-        password: resolvedPassword,
-      }),
-    );
+    try {
+      await dispatch(
+        saveFactoryDbConnectionSettings({
+          factoryId: selectedFactoryId,
+          dbSystem: selectedFactoryConnection.dbSystem,
+          driverClass: resolvedDriverClass,
+          url: resolvedUrl,
+          defaultCatalog: resolvedDefaultCatalog,
+          userName: resolvedUserName,
+          password: resolvedPassword,
+        }),
+      ).unwrap();
 
-    if (saveFactoryDbConnectionSettings.fulfilled.match(resultAction)) {
       setLocalMessage({
         type: "success",
         text: t("messageSettingsSaved"),
       });
-      return;
+    } catch (err: any) {
+      setLocalMessage({
+        type: "error",
+        text: translateBackendMessage(
+          err?.message ||
+            t("messageSettingsSaveError", {
+              defaultValue: "Saving factory DB settings failed.",
+            }),
+          t,
+        ),
+      });
     }
-
-    setLocalMessage({
-      type: "error",
-      text: "Saving factory DB settings failed.",
-    });
   };
 
   const onTestConnection = async () => {
@@ -301,30 +409,45 @@ export function FactorySettingsTab() {
 
     clearMessages();
 
-    const resultAction = await dispatch(
-      testFactoryDbConnection({
-        factoryId: selectedFactoryId,
-        dbSystem: selectedFactoryConnection.dbSystem,
-        driverClass: resolvedDriverClass,
-        url: resolvedUrl,
-        defaultCatalog: resolvedDefaultCatalog,
-        userName: resolvedUserName,
-        password: resolvedPassword,
+    setLocalMessage({
+      type: "info",
+      text: t("messageTestingConnection", {
+        defaultValue: "Teste Verbindung...",
       }),
-    );
+    });
 
-    if (testFactoryDbConnection.fulfilled.match(resultAction)) {
+    try {
+      const backendMessage = await dispatch(
+        testFactoryDbConnection({
+          factoryId: selectedFactoryId,
+          dbSystem: selectedFactoryConnection.dbSystem,
+          driverClass: resolvedDriverClass,
+          url: resolvedUrl,
+          defaultCatalog: resolvedDefaultCatalog,
+          userName: resolvedUserName,
+          password: resolvedPassword,
+        }),
+      ).unwrap();
+
       setLocalMessage({
         type: "success",
-        text: "DB connection test was successful.",
+        text: translateBackendMessage(
+          backendMessage || "Connection test successful.",
+          t,
+        ),
       });
-      return;
+    } catch (err: any) {
+      setLocalMessage({
+        type: "error",
+        text: translateBackendMessage(
+          err?.message ||
+            t("messageConnectionTestError", {
+              defaultValue: "Connection test failed.",
+            }),
+          t,
+        ),
+      });
     }
-
-    setLocalMessage({
-      type: "error",
-      text: "DB connection test failed.",
-    });
   };
 
   return (
@@ -400,7 +523,7 @@ export function FactorySettingsTab() {
             />
           </FieldRow>
 
-          <FieldRow label="Resulting URL">
+          <FieldRow label={t("labelResultingUrl")}>
             <TextInput
               size="sm"
               value={resolvedUrl}
