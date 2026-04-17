@@ -78,7 +78,7 @@ export function OfflineOverlay() {
                 <View style={styles.buttonWrap}>
                   <ActionButton
                     variant="secondary"
-                    label={t("changeServer", "Server ändern")}
+                    label={t("changserver")}
                     size="xs"
                     onPress={() => setServerModalVisible(true)}
                   />

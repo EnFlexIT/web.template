@@ -6,7 +6,10 @@
     "onlineTitle": "Server ist wieder erreichbar",
     "onlineMessage": "Ihre Verbindung wurde wiederhergestellt. Sie können jetzt fortfahren.",
     "checking": "Überprüfe...",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "goBack": "Zurück zur Startseite",
+    "changserver": "Server ändern"
+
     
     
 }

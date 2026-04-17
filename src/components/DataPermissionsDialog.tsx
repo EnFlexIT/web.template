@@ -112,7 +112,7 @@ export function DataPermissionsDialog() {
         de: "Deutsch",
         en: "English",
       }) as const,
-    []
+    [],
   );
 
   React.useEffect(() => {
@@ -149,7 +149,9 @@ export function DataPermissionsDialog() {
         <ThemedView style={styles.contentContainer}>
           <ThemedView style={styles.headerRow}>
             <ThemedText style={styles.title}>
-              {t("privacy_settings_title", { defaultValue: "Datenschutz" })}
+              {t("privacy_settings_title", {
+                defaultValue: "Datenschutzeinstellungen",
+              })}
             </ThemedText>
 
             <View style={styles.langBox}>
@@ -182,7 +184,8 @@ export function DataPermissionsDialog() {
                 <ThemedView key={p.id}>
                   <Row
                     label={t((p as any).titleKey ?? "", {
-                      defaultValue: (p as any).title ?? `Permission ${p.id}`,
+                      defaultValue:
+                        (p as any).title ?? `Berechtigung ${p.id}`,
                     })}
                     value={disabled ? true : value}
                     disabled={disabled}
@@ -201,6 +204,8 @@ export function DataPermissionsDialog() {
                 {t("accept_all", { defaultValue: "Alle akzeptieren" })}
               </ThemedText>
             </Pressable>
+
+           
 
             <Pressable
               onPress={einstellungenSpeichern}

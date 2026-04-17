@@ -6,5 +6,6 @@
     "onlineTitle": "Server is reachable again",
     "onlineMessage": "Your connection has been restored. You can now proceed.",
     "checking": "Checking...",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "changserver": "Change  Server"
 }

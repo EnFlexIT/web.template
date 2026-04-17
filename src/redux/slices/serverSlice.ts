@@ -31,7 +31,7 @@ function getDefaultServer(): SavedServer {
 
   return {
     id: "local",
-    name: "My Fancy Home",
+    name: "Smart Home Systeme",
     baseUrl: runtimeBaseUrl ?? fallbackBaseUrl,
     environment: "DEV",
   };
