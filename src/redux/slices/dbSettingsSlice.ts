@@ -131,11 +131,26 @@ function getBackendErrorMessage(error: unknown, fallback: string) {
   );
 }
 
+function getBackendInfoMessage(response: any) {
+  return response?.data?.message || "";
+}
+
+function isBackendFailureMessage(message?: string) {
+  const normalized = String(message ?? "").trim().toLowerCase();
+  return normalized.includes("failed") || normalized.includes("could not");
+}
+
 function ensureSuccessfulResponse(response: any): BackendResponse {
   const data: BackendResponse = response?.data ?? {};
+  const messageType = String(data?.messageType ?? "").toUpperCase();
+  const message = data?.message ?? "";
 
-  if (String(data?.messageType ?? "").toUpperCase() === "ERROR") {
-    throw new Error(data.message || "Backend returned an error.");
+  if (messageType === "ERROR") {
+    throw new Error(message || "Backend returned an error.");
+  }
+
+  if (isBackendFailureMessage(message)) {
+    throw new Error(message);
   }
 
   return data;
@@ -322,11 +337,7 @@ function buildGeneralConnectionEntries(
 ): PropertyEntry[] {
   return [
     toPropertyEntry("useForEveryFactory", payload.useForEveryFactory, "BOOLEAN"),
-    toPropertyEntry(
-      "dbSystem",
-      normalizeDbSystemName(payload.dbSystem),
-      "STRING",
-    ),
+    toPropertyEntry("dbSystem", normalizeDbSystemName(payload.dbSystem), "STRING"),
     toPropertyEntry(
       "hibernate.connection.driver_class",
       normalizeDriverClass(payload.dbSystem, payload.driverClass),
@@ -342,12 +353,11 @@ function buildGeneralConnectionEntries(
 function buildTestConnectionEntries(
   payload: GeneralDbConnectionSettings | FactoryDbConnectionSettings,
 ): PropertyEntry[] {
+  const username = payload.userName?.trim() || "admin";
+  const password = payload.password?.trim() || "admin";
+
   return [
-    toPropertyEntry(
-      "dbSystem",
-      normalizeDbSystemName(payload.dbSystem),
-      "STRING",
-    ),
+    toPropertyEntry("dbSystem", normalizeDbSystemName(payload.dbSystem), "STRING"),
     toPropertyEntry(
       "hibernate.connection.driver_class",
       normalizeDriverClass(payload.dbSystem, payload.driverClass),
@@ -355,8 +365,8 @@ function buildTestConnectionEntries(
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
     toPropertyEntry("hibernate.default_catalog", payload.defaultCatalog, "STRING"),
-    toPropertyEntry("hibernate.connection.username", payload.userName, "STRING"),
-    toPropertyEntry("hibernate.connection.password", payload.password, "STRING"),
+    toPropertyEntry("hibernate.connection.username", username, "STRING"),
+    toPropertyEntry("hibernate.connection.password", password, "STRING"),
   ];
 }
 
@@ -365,11 +375,7 @@ function buildFactoryConnectionEntries(
 ): PropertyEntry[] {
   return [
     toPropertyEntry("factoryID", payload.factoryId, "STRING"),
-    toPropertyEntry(
-      "dbSystem",
-      normalizeDbSystemName(payload.dbSystem),
-      "STRING",
-    ),
+    toPropertyEntry("dbSystem", normalizeDbSystemName(payload.dbSystem), "STRING"),
     toPropertyEntry(
       "hibernate.connection.driver_class",
       normalizeDriverClass(payload.dbSystem, payload.driverClass),
@@ -510,10 +516,6 @@ export const saveGeneralDbConnectionSettings = createAsyncThunk(
 
     try {
       const propertyEntries = buildGeneralConnectionEntries(payload);
-      console.log(
-        "DB.CONN.GENERAL propertyEntries:",
-        JSON.stringify(propertyEntries, null, 2),
-      );
 
       const response = await api.setAppSettings(
         {
@@ -522,12 +524,9 @@ export const saveGeneralDbConnectionSettings = createAsyncThunk(
         } as any,
       );
 
-      console.log("DB.CONN.GENERAL response:", response?.data);
-
       ensureSuccessfulResponse(response);
       return payload;
     } catch (error) {
-      console.log("DB.CONN.GENERAL error:", error);
       throw new Error(
         getBackendErrorMessage(
           error,
@@ -545,10 +544,6 @@ export const testGeneralDbConnection = createAsyncThunk(
 
     try {
       const propertyEntries = buildTestConnectionEntries(payload);
-      console.log(
-        "DB.CONN.TEST propertyEntries:",
-        JSON.stringify(propertyEntries, null, 2),
-      );
 
       const response = await api.setAppSettings(
         {
@@ -557,12 +552,9 @@ export const testGeneralDbConnection = createAsyncThunk(
         } as any,
       );
 
-      console.log("DB.CONN.TEST response:", response?.data);
-
-      ensureSuccessfulResponse(response);
-      return true;
+      const data = ensureSuccessfulResponse(response);
+      return data.message || "Connection test was successful.";
     } catch (error) {
-      console.log("DB.CONN.TEST error:", error);
       throw new Error(
         getBackendErrorMessage(error, "DB Connection Test fehlgeschlagen."),
       );
@@ -603,10 +595,6 @@ export const saveFactoryDbConnectionSettings = createAsyncThunk(
 
     try {
       const propertyEntries = buildFactoryConnectionEntries(payload);
-      console.log(
-        "DB.CONN.FACTORY.SET propertyEntries:",
-        JSON.stringify(propertyEntries, null, 2),
-      );
 
       const response = await api.setAppSettings(
         {
@@ -615,12 +603,9 @@ export const saveFactoryDbConnectionSettings = createAsyncThunk(
         } as any,
       );
 
-      console.log("DB.CONN.FACTORY.SET response:", response?.data);
-
       ensureSuccessfulResponse(response);
       return payload;
     } catch (error) {
-      console.log("DB.CONN.FACTORY.SET error:", error);
       throw new Error(
         getBackendErrorMessage(
           error,
@@ -638,10 +623,6 @@ export const testFactoryDbConnection = createAsyncThunk(
 
     try {
       const propertyEntries = buildTestConnectionEntries(payload);
-      console.log(
-        "DB.CONN.TEST (factory) propertyEntries:",
-        JSON.stringify(propertyEntries, null, 2),
-      );
 
       const response = await api.setAppSettings(
         {
@@ -650,12 +631,9 @@ export const testFactoryDbConnection = createAsyncThunk(
         } as any,
       );
 
-      console.log("DB.CONN.TEST (factory) response:", response?.data);
-
-      ensureSuccessfulResponse(response);
-      return true;
+      const data = ensureSuccessfulResponse(response);
+      return data.message || "Connection test was successful.";
     } catch (error) {
-      console.log("DB.CONN.TEST (factory) error:", error);
       throw new Error(
         getBackendErrorMessage(error, "Factory DB Connection Test fehlgeschlagen."),
       );
@@ -681,11 +659,6 @@ export const saveDerbyNetworkServerSettings = createAsyncThunk(
         toPropertyEntry("password", payload.password, "STRING"),
       ];
 
-      console.log(
-        "DB.DERBY.NETWORKSERVER propertyEntries:",
-        JSON.stringify(propertyEntries, null, 2),
-      );
-
       const response = await api.setAppSettings(
         {
           performative: "db.derby.networkserver",
@@ -693,12 +666,9 @@ export const saveDerbyNetworkServerSettings = createAsyncThunk(
         } as any,
       );
 
-      console.log("DB.DERBY.NETWORKSERVER response:", response?.data);
-
       ensureSuccessfulResponse(response);
       return payload;
     } catch (error) {
-      console.log("DB.DERBY.NETWORKSERVER error:", error);
       throw new Error(
         getBackendErrorMessage(
           error,

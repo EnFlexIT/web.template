@@ -42,20 +42,6 @@ type ParsedConnectionUrl = {
   params: string;
 };
 
-function normalizeDbSystemName(dbSystem: string) {
-  const normalized = dbSystem.trim();
-
-  if (normalized === "Apache Derby (Embedded)") {
-    return "Apache Derby";
-  }
-
-  return normalized;
-}
-
-function isApacheDerby(dbSystem: string) {
-  return normalizeDbSystemName(dbSystem) === "Apache Derby";
-}
-
 function splitUrlAndParams(url: string): { baseUrl: string; params: string } {
   if (!url) {
     return { baseUrl: "", params: "" };
@@ -259,14 +245,14 @@ export function GeneralSettingsTab() {
       dispatch(
         setGeneralConnectionField({
           key: "userName",
-          value: fallbackDefinition?.userName ?? "",
+          value: fallbackDefinition?.userName ?? "admin",
         }),
       );
 
       dispatch(
         setGeneralConnectionField({
           key: "password",
-          value: fallbackDefinition?.password ?? "",
+          value: fallbackDefinition?.password ?? "admin",
         }),
       );
 
@@ -302,7 +288,6 @@ export function GeneralSettingsTab() {
   }, [selectedDbSystemDefinition?.urlMask, generalConnection.url]);
 
   const isFieldsEnabled = generalConnection.useForEveryFactory;
-  const isDerby = isApacheDerby(generalConnection.dbSystem);
 
   const displayedMessage = useMemo(() => {
     if (error) {
@@ -316,18 +301,11 @@ export function GeneralSettingsTab() {
       return localMessage;
     }
 
-    if (isDerby) {
-      return {
-        type: "info" as const,
-        text: "Info Box !",
-      };
-    }
-
     return {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText, isDerby]);
+  }, [error, localMessage, fallbackInfoText]);
 
   const clearMessages = () => {
     if (error) {
@@ -391,18 +369,6 @@ export function GeneralSettingsTab() {
     );
   };
 
-  const buildTestPayload = () => {
-    if (!isDerby) {
-      return generalConnection;
-    }
-
-    return {
-      ...generalConnection,
-      userName: "",
-      password: "",
-    };
-  };
-
   const onChangeCheckbox = (value: boolean) => {
     clearMessages();
 
@@ -420,30 +386,15 @@ export function GeneralSettingsTab() {
     const nextDefinition = dbSystemParameters[value];
     const nextUrl = nextDefinition?.url ?? "";
     const parsedDefinitionUrl = parseConnectionUrl(nextUrl);
-    const nextIsDerby = isApacheDerby(value);
 
     updateConnection({
       dbSystem: value,
       driverClass: nextDefinition?.driverClass ?? "",
       defaultCatalog:
         nextDefinition?.defaultCatalog ?? parsedDefinitionUrl.catalog ?? "",
-      userName: nextIsDerby ? "" : nextDefinition?.userName ?? "",
-      password: nextIsDerby ? "" : nextDefinition?.password ?? "",
+      userName: nextDefinition?.userName ?? "admin",
+      password: nextDefinition?.password ?? "admin",
       url: nextUrl,
-    });
-  };
-
-  const logCurrentPayload = (context: "TEST" | "SAVE", payloadOverride?: any) => {
-    const payload = payloadOverride ?? generalConnection;
-
-    console.log(`[GeneralSettingsTab:${context}] payload`, {
-      useForEveryFactory: payload.useForEveryFactory,
-      dbSystem: payload.dbSystem,
-      driverClass: payload.driverClass,
-      url: payload.url,
-      defaultCatalog: payload.defaultCatalog,
-      userName: payload.userName,
-      password: payload.password ? "***" : "",
     });
   };
 
@@ -466,27 +417,21 @@ export function GeneralSettingsTab() {
       return;
     }
 
-    const payload = buildTestPayload();
-
     setLocalMessage({
       type: "info",
-      text: isDerby
-        ? "Testing Apache Derby connection without username/password..."
-        : t("messageTestingConnection", {
-            defaultValue: "Testing connection...",
-          }),
+      text: t("messageTestingConnection", {
+        defaultValue: "Testing connection...",
+      }),
     });
 
-    logCurrentPayload("TEST", payload);
-
     try {
-      await dispatch(testGeneralDbConnection(payload)).unwrap();
+      const backendMessage = await dispatch(
+        testGeneralDbConnection(generalConnection),
+      ).unwrap();
 
       setLocalMessage({
         type: "success",
-        text: t("messageConnectionTestSuccess", {
-          defaultValue: "Connection test was successful.",
-        }),
+        text: backendMessage || "Connection test was successful.",
       });
     } catch (err: any) {
       setLocalMessage({
@@ -502,8 +447,6 @@ export function GeneralSettingsTab() {
 
   const onSave = async () => {
     clearMessages();
-
-    logCurrentPayload("SAVE");
 
     try {
       await dispatch(saveGeneralDbConnectionSettings(generalConnection)).unwrap();
