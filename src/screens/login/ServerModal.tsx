@@ -409,6 +409,7 @@ export function ServerModal({
                   icon="plus"
                   onPress={handleAddByPlus}
                   size="sm"
+                  tooltip={t("addServer")}
                 />
               </View>
 
@@ -430,9 +431,10 @@ export function ServerModal({
                 />
                 <ActionButton
                   variant="secondary"
-                  icon="form"
+                  icon="save"
                   onPress={handleSaveSide}
                   size="sm"
+                  tooltip={t("saveAndUse")}
                 />
               </View>
             </View>

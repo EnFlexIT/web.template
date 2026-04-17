@@ -18,10 +18,10 @@
   "changeOrganizationsQuick": "Organizations wechseln",
   "savedServers": "Gespeicherte Server",
   "useServer": "Anwenden",
-  "addServer": "Server hinzufügen oder bearbeiten",
+  "addServer": "Server hinzufügen ",
   "serverLabel": "My Fancy System",
   "serverUrl": "URL (z.B. http://localhost:8081)",
-  "saveAndUse": "Speichern & verwenden",
+  "saveAndUse": "ändreungen speichern",
   "close": "Schließen",
 
   "loading": "Lädt…",

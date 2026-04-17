@@ -134,6 +134,7 @@ export function ServerLoginModal({
             onPress={handleSubmit}
             size="sm"
             disabled={loading || !username.trim() || !password}
+          
           />
         </Pressable>
       </Pressable>

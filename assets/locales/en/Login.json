@@ -20,10 +20,10 @@
   "savedServers": "Saved servers",
   "useServer": "Use",
 
-  "addServer": "Add new server or edit existing",
+  "addServer": "Add new server",
   "serverLabel": "Name (e.g. Localhost)",
   "serverUrl": "My Fancy System",
-  "saveAndUse": "Save & use",
+  "saveAndUse": "save the changes",
   "close": "Close",
 
   "loading": "Loading…",
