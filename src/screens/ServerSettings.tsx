@@ -31,21 +31,29 @@ import {
 } from "../redux/slices/serverSlice";
 
 import {
-  selectAuthenticationMethod,
   switchServer,
   getJwtForServer,
+  type AuthMethod,
 } from "../redux/slices/apiSlice";
 
 import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
+
 } from "../screens/login/serverCheck";
 
 type Server = {
   id: string;
   name: string;
   baseUrl: string;
+};
+
+type ServerAuthInfo = {
+  authenticated: boolean;
+  authenticationMethod: AuthMethod;
+  oidcBearer: string | null;
+  sessionInvalid: boolean;
 };
 
 function detectEnvironment(url: string): ServerEnvironment {
@@ -96,42 +104,11 @@ function extractBearerToken(value: unknown): string | null {
   return m?.[1]?.trim() ?? null;
 }
 
-async function checkServerAuthenticated(
-  baseUrl: string,
-  jwt: string | null,
-): Promise<boolean> {
-  const base = normalizeBaseUrl(baseUrl);
-
-  try {
-    const res = await fetch(`${base}/api/alive`, {
-      method: "GET",
-      cache: "no-store",
-      headers: jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-            Accept: "application/json",
-          }
-        : {
-            Accept: "application/json",
-          },
-    });
-
-    if (res.status === 200) return true;
-    if (res.status === 401) return false;
-
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 export function ServerSettingsScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const { theme } = useUnistyles();
-
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
 
   const serversState = useAppSelector(selectServers);
   const servers: Server[] = serversState?.servers ?? [];
@@ -155,7 +132,11 @@ export function ServerSettingsScreen() {
   const [pendingServerUrl, setPendingServerUrl] = useState<string | null>(null);
   const [pendingServerLabel, setPendingServerLabel] = useState<string>("");
   const [pendingServerId, setPendingServerId] = useState<string | null>(null);
+  const [pendingServerAuthMethod, setPendingServerAuthMethod] =
+    useState<AuthMethod>("unknown");
+  const [pendingOidcBearer, setPendingOidcBearer] = useState<string | null>(null);
 
+  const [showOidcConfirm, setShowOidcConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUseSaveConfirm, setShowUseSaveConfirm] = useState(false);
@@ -190,6 +171,17 @@ export function ServerSettingsScreen() {
     setNameError(null);
     setUrlError(null);
     setGeneralError(null);
+  }
+
+  function resetPendingAuthState() {
+    setPendingServerUrl(null);
+    setPendingServerLabel("");
+    setPendingServerId(null);
+    setPendingServerAuthMethod("unknown");
+    setPendingOidcBearer(null);
+    setLoginError(null);
+    setLoginModalVisible(false);
+    setShowOidcConfirm(false);
   }
 
   function startAddNew() {
@@ -397,37 +389,142 @@ export function ServerSettingsScreen() {
         return;
       }
     }
+async function checkServerAuthenticated(
+  baseUrl: string,
+  jwt: string | null,
+): Promise<ServerAuthInfo> {
+  const normalized = normalizeBaseUrl(baseUrl);
 
+  try {
+    const res = await fetch(`${normalized}/api/app/settings/get`, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      },
+    });
+
+    if (res.status === 400) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: true,
+      };
+    }
+
+    if (!res.ok) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: false,
+      };
+    }
+
+    const data = await res.json();
+    const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+
+    const authCfg = entries.find(
+      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
+    )?.value;
+
+    const authenticatedRaw = entries.find(
+      (entry: any) => entry?.key === "_Authenticated",
+    )?.value;
+
+    const oidcBearer = entries.find(
+      (entry: any) => entry?.key === "_oidc.bearer",
+    )?.value;
+
+    const hasSessionId = entries.some(
+      (entry: any) => entry?.key === "_session.id",
+    );
+
+    const hasSessionPathParameter = entries.some(
+      (entry: any) => entry?.key === "_session.pathParameter",
+    );
+
+    const authenticated =
+      typeof authenticatedRaw === "boolean"
+        ? authenticatedRaw
+        : String(authenticatedRaw).toLowerCase() === "true";
+
+    let authenticationMethod: AuthMethod = "unknown";
+
+    if (authCfg === "OIDCSecurityHandler") {
+      authenticationMethod = "oidc";
+    } else if (authCfg === "JwtSingleUserSecurityHandler") {
+      authenticationMethod = "jwt";
+    } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
+      authenticationMethod = "oidc";
+    } else if (jwt) {
+      authenticationMethod = "jwt";
+    } else {
+      authenticationMethod = "jwt";
+    }
+
+    return {
+      authenticated,
+      authenticationMethod,
+      oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
+      sessionInvalid: false,
+    };
+  } catch {
+    return {
+      authenticated: false,
+      authenticationMethod: "unknown",
+      oidcBearer: null,
+      sessionInvalid: false,
+    };
+  }
+}
     setBusy(true);
     const existingJwt = await getJwtForServer(targetUrl);
-    const alreadyAuthenticated = await checkServerAuthenticated(
-      targetUrl,
-      existingJwt,
-    );
+    const info = await checkServerAuthenticated(targetUrl, existingJwt);
     setBusy(false);
 
-    if (!alreadyAuthenticated) {
+    if (info.authenticated) {
+      await dispatch(
+        switchServer({
+          url: targetUrl,
+          initializeMenu: true,
+        }),
+      );
+
+      if (targetId) {
+        dispatch(selectServer(targetId));
+        setDraftServerId(targetId);
+      }
+
+      navigation.goBack();
+      return;
+    }
+
+    // JWT -> alter Login-Dialog
+    if (info.authenticationMethod === "jwt") {
       setPendingServerUrl(targetUrl);
       setPendingServerLabel(targetLabel);
       setPendingServerId(targetId);
+      setPendingServerAuthMethod("jwt");
+      setPendingOidcBearer(null);
       setLoginError(null);
       setLoginModalVisible(true);
       return;
     }
 
-    await dispatch(
-      switchServer({
-        url: targetUrl,
-        initializeMenu: true,
-      }),
+    // OIDC oder unknown -> OpenID-Dialog
+    setPendingServerUrl(targetUrl);
+    setPendingServerLabel(targetLabel);
+    setPendingServerId(targetId);
+    setPendingServerAuthMethod(
+      info.authenticationMethod === "oidc" ? "oidc" : "unknown",
     );
-
-    if (targetId) {
-      dispatch(selectServer(targetId));
-      setDraftServerId(targetId);
-    }
-
-    navigation.goBack();
+    setPendingOidcBearer(info.oidcBearer ?? null);
+    setLoginError(null);
+    setShowOidcConfirm(true);
   }
 
   function handleUseServer() {
@@ -438,7 +535,7 @@ export function ServerSettingsScreen() {
       return;
     }
 
-    proceedUseServerAfterOptionalSave(true);
+    void proceedUseServerAfterOptionalSave(true);
   }
 
   async function confirmUseWithSave() {
@@ -456,10 +553,6 @@ export function ServerSettingsScreen() {
     setLoginError(null);
 
     try {
-      if (authenticationMethod !== "jwt") {
-        throw new Error("Aktuell wird nur JWT-Login unterstützt.");
-      }
-
       const basic = toBase64(`${params.username}:${params.password}`);
 
       const res = await fetch(`${pendingServerUrl}/api/user/login`, {
@@ -497,15 +590,37 @@ export function ServerSettingsScreen() {
         setDraftServerId(pendingServerId);
       }
 
-      setLoginModalVisible(false);
-      setPendingServerUrl(null);
-      setPendingServerLabel("");
-      setPendingServerId(null);
-      setLoginError(null);
-
+      resetPendingAuthState();
       navigation.goBack();
     } catch (err: any) {
       setLoginError(err?.message ?? "Anmeldung fehlgeschlagen.");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
+  async function handleOidcConfirm() {
+    if (!pendingServerUrl || loginLoading) return;
+
+    setLoginLoading(true);
+    setLoginError(null);
+
+    try {
+      await dispatch(
+        switchServer({
+          url: pendingServerUrl,
+          providedJwt: pendingOidcBearer ?? undefined,
+          initializeMenu: !!pendingOidcBearer,
+        }),
+      );
+
+      if (pendingServerId) {
+        dispatch(selectServer(pendingServerId));
+        setDraftServerId(pendingServerId);
+      }
+
+      resetPendingAuthState();
+      navigation.goBack();
     } finally {
       setLoginLoading(false);
     }
@@ -678,17 +793,27 @@ export function ServerSettingsScreen() {
       <ServerLoginModal
         visible={loginModalVisible}
         serverLabel={pendingServerLabel}
+        authMethod="jwt"
         loading={loginLoading}
         error={loginError}
         onClose={() => {
           if (loginLoading) return;
-          setLoginModalVisible(false);
-          setLoginError(null);
-          setPendingServerUrl(null);
-          setPendingServerLabel("");
-          setPendingServerId(null);
+          resetPendingAuthState();
         }}
         onSubmit={handleServerLoginSubmit}
+      />
+
+      <ConfirmModal
+        visible={showOidcConfirm}
+        title="OpenID Connect"
+        message={`Für "${pendingServerLabel}" wurde OpenID Connect erkannt. Möchten Sie mit OpenID anmelden?`}
+        confirmLabel="Mit OpenID anmelden"
+        cancelLabel={t("cancel")}
+        onConfirm={handleOidcConfirm}
+        onCancel={() => {
+          if (loginLoading) return;
+          resetPendingAuthState();
+        }}
       />
 
       <ConfirmModal
