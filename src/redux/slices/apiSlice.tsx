@@ -27,10 +27,10 @@ const jwtKey = "jwt" as const;
 export const jwtByServerKey = "jwtByServer" as const;
 const serversKey = "servers" as const;
 
-type AuthMethod = "jwt" | "oidc";
+type AuthMethod = "jwt" | "oidc" | "unknown";
 type JwtByServer = Record<string, string>;
 
-const defaultAuthenticationMethod: AuthMethod = "jwt";
+const defaultAuthenticationMethod: AuthMethod = "unknown";
 
 const fallbackDefaultIp: string = __DEV__
   ? process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? ""
@@ -38,11 +38,11 @@ const fallbackDefaultIp: string = __DEV__
 
 const defaultJwt: string | null = null;
 
-export function normalizeBaseUrl(url: string) {
+export function normalizeBaseUrl(url: string): string {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
 
-function debugJwtStorage(label: string, map: Record<string, string>) {
+function debugJwtStorage(label: string, map: Record<string, string>): void {
   console.log("===== JWT STORAGE DEBUG =====");
   console.log("Context:", label);
 
@@ -51,8 +51,8 @@ function debugJwtStorage(label: string, map: Record<string, string>) {
   if (keys.length === 0) {
     console.log("jwtByServer EMPTY");
   } else {
-    keys.forEach((k) => {
-      console.log("server:", k, "token exists:", !!map[k]);
+    keys.forEach((key) => {
+      console.log("server:", key, "token exists:", !!map[key]);
     });
   }
 
@@ -116,7 +116,7 @@ async function loadSelectedServerBaseUrl(): Promise<string | null> {
 
     if (!selectedServerId) return null;
 
-    const selected = servers.find((s) => s.id === selectedServerId);
+    const selected = servers.find((server) => server.id === selectedServerId);
 
     return selected?.baseUrl ? normalizeBaseUrl(selected.baseUrl) : null;
   } catch {
@@ -139,7 +139,7 @@ function resolveActiveApiBaseUrl(params: {
   );
 }
 
-function getInitialBaseUrl() {
+function getInitialBaseUrl(): string {
   return resolveActiveApiBaseUrl({
     mode: getApplicationMode(),
     runtimeBaseUrl: resolveRuntimeBaseUrl(),
@@ -157,10 +157,9 @@ function makeRestConf(params: {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
   const isJsonMime = new RestApiConfiguration().isJsonMime;
 
-  const headers =
-    params.authenticationMethod === "jwt" && params.jwt
-      ? { Authorization: `Bearer ${params.jwt}` }
-      : undefined;
+  const headers = params.jwt
+    ? { Authorization: `Bearer ${params.jwt}` }
+    : undefined;
 
   return {
     isJsonMime,
@@ -177,10 +176,9 @@ function makeDynamicConf(params: {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
   const isJsonMime = new DynamicContentApiConfiguration().isJsonMime;
 
-  const headers =
-    params.authenticationMethod === "jwt" && params.jwt
-      ? { Authorization: `Bearer ${params.jwt}` }
-      : undefined;
+  const headers = params.jwt
+    ? { Authorization: `Bearer ${params.jwt}` }
+    : undefined;
 
   return {
     isJsonMime,
@@ -225,10 +223,14 @@ async function detectServerAndMode(baseUrl: string): Promise<{
   try {
     const { data, status } = await infoApi.getAppSettings();
 
+    console.log("[DETECT SERVER] baseUrl:", base);
+    console.log("[DETECT SERVER] status:", status);
+    console.log("[DETECT SERVER] data:", data);
+
     if (status !== 200) {
       return {
         isPointingToServer: false,
-        authenticationMethod: "jwt",
+        authenticationMethod: "unknown",
         isBaseMode: false,
       };
     }
@@ -238,34 +240,65 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       : [];
 
     const authCfg = entries.find(
-      (e: any) => e?.key === "_ServerWideSecurityConfiguration",
+      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
     )?.value;
 
     const authenticatedRaw = entries.find(
-      (e: any) => e?.key === "_Authenticated",
+      (entry: any) => entry?.key === "_Authenticated",
     )?.value;
+
+    const hasSessionId = entries.some(
+      (entry: any) => entry?.key === "_session.id",
+    );
+
+    const hasSessionPathParameter = entries.some(
+      (entry: any) => entry?.key === "_session.pathParameter",
+    );
 
     const authenticated =
       typeof authenticatedRaw === "boolean"
         ? authenticatedRaw
         : String(authenticatedRaw).toLowerCase() === "true";
+let authenticationMethod: AuthMethod = "unknown";
 
-    const authenticationMethod: AuthMethod =
-      authCfg === "OIDCSecurityHandler" ? "oidc" : "jwt";
+if (authCfg === "OIDCSecurityHandler") {
+  authenticationMethod = "oidc";
+} else if (authCfg === "JwtSingleUserSecurityHandler") {
+  authenticationMethod = "jwt";
+} else if (hasSessionId || hasSessionPathParameter) {
+  authenticationMethod = "oidc";
+} else {
+  // pragmatischer Fallback für lokale/ältere Server
+  authenticationMethod = "jwt";
+}
 
-    const isBaseMode = authenticated === false;
+    console.log("[DETECT SERVER] authCfg:", authCfg);
+    console.log("[DETECT SERVER] authenticatedRaw:", authenticatedRaw);
+    console.log("[DETECT SERVER] authenticated:", authenticated);
+    console.log("[DETECT SERVER] hasSessionId:", hasSessionId);
+    console.log(
+      "[DETECT SERVER] hasSessionPathParameter:",
+      hasSessionPathParameter,
+    );
+    console.log("[DETECT SERVER] authenticationMethod:", authenticationMethod);
 
-    return { isPointingToServer: true, authenticationMethod, isBaseMode };
-  } catch {
+    return {
+      isPointingToServer: true,
+      authenticationMethod,
+      isBaseMode: authenticated === false,
+    };
+  } catch (error) {
+    console.error("[DETECT SERVER] failed:", error);
+
     return {
       isPointingToServer: false,
-      authenticationMethod: "jwt",
+      authenticationMethod: "unknown",
       isBaseMode: false,
     };
   }
 }
 
-function isJwtStillValid(jwt: string | null) {
+function isJwtStillValid(jwt: string | null): boolean {
   if (!jwt) return false;
 
   try {
@@ -280,8 +313,7 @@ function isJwtStillValid(jwt: string | null) {
 function computeLoggedIn(params: {
   authenticationMethod: AuthMethod;
   jwt: string | null;
-}) {
-  if (params.authenticationMethod !== "jwt") return false;
+}): boolean {
   return isJwtStillValid(params.jwt);
 }
 
@@ -433,16 +465,18 @@ export const refreshServerStatus = createAsyncThunk(
       }),
     );
 
-    return { isPointingToServer, authenticationMethod, isBaseMode, skipped: false };
+    return {
+      isPointingToServer,
+      authenticationMethod,
+      isBaseMode,
+      skipped: false,
+    };
   },
 );
 
 export const login = createAsyncThunk(
   "api/login",
-  async (
-    payload: { jwt: string; baseUrl?: string },
-    thunkAPI,
-  ) => {
+  async (payload: { jwt: string; baseUrl?: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
 
     const currentIp = normalizeBaseUrl(payload.baseUrl ?? state.api.ip);

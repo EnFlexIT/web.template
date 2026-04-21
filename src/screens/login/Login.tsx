@@ -1,18 +1,21 @@
 // src/screens/login/Login.tsx
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  TextInput as RNTextInput,
   View,
- StyleSheet as NativeStyleSheet,
+  StyleSheet as NativeStyleSheet,
+  Platform,
+  Linking,
 } from "react-native";
-import { withUnistyles } from "react-native-unistyles";
+import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
-import { useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
+
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -40,8 +43,10 @@ import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
 
+WebBrowser.maybeCompleteAuthSession();
+
 // ---------- helpers ----------
-function toBase64(str: string) {
+function toBase64(str: string): string {
   return typeof btoa !== "undefined"
     ? btoa(str)
     : Buffer.from(str).toString("base64");
@@ -53,14 +58,26 @@ function extractBearerToken(value: unknown): string | null {
   return m?.[1]?.trim() ?? null;
 }
 
+function normalizeBaseUrl(url: string): string {
+  return (url ?? "").trim().replace(/\/+$/, "");
+}
+
+// Falls euer Server den OIDC-Flow nicht auf der Root-URL startet,
+// sondern z. B. auf /api/login oder /login,
+// dann NUR diese Funktion anpassen.
+function buildServerOidcStartUrl(baseUrl: string): string {
+  return normalizeBaseUrl(baseUrl);
+}
+
 // ---------- component ----------
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
   const Feather = withUnistyles(Feather_);
   const { theme } = useUnistyles();
+
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-  const { isPointingToServer } = useAppSelector(selectApi);
+  const { isPointingToServer, isLoggedIn } = useAppSelector(selectApi);
   const ip = useAppSelector(selectIp);
 
   const language = useAppSelector(selectLanguage);
@@ -75,9 +92,7 @@ export function LoginScreen() {
   const [highlight, setHighlight] = useState(false);
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
-
-  const passwordFieldRef = useRef<RNTextInput>(null);
-  const loginButtonRef = useRef<View>(null);
+  const [oidcAutoStarted, setOidcAutoStarted] = useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -93,108 +108,6 @@ export function LoginScreen() {
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
 
   styles.useVariants({ highlight });
-
-  async function login() {
-    setLoginRequestIssued(true);
-    setLoginRequestStatus("loading");
-    setLoginFeedback(null);
-
-    if (!username.trim() || !password.trim()) {
-      setLoginRequestStatus("failed");
-      setLoginFeedback("Bitte Benutzername und Passwort eingeben.");
-      return;
-    }
-
-    switch (authenticationMethod) {
-      case "jwt": {
-        try {
-          const basic = toBase64(`${username}:${password}`);
-          const loginUrl = `${selectedBaseUrl}/api/user/login`;
-
-          console.log("[LOGIN SCREEN] selectedBaseUrl:", selectedBaseUrl);
-          console.log("[LOGIN SCREEN] loginUrl:", loginUrl);
-
-          const response = await fetch(loginUrl, {
-            method: "GET",
-            headers: {
-              Authorization: `Basic ${basic}`,
-              Accept: "application/json",
-            },
-          });
-
-          const wwwAuthenticate =
-            response.headers.get("www-authenticate") ??
-            response.headers.get("WWW-Authenticate") ??
-            response.headers.get("authorization") ??
-            response.headers.get("Authorization");
-
-          const bodyText = await response.text();
-
-          const bearerToken =
-            extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
-
-          if (response.status === 200 && bearerToken) {
-            console.log(
-              "[LOGIN SCREEN] switching to server with token:",
-              selectedBaseUrl,
-            );
-
-            await dispatch(
-              switchServer({
-                url: selectedBaseUrl,
-                providedJwt: bearerToken,
-                initializeMenu: true,
-              }),
-            );
-
-            if (shouldPromptPasswordChange) {
-              dispatch(openInitialPasswordChangeDialog());
-            }
-
-            setLoginRequestStatus("successful");
-            setLoginFeedback(null);
-            return;
-          }
-
-          if (response.status === 401) {
-            setLoginRequestStatus("failed");
-            setLoginFeedback(t("invalid_credentials"));
-            return;
-          }
-
-          setLoginRequestStatus("failed");
-          setLoginFeedback(t("login_failed"));
-        } catch (error: any) {
-          console.error("[LOGIN SCREEN] login failed:", error);
-
-          const msg = String(error?.message ?? "").toLowerCase();
-
-          if (
-            msg.includes("failed to fetch") ||
-            msg.includes("network") ||
-            msg.includes("load failed") ||
-            msg.includes("err_connection_refused")
-          ) {
-            setLoginFeedback("Server nicht erreichbar.");
-          } else {
-            setLoginFeedback("Anmeldung fehlgeschlagen.");
-          }
-
-          setLoginRequestStatus("failed");
-        }
-        break;
-      }
-
-      case "oidc": {
-        console.warn(
-          "Login called while authenticationMethod=oidc. Implement OIDC flow here.",
-        );
-        setLoginRequestStatus("failed");
-        setLoginFeedback("OIDC-Login ist aktuell noch nicht verfügbar.");
-        break;
-      }
-    }
-  }
 
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
 
@@ -213,6 +126,192 @@ export function LoginScreen() {
     ? "system"
     : themeInfo.theme;
 
+  const isWeb = Platform.OS === "web";
+  const isExpoGo = Constants.appOwnership === "expo";
+
+  const showJwtLogin = authenticationMethod === "jwt";
+  const showOidcLogin = authenticationMethod === "oidc";
+  const showUnknownAuth = authenticationMethod === "unknown";
+
+  const shouldShowOidcButton = showOidcLogin && (isWeb || isExpoGo);
+  const shouldAutoStartOidc =
+    showOidcLogin &&
+    isPointingToServer &&
+    !isLoggedIn &&
+    !oidcAutoStarted &&
+    !isWeb &&
+    !isExpoGo;
+
+  async function loginWithJwt(): Promise<void> {
+    if (!username.trim() || !password.trim()) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("Bitte Benutzername und Passwort eingeben.");
+      return;
+    }
+
+    const basic = toBase64(`${username}:${password}`);
+    const loginUrl = `${selectedBaseUrl}/api/user/login`;
+
+    console.log("[LOGIN SCREEN][JWT] selectedBaseUrl:", selectedBaseUrl);
+    console.log("[LOGIN SCREEN][JWT] loginUrl:", loginUrl);
+
+    const response = await fetch(loginUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        Accept: "application/json",
+      },
+    });
+
+    const wwwAuthenticate =
+      response.headers.get("www-authenticate") ??
+      response.headers.get("WWW-Authenticate") ??
+      response.headers.get("authorization") ??
+      response.headers.get("Authorization");
+
+    const bodyText = await response.text();
+
+    const bearerToken =
+      extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
+
+    if (response.status === 200 && bearerToken) {
+      await dispatch(
+        switchServer({
+          url: selectedBaseUrl,
+          providedJwt: bearerToken,
+          initializeMenu: true,
+        }),
+      );
+
+      if (shouldPromptPasswordChange) {
+        dispatch(openInitialPasswordChangeDialog());
+      }
+
+      setLoginRequestStatus("successful");
+      setLoginFeedback(null);
+      return;
+    }
+
+    if (response.status === 401) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback(t("invalid_credentials"));
+      return;
+    }
+
+    setLoginRequestStatus("failed");
+    setLoginFeedback(t("login_failed"));
+  }
+
+  async function loginWithOidc(): Promise<void> {
+    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+
+    if (!oidcStartUrl) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("OIDC-Start-URL fehlt.");
+      return;
+    }
+
+    console.log("[LOGIN SCREEN][OIDC] selectedBaseUrl:", selectedBaseUrl);
+    console.log("[LOGIN SCREEN][OIDC] oidcStartUrl:", oidcStartUrl);
+    console.log("[LOGIN SCREEN][OIDC] isWeb:", isWeb);
+    console.log("[LOGIN SCREEN][OIDC] isExpoGo:", isExpoGo);
+
+    if (isWeb) {
+      window.location.href = oidcStartUrl;
+      return;
+    }
+
+    const canOpen = await Linking.canOpenURL(oidcStartUrl);
+
+    if (!canOpen) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("OIDC-Login-URL konnte nicht geöffnet werden.");
+      return;
+    }
+
+    const result = await WebBrowser.openAuthSessionAsync(
+      oidcStartUrl,
+      undefined,
+    );
+
+    console.log("[LOGIN SCREEN][OIDC] browser result:", result.type);
+
+    if (result.type === "cancel" || result.type === "dismiss") {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("OIDC-Login wurde abgebrochen.");
+      return;
+    }
+
+    // Bei serverbasiertem OIDC übernimmt der Server die Session.
+    // Danach prüfen wir den Serverstatus neu über switchServer.
+    await dispatch(
+      switchServer({
+        url: selectedBaseUrl,
+        initializeMenu: true,
+      }),
+    );
+
+    setLoginRequestStatus("successful");
+    setLoginFeedback(null);
+  }
+
+  async function login(): Promise<void> {
+    setLoginRequestIssued(true);
+    setLoginRequestStatus("loading");
+    setLoginFeedback(null);
+
+    try {
+      switch (authenticationMethod) {
+        case "jwt":
+          await loginWithJwt();
+          return;
+
+        case "oidc":
+          await loginWithOidc();
+          return;
+
+        case "unknown":
+        default:
+          setLoginRequestStatus("failed");
+          setLoginFeedback(
+            "Authentifizierungsmethode konnte nicht erkannt werden.",
+          );
+          return;
+      }
+    } catch (error: unknown) {
+      console.error("[LOGIN SCREEN] login failed:", error);
+
+      const msg =
+        error instanceof Error
+          ? error.message.toLowerCase()
+          : String(error ?? "").toLowerCase();
+
+      if (
+        msg.includes("failed to fetch") ||
+        msg.includes("network") ||
+        msg.includes("load failed") ||
+        msg.includes("err_connection_refused")
+      ) {
+        setLoginFeedback("Server nicht erreichbar.");
+      } else {
+        setLoginFeedback("Anmeldung fehlgeschlagen.");
+      }
+
+      setLoginRequestStatus("failed");
+    }
+  }
+
+  useEffect(() => {
+    setOidcAutoStarted(false);
+  }, [selectedBaseUrl, authenticationMethod]);
+
+  useEffect(() => {
+    if (shouldAutoStartOidc) {
+      setOidcAutoStarted(true);
+      void login();
+    }
+  }, [shouldAutoStartOidc]);
+
   return (
     <View style={[styles.container]}>
       <View style={[styles.widget, styles.border]}>
@@ -221,54 +320,84 @@ export function LoginScreen() {
           <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
         </View>
 
-     
         <View style={[styles.upperHalf]}>
-          <TextInput
-            size="sm"
-            style={[styles.border, styles.padding]}
-            placeholder={t("username_placeholder")}
-            textContentType="username"
-            onChangeText={(value) => {
-              setUsername(value);
-              setLoginFeedback(null);
-            }}
-            value={username}
-            returnKeyType="next"
-            onSubmitEditing={() => passwordFieldRef.current?.focus()}
-          />
+          {showJwtLogin && (
+            <>
+              <TextInput
+                size="sm"
+                style={[styles.border, styles.padding]}
+                placeholder={t("username_placeholder")}
+                textContentType="username"
+                onChangeText={(value: string) => {
+                  setUsername(value);
+                  setLoginFeedback(null);
+                }}
+                value={username}
+                returnKeyType="next"
+              />
 
-          <TextInput
-            size="sm"
-            style={[styles.border, styles.padding]}
-            placeholder={t("password_placeholder")}
-            textContentType="password"
-            passwordToggle
-            onChangeText={(value) => {
-              setPassword(value);
-              setLoginFeedback(null);
-            }}
-            value={password}
-            returnKeyType="done"
-            onSubmitEditing={() => {
-              if (isPointingToServer && username && password) {
-                login();
-              } else {
-                // @ts-ignore
-                loginButtonRef.current?.focus?.();
-              }
-            }}
-          />
+              <TextInput
+                size="sm"
+                style={[styles.border, styles.padding]}
+                placeholder={t("password_placeholder")}
+                textContentType="password"
+                passwordToggle
+                onChangeText={(value: string) => {
+                  setPassword(value);
+                  setLoginFeedback(null);
+                }}
+                value={password}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (isPointingToServer && username && password) {
+                    void login();
+                  }
+                }}
+              />
 
-          <ActionButton
-            label={t("login")}
-            variant="secondary"
-            onPress={login}
-            size="xs"
-            
+              <ActionButton
+                label={t("login")}
+                variant="secondary"
+                onPress={() => {
+                  void login();
+                }}
+                size="xs"
+              />
+            </>
+          )}
 
-          />
+          {showOidcLogin && (
+            <>
+              <ThemedText style={localStyles.infoText}>
+                {shouldShowOidcButton
+                  ? "OpenID Connect erkannt. Bitte Anmeldung starten."
+                  : "OpenID Connect erkannt. Weiterleitung zur Anmeldung läuft..."}
+              </ThemedText>
+
+              {shouldShowOidcButton && (
+                <ActionButton
+                  label="Mit OpenID anmelden"
+                  variant="secondary"
+                  onPress={() => {
+                    void login();
+                  }}
+                  size="xs"
+                />
+              )}
+            </>
+          )}
+
+          {showUnknownAuth && (
+            <>
+              <ThemedText style={localStyles.infoText}>
+                Die Authentifizierungsmethode konnte noch nicht erkannt werden.
+              </ThemedText>
+              <ThemedText style={localStyles.infoSubText}>
+                Bitte Server prüfen oder erneut verbinden.
+              </ThemedText>
+            </>
+          )}
         </View>
-
 
         <View style={[styles.lowerHalf]}>
           <Pressable
@@ -329,22 +458,42 @@ export function LoginScreen() {
                   size="xs"
                 />
               </View>
+
+              <View style={{ gap: 4 }}>
+                <ThemedText style={localStyles.debugText}>
+                  Auth: {authenticationMethod}
+                </ThemedText>
+                <ThemedText style={localStyles.debugText}>
+                  Reachable: {String(isPointingToServer)}
+                </ThemedText>
+                {showOidcLogin && (
+                  <>
+                    <ThemedText style={localStyles.debugText}>
+                      OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
+                    </ThemedText>
+                    <ThemedText style={localStyles.debugText}>
+                      ExpoGo: {String(isExpoGo)}
+                    </ThemedText>
+                    <ThemedText style={localStyles.debugText}>
+                      Web: {String(isWeb)}
+                    </ThemedText>
+                  </>
+                )}
+              </View>
             </ScrollView>
           )}
         </View>
       </View>
-   {!!loginFeedback && (
-          <View style={localStyles.feedbackWrap}>
-             <Feather
-                  name={"alert-triangle"}
-                  size={15}
-                  color={"#dc2626"}
-              />
-            <ThemedText style={localStyles.feedbackText}>
-              {loginFeedback}
-            </ThemedText>
-          </View>
-        )}
+
+      {!!loginFeedback && (
+        <View style={localStyles.feedbackWrap}>
+          <Feather name={"alert-triangle"} size={15} color={"#dc2626"} />
+          <ThemedText style={localStyles.feedbackText}>
+            {loginFeedback}
+          </ThemedText>
+        </View>
+      )}
+
       <LoginRequestStatusIndicator
         issued={loginRequestIssued}
         status={loginRequestStatus}
@@ -391,9 +540,7 @@ function LoginRequestStatusIndicator({
     );
   }
 
-  return (
-   null
-  );
+  return null;
 }
 
 const logoStyles = NativeStyleSheet.create({
@@ -406,17 +553,29 @@ const logoStyles = NativeStyleSheet.create({
 
 const localStyles = NativeStyleSheet.create({
   feedbackWrap: {
-    borderWidth:1,
-    flexDirection:"row",
-    borderColor:"#dc2626",
+    borderWidth: 1,
+    flexDirection: "row",
+    borderColor: "#dc2626",
     alignItems: "center",
-    gap:6,
-    padding:5
+    gap: 6,
+    padding: 5,
   },
   feedbackText: {
     color: "#dc2626",
     fontSize: 13,
     textAlign: "center",
-   
+  },
+  infoText: {
+    textAlign: "center",
+    fontSize: 14,
+  },
+  infoSubText: {
+    textAlign: "center",
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  debugText: {
+    fontSize: 12,
+    opacity: 0.7,
   },
 });

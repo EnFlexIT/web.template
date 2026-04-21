@@ -32,7 +32,7 @@ async function ping(
     });
 
     return {
-      ok: true,
+      ok: res.ok,
       status: res.status,
     };
   } finally {
@@ -40,8 +40,23 @@ async function ping(
   }
 }
 
+function isReachableStatus(status?: number): boolean {
+  if (status == null) return false;
+
+  // Server hat geantwortet -> erreichbar
+  // auch wenn auth/security greift
+  return status >= 200 && status < 500;
+}
+
 export const checkAlive = createAsyncThunk<
-  { isOnline: boolean; wentOnline: boolean; error?: string | null; skipped?: boolean },
+  {
+    isOnline: boolean;
+    wentOnline: boolean;
+    error?: string | null;
+    skipped?: boolean;
+    checkedUrl?: string | null;
+    checkedStatus?: number;
+  },
   { silent?: boolean } | undefined
 >("connectivity/checkAlive", async (arg, thunkAPI) => {
   const state = thunkAPI.getState() as RootState;
@@ -52,6 +67,8 @@ export const checkAlive = createAsyncThunk<
       wentOnline: false,
       error: null,
       skipped: true,
+      checkedUrl: null,
+      checkedStatus: undefined,
     };
   }
 
@@ -60,7 +77,6 @@ export const checkAlive = createAsyncThunk<
   const silent = arg?.silent === true;
 
   const baseUrl = (ip ?? "").replace(/\/+$/, "");
-  const url = `${baseUrl}/api/alive`;
 
   if (!baseUrl) {
     return {
@@ -68,36 +84,63 @@ export const checkAlive = createAsyncThunk<
       wentOnline: false,
       error: silent ? null : "Keine Server-URL gesetzt.",
       skipped: false,
+      checkedUrl: null,
+      checkedStatus: undefined,
     };
   }
 
-  try {
-    const result = await ping(url, 4000);
+  const candidateUrls = [
+    `${baseUrl}/api/alive`,
+    `${baseUrl}/api/app/settings/get`,
+  ];
 
-    console.log("[checkAlive] reachable:", url, "status:", result.status);
+  let lastStatus: number | undefined;
+  let lastUrl: string | null = null;
+  let lastError: unknown = null;
 
-    return {
-      isOnline: true,
-      wentOnline: wasOffline,
-      error: null,
-      skipped: false,
-    };
-  } catch (err: any) {
-    const msg = silent
+  for (const url of candidateUrls) {
+    try {
+      const result = await ping(url, 4000);
+      lastStatus = result.status;
+      lastUrl = url;
+
+      console.log("[checkAlive] response:", url, "status:", result.status);
+
+      if (isReachableStatus(result.status)) {
+        return {
+          isOnline: true,
+          wentOnline: wasOffline,
+          error: null,
+          skipped: false,
+          checkedUrl: url,
+          checkedStatus: result.status,
+        };
+      }
+    } catch (err: unknown) {
+      lastUrl = url;
+      lastError = err;
+      console.log("[checkAlive] failed:", url, err);
+    }
+  }
+
+  const message =
+    silent
       ? null
-      : err?.name === "AbortError"
+      : lastError &&
+          typeof lastError === "object" &&
+          "name" in lastError &&
+          (lastError as { name?: string }).name === "AbortError"
         ? "Server antwortet nicht (Timeout)."
-        : err?.message || "Server nicht erreichbar.";
+        : "Server nicht erreichbar.";
 
-    console.log("[checkAlive] failed:", url, err);
-
-    return {
-      isOnline: false,
-      wentOnline: false,
-      error: msg,
-      skipped: false,
-    };
-  }
+  return {
+    isOnline: false,
+    wentOnline: false,
+    error: message,
+    skipped: false,
+    checkedUrl: lastUrl,
+    checkedStatus: lastStatus,
+  };
 });
 
 const connectivitySlice = createSlice({

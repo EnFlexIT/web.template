@@ -34,7 +34,7 @@
       "react-native-edge-to-edge",
       "expo-web-browser"
     ],
-    "scheme": "example",
+    "scheme": "agentworkbench",
     "extra": {
       "eas": {
         "projectId": "2c3096d1-40f9-4b89-a39c-483530ed29b3"
