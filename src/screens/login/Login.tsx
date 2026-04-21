@@ -45,7 +45,6 @@ import { TextInput } from "../../components/ui-elements/TextInput";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// ---------- helpers ----------
 function toBase64(str: string): string {
   return typeof btoa !== "undefined"
     ? btoa(str)
@@ -62,14 +61,70 @@ function normalizeBaseUrl(url: string): string {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
 
-// Falls euer Server den OIDC-Flow nicht auf der Root-URL startet,
-// sondern z. B. auf /api/login oder /login,
-// dann NUR diese Funktion anpassen.
 function buildServerOidcStartUrl(baseUrl: string): string {
   return normalizeBaseUrl(baseUrl);
 }
 
-// ---------- component ----------
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchOidcBearerFromServer(baseUrl: string): Promise<string | null> {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+
+  const authenticatedRaw = entries.find(
+    (entry: any) => entry?.key === "_Authenticated",
+  )?.value;
+
+  const authenticated =
+    typeof authenticatedRaw === "boolean"
+      ? authenticatedRaw
+      : String(authenticatedRaw).toLowerCase() === "true";
+
+  if (!authenticated) {
+    return null;
+  }
+
+  const bearer = entries.find(
+    (entry: any) => entry?.key === "_oidc.bearer",
+  )?.value;
+
+  return typeof bearer === "string" && bearer.length > 0 ? bearer : null;
+}
+
+async function waitForOidcBearer(
+  baseUrl: string,
+  retries = 20,
+  delayMs = 1000,
+): Promise<string | null> {
+  for (let i = 0; i < retries; i += 1) {
+    const bearer = await fetchOidcBearerFromServer(baseUrl);
+
+    if (bearer) {
+      return bearer;
+    }
+
+    await sleep(delayMs);
+  }
+
+  return null;
+}
+
 export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
@@ -104,7 +159,6 @@ export function LoginScreen() {
   const [loginRequestStatus, setLoginRequestStatus] = useState<
     "loading" | "successful" | "failed"
   >("loading");
-
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
 
   styles.useVariants({ highlight });
@@ -151,9 +205,6 @@ export function LoginScreen() {
 
     const basic = toBase64(`${username}:${password}`);
     const loginUrl = `${selectedBaseUrl}/api/user/login`;
-
-    console.log("[LOGIN SCREEN][JWT] selectedBaseUrl:", selectedBaseUrl);
-    console.log("[LOGIN SCREEN][JWT] loginUrl:", loginUrl);
 
     const response = await fetch(loginUrl, {
       method: "GET",
@@ -211,13 +262,43 @@ export function LoginScreen() {
       return;
     }
 
-    console.log("[LOGIN SCREEN][OIDC] selectedBaseUrl:", selectedBaseUrl);
-    console.log("[LOGIN SCREEN][OIDC] oidcStartUrl:", oidcStartUrl);
-    console.log("[LOGIN SCREEN][OIDC] isWeb:", isWeb);
-    console.log("[LOGIN SCREEN][OIDC] isExpoGo:", isExpoGo);
-
     if (isWeb) {
-      window.location.href = oidcStartUrl;
+      const popup = window.open(
+        oidcStartUrl,
+        "oidcLogin",
+        "width=520,height=720,resizable=yes,scrollbars=yes,status=yes",
+      );
+
+      if (!popup) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback("OIDC-Popup konnte nicht geöffnet werden.");
+        return;
+      }
+
+      const bearer = await waitForOidcBearer(selectedBaseUrl, 60, 1000);
+
+      if (!popup.closed) {
+        popup.close();
+      }
+
+      if (!bearer) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback(
+          "OIDC-Anmeldung war erfolgreich, aber der Server hat noch keinen Bearer geliefert.",
+        );
+        return;
+      }
+
+      await dispatch(
+        switchServer({
+          url: selectedBaseUrl,
+          providedJwt: bearer,
+          initializeMenu: true,
+        }),
+      );
+
+      setLoginRequestStatus("successful");
+      setLoginFeedback(null);
       return;
     }
 
@@ -229,24 +310,22 @@ export function LoginScreen() {
       return;
     }
 
-    const result = await WebBrowser.openAuthSessionAsync(
-      oidcStartUrl,
-      undefined,
-    );
+    await WebBrowser.openBrowserAsync(oidcStartUrl);
 
-    console.log("[LOGIN SCREEN][OIDC] browser result:", result.type);
+    const bearer = await waitForOidcBearer(selectedBaseUrl, 20, 1000);
 
-    if (result.type === "cancel" || result.type === "dismiss") {
+    if (!bearer) {
       setLoginRequestStatus("failed");
-      setLoginFeedback("OIDC-Login wurde abgebrochen.");
+      setLoginFeedback(
+        "OIDC-Anmeldung war erfolgreich, aber der Server hat noch keinen Bearer geliefert.",
+      );
       return;
     }
 
-    // Bei serverbasiertem OIDC übernimmt der Server die Session.
-    // Danach prüfen wir den Serverstatus neu über switchServer.
     await dispatch(
       switchServer({
         url: selectedBaseUrl,
+        providedJwt: bearer,
         initializeMenu: true,
       }),
     );
@@ -467,17 +546,9 @@ export function LoginScreen() {
                   Reachable: {String(isPointingToServer)}
                 </ThemedText>
                 {showOidcLogin && (
-                  <>
-                    <ThemedText style={localStyles.debugText}>
-                      OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
-                    </ThemedText>
-                    <ThemedText style={localStyles.debugText}>
-                      ExpoGo: {String(isExpoGo)}
-                    </ThemedText>
-                    <ThemedText style={localStyles.debugText}>
-                      Web: {String(isWeb)}
-                    </ThemedText>
-                  </>
+                  <ThemedText style={localStyles.debugText}>
+                    OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
+                  </ThemedText>
                 )}
               </View>
             </ScrollView>
