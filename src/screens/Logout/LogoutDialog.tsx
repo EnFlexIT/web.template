@@ -16,10 +16,14 @@ import {
   normalizeBaseUrl,
   getJwtForServer,
   setIsLogoutDialogOpen,
+  type AuthMethod,
 } from "../../redux/slices/apiSlice";
 import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
-import { checkServerReachable } from "../login/serverCheck";
+import {
+  checkServerAuthenticated,
+  checkServerReachable,
+} from "../login/serverCheck";
 
 type Props = {
   visible: boolean;
@@ -32,52 +36,10 @@ type LogoutServerItem = {
   baseUrl: string;
   normalizedBaseUrl: string;
   isCurrent: boolean;
+  authenticationMethod: AuthMethod;
 };
 
 const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
-
-function getPropertyValue(
-  data: any,
-  key: string,
-): string | boolean | number | null | undefined {
-  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
-  return entries.find((entry: any) => entry?.key === key)?.value;
-}
-
-async function checkServerAuthenticated(
-  baseUrl: string,
-  jwt: string | null,
-): Promise<boolean> {
-  const normalized = normalizeBaseUrl(baseUrl);
-
-  try {
-    const res = await fetch(`${normalized}/api/app/settings/get`, {
-      method: "GET",
-      cache: "no-store",
-      headers: jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-            Accept: "application/json",
-          }
-        : {
-            Accept: "application/json",
-          },
-      credentials: "include",
-    });
-
-    if (!res.ok) return false;
-
-    const data = await res.json();
-    const authenticatedRaw = getPropertyValue(data, "_Authenticated");
-
-    return (
-      authenticatedRaw === true ||
-      String(authenticatedRaw).toLowerCase() === "true"
-    );
-  } catch {
-    return false;
-  }
-}
 
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
@@ -124,11 +86,14 @@ export function LogoutDialog({ visible, onClose }: Props) {
             if (!reachable.ok) return null;
 
             const jwt = await getJwtForServer(server.baseUrl);
-            if (!jwt) return null;
+            const info = await checkServerAuthenticated(server.baseUrl, jwt);
 
-            const authenticated = await checkServerAuthenticated(server.baseUrl, jwt);
-            if (!authenticated) {
+            // JWT lokal vorhanden, aber serverseitig nicht mehr gültig
+            if (jwt && !info.authenticated) {
               await setJwtForServer(server.baseUrl, null);
+            }
+
+            if (!info.authenticated) {
               return null;
             }
 
@@ -138,6 +103,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
               baseUrl: server.baseUrl,
               normalizedBaseUrl: normalized,
               isCurrent: normalized === currentNormalizedIp,
+              authenticationMethod: info.authenticationMethod,
             } satisfies LogoutServerItem;
           } catch {
             return null;
@@ -238,11 +204,14 @@ export function LogoutDialog({ visible, onClose }: Props) {
       const selectedCurrentServer = selectedServers.find((server) => server.isCurrent);
       const selectedOtherServers = selectedServers.filter((server) => !server.isCurrent);
 
+      // Für andere Server: lokalen Token löschen.
+      // Das reicht für JWT und für OIDC-Bearer im lokalen Storage.
       for (const server of selectedOtherServers) {
         await setJwtForServer(server.baseUrl, null);
       }
 
       if (selectedCurrentServer) {
+        // Aktueller Server: lokales Token + laufende Session sauber beenden
         await dispatch(logoutAsync()).unwrap();
       } else {
         dispatch(setIsLogoutDialogOpen(false));
@@ -333,6 +302,10 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
                           <ThemedText style={styles.serverUrl}>
                             ({server.baseUrl})
+                          </ThemedText>
+
+                          <ThemedText style={styles.serverAuth}>
+                            {server.authenticationMethod === "oidc" ? "OIDC" : "JWT"}
                           </ThemedText>
                         </View>
                       </Pressable>
@@ -484,6 +457,12 @@ const styles = StyleSheet.create((theme) => ({
   serverUrl: {
     fontSize: 11,
     opacity: 0.6,
+  },
+
+  serverAuth: {
+    fontSize: 11,
+    opacity: 0.7,
+    fontWeight: "600",
   },
 
   actions: {

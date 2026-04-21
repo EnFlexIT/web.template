@@ -11,8 +11,8 @@ import {
   selectIsSwitchingServer,
   switchServer,
   getJwtForServer,
-  selectAuthenticationMethod,
   selectIsLoggedIn,
+  type AuthMethod,
 } from "../redux/slices/apiSlice";
 import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
 
@@ -50,35 +50,6 @@ function extractBearerToken(value: unknown): string | null {
   return m?.[1]?.trim() ?? null;
 }
 
-async function checkServerAuthenticated(
-  baseUrl: string,
-  jwt: string | null,
-): Promise<boolean> {
-  const normalized = normalizeBaseUrl(baseUrl);
-
-  try {
-    const res = await fetch(`${normalized}/api/alive`, {
-      method: "GET",
-      cache: "no-store",
-      headers: jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-            Accept: "application/json",
-          }
-        : {
-            Accept: "application/json",
-          },
-    });
-
-    if (res.status === 200) return true;
-    if (res.status === 401) return false;
-
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 type ServerTone = "green" | "yellow" | "red";
 
 type ServerOptionMeta = {
@@ -86,7 +57,107 @@ type ServerOptionMeta = {
   subtitle: string;
 };
 
+type ServerAuthInfo = {
+  authenticated: boolean;
+  authenticationMethod: AuthMethod;
+  oidcBearer: string | null;
+  sessionInvalid: boolean;
+};
+
 const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
+
+async function checkServerAuthenticated(
+  baseUrl: string,
+  jwt: string | null,
+): Promise<ServerAuthInfo> {
+  const normalized = normalizeBaseUrl(baseUrl);
+
+  try {
+    const res = await fetch(`${normalized}/api/app/settings/get`, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      },
+    });
+
+    if (res.status === 400) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: true,
+      };
+    }
+
+    if (!res.ok) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: false,
+      };
+    }
+
+    const data = await res.json();
+    const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+
+    const authCfg = entries.find(
+      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
+    )?.value;
+
+    const authenticatedRaw = entries.find(
+      (entry: any) => entry?.key === "_Authenticated",
+    )?.value;
+
+    const oidcBearer = entries.find(
+      (entry: any) => entry?.key === "_oidc.bearer",
+    )?.value;
+
+    const hasSessionId = entries.some(
+      (entry: any) => entry?.key === "_session.id",
+    );
+
+    const hasSessionPathParameter = entries.some(
+      (entry: any) => entry?.key === "_session.pathParameter",
+    );
+
+    const authenticated =
+      typeof authenticatedRaw === "boolean"
+        ? authenticatedRaw
+        : String(authenticatedRaw).toLowerCase() === "true";
+
+    let authenticationMethod: AuthMethod = "unknown";
+
+    if (authCfg === "OIDCSecurityHandler") {
+      authenticationMethod = "oidc";
+    } else if (authCfg === "JwtSingleUserSecurityHandler") {
+      authenticationMethod = "jwt";
+    } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
+      authenticationMethod = "oidc";
+    } else if (jwt) {
+      authenticationMethod = "jwt";
+    } else {
+      authenticationMethod = "jwt";
+    }
+
+    return {
+      authenticated,
+      authenticationMethod,
+      oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
+      sessionInvalid: false,
+    };
+  } catch {
+    return {
+      authenticated: false,
+      authenticationMethod: "unknown",
+      oidcBearer: null,
+      sessionInvalid: false,
+    };
+  }
+}
 
 export function Footer() {
   const dispatch = useAppDispatch();
@@ -95,7 +166,6 @@ export function Footer() {
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
   const Feather = withUnistyles(Feather_);
   const env = getAppEnvironment();
@@ -106,6 +176,8 @@ export function Footer() {
   const [pendingServerId, setPendingServerId] = useState<string | null>(null);
   const [pendingServerUrl, setPendingServerUrl] = useState<string | null>(null);
   const [pendingServerLabel, setPendingServerLabel] = useState("");
+  const [pendingServerAuthMethod, setPendingServerAuthMethod] =
+    useState<AuthMethod>("unknown");
 
   const [serverOptionMeta, setServerOptionMeta] = useState<
     Record<string, ServerOptionMeta>
@@ -146,23 +218,33 @@ export function Footer() {
               server.id,
               {
                 tone: "red" as const,
-                subtitle: "Nicht erreichbar / offline",
+                subtitle: t("nichtErreichbar"),
               },
             ] as const;
           }
 
           const jwt = await getJwtForServer(server.baseUrl);
-          const authenticated = await checkServerAuthenticated(
-            server.baseUrl,
-            jwt,
-          );
+          const info = await checkServerAuthenticated(server.baseUrl, jwt);
 
-          if (authenticated) {
+          if (info.authenticated) {
             return [
               server.id,
               {
                 tone: "green" as const,
-                subtitle: t("einloggt"),
+                subtitle:
+                  info.authenticationMethod === "oidc"
+                    ? "OIDC eingeloggt"
+                    : "JWT eingeloggt",
+              },
+            ] as const;
+          }
+
+          if (info.sessionInvalid) {
+            return [
+              server.id,
+              {
+                tone: "yellow" as const,
+                subtitle: "Session ungültig / neu anmelden",
               },
             ] as const;
           }
@@ -171,7 +253,10 @@ export function Footer() {
             server.id,
             {
               tone: "yellow" as const,
-              subtitle: t("erreichbarNichtEinloggt"),
+              subtitle:
+                info.authenticationMethod === "oidc"
+                  ? "OIDC erreichbar / nicht eingeloggt"
+                  : "Erreichbar / nicht eingeloggt",
             },
           ] as const;
         } catch {
@@ -197,14 +282,14 @@ export function Footer() {
       await refreshServerStatuses();
     };
 
-    safeRefresh();
+    void safeRefresh();
 
     const intervalId = setInterval(() => {
-      safeRefresh();
+      void safeRefresh();
     }, 10000);
 
     const onRefreshEvent = () => {
-      safeRefresh();
+      void safeRefresh();
     };
 
     if (typeof window !== "undefined") {
@@ -237,49 +322,66 @@ export function Footer() {
 
     const newUrl = normalizeBaseUrl(server.baseUrl);
     const existingJwt = await getJwtForServer(newUrl);
-    const alreadyAuthenticated = await checkServerAuthenticated(
-      newUrl,
-      existingJwt,
-    );
+    const info = await checkServerAuthenticated(newUrl, existingJwt);
 
-    if (!alreadyAuthenticated) {
-      if (isLoginPage) {
-        dispatch(selectServer(server.id));
+    if (info.authenticationMethod === "oidc") {
+      dispatch(selectServer(server.id));
 
-        await dispatch(
-          switchServer({
-            url: newUrl,
-            initializeMenu: false,
-          }),
-        );
+      await dispatch(
+        switchServer({
+          url: newUrl,
+          providedJwt: info.oidcBearer,
+          initializeMenu: !!info.oidcBearer,
+        }),
+      );
 
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-        }
-
-        return;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
       }
 
-      setPendingServerId(server.id);
-      setPendingServerUrl(newUrl);
-      setPendingServerLabel(server.name?.trim() || server.baseUrl);
-      setLoginError(null);
-      setLoginModalVisible(true);
       return;
     }
 
-    dispatch(selectServer(server.id));
+    if (existingJwt && info.authenticated) {
+      dispatch(selectServer(server.id));
 
-    await dispatch(
-      switchServer({
-        url: newUrl,
-        initializeMenu: true,
-      }),
-    );
+      await dispatch(
+        switchServer({
+          url: newUrl,
+          initializeMenu: true,
+        }),
+      );
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+      }
+
+      return;
     }
+
+    if (isLoginPage) {
+      dispatch(selectServer(server.id));
+
+      await dispatch(
+        switchServer({
+          url: newUrl,
+          initializeMenu: false,
+        }),
+      );
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+      }
+
+      return;
+    }
+
+    setPendingServerId(server.id);
+    setPendingServerUrl(newUrl);
+    setPendingServerLabel(server.name?.trim() || server.baseUrl);
+    setPendingServerAuthMethod("jwt");
+    setLoginError(null);
+    setLoginModalVisible(true);
   }
 
   async function handleServerLoginSubmit(params: {
@@ -292,8 +394,8 @@ export function Footer() {
     setLoginError(null);
 
     try {
-      if (authenticationMethod !== "jwt") {
-        throw new Error("Aktuell wird nur JWT-Login unterstützt.");
+      if (pendingServerAuthMethod !== "jwt") {
+        throw new Error("Für diesen Server ist kein Passwort-Login nötig.");
       }
 
       const trimmedUsername = params.username.trim();
@@ -345,6 +447,7 @@ export function Footer() {
       setPendingServerId(null);
       setPendingServerUrl(null);
       setPendingServerLabel("");
+      setPendingServerAuthMethod("unknown");
       setLoginError(null);
 
       if (typeof window !== "undefined") {
@@ -381,7 +484,7 @@ export function Footer() {
             onChange={handleServerChange}
             size="xs"
             appearance="menu"
-            menuWidth={180}
+            menuWidth={220}
             disabled={isSwitchingServer || loginLoading}
             optionMeta={serverOptionMeta}
             showOptionToneDot
@@ -422,6 +525,7 @@ export function Footer() {
         serverLabel={pendingServerLabel}
         loading={loginLoading}
         error={loginError}
+        authMethod={pendingServerAuthMethod}
         onClose={() => {
           if (loginLoading) return;
           setLoginModalVisible(false);
@@ -429,6 +533,7 @@ export function Footer() {
           setPendingServerId(null);
           setPendingServerUrl(null);
           setPendingServerLabel("");
+          setPendingServerAuthMethod("unknown");
         }}
         onSubmit={handleServerLoginSubmit}
       />
@@ -451,33 +556,9 @@ const styles = StyleSheet.create((theme) => ({
     flexWrap: "wrap",
   },
 
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-
   color: {
     color: theme.colors.text,
   },
-
-  devBadge: {
-    backgroundColor: "#F59E0B",
-  },
-
-  testBadge: {
-    backgroundColor: "#3B82F6",
-  },
-
-  prodBadge: {
-    backgroundColor: "#6B7280",
-  },
-
-  badgeText: {
-    color: "#FFFFFF",
-  },
-
-  text: {},
 
   separator: {
     opacity: 0.6,
@@ -485,7 +566,7 @@ const styles = StyleSheet.create((theme) => ({
 
   serverDropdownWrap: {
     minWidth: 100,
-    maxWidth: 230,
+    maxWidth: 260,
   },
 
   serverDropdownWrapDisabled: {

@@ -13,10 +13,12 @@ import { H1 } from "../../components/stylistic/H1";
 import { TextInput } from "../../components/ui-elements/TextInput";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../components/themed/ThemedText";
+import type { AuthMethod } from "../../redux/slices/apiSlice";
 
 type Props = {
   visible: boolean;
   serverLabel: string;
+  authMethod?: AuthMethod;
   loading?: boolean;
   error?: string | null;
   onClose: () => void;
@@ -29,6 +31,7 @@ type Props = {
 export function ServerLoginModal({
   visible,
   serverLabel,
+  authMethod = "jwt",
   loading = false,
   error = null,
   onClose,
@@ -50,6 +53,7 @@ export function ServerLoginModal({
   async function handleSubmit() {
     const trimmedUsername = username.trim();
 
+    if (authMethod !== "jwt") return;
     if (!trimmedUsername || !password || loading) return;
 
     await onSubmit({
@@ -89,53 +93,60 @@ export function ServerLoginModal({
           <ThemedText
             style={[
               styles.subtitle,
-              error
-                ? { color: "red", opacity: 1 }
-                : undefined,
+              error ? { color: "red", opacity: 1 } : undefined,
             ]}
           >
             {error
               ? t("invalid_credentials", "Falscher Benutzername oder Passwort")
-              : `${t("loginfor")}: ${serverLabel}`}
+              : authMethod === "oidc"
+                ? `OIDC-Login für: ${serverLabel}`
+                : `${t("loginfor")}: ${serverLabel}`}
           </ThemedText>
 
-          <View style={styles.form}>
-            <TextInput
-              size="sm"
-              placeholder={t("username_placeholder")}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                if (password) {
-                  handleSubmit();
-                }
-              }}
-            />
+          {authMethod === "jwt" ? (
+            <>
+              <View style={styles.form}>
+                <TextInput
+                  size="sm"
+                  placeholder={t("username_placeholder")}
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  returnKeyType="next"
+                  onSubmitEditing={() => {
+                    if (password) {
+                      void handleSubmit();
+                    }
+                  }}
+                />
 
-            <TextInput
-              size="sm"
-              placeholder={t("password_placeholder")}
-              value={password}
-              onChangeText={setPassword}
-              passwordToggle
-              autoCapitalize="none"
-            
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-          </View>
+                <TextInput
+                  size="sm"
+                  placeholder={t("password_placeholder")}
+                  value={password}
+                  onChangeText={setPassword}
+                  passwordToggle
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    void handleSubmit();
+                  }}
+                />
+              </View>
 
-          <ActionButton
-            label={t("login")}
-            variant="secondary"
-            onPress={handleSubmit}
-            size="sm"
-            disabled={loading || !username.trim() || !password}
-          
-          />
+              <ActionButton
+                label={t("login")}
+                variant="secondary"
+                onPress={() => {
+                  void handleSubmit();
+                }}
+                size="sm"
+                disabled={loading || !username.trim() || !password}
+              />
+            </>
+          ) : (
+            <ThemedText>Für OIDC ist kein Passwort-Dialog nötig.</ThemedText>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
