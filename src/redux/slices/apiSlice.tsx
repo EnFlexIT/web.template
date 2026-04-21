@@ -19,7 +19,6 @@ import {
   Configuration as DynamicContentApiConfiguration,
   DefaultApi,
 } from "../../api/implementation/Dynamic-Content-Api";
-
 import { clearMenu, initializeMenu } from "./menuSlice";
 
 const ipKey = "ip" as const;
@@ -27,7 +26,7 @@ const jwtKey = "jwt" as const;
 export const jwtByServerKey = "jwtByServer" as const;
 const serversKey = "servers" as const;
 
-type AuthMethod = "jwt" | "oidc" | "unknown";
+export type AuthMethod = "jwt" | "oidc" | "unknown";
 type JwtByServer = Record<string, string>;
 
 const defaultAuthenticationMethod: AuthMethod = "unknown";
@@ -255,32 +254,26 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       (entry: any) => entry?.key === "_session.pathParameter",
     );
 
+    const hasOidcBearer = entries.some(
+      (entry: any) => entry?.key === "_oidc.bearer",
+    );
+
     const authenticated =
       typeof authenticatedRaw === "boolean"
         ? authenticatedRaw
         : String(authenticatedRaw).toLowerCase() === "true";
-let authenticationMethod: AuthMethod = "unknown";
 
-if (authCfg === "OIDCSecurityHandler") {
-  authenticationMethod = "oidc";
-} else if (authCfg === "JwtSingleUserSecurityHandler") {
-  authenticationMethod = "jwt";
-} else if (hasSessionId || hasSessionPathParameter) {
-  authenticationMethod = "oidc";
-} else {
-  // pragmatischer Fallback für lokale/ältere Server
-  authenticationMethod = "jwt";
-}
+    let authenticationMethod: AuthMethod = "unknown";
 
-    console.log("[DETECT SERVER] authCfg:", authCfg);
-    console.log("[DETECT SERVER] authenticatedRaw:", authenticatedRaw);
-    console.log("[DETECT SERVER] authenticated:", authenticated);
-    console.log("[DETECT SERVER] hasSessionId:", hasSessionId);
-    console.log(
-      "[DETECT SERVER] hasSessionPathParameter:",
-      hasSessionPathParameter,
-    );
-    console.log("[DETECT SERVER] authenticationMethod:", authenticationMethod);
+    if (authCfg === "OIDCSecurityHandler") {
+      authenticationMethod = "oidc";
+    } else if (authCfg === "JwtSingleUserSecurityHandler") {
+      authenticationMethod = "jwt";
+    } else if (hasOidcBearer || hasSessionId || hasSessionPathParameter) {
+      authenticationMethod = "oidc";
+    } else {
+      authenticationMethod = "jwt";
+    }
 
     return {
       isPointingToServer: true,
@@ -358,14 +351,7 @@ export const initializeApi = createAsyncThunk(
       fallbackBaseUrl: fallbackDefaultIp,
     });
 
-    console.log("[INITIALIZE API] runtimeBaseUrl:", runtimeBaseUrl);
-    console.log("[INITIALIZE API] selectedServerBaseUrl:", selectedServerBaseUrl);
-    console.log("[INITIALIZE API] storedIp:", storedIp);
-    console.log("[INITIALIZE API] resolved ip:", ip);
-
     const jwt = (jwtByServer[ip] ?? defaultJwt) as string | null;
-
-    console.log("[INITIALIZE API] jwt exists for resolved ip:", !!jwt);
 
     const { isPointingToServer, authenticationMethod, isBaseMode } =
       await detectServerAndMode(ip);
@@ -478,17 +464,11 @@ export const login = createAsyncThunk(
   "api/login",
   async (payload: { jwt: string; baseUrl?: string }, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
-
     const currentIp = normalizeBaseUrl(payload.baseUrl ?? state.api.ip);
-
-    console.log("[LOGIN] saving jwt for:", currentIp);
 
     await setJwtForServer(currentIp, payload.jwt);
     await AsyncStorage.setItem(jwtKey, payload.jwt);
     await AsyncStorage.setItem(ipKey, currentIp);
-
-    const debugMap = await loadJwtByServer();
-    debugJwtStorage("after login", debugMap);
 
     thunkAPI.dispatch(
       setConnectionLocal({
@@ -513,13 +493,8 @@ export const logoutAsync = createAsyncThunk(
     thunkAPI.dispatch(setIsLoggingOut(true));
 
     try {
-      console.log("[LOGOUT] removing jwt for:", currentIp);
-
       await setJwtForServer(currentIp, null);
       await AsyncStorage.removeItem(jwtKey);
-
-      const debugMap = await loadJwtByServer();
-      debugJwtStorage("after logout", debugMap);
 
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());
@@ -560,12 +535,6 @@ export const switchServer = createAsyncThunk(
       } else {
         nextJwt = await getJwtForServer(newUrl);
       }
-
-      console.log("[SWITCH SERVER] switching to:", newUrl);
-      console.log("[SWITCH SERVER] jwt exists:", !!nextJwt);
-
-      const debugMap = await loadJwtByServer();
-      debugJwtStorage("after switchServer", debugMap);
 
       const { isPointingToServer, authenticationMethod, isBaseMode } =
         await detectServerAndMode(newUrl);

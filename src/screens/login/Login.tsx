@@ -1,5 +1,3 @@
-// src/screens/login/Login.tsx
-
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -62,7 +60,8 @@ function normalizeBaseUrl(url: string): string {
 }
 
 function buildServerOidcStartUrl(baseUrl: string): string {
-  return normalizeBaseUrl(baseUrl);
+  const normalized = normalizeBaseUrl(baseUrl);
+  return `${normalized}/`;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -182,6 +181,8 @@ export function LoginScreen() {
 
   const isWeb = Platform.OS === "web";
   const isExpoGo = Constants.appOwnership === "expo";
+  const isPopupWindow =
+    typeof window !== "undefined" && window.opener != null;
 
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
@@ -194,7 +195,8 @@ export function LoginScreen() {
     !isLoggedIn &&
     !oidcAutoStarted &&
     !isWeb &&
-    !isExpoGo;
+    !isExpoGo &&
+    !isPopupWindow;
 
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
@@ -546,9 +548,20 @@ export function LoginScreen() {
                   Reachable: {String(isPointingToServer)}
                 </ThemedText>
                 {showOidcLogin && (
-                  <ThemedText style={localStyles.debugText}>
-                    OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
-                  </ThemedText>
+                  <>
+                    <ThemedText style={localStyles.debugText}>
+                      OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
+                    </ThemedText>
+                    <ThemedText style={localStyles.debugText}>
+                      Popup: {String(isPopupWindow)}
+                    </ThemedText>
+                    <ThemedText style={localStyles.debugText}>
+                      ExpoGo: {String(isExpoGo)}
+                    </ThemedText>
+                    <ThemedText style={localStyles.debugText}>
+                      Web: {String(isWeb)}
+                    </ThemedText>
+                  </>
                 )}
               </View>
             </ScrollView>
