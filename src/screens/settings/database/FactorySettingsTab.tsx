@@ -32,6 +32,7 @@ import {
   selectSelectedFactoryId,
   setSelectedFactoryConnectionField,
   setSelectedFactoryId,
+  fetchDbSettings,
 } from "../../../redux/slices/dbSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
@@ -223,6 +224,9 @@ export function FactorySettingsTab() {
   const fallbackInfoText = t("messageInfoBoxDefault", {
     defaultValue: "Info Box",
   });
+   useEffect(() => {
+      dispatch(fetchDbSettings());
+    }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchDbSystemParameters());

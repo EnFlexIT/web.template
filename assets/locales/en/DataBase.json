@@ -43,5 +43,9 @@
   "backendMessagePropertiesCouldNotBeApplied": "Properties could not be applied.",
   "backendMessagePermissionDenied": "Permission denied.",
   "backendMessageCombinedUserPasswordEmpty": "The user name and password are empty.",
-  "labelfactoryDatabaseConnectionSettings": "Database connection settings for each database connection"
+  "labelfactoryDatabaseConnectionSettings": "Database connection settings for each database connection",
+  "messageGeneralConnectionInactive": "General database settings are inactive because \"Use settings for every database connection\" is disabled.",
+  "messageGeneralConnectionEnabled": "General database connection is now active for every factory.",
+  "messageGeneralConnectionDisabled": "Factory-specific database connections are now active again."
+  
 }

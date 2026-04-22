@@ -43,7 +43,9 @@
   "backendMessagePropertiesCouldNotBeApplied": "Die Einstellungen konnten nicht übernommen werden.",
   "backendMessagePermissionDenied": "Zugriff verweigert.",
   "backendMessageCombinedUserPasswordEmpty": "Benutzername und Passwort sind leer.",
-  "labelfactoryDatabaseConnectionSettings": "Datenbankverbindungseinstellungen für jede Datenbankverbindung"
-
+  "labelfactoryDatabaseConnectionSettings": "Datenbankverbindungseinstellungen für jede Datenbankverbindung",
+  "messageGeneralConnectionInactive": "Allgemeine Datenbankeinstellungen sind inaktiv, da \"Einstellungen für jede Datenbankverbindung verwenden\" deaktiviert ist.",
+  "messageGeneralConnectionEnabled": "Allgemeine Datenbankverbindung ist jetzt für jede Factory aktiv.",
+  "messageGeneralConnectionDisabled": "Factory-spezifische Datenbankverbindungen sind jetzt wieder aktiv."
   
 }

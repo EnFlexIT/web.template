@@ -387,10 +387,7 @@ export function GeneralSettingsTab() {
     if (!isUsingGeneralConnection) {
       return {
         type: "info" as const,
-        text: t("messageGeneralConnectionInactive", {
-          defaultValue:
-            'General database settings are inactive because "Use settings for every database connection" is disabled.',
-        }),
+        text: t("messageGeneralConnectionInactive"),
       };
     }
 
@@ -498,10 +495,7 @@ export function GeneralSettingsTab() {
       setLocalMessage({
         type: "success",
         text: value
-          ? t("messageGeneralConnectionEnabled", {
-              defaultValue:
-                "General database connection is now active for every factory.",
-            })
+          ? t("messageGeneralConnectionEnabled")
           : t("messageGeneralConnectionDisabled", {
               defaultValue:
                 "Factory-specific database connections are now active again.",
