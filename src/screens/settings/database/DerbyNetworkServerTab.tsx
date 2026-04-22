@@ -124,6 +124,8 @@ export function DerbyNetworkServerTab() {
       ? Number(derby.port)
       : 1527;
 
+  const isFormDisabled = isLoading || isSaving;
+
   const onSave = async () => {
     clearMessages();
 
@@ -131,16 +133,21 @@ export function DerbyNetworkServerTab() {
       await dispatch(
         saveDerbyNetworkServerSettings({
           isStartDerbyNetworkServer: derby.isStartDerbyNetworkServer,
-          hostIp: derby.hostIp.trim(),
+          hostIp: derby.hostIp.trim() || "localhost",
           port: normalizedPort,
-          userName: derby.userName,
-          password: derby.password,
+          userName: derby.userName?.trim() || "admin",
+          password: derby.password?.trim() || "admin",
         }),
       ).unwrap();
 
       setLocalMessage({
         type: "success",
-        text: t("messageSettingsSaved"),
+        text: derby.isStartDerbyNetworkServer
+          ? t("messageDerbyServerStarted", {
+              defaultValue:
+                "Settings saved successfully. Derby network server start was requested.",
+            })
+          : t("messageSettingsSaved"),
       });
     } catch (err: any) {
       setLocalMessage({
@@ -164,9 +171,6 @@ export function DerbyNetworkServerTab() {
       text: t("messageDerbyNetworkServerTestInfo"),
     });
   };
-
-  const isFormEnabled = true;
-  const isFormDisabled = false;
 
   return (
     <Card style={styles.card} padding="md">
@@ -204,18 +208,13 @@ export function DerbyNetworkServerTab() {
               dispatch(
                 setDerbyField({
                   key: "isStartDerbyNetworkServer",
-                  value,
+                  value: Boolean(value),
                 }),
               );
             }}
           />
 
-          <View
-            style={[
-              styles.formArea,
-              !isFormEnabled && styles.formAreaDisabled,
-            ]}
-          >
+          <View style={styles.formArea}>
             <TextInput
               label={t("labelHostOrIP")}
               value={derby.hostIp}
@@ -299,7 +298,7 @@ export function DerbyNetworkServerTab() {
             onPress={onSave}
             size="sm"
             variant="secondary"
-            disabled={isFormDisabled || isSaving}
+            disabled={isSaving || isLoading}
           />
         </View>
       </View>
@@ -362,10 +361,6 @@ const styles = StyleSheet.create((theme) => ({
 
   formArea: {
     gap: 16,
-  },
-
-  formAreaDisabled: {
-    opacity: 0.6,
   },
 
   actions: {
