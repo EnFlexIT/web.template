@@ -42,6 +42,13 @@
       "title": "Benachrichtigungen",
       "description": "Sieh dir deine aktuellen Benachrichtigungen an und die wichtige Ereignisse ."
     },
-    "search": "Suchen…"
+    "search": "Suchen…",
+
+    "personalSettings": {
+      "title": "Benutzereinstellung",
+      "description": "Individuelle Einstellungen für dein Konto und deine Präferenzen."
+    }
+  
+
   }
 }

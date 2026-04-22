@@ -42,6 +42,10 @@
       "title": "Notifications",
       "description": "View your current notifications and stay informed about important updates."
       },
-      "search": "Search…"
+      "search": "Search…",
+      "personalSettings": {
+        "title": "Personal Settings",
+        "description": "Individual settings for your account and preferences."
+      }
 }
 }

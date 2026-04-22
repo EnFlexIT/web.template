@@ -40,7 +40,18 @@ export function getStaticMenu(): StaticMenuItem[] {
       menuID: 3003, 
       Screen: SettingsScreen 
     },
+    /**
+     * ============================================================
+     * UNTERPUNKTE DIREKT UNTER SETTINGS (notifications)
+     * ============================================================
+     */
 
+    {
+      caption: "notifications",
+      menuID: 3015,
+      parentID: 3003,
+      Screen: NotificationsScreen,
+    },
     /**
      * ============================================================
      * HUB SCREEN (Ordner-Ebene)
@@ -52,6 +63,12 @@ export function getStaticMenu(): StaticMenuItem[] {
     { 
       caption: "System Settings", 
       menuID: 3021, 
+      parentID: 3003, 
+      Screen: MenuHubScreen 
+    },
+      { 
+      caption: "personalSettings", 
+      menuID: 3022, 
       parentID: 3003, 
       Screen: MenuHubScreen 
     },
@@ -67,21 +84,21 @@ export function getStaticMenu(): StaticMenuItem[] {
     { 
       caption: "Appearance", 
       menuID: 3004, 
-      parentID: 3003, 
+      parentID: 3022, 
       Screen: UnauthenticatedSettings 
     },
 
     { 
       caption: "privacysettings", 
       menuID: 3005, 
-      parentID: 3003, 
+      parentID: 3022, 
       Screen: PrivacySettings 
     },
 
     { 
       caption: "changePassword", 
       menuID: 3013, 
-      parentID: 3003, 
+      parentID: 3022, 
       Screen: ChangePasswordScreen 
     },
 
@@ -101,6 +118,12 @@ export function getStaticMenu(): StaticMenuItem[] {
       menuID: 3012, 
       parentID: 3021, 
       Screen: ServerSettingsScreen 
+    },
+   { 
+      caption: "appInfo", 
+      menuID: 3014, 
+      parentID: 3021, 
+      Screen: UpdateWebAppTab 
     },
 
     /**
@@ -134,18 +157,8 @@ export function getStaticMenu(): StaticMenuItem[] {
       Screen: DevHomeScreen 
     },
 
-    { 
-      caption: "appInfo", 
-      menuID: 3014, 
-      parentID: 3003, 
-      Screen: UpdateWebAppTab 
-    },
-    {
-      caption: "notifications",
-      menuID: 3015,
-      parentID: 3003,
-      Screen: NotificationsScreen,
-    }
+ 
+ 
   ];
 
   /**

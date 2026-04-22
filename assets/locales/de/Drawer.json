@@ -16,6 +16,8 @@
   "serverSettings": "Servereinstellungen",
   "System Settings": "Systemeinstellungen",
   "appInfo":"Update",
-  "notifications":"Benachrichtigungen"
+  "notifications":"Benachrichtigungen",
+  "personalSettings":"Benutzereinstellung"
+ 
   
 }
