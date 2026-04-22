@@ -73,11 +73,22 @@ async function fetchOidcBearerFromServer(baseUrl: string): Promise<string | null
 
   const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
     method: "GET",
+    cache: "no-store",
     credentials: "include",
     headers: {
       Accept: "application/json",
     },
   });
+
+  if (response.status === 400) {
+    const text = await response.text();
+
+    if (text.toLowerCase().includes("duplicate sessions")) {
+      throw new Error("duplicate_sessions");
+    }
+
+    return null;
+  }
 
   if (!response.ok) {
     return null;
@@ -112,10 +123,19 @@ async function waitForOidcBearer(
   delayMs = 1000,
 ): Promise<string | null> {
   for (let i = 0; i < retries; i += 1) {
-    const bearer = await fetchOidcBearerFromServer(baseUrl);
+    try {
+      const bearer = await fetchOidcBearerFromServer(baseUrl);
 
-    if (bearer) {
-      return bearer;
+      if (bearer) {
+        return bearer;
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "duplicate_sessions"
+      ) {
+        throw error;
+      }
     }
 
     await sleep(delayMs);
@@ -147,6 +167,7 @@ export function LoginScreen() {
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcAutoStarted, setOidcAutoStarted] = useState(false);
+  const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -194,6 +215,7 @@ export function LoginScreen() {
     isPointingToServer &&
     !isLoggedIn &&
     !oidcAutoStarted &&
+    !oidcLoginInProgress &&
     !isWeb &&
     !isExpoGo &&
     !isPopupWindow;
@@ -256,38 +278,74 @@ export function LoginScreen() {
   }
 
   async function loginWithOidc(): Promise<void> {
-    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
-
-    if (!oidcStartUrl) {
-      setLoginRequestStatus("failed");
-      setLoginFeedback("OIDC-Start-URL fehlt.");
+    if (oidcLoginInProgress) {
       return;
     }
 
-    if (isWeb) {
-      const popup = window.open(
-        oidcStartUrl,
-        "oidcLogin",
-        "width=520,height=720,resizable=yes,scrollbars=yes,status=yes",
-      );
+    setOidcLoginInProgress(true);
 
-      if (!popup) {
+    try {
+      const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+
+      if (!oidcStartUrl) {
         setLoginRequestStatus("failed");
-        setLoginFeedback("OIDC-Popup konnte nicht geöffnet werden.");
+        setLoginFeedback("OIDC-Start-URL fehlt.");
         return;
       }
 
-      const bearer = await waitForOidcBearer(selectedBaseUrl, 60, 1000);
+      if (isWeb) {
+        const popup = window.open(
+          oidcStartUrl,
+          "oidcLogin",
+          "width=520,height=720,resizable=yes,scrollbars=yes,status=yes",
+        );
 
-      if (!popup.closed) {
-        popup.close();
+        if (!popup) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("OIDC-Popup konnte nicht geöffnet werden.");
+          return;
+        }
+
+        const bearer = await waitForOidcBearer(selectedBaseUrl, 60, 1000);
+
+        if (!popup.closed) {
+          popup.close();
+        }
+
+        if (!bearer) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback(t("please_check_server_version"));
+          return;
+        }
+
+        await dispatch(
+          switchServer({
+            url: selectedBaseUrl,
+            providedJwt: bearer,
+            initializeMenu: true,
+          }),
+        );
+
+        setLoginRequestStatus("successful");
+        setLoginFeedback(null);
+        return;
       }
+
+      const canOpen = await Linking.canOpenURL(oidcStartUrl);
+
+      if (!canOpen) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback(t("cannot_open_oidc_url"));
+        return;
+      }
+
+      await WebBrowser.openBrowserAsync(oidcStartUrl);
+
+      const bearer = await waitForOidcBearer(selectedBaseUrl, 20, 1000);
 
       if (!bearer) {
         setLoginRequestStatus("failed");
-        setLoginFeedback(
-          t("please_check_server_version")
-        );
+        setLoginFeedback(t("please_check_server_version"));
         return;
       }
 
@@ -301,42 +359,16 @@ export function LoginScreen() {
 
       setLoginRequestStatus("successful");
       setLoginFeedback(null);
-      return;
+    } finally {
+      setOidcLoginInProgress(false);
     }
-
-    const canOpen = await Linking.canOpenURL(oidcStartUrl);
-
-    if (!canOpen) {
-      setLoginRequestStatus("failed");
-      setLoginFeedback(t("cannot_open_oidc_url"));
-      return;
-    }
-
-    await WebBrowser.openBrowserAsync(oidcStartUrl);
-
-    const bearer = await waitForOidcBearer(selectedBaseUrl, 20, 1000);
-
-    if (!bearer) {
-      setLoginRequestStatus("failed");
-      setLoginFeedback(
-        t("please_check_server_version")
-      );
-      return;
-    }
-
-    await dispatch(
-      switchServer({
-        url: selectedBaseUrl,
-        providedJwt: bearer,
-        initializeMenu: true,
-      }),
-    );
-
-    setLoginRequestStatus("successful");
-    setLoginFeedback(null);
   }
 
   async function login(): Promise<void> {
+    if (oidcLoginInProgress && authenticationMethod === "oidc") {
+      return;
+    }
+
     setLoginRequestIssued(true);
     setLoginRequestStatus("loading");
     setLoginFeedback(null);
@@ -367,7 +399,11 @@ export function LoginScreen() {
           ? error.message.toLowerCase()
           : String(error ?? "").toLowerCase();
 
-      if (
+      if (msg.includes("duplicate_sessions")) {
+        setLoginFeedback(
+          "Es gibt doppelte Server-Sessions. Bitte alte OIDC-Sitzungen schließen und erneut anmelden."
+        );
+      } else if (
         msg.includes("failed to fetch") ||
         msg.includes("network") ||
         msg.includes("load failed") ||
@@ -384,6 +420,7 @@ export function LoginScreen() {
 
   useEffect(() => {
     setOidcAutoStarted(false);
+    setOidcLoginInProgress(false);
   }, [selectedBaseUrl, authenticationMethod]);
 
   useEffect(() => {
@@ -457,6 +494,7 @@ export function LoginScreen() {
                     void login();
                   }}
                   size="xs"
+                  disabled={oidcLoginInProgress}
                 />
               )}
             </>
@@ -532,7 +570,6 @@ export function LoginScreen() {
                   size="xs"
                 />
               </View>
-
             </ScrollView>
           )}
         </View>
