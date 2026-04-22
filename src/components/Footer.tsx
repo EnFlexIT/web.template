@@ -231,10 +231,7 @@ export function Footer() {
               server.id,
               {
                 tone: "green" as const,
-                subtitle:
-                  info.authenticationMethod === "oidc"
-                    ? t("eingeloggt")
-                    : t("eingeloggt"),
+                subtitle: t("eingeloggt"),
               },
             ] as const;
           }
@@ -253,10 +250,7 @@ export function Footer() {
             server.id,
             {
               tone: "yellow" as const,
-              subtitle:
-                info.authenticationMethod === "oidc"
-                  ? t("erreichbarNichtEinloggt")
-                  : t("erreichbarNichtEinloggt"),
+              subtitle: t("erreichbarNichtEinloggt"),
             },
           ] as const;
         } catch {
@@ -324,30 +318,16 @@ export function Footer() {
     const existingJwt = await getJwtForServer(newUrl);
     const info = await checkServerAuthenticated(newUrl, existingJwt);
 
-    if (info.authenticationMethod === "oidc") {
+    if (info.authenticated) {
       dispatch(selectServer(server.id));
 
       await dispatch(
         switchServer({
           url: newUrl,
-          providedJwt: info.oidcBearer,
-          initializeMenu: !!info.oidcBearer,
-        }),
-      );
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-      }
-
-      return;
-    }
-
-    if (existingJwt && info.authenticated) {
-      dispatch(selectServer(server.id));
-
-      await dispatch(
-        switchServer({
-          url: newUrl,
+          providedJwt:
+            info.authenticationMethod === "oidc"
+              ? info.oidcBearer ?? undefined
+              : undefined,
           initializeMenu: true,
         }),
       );
@@ -359,29 +339,46 @@ export function Footer() {
       return;
     }
 
-    if (isLoginPage) {
-      dispatch(selectServer(server.id));
+    if (info.authenticationMethod === "jwt") {
+      if (isLoginPage) {
+        dispatch(selectServer(server.id));
 
-      await dispatch(
-        switchServer({
-          url: newUrl,
-          initializeMenu: false,
-        }),
-      );
+        await dispatch(
+          switchServer({
+            url: newUrl,
+            initializeMenu: false,
+          }),
+        );
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        }
+
+        return;
       }
 
+      setPendingServerId(server.id);
+      setPendingServerUrl(newUrl);
+      setPendingServerLabel(server.name?.trim() || server.baseUrl);
+      setPendingServerAuthMethod("jwt");
+      setLoginError(null);
+      setLoginModalVisible(true);
       return;
     }
 
-    setPendingServerId(server.id);
-    setPendingServerUrl(newUrl);
-    setPendingServerLabel(server.name?.trim() || server.baseUrl);
-    setPendingServerAuthMethod("jwt");
-    setLoginError(null);
-    setLoginModalVisible(true);
+    dispatch(selectServer(server.id));
+
+    await dispatch(
+      switchServer({
+        url: newUrl,
+        providedJwt: info.oidcBearer ?? undefined,
+        initializeMenu: !!info.oidcBearer,
+      }),
+    );
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+    }
   }
 
   async function handleServerLoginSubmit(params: {

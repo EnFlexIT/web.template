@@ -389,11 +389,11 @@ export function ServerSettingsScreen() {
         return;
       }
     }
-async function checkServerAuthenticated(
-  baseUrl: string,
-  jwt: string | null,
-): Promise<ServerAuthInfo> {
-  const normalized = normalizeBaseUrl(baseUrl);
+  async function checkServerAuthenticated(
+    baseUrl: string,
+    jwt: string | null,
+  ): Promise<ServerAuthInfo> {
+    const normalized = normalizeBaseUrl(baseUrl);
 
   try {
     const res = await fetch(`${normalized}/api/app/settings/get`, {
@@ -472,16 +472,16 @@ async function checkServerAuthenticated(
       oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
       sessionInvalid: false,
     };
-  } catch {
+   } catch {
     return {
       authenticated: false,
       authenticationMethod: "unknown",
       oidcBearer: null,
       sessionInvalid: false,
     };
-  }
-}
-    setBusy(true);
+   }
+   }
+     setBusy(true);
     const existingJwt = await getJwtForServer(targetUrl);
     const info = await checkServerAuthenticated(targetUrl, existingJwt);
     setBusy(false);
@@ -624,6 +624,12 @@ async function checkServerAuthenticated(
     } finally {
       setLoginLoading(false);
     }
+  }
+  if (showOidcConfirm)
+
+  {
+    return (handleOidcConfirm(), null);
+
   }
 
   return (
@@ -803,19 +809,6 @@ async function checkServerAuthenticated(
           resetPendingAuthState();
         }}
         onSubmit={handleServerLoginSubmit}
-      />
-
-      <ConfirmModal
-        visible={showOidcConfirm}
-        title="OpenID Connect"
-        message={`Für "${pendingServerLabel}" wurde OpenID Connect erkannt. Möchten Sie mit OpenID anmelden?`}
-        confirmLabel="Mit OpenID anmelden"
-        cancelLabel={t("cancel")}
-        onConfirm={handleOidcConfirm}
-        onCancel={() => {
-          if (loginLoading) return;
-          resetPendingAuthState();
-        }}
       />
 
       <ConfirmModal
