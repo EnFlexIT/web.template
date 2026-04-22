@@ -15,7 +15,8 @@
   "appInfo":"Update",
   "changeOrganization": "Server Settings",
   "notifications":"Notifications",
-  "serverSettings": "Server Settings"
-
+  "serverSettings": "Server Settings",
+  "System Settings": "System Settings",
+  "Appearance": "Appearance"
 
 }
