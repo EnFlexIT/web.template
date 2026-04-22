@@ -42,5 +42,6 @@
   "backendMessagePasswordEmpty": "The password is empty.",
   "backendMessagePropertiesCouldNotBeApplied": "Properties could not be applied.",
   "backendMessagePermissionDenied": "Permission denied.",
-  "backendMessageCombinedUserPasswordEmpty": "The user name and password are empty."
+  "backendMessageCombinedUserPasswordEmpty": "The user name and password are empty.",
+  "labelfactoryDatabaseConnectionSettings": "Database connection settings for each database connection"
 }

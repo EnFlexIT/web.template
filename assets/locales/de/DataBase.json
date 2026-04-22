@@ -42,6 +42,8 @@
   "backendMessagePasswordEmpty": "Das Passwort ist leer.",
   "backendMessagePropertiesCouldNotBeApplied": "Die Einstellungen konnten nicht übernommen werden.",
   "backendMessagePermissionDenied": "Zugriff verweigert.",
-  "backendMessageCombinedUserPasswordEmpty": "Benutzername und Passwort sind leer."
+  "backendMessageCombinedUserPasswordEmpty": "Benutzername und Passwort sind leer.",
+  "labelfactoryDatabaseConnectionSettings": "Datenbankverbindungseinstellungen für jede Datenbankverbindung"
+
   
 }

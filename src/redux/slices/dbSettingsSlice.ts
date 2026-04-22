@@ -335,6 +335,9 @@ function mapFactoryConnection(
 function buildGeneralConnectionEntries(
   payload: GeneralDbConnectionSettings,
 ): PropertyEntry[] {
+  const username = payload.userName?.trim() || "admin";
+  const password = payload.password?.trim() || "admin";
+
   return [
     toPropertyEntry("useForEveryFactory", payload.useForEveryFactory, "BOOLEAN"),
     toPropertyEntry("dbSystem", normalizeDbSystemName(payload.dbSystem), "STRING"),
@@ -345,8 +348,8 @@ function buildGeneralConnectionEntries(
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
     toPropertyEntry("hibernate.default_catalog", payload.defaultCatalog, "STRING"),
-    toPropertyEntry("hibernate.connection.username", payload.userName, "STRING"),
-    toPropertyEntry("hibernate.connection.password", payload.password, "STRING"),
+    toPropertyEntry("hibernate.connection.username", username, "STRING"),
+    toPropertyEntry("hibernate.connection.password", password, "STRING"),
   ];
 }
 
@@ -373,6 +376,9 @@ function buildTestConnectionEntries(
 function buildFactoryConnectionEntries(
   payload: FactoryDbConnectionSettings,
 ): PropertyEntry[] {
+  const username = payload.userName?.trim() || "admin";
+  const password = payload.password?.trim() || "admin";
+
   return [
     toPropertyEntry("factoryID", payload.factoryId, "STRING"),
     toPropertyEntry("dbSystem", normalizeDbSystemName(payload.dbSystem), "STRING"),
@@ -383,11 +389,10 @@ function buildFactoryConnectionEntries(
     ),
     toPropertyEntry("hibernate.connection.url", payload.url, "STRING"),
     toPropertyEntry("hibernate.default_catalog", payload.defaultCatalog, "STRING"),
-    toPropertyEntry("hibernate.connection.username", payload.userName, "STRING"),
-    toPropertyEntry("hibernate.connection.password", payload.password, "STRING"),
+    toPropertyEntry("hibernate.connection.username", username, "STRING"),
+    toPropertyEntry("hibernate.connection.password", password, "STRING"),
   ];
 }
-
 export const fetchDbSettings = createAsyncThunk(
   "dbSettings/fetchDbSettings",
   async (_, thunkAPI) => {

@@ -15,9 +15,9 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
   clearDbSettingsError,
-  fetchDbSettings,
   fetchDbSystemParameters,
   fetchFactoryDbConnectionSettings,
+  fetchGeneralDbConnectionSettings,
   saveFactoryDbConnectionSettings,
   testFactoryDbConnection,
   selectDbSettingsError,
@@ -27,6 +27,7 @@ import {
   selectDbSystems,
   selectFactories,
   selectFactoryStates,
+  selectGeneralConnection,
   selectSelectedFactoryConnection,
   selectSelectedFactoryId,
   setSelectedFactoryConnectionField,
@@ -202,8 +203,8 @@ function translateBackendMessage(
 
 export function FactorySettingsTab() {
   const dispatch = useAppDispatch();
-
   const { t } = useTranslation(["DataBase"]);
+
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const factories = useAppSelector(selectFactories);
@@ -212,6 +213,7 @@ export function FactorySettingsTab() {
   const selectedFactoryConnection = useAppSelector(
     selectSelectedFactoryConnection,
   );
+  const generalConnection = useAppSelector(selectGeneralConnection);
   const isLoading = useAppSelector(selectDbSettingsLoading);
   const isSaving = useAppSelector(selectDbSettingsSaving);
   const error = useAppSelector(selectDbSettingsError);
@@ -223,8 +225,8 @@ export function FactorySettingsTab() {
   });
 
   useEffect(() => {
-    dispatch(fetchDbSettings());
     dispatch(fetchDbSystemParameters());
+    dispatch(fetchGeneralDbConnectionSettings());
   }, [dispatch]);
 
   useEffect(() => {
@@ -234,10 +236,10 @@ export function FactorySettingsTab() {
   }, [dispatch, factories, selectedFactoryId]);
 
   useEffect(() => {
-    if (selectedFactoryId) {
+    if (selectedFactoryId && !generalConnection.useForEveryFactory) {
       dispatch(fetchFactoryDbConnectionSettings(selectedFactoryId));
     }
-  }, [dispatch, selectedFactoryId]);
+  }, [dispatch, selectedFactoryId, generalConnection.useForEveryFactory]);
 
   const factoryOptions = useMemo<Record<string, string>>(() => {
     return factories.reduce<Record<string, string>>((acc, factory) => {
@@ -280,18 +282,38 @@ export function FactorySettingsTab() {
     "";
 
   const resolvedUserName =
-    selectedFactoryConnection.userName || activeDbSystemDefinition?.userName || "admin";
+    selectedFactoryConnection.userName ||
+    activeDbSystemDefinition?.userName ||
+    "admin";
 
   const resolvedPassword =
-    selectedFactoryConnection.password || activeDbSystemDefinition?.password || "admin";
+    selectedFactoryConnection.password ||
+    activeDbSystemDefinition?.password ||
+    "admin";
 
-  const isFormDisabled = !selectedFactoryId || isLoading;
+  const isUsingGeneralConnection = generalConnection.useForEveryFactory;
+
+  const isFormDisabled =
+    !selectedFactoryId ||
+    isLoading ||
+    isSaving ||
+    isUsingGeneralConnection;
 
   const displayedMessage = useMemo(() => {
     if (error) {
       return {
         type: "error" as const,
         text: translateBackendMessage(error, t),
+      };
+    }
+
+    if (isUsingGeneralConnection) {
+      return {
+        type: "info" as const,
+        text: t("messageFactorySettingsDisabledByGeneral", {
+          defaultValue:
+            'Factory settings are read-only because "Use settings for every database connection" is enabled in General Database Settings.',
+        }),
       };
     }
 
@@ -306,7 +328,7 @@ export function FactorySettingsTab() {
       type: "info" as const,
       text: fallbackInfoText,
     };
-  }, [error, localMessage, fallbackInfoText, t]);
+  }, [error, isUsingGeneralConnection, localMessage, fallbackInfoText, t]);
 
   const clearMessages = () => {
     if (error) {
@@ -369,7 +391,7 @@ export function FactorySettingsTab() {
   };
 
   const onSave = async () => {
-    if (!selectedFactoryId) return;
+    if (!selectedFactoryId || isUsingGeneralConnection) return;
 
     clearMessages();
 
@@ -405,7 +427,7 @@ export function FactorySettingsTab() {
   };
 
   const onTestConnection = async () => {
-    if (!selectedFactoryId) return;
+    if (!selectedFactoryId || isUsingGeneralConnection) return;
 
     clearMessages();
 
@@ -454,7 +476,7 @@ export function FactorySettingsTab() {
     <Card style={styles.card} padding="md">
       <View style={styles.container}>
         <View style={styles.header}>
-          <H2>{t("labelGeneralDatabaseConnectionSettings")}</H2>
+          <H2>{t("labelfactoryDatabaseConnectionSettings")}</H2>
           <View style={styles.separator} />
         </View>
 
@@ -489,6 +511,7 @@ export function FactorySettingsTab() {
                 value={selectedFactoryId}
                 options={factoryOptions}
                 onChange={(value) => onFactoryChange(String(value))}
+                disabled={isLoading || isSaving}
               />
             </View>
 
@@ -598,7 +621,7 @@ export function FactorySettingsTab() {
             label={t("labelTestConnection")}
             size="sm"
             onPress={onTestConnection}
-            disabled={isFormDisabled || isSaving}
+            disabled={isFormDisabled}
           />
 
           <ActionButton
@@ -606,7 +629,7 @@ export function FactorySettingsTab() {
             size="sm"
             variant="secondary"
             onPress={onSave}
-            disabled={isSaving || isFormDisabled}
+            disabled={isFormDisabled}
           />
         </View>
       </View>

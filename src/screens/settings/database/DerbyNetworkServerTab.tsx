@@ -165,8 +165,8 @@ export function DerbyNetworkServerTab() {
     });
   };
 
-  const isFormEnabled = derby.isStartDerbyNetworkServer;
-  const isFormDisabled = isLoading || !isFormEnabled;
+  const isFormEnabled = true;
+  const isFormDisabled = false;
 
   return (
     <Card style={styles.card} padding="md">
