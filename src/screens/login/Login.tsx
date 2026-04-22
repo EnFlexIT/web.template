@@ -201,7 +201,7 @@ export function LoginScreen() {
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
       setLoginRequestStatus("failed");
-      setLoginFeedback("Bitte Benutzername und Passwort eingeben.");
+      setLoginFeedback(t("username_and_password_required"));
       return;
     }
 
@@ -286,7 +286,7 @@ export function LoginScreen() {
       if (!bearer) {
         setLoginRequestStatus("failed");
         setLoginFeedback(
-          "OIDC-Anmeldung war erfolgreich, aber der Server hat noch keinen Bearer geliefert.",
+          t("please_check_server_version")
         );
         return;
       }
@@ -308,7 +308,7 @@ export function LoginScreen() {
 
     if (!canOpen) {
       setLoginRequestStatus("failed");
-      setLoginFeedback("OIDC-Login-URL konnte nicht geöffnet werden.");
+      setLoginFeedback(t("cannot_open_oidc_url"));
       return;
     }
 
@@ -319,7 +319,7 @@ export function LoginScreen() {
     if (!bearer) {
       setLoginRequestStatus("failed");
       setLoginFeedback(
-        "OIDC-Anmeldung war erfolgreich, aber der Server hat noch keinen Bearer geliefert.",
+        t("please_check_server_version")
       );
       return;
     }
@@ -355,7 +355,7 @@ export function LoginScreen() {
         default:
           setLoginRequestStatus("failed");
           setLoginFeedback(
-            "Authentifizierungsmethode konnte nicht erkannt werden.",
+            t("auth_method_unknown")
           );
           return;
       }
@@ -449,15 +449,9 @@ export function LoginScreen() {
 
           {showOidcLogin && (
             <>
-              <ThemedText style={localStyles.infoText}>
-                {shouldShowOidcButton
-                  ? "OpenID Connect erkannt. Bitte Anmeldung starten."
-                  : "OpenID Connect erkannt. Weiterleitung zur Anmeldung läuft..."}
-              </ThemedText>
-
               {shouldShowOidcButton && (
                 <ActionButton
-                  label="Mit OpenID anmelden"
+                  label={t("login")}
                   variant="secondary"
                   onPress={() => {
                     void login();
@@ -471,15 +465,14 @@ export function LoginScreen() {
           {showUnknownAuth && (
             <>
               <ThemedText style={localStyles.infoText}>
-                Die Authentifizierungsmethode konnte noch nicht erkannt werden.
+                {t("auth_method_unknown")}
               </ThemedText>
               <ThemedText style={localStyles.infoSubText}>
-                Bitte Server prüfen oder erneut verbinden.
+                {t("please_check_server_version")}
               </ThemedText>
             </>
           )}
         </View>
-
         <View style={[styles.lowerHalf]}>
           <Pressable
             style={[styles.advancedSettingsTitleContainer]}
@@ -540,30 +533,6 @@ export function LoginScreen() {
                 />
               </View>
 
-              <View style={{ gap: 4 }}>
-                <ThemedText style={localStyles.debugText}>
-                  Auth: {authenticationMethod}
-                </ThemedText>
-                <ThemedText style={localStyles.debugText}>
-                  Reachable: {String(isPointingToServer)}
-                </ThemedText>
-                {showOidcLogin && (
-                  <>
-                    <ThemedText style={localStyles.debugText}>
-                      OIDC Start URL: {buildServerOidcStartUrl(selectedBaseUrl)}
-                    </ThemedText>
-                    <ThemedText style={localStyles.debugText}>
-                      Popup: {String(isPopupWindow)}
-                    </ThemedText>
-                    <ThemedText style={localStyles.debugText}>
-                      ExpoGo: {String(isExpoGo)}
-                    </ThemedText>
-                    <ThemedText style={localStyles.debugText}>
-                      Web: {String(isWeb)}
-                    </ThemedText>
-                  </>
-                )}
-              </View>
             </ScrollView>
           )}
         </View>

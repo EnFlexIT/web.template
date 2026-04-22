@@ -10,22 +10,18 @@
   "system": "System",
   "light": "Light",
   "dark": "Dark",
-
   "currentServer": "Current server",
   "serverReachable": "Online",
   "serverNotReachable": "Offline",
-
   "changeOrganization": "Server Settings",
   "changeOrganizationsQuick": "Switch organization",
   "savedServers": "Saved servers",
   "useServer": "Use",
-
   "addServer": "Add new server",
   "serverLabel": "Name (e.g. Localhost)",
   "serverUrl": "My Fancy System",
-  "saveAndUse": "save the changes",
+  "saveAndUse": "Save changes",
   "close": "Close",
-
   "loading": "Loading…",
   "successful": "Success",
   "failed": "Failed",
@@ -57,7 +53,14 @@
   "cancel": "Cancel",
   "confirmDeleteServer": "Delete server?",
   "confirmDeleteServerMessage": "Do you really want to delete this server?",
-  "delete": "Delete"
+  "delete": "Delete",
+  "eingelogt": "Logged in",
+  "auth_method_unknown": "Authentication method could not be recognized yet.",
+  "please_check_server_version": "Please check server or reconnect.",
+  "cannot_open_oidc_url": "Cannot open OIDC login URL.",
+  "username_and_password_required": "Please enter username and password."
+
+
   
 
 

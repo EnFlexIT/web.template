@@ -233,8 +233,8 @@ export function Footer() {
                 tone: "green" as const,
                 subtitle:
                   info.authenticationMethod === "oidc"
-                    ? "OIDC eingeloggt"
-                    : "JWT eingeloggt",
+                    ? t("eingeloggt")
+                    : t("eingeloggt"),
               },
             ] as const;
           }
@@ -244,7 +244,7 @@ export function Footer() {
               server.id,
               {
                 tone: "yellow" as const,
-                subtitle: "Session ungültig / neu anmelden",
+                subtitle: t("Session ungültig / neu anmelden"),
               },
             ] as const;
           }
@@ -255,8 +255,8 @@ export function Footer() {
               tone: "yellow" as const,
               subtitle:
                 info.authenticationMethod === "oidc"
-                  ? "OIDC erreichbar / nicht eingeloggt"
-                  : "Erreichbar / nicht eingeloggt",
+                  ? t("erreichbarNichtEinloggt")
+                  : t("erreichbarNichtEinloggt"),
             },
           ] as const;
         } catch {
