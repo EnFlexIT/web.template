@@ -50,10 +50,11 @@
   "confirmDeleteServerMessage": "Möchtest du diesen Server wirklich löschen?",
   "delete": "Löschen",
   "eingelogt": "Eingeloggt",
-   "auth_method_unknown": "Authentifizierungsmethode konnte noch nicht erkannt werden.",
+  "auth_method_unknown": "Authentifizierungsmethode konnte noch nicht erkannt werden.",
   "please_check_server_version": "Bitte Server prüfen oder erneut verbinden.",
   "cannot_open_oidc_url": "OIDC-Login-URL konnte nicht geöffnet werden.",
-  "username_and_password_required": "Bitte Benutzername und Passwort eingeben."
+  "username_and_password_required": "Bitte Benutzername und Passwort eingeben.",
+  "saveServer": "änderungen speichern"
   
   
 }

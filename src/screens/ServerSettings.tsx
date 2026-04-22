@@ -672,6 +672,7 @@ async function checkServerAuthenticated(
                 onPress={handleAddByPlus}
                 size="sm"
                 disabled={busy || loginLoading}
+                tooltip={t("addServer")}
               />
             </View>
 
@@ -700,10 +701,11 @@ async function checkServerAuthenticated(
 
               <ActionButton
                 variant="secondary"
-                icon="form"
+                icon="save"
                 onPress={handleSaveSide}
                 size="sm"
                 disabled={busy || loginLoading}
+                tooltip={t("saveServer")}
               />
             </View>
           </View>
