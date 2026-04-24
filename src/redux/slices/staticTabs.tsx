@@ -12,6 +12,7 @@ import { GeneralSettingsTab } from "../../screens/settings/database/GeneralSetti
 import { UpdateGeneralTab } from "../../screens/update/tabs/UpdateGeneralTab";
 import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
 import { UpdateBackendTab } from "../../screens/update/tabs/UpdateBackendTab";
+import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 export type StaticTabItem = {
@@ -76,8 +77,19 @@ export const STATIC_TABS: StaticTabItem[] = [
       featureID: 3111, // diese Tab hat eine Feature Flag (3014) - siehe tabFeatureFlags.ts
     Content: UpdateBackendTab,
   },
+  /**
+   * ============================================================
+   * Agent Workbench Options (menuID 3023 = options)
+   * ============================================================
+   */
+  {
+    menuID: 3023,
+    tabKey: "program-start",
+    caption: "Program Start",
+    position: 1,
+    Content: ProgramStartTab,
+  }
 
-  
   // { menuID: 3010, tabKey: "newTab", caption: "New Tab", position: 4, featureID: 5002, Content: NewTabComponent },
 ];
 

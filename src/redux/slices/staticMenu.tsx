@@ -17,6 +17,7 @@ import { isMenuEnabled } from "./featureFlags";
 
 
 import { withAutoTabs } from "../../components/config/tabAuto";
+import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
 
 export type StaticMenuItem = {
   caption: string;
@@ -72,7 +73,7 @@ export function getStaticMenu(): StaticMenuItem[] {
       parentID: 3003, 
       Screen: MenuHubScreen 
     },
-
+  
     /**
      * ============================================================
      * UNTERPUNKTE DIREKT UNTER SETTINGS (Normale Screens)
@@ -102,6 +103,7 @@ export function getStaticMenu(): StaticMenuItem[] {
       Screen: ChangePasswordScreen 
     },
 
+
     /**
      * ============================================================
      * UNTERPUNKTE VON "System Settings"
@@ -125,6 +127,18 @@ export function getStaticMenu(): StaticMenuItem[] {
       parentID: 3021, 
       Screen: UpdateWebAppTab 
     },
+      {
+      caption: "options",
+      menuID: 3023,
+      parentID: 3021,
+      Screen: ProgramStartTab,
+    },
+    { 
+      caption: "databaseConnectionsAndSettings", 
+      menuID: 3010, 
+      parentID: 3021, 
+      Screen: ServerSettingsScreen 
+    },
 
     /**
      * ============================================================
@@ -137,12 +151,7 @@ export function getStaticMenu(): StaticMenuItem[] {
      * withAutoTabs() ersetzt ihn automatisch durch TabScreen,
      * wenn Tabs vorhanden sind.
      */
-    { 
-      caption: "databaseConnectionsAndSettings", 
-      menuID: 3010, 
-      parentID: 3021, 
-      Screen: ServerSettingsScreen 
-    },
+   
 
     /**
      * ============================================================

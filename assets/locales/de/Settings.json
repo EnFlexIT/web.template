@@ -47,7 +47,12 @@
     "personalSettings": {
       "title": "Benutzereinstellung",
       "description": "Individuelle Einstellungen für dein Konto und deine Präferenzen."
-    }
+    },
+   "options": {
+        "title": "Optionen",
+        "description": "App-Optionen, Datenschutz und Verbindungsverwaltung."
+      }
+   
   
 
   }

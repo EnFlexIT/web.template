@@ -46,6 +46,10 @@
       "personalSettings": {
         "title": "Personal Settings",
         "description": "Individual settings for your account and preferences."
+      },
+      "options": {
+        "title": "Options",
+        "description": "App options, privacy and connection management."
       }
 }
 }
