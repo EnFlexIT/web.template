@@ -203,7 +203,7 @@ export function LoginScreen() {
   const isWeb = Platform.OS === "web";
   const isExpoGo = Constants.appOwnership === "expo";
   const isPopupWindow =
-    typeof window !== "undefined" && window.opener != null;
+  typeof window !== "undefined" && window.opener != null;
 
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";

@@ -226,6 +226,14 @@ async function detectServerAndMode(baseUrl: string): Promise<{
     console.log("[DETECT SERVER] status:", status);
     console.log("[DETECT SERVER] data:", data);
 
+    if (status === 401 || status === 403) {
+    return {
+      isPointingToServer: true,
+      authenticationMethod: "unknown",
+      isBaseMode: false,
+    };
+  }
+
     if (status !== 200) {
       return {
         isPointingToServer: false,
