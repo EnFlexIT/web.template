@@ -1,6 +1,24 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
 
+const EXEC_MODE: string = "exec.mode";
+const SERVER_MASTER_URL: string = "server.master.url";
+const SERVER_MASTER_PORT: string = "server.master.port";
+const SERVER_MASTER_PORT_MTP: string = "server.master.port.mtp";
+const SERVER_MASTER_PROTOCOL: string = "server.master.protocol";
+const LOCAL_MTP_CREATION: string = "local.mtp.creation";
+const LOCAL_MTP_URL: string = "local.mtp.url";
+const LOCAL_MTP_PORT: string = "local.mtp.port";
+const LOCAL_MTP_PROTOCOL: string = "local.mtp.protocol";
+const EMBEDDEDSYSTEM_PROJECT: string = "embeddedsystem.project";
+const DEVICE_SYSTEM_EXEC_MODE: string = "device_system_exec_mode";
+const EMBEDDEDSYSTEM_AGENT_CLASSNAME: string = "embeddedsystem.agent[X].classname";
+const EMBEDDEDSYSTEM_AGENT_AGENTNAME: string = "embeddedsystem.agent[X].agentname";
+const SERVICE_SERVICE_SETUP: string = "service.service_setup";
+const LOCAL_IP_SELECTION: string = "local.ip.selection[X]";
+const FACTORY_ID: string = "factory_id";
+
+
 type PropertyEntry = {
   key: string;
   value: string;
@@ -254,35 +272,20 @@ function mapExecSettings(entries: PropertyEntry[]): ExecSettings {
   return {
     startAs: normalizeStartAs(findEntryValue(entries, "exec.mode")),
 
-    serverMasterUrl: findEntryValue(entries, "server.master.url") ?? "",
-    serverMasterPort: toNumber(
-      findEntryValue(entries, "server.master.port"),
-      1099,
-    ),
-    serverMasterPortMtp: toNumber(
-      findEntryValue(entries, "server.master.port.mtp"),
-      7778,
-    ),
-    serverMasterProtocol:
-      findEntryValue(entries, "server.master.protocol") ?? "HTTP",
-
-    localMtpCreation:
-      findEntryValue(entries, "local.mtp.creation") ?? "ConfiguredByJADE",
-    localMtpUrl: findEntryValue(entries, "local.mtp.url") ?? "",
-    localMtpPort: toNumber(findEntryValue(entries, "local.mtp.port"), 7778),
-    localMtpProtocol: findEntryValue(entries, "local.mtp.protocol") ?? "HTTP",
-
-    embeddedSystemProject:
-      findEntryValue(entries, "embeddedsystem.project") ?? "",
-    deviceSystemExecMode:
-      findEntryValue(entries, "device_system_exec_mode") ?? "SETUP",
-    serviceSetup: findEntryValue(entries, "service.service_setup") ?? "",
-    factoryId: findEntryValue(entries, "factory_id") ?? "",
-    bgSystemAutoInit: toBoolean(
-      findEntryValue(entries, "bgsystem.auto_init"),
-      false,
-    ),
-
+    serverMasterUrl: findEntryValue(entries,SERVER_MASTER_URL) ?? "",
+    serverMasterPort: toNumber(findEntryValue(entries, SERVER_MASTER_PORT), 1099,),
+    serverMasterPortMtp: toNumber(findEntryValue(entries, SERVER_MASTER_PORT_MTP), 7778,),
+    serverMasterProtocol: findEntryValue(entries, SERVER_MASTER_PROTOCOL) ?? "HTTP",
+    //************************************ */
+    localMtpCreation: findEntryValue(entries,LOCAL_MTP_CREATION) ?? "ConfiguredByJADE",
+    localMtpUrl: findEntryValue(entries, LOCAL_MTP_URL) ?? "",
+    localMtpPort: toNumber(findEntryValue(entries, LOCAL_MTP_PORT), 7778),
+    localMtpProtocol: findEntryValue(entries, LOCAL_MTP_PROTOCOL) ?? "HTTP",
+    embeddedSystemProject:findEntryValue(entries, EMBEDDEDSYSTEM_PROJECT) ?? "",
+    deviceSystemExecMode: findEntryValue(entries, DEVICE_SYSTEM_EXEC_MODE) ?? "SETUP",
+    serviceSetup: findEntryValue(entries, SERVICE_SERVICE_SETUP) ?? "",
+    factoryId: findEntryValue(entries,FACTORY_ID) ?? "",
+    bgSystemAutoInit: toBoolean(findEntryValue(entries, "bgsystem.auto_init"), false, ),
     embeddedSystemAgents: mapEmbeddedSystemAgents(entries),
   };
 }
@@ -291,36 +294,32 @@ function buildExecSettingsEntries(payload: ExecSettings): PropertyEntry[] {
   const entries: PropertyEntry[] = [
     toPropertyEntry("exec.mode", payload.startAs, "STRING"),
 
-    toPropertyEntry("server.master.url", payload.serverMasterUrl, "STRING"),
-    toPropertyEntry("server.master.port", payload.serverMasterPort, "INTEGER"),
+    toPropertyEntry(SERVER_MASTER_URL, payload.serverMasterUrl, "STRING"),
+    toPropertyEntry(SERVER_MASTER_PORT, payload.serverMasterPort, "INTEGER"),
+    toPropertyEntry(SERVER_MASTER_PORT_MTP, payload.serverMasterPortMtp, "INTEGER"),
     toPropertyEntry(
-      "server.master.port.mtp",
-      payload.serverMasterPortMtp,
-      "INTEGER",
-    ),
-    toPropertyEntry(
-      "server.master.protocol",
+      SERVER_MASTER_PROTOCOL,
       payload.serverMasterProtocol,
       "STRING",
     ),
 
-    toPropertyEntry("local.mtp.creation", payload.localMtpCreation, "STRING"),
-    toPropertyEntry("local.mtp.url", payload.localMtpUrl, "STRING"),
-    toPropertyEntry("local.mtp.port", payload.localMtpPort, "INTEGER"),
-    toPropertyEntry("local.mtp.protocol", payload.localMtpProtocol, "STRING"),
+    toPropertyEntry(LOCAL_MTP_CREATION, payload.localMtpCreation, "STRING"),
+    toPropertyEntry(LOCAL_MTP_URL, payload.localMtpUrl, "STRING"),
+    toPropertyEntry(LOCAL_MTP_PORT, payload.localMtpPort, "INTEGER"),
+    toPropertyEntry(LOCAL_MTP_PROTOCOL, payload.localMtpProtocol, "STRING"),
 
     toPropertyEntry(
-      "embeddedsystem.project",
+      EMBEDDEDSYSTEM_PROJECT,
       payload.embeddedSystemProject,
       "STRING",
     ),
     toPropertyEntry(
-      "device_system_exec_mode",
+      DEVICE_SYSTEM_EXEC_MODE,
       payload.deviceSystemExecMode,
       "STRING",
     ),
-    toPropertyEntry("service.service_setup", payload.serviceSetup, "STRING"),
-    toPropertyEntry("factory_id", payload.factoryId, "STRING"),
+    toPropertyEntry(SERVICE_SERVICE_SETUP, payload.serviceSetup, "STRING"),
+    toPropertyEntry(FACTORY_ID, payload.factoryId, "STRING"),
     toPropertyEntry("bgsystem.auto_init", payload.bgSystemAutoInit, "BOOLEAN"),
   ];
 
