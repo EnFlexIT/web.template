@@ -6,8 +6,8 @@ import reducer, {
   isDynamicMenuItem,
   
   MenuItem,
-} from "./menuSlice";
-import { initializeMenu } from "./menuSlice";
+} from "../redux/slices/menuSlice";
+import { initializeMenu } from "../redux/slices/menuSlice";
 
 describe("menuSlice", () => {
   const initialState: MenuState = {

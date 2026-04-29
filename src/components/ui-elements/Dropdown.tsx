@@ -1,5 +1,11 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Modal, Pressable, View, useWindowDimensions } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Text } from "../stylistic/Text";
 import { ThemedText } from "../themed/ThemedText";
@@ -26,7 +32,6 @@ interface DropdownProps<T extends string> {
   showSelectedToneDot?: boolean;
   showOptionToneDot?: boolean;
   menuOffsetY?: number;
-
   onOpen?: () => void;
   onClose?: () => void;
 }
@@ -213,7 +218,12 @@ export function Dropdown<T extends string>({
               },
             ]}
           >
-            <View>
+            <ScrollView
+              style={{ maxHeight: maxMenuHeight }}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator
+            >
               {keys.map((key, index) => {
                 const active = key === value;
                 const meta = optionMeta?.[key];
@@ -250,7 +260,10 @@ export function Dropdown<T extends string>({
                       </View>
 
                       {meta?.subtitle ? (
-                        <ThemedText numberOfLines={1} style={styles.itemSubtitle}>
+                        <ThemedText
+                          numberOfLines={1}
+                          style={styles.itemSubtitle}
+                        >
                           {meta.subtitle}
                         </ThemedText>
                       ) : null}
@@ -258,7 +271,7 @@ export function Dropdown<T extends string>({
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

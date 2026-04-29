@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, Pressable } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { View, Pressable, Modal } from "react-native";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import AntDesign_ from "@expo/vector-icons/AntDesign";
 
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
@@ -8,30 +9,52 @@ import { TextInput } from "../../components/ui-elements/TextInput";
 import { Card } from "../../components/ui-elements/Card";
 import { H4 } from "../../components/stylistic/H4";
 import { ThemedText } from "../../components/themed/ThemedText";
-import { Checkbox } from "../../components/ui-elements/Checkbox";
+import {
+  SelectableList,
+  SelectableItem,
+} from "../../components/ui-elements/SelectableList";
+
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
+
+import {
+  fetchDbSettings,
+  selectFactories,
+  selectFactoryStates,
+} from "../../redux/slices/dbSettingsSlice";
+
 import {
   addEmbeddedSystemAgent,
   clearExecSettingsError,
+  fetchAvailableExecAgents,
   fetchExecSettings,
   fetchProjects,
   fetchProjectSetups,
   removeEmbeddedSystemAgent,
   saveExecSettings,
+  selectAvailableExecAgents,
   selectExecSettings,
   selectExecSettingsError,
   selectExecSettingsLoading,
   selectExecSettingsProjects,
   selectExecSettingsProjectSetups,
   selectExecSettingsSaving,
+  selectLocalIpSelections,
   setEmbeddedSystemAgentField,
   setExecSettingsField,
 } from "../../redux/slices/execSettingsSlice";
 
-type StartMode = "application" | "background" | "service";
+const AntDesign = withUnistyles(AntDesign_);
+
+type StartMode = "application" | "service" | "SERVER";
 type LocalAddressMode = "jade" | "ip";
 type RunAsMode = "service" | "embedded";
+
+type FactoryStateMeta = {
+  label: string;
+  color: string;
+  iconName: React.ComponentProps<typeof AntDesign>["name"];
+};
 
 function mapBackendStartModeToUi(value: string): StartMode {
   switch (value) {
@@ -39,9 +62,9 @@ function mapBackendStartModeToUi(value: string): StartMode {
     case "Application":
       return "application";
     case "BACKGROUND_SYSTEM":
-    case "Background System":
-      return "background";
-    case "SERVICE_EMBEDDED_SYSTEM_AGENT":
+    case "SERVER":
+      return "SERVER";
+    case "DEVICE_SYSTEM":
     case "Service / Embedded System Agent":
       return "service";
     default:
@@ -53,10 +76,10 @@ function mapUiStartModeToBackend(value: StartMode): string {
   switch (value) {
     case "application":
       return "APPLICATION";
-    case "background":
-      return "BACKGROUND_SYSTEM";
+    case "SERVER":
+      return "SERVER";
     case "service":
-      return "SERVICE_EMBEDDED_SYSTEM_AGENT";
+      return "DEVICE_SYSTEM";
     default:
       return "APPLICATION";
   }
@@ -64,7 +87,7 @@ function mapUiStartModeToBackend(value: StartMode): string {
 
 function mapBackendLocalModeToUi(value: string): LocalAddressMode {
   switch (value) {
-    case "ConfiguredByIPAddress":
+    case "ConfiguredByIPandPort":
       return "ip";
     case "ConfiguredByJADE":
     default:
@@ -75,10 +98,30 @@ function mapBackendLocalModeToUi(value: string): LocalAddressMode {
 function mapUiLocalModeToBackend(value: LocalAddressMode): string {
   switch (value) {
     case "ip":
-      return "ConfiguredByIPAddress";
+      return "ConfiguredByIPandPort";
     case "jade":
     default:
       return "ConfiguredByJADE";
+  }
+}
+
+function mapDeviceModeToUi(value: string): RunAsMode {
+  switch (value) {
+    case "AGENT":
+      return "embedded";
+    case "SETUP":
+    default:
+      return "service";
+  }
+}
+
+function mapUiToDeviceMode(value: RunAsMode): string {
+  switch (value) {
+    case "embedded":
+      return "AGENT";
+    case "service":
+    default:
+      return "SETUP";
   }
 }
 
@@ -110,12 +153,6 @@ function splitServerMasterUrl(value: string): {
   };
 }
 
-function buildServerMasterUrl(protocol: string, host: string): string {
-  const normalizedHost = String(host ?? "").trim();
-  if (!normalizedHost) return "";
-  return `${protocol.toLowerCase()}://${normalizedHost}`;
-}
-
 function toOptions(values: string[], currentValue?: string): Record<string, string> {
   const options: Record<string, string> = {
     "": "",
@@ -132,12 +169,77 @@ function toOptions(values: string[], currentValue?: string): Record<string, stri
   return options;
 }
 
+function extractIpAddress(value: string): string {
+  const match = String(value ?? "").match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/);
+  return match?.[0] ?? String(value ?? "");
+}
+
+function getFactoryStateMeta(state: string): FactoryStateMeta {
+  switch (state) {
+    case "Destroyed":
+      return {
+        label: "SessionFactory was destroyed",
+        color: "#9CA3AF",
+        iconName: "database",
+      };
+
+    case "CheckDBConnection":
+      return {
+        label: "Checking database connection ...",
+        color: "#2563EB",
+        iconName: "database",
+      };
+
+    case "CheckDBConectionFailed":
+      return {
+        label: "Database connection test failed!",
+        color: "#DC2626",
+        iconName: "database",
+      };
+
+    case "InitializationProcessStarted":
+      return {
+        label: "Initialize SessionFactory",
+        color: "#14B8A6",
+        iconName: "database",
+      };
+
+    case "InitializationProcessFailed":
+      return {
+        label: "Initialization of SessionFactory failed",
+        color: "#DC2626",
+        iconName: "database",
+      };
+
+    case "Created":
+      return {
+        label: "Successfully Initialized",
+        color: "#16A34A",
+        iconName: "database",
+      };
+
+    case "NotAvailableYet":
+    default:
+      return {
+        label: "Not available yet",
+        color: "#9CA3AF",
+        iconName: "database",
+      };
+  }
+}
+
 export function ProgramStartTab() {
   const dispatch = useAppDispatch();
+
+  const factories = useAppSelector(selectFactories);
+  const factoryStates = useAppSelector(selectFactoryStates);
 
   const settings = useAppSelector(selectExecSettings);
   const projects = useAppSelector(selectExecSettingsProjects);
   const projectSetups = useAppSelector(selectExecSettingsProjectSetups);
+  const availableAgents = useAppSelector(selectAvailableExecAgents);
+  const localIpSelections = useAppSelector(selectLocalIpSelections);
+
   const isLoading = useAppSelector(selectExecSettingsLoading);
   const isSaving = useAppSelector(selectExecSettingsSaving);
   const error = useAppSelector(selectExecSettingsError);
@@ -145,10 +247,18 @@ export function ProgramStartTab() {
   const [selectedAgentIndex, setSelectedAgentIndex] = useState<number | null>(
     null,
   );
+  const [isAgentModalVisible, setIsAgentModalVisible] = useState(false);
+  const [selectedAgentClass, setSelectedAgentClass] = useState("");
+  const [newAgentName, setNewAgentName] = useState("");
+
+  const [isIpModalVisible, setIsIpModalVisible] = useState(false);
+  const [selectedIp, setSelectedIp] = useState("");
 
   useEffect(() => {
     dispatch(fetchExecSettings());
     dispatch(fetchProjects());
+    dispatch(fetchAvailableExecAgents());
+    dispatch(fetchDbSettings());
   }, [dispatch]);
 
   useEffect(() => {
@@ -161,27 +271,26 @@ export function ProgramStartTab() {
   const localAddressMode = mapBackendLocalModeToUi(settings.localMtpCreation);
 
   const serverMasterUrlParts = splitServerMasterUrl(settings.serverMasterUrl);
-  const urlProtocol = serverMasterUrlParts.protocol;
-  const serverIp = serverMasterUrlParts.host;
+  const urlProtocol = settings.serverMasterProtocol || serverMasterUrlParts.protocol;
+  const serverIp = extractIpAddress(serverMasterUrlParts.host);
 
   const port = String(settings.serverMasterPort ?? "");
   const mtpPort = String(settings.serverMasterPortMtp ?? "");
-  const localIp = settings.localMtpUrl ?? "";
+
+  const localIpRaw = settings.localMtpUrl ?? "";
+  const localIp = extractIpAddress(localIpRaw);
   const localMtpPort = String(settings.localMtpPort ?? "");
   const mtpProtocol = settings.localMtpProtocol ?? "HTTP";
 
-  const isApplicationMode = startMode === "application";
-  const isBackgroundMode = startMode === "background";
+  const isBackgroundMode = startMode === "SERVER";
   const isServiceMode = startMode === "service";
   const useIpAddress = localAddressMode === "ip";
+  const hasSelectedProject = !!settings.embeddedSystemProject;
 
-  const isMainServerDisabled = !isApplicationMode || isLoading || isSaving;
+  const runAsMode = mapDeviceModeToUi(settings.deviceSystemExecMode);
 
-  const backgroundInitializeAtStartup = settings.bgSystemAutoInit;
-
-  const runAsMode: RunAsMode =
-    settings.deviceSystemExecMode === "AGENT" ? "embedded" : "service";
-
+const isEmbeddedMode = runAsMode === "embedded";
+const isServiceRunMode = runAsMode === "service";
   const projectOptions = useMemo(
     () => toOptions(projects, settings.embeddedSystemProject),
     [projects, settings.embeddedSystemProject],
@@ -191,6 +300,28 @@ export function ProgramStartTab() {
     () => toOptions(projectSetups, settings.serviceSetup),
     [projectSetups, settings.serviceSetup],
   );
+
+  const availableAgentItems = useMemo<SelectableItem<string>[]>(() => {
+    return availableAgents.map((agent) => ({
+      id: agent.className,
+      label: agent.className,
+    }));
+  }, [availableAgents]);
+
+  const localIpItems = useMemo<SelectableItem<string>[]>(() => {
+    return localIpSelections.map((ip) => ({
+      id: ip,
+      label: ip,
+    }));
+  }, [localIpSelections]);
+
+  const backgroundFactoryId =
+    settings.factoryId || factories[0] || "de.enflexit.awb.bgSystem.db";
+
+  const backgroundFactoryState =
+    factoryStates[backgroundFactoryId] ?? "NotAvailableYet";
+
+  const backgroundFactoryStateMeta = getFactoryStateMeta(backgroundFactoryState);
 
   const clearError = () => {
     if (error) {
@@ -216,12 +347,6 @@ export function ProgramStartTab() {
         value,
       }),
     );
-    dispatch(
-      setExecSettingsField({
-        key: "serverMasterUrl",
-        value: buildServerMasterUrl(value, serverIp),
-      }),
-    );
   };
 
   const onChangeServerIp = (value: string) => {
@@ -229,7 +354,7 @@ export function ProgramStartTab() {
     dispatch(
       setExecSettingsField({
         key: "serverMasterUrl",
-        value: buildServerMasterUrl(urlProtocol, value),
+        value: extractIpAddress(value),
       }),
     );
   };
@@ -254,22 +379,22 @@ export function ProgramStartTab() {
     );
   };
 
-  const onChangeLocalAddressMode = (value: LocalAddressMode) => {
+const onChangeLocalAddressMode = (value: LocalAddressMode) => {
     clearError();
+
     dispatch(
-      setExecSettingsField({
+        setExecSettingsField({
         key: "localMtpCreation",
         value: mapUiLocalModeToBackend(value),
-      }),
+        }),
     );
-  };
-
+    };
   const onChangeLocalIp = (value: string) => {
     clearError();
     dispatch(
       setExecSettingsField({
         key: "localMtpUrl",
-        value,
+        value: extractIpAddress(value),
       }),
     );
   };
@@ -296,7 +421,14 @@ export function ProgramStartTab() {
 
   const onSave = async () => {
     clearError();
-    await dispatch(saveExecSettings(settings));
+
+    await dispatch(
+      saveExecSettings({
+        ...settings,
+        serverMasterUrl: extractIpAddress(settings.serverMasterUrl ?? ""),
+        localMtpUrl: extractIpAddress(settings.localMtpUrl ?? ""),
+      }),
+    );
   };
 
   const protocolOptions = {
@@ -329,11 +461,13 @@ export function ProgramStartTab() {
               selected={startMode === "application"}
               onPress={() => onChangeStartMode("application")}
             />
+
             <RadioRow
               label="Background System (Master / Slave)"
-              selected={startMode === "background"}
-              onPress={() => onChangeStartMode("background")}
+              selected={startMode === "SERVER"}
+              onPress={() => onChangeStartMode("SERVER")}
             />
+
             <RadioRow
               label="Service / Embedded System Agent"
               selected={startMode === "service"}
@@ -359,7 +493,7 @@ export function ProgramStartTab() {
                 value={urlProtocol}
                 options={protocolOptions}
                 onChange={(value) => onChangeUrlProtocol(String(value))}
-                disabled={isMainServerDisabled}
+                disabled={isLoading || isSaving}
               />
             </View>
 
@@ -370,7 +504,7 @@ export function ProgramStartTab() {
                 size="sm"
                 value={serverIp}
                 onChangeText={onChangeServerIp}
-                disabled={isMainServerDisabled}
+                disabled={isLoading || isSaving}
               />
             </View>
           </View>
@@ -383,9 +517,10 @@ export function ProgramStartTab() {
                 size="sm"
                 value={port}
                 onChangeText={onChangePort}
-                disabled={isMainServerDisabled}
+                disabled={isLoading || isSaving}
               />
             </View>
+
             <ThemedText style={styles.hintText}>
               1099 = "myServer:1099/JADE"
             </ThemedText>
@@ -399,9 +534,10 @@ export function ProgramStartTab() {
                 size="sm"
                 value={mtpPort}
                 onChangeText={onChangeMtpPort}
-                disabled={isMainServerDisabled}
+                disabled={isLoading || isSaving}
               />
             </View>
+
             <ThemedText style={styles.hintText}>
               7778 = "http://myServer:7778/acc"
             </ThemedText>
@@ -418,14 +554,32 @@ export function ProgramStartTab() {
                 selected={localAddressMode === "jade"}
                 onPress={() => onChangeLocalAddressMode("jade")}
               />
-              <RadioRow
-                label="Use IP-Address"
-                selected={localAddressMode === "ip"}
-                onPress={() => onChangeLocalAddressMode("ip")}
-              />
-            </View>
 
-            <FieldRow label="IP">
+              <View style={styles.ipAddressOptionRow}>
+                <RadioRow
+                  label="Use IP-Address"
+                  selected={localAddressMode === "ip"}
+                  onPress={() => onChangeLocalAddressMode("ip")}
+                />
+                <ActionButton
+                label="✎"
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                    clearError();
+
+                    setSelectedIp(
+                    localIp || localIpSelections[0] || "",
+                    );
+
+                    setIsIpModalVisible(true);
+                }}
+                disabled={!useIpAddress || isLoading || isSaving}
+                />
+                            </View>
+            </View>
+            <View style={ styles.inlineInputRow}>
+            <ThemedText> IP</ThemedText>
               <TextInput
                 size="sm"
                 value={localIp}
@@ -433,7 +587,7 @@ export function ProgramStartTab() {
                 disabled={!useIpAddress || isLoading || isSaving}
                 placeholder="Auto-Configuration"
               />
-            </FieldRow>
+            </View>
           </View>
 
           <View style={styles.rightLocalMode}>
@@ -466,31 +620,20 @@ export function ProgramStartTab() {
       </Section>
 
       {isBackgroundMode && (
-        <Section title="Agent.Workbench Background System - Configuration">
-          <Checkbox
-            label="Automatically initialize background system at startup"
-            value={backgroundInitializeAtStartup}
-            onChange={(value) => {
-              clearError();
-              dispatch(
-                setExecSettingsField({
-                  key: "bgSystemAutoInit",
-                  value: Boolean(value),
-                }),
-              );
-            }}
-          />
+        <View style={styles.databaseStatusBox}>
+          <View style={styles.databaseStatusBody}>
+            <AntDesign
+              name={backgroundFactoryStateMeta.iconName}
+              size={16}
+              color={backgroundFactoryStateMeta.color}
+            />
 
-          <View style={styles.databaseStatusBox}>
-            <ThemedText style={styles.sectionTitle}>
-              [Optional] Database for the 'server.master'
-            </ThemedText>
             <ThemedText style={styles.successText}>
-              SessionFactory '{settings.factoryId || "de.enflexit.awb.bgSystem.db"}':
-              Successfully Initialized
+              SessionFactory '{backgroundFactoryId}':{" "}
+              {backgroundFactoryStateMeta.label}
             </ThemedText>
           </View>
-        </Section>
+        </View>
       )}
 
       {isServiceMode && (
@@ -501,166 +644,374 @@ export function ProgramStartTab() {
               value={settings.embeddedSystemProject}
               options={projectOptions}
               onChange={(value) => {
+                const nextProject = String(value);
+
                 clearError();
+
                 dispatch(
                   setExecSettingsField({
                     key: "embeddedSystemProject",
-                    value: String(value),
+                    value: nextProject,
                   }),
                 );
+
                 dispatch(
                   setExecSettingsField({
                     key: "serviceSetup",
                     value: "",
                   }),
                 );
+
+                setSelectedAgentIndex(null);
+
+                if (nextProject) {
+                  dispatch(fetchProjectSetups(nextProject));
+                }
               }}
               disabled={isLoading || isSaving}
             />
           </FieldRow>
 
-          <FieldRow label="Run as">
-            <View style={styles.radioInlineGroup}>
-              <RadioRow
-                label="Service"
-                selected={runAsMode === "service"}
-                onPress={() => {
-                  clearError();
-                  dispatch(
-                    setExecSettingsField({
-                      key: "deviceSystemExecMode",
-                      value: "SETUP",
-                    }),
-                  );
-                }}
-              />
-              <RadioRow
-                label="Embedded System Agent"
-                selected={runAsMode === "embedded"}
-                onPress={() => {
-                  clearError();
-                  dispatch(
-                    setExecSettingsField({
-                      key: "deviceSystemExecMode",
-                      value: "AGENT",
-                    }),
-                  );
-                }}
-              />
-            </View>
-          </FieldRow>
+          <View style={!hasSelectedProject && styles.disabledArea}>
+            <FieldRow label="Run as">
+              <View style={styles.radioInlineGroup}>
+                <RadioRow
+                  label="Service"
+                  selected={runAsMode === "service"}
+                  disabled={!hasSelectedProject}
+                  onPress={() => {
+                    if (!hasSelectedProject) return;
 
-          <FieldRow label="Service - Setup">
+                    clearError();
+                    dispatch(
+                      setExecSettingsField({
+                        key: "deviceSystemExecMode",
+                        value: mapUiToDeviceMode("service"),
+                      }),
+                    );
+                  }}
+                />
+
+                <RadioRow
+                  label="Embedded System Agent"
+                  selected={runAsMode === "embedded"}
+                  disabled={!hasSelectedProject}
+                  onPress={() => {
+                    if (!hasSelectedProject) return;
+
+                    clearError();
+                    dispatch(
+                      setExecSettingsField({
+                        key: "deviceSystemExecMode",
+                        value: mapUiToDeviceMode("embedded"),
+                      }),
+                    );
+                  }}
+                />
+              </View>
+            </FieldRow>
+
+       <FieldRow label="Service - Setup">
             <Dropdown
-              size="sm"
-              value={settings.serviceSetup}
-              options={serviceSetupOptions}
-              onChange={(value) => {
+                size="sm"
+                value={settings.serviceSetup}
+                options={serviceSetupOptions}
+                onChange={(value) => {
+                if (!hasSelectedProject || isEmbeddedMode) return;
+
                 clearError();
                 dispatch(
-                  setExecSettingsField({
+                    setExecSettingsField({
                     key: "serviceSetup",
                     value: String(value),
-                  }),
+                    }),
                 );
-              }}
-              disabled={isLoading || isSaving || !settings.embeddedSystemProject}
+                }}
+                disabled={isLoading || isSaving || !hasSelectedProject || isEmbeddedMode}
             />
-          </FieldRow>
+    </FieldRow>
 
-          <View style={styles.embeddedHeader}>
-            <ThemedText style={styles.sectionTitle}>
-              Embedded System Agents
-            </ThemedText>
+            <View style={styles.embeddedHeader}>
+              <ThemedText style={styles.sectionTitle}>
+                Embedded System Agents
+              </ThemedText>
 
-            <View style={styles.tableActions}>
-              <ActionButton
-                label="+"
-                size="sm"
-                onPress={() => {
-                  clearError();
-                  dispatch(addEmbeddedSystemAgent());
-                  setSelectedAgentIndex(settings.embeddedSystemAgents.length);
-                }}
-                disabled={isLoading || isSaving}
-              />
-              <ActionButton
-                label="-"
-                size="sm"
-                onPress={() => {
-                  if (selectedAgentIndex == null) return;
-                  clearError();
-                  dispatch(removeEmbeddedSystemAgent(selectedAgentIndex));
-                  setSelectedAgentIndex(null);
-                }}
-                disabled={isLoading || isSaving || selectedAgentIndex == null}
-              />
-            </View>
-          </View>
+              <View style={styles.tableActions}>
+                <ActionButton
+                  label="+"
+                  size="sm"
+                  onPress={() => {
+                    if (!hasSelectedProject) return;
 
-          <View style={styles.agentTable}>
-            <View style={styles.tableHeader}>
-              <ThemedText style={styles.tableCell}>Agent Name</ThemedText>
-              <ThemedText style={styles.tableCell}>Agent Class</ThemedText>
-            </View>
+                    clearError();
+                    setNewAgentName("");
+                    setSelectedAgentClass("");
+                    dispatch(fetchAvailableExecAgents());
+                    setIsAgentModalVisible(true);
+                  }}
+                  disabled={
+                    isLoading ||
+                    isSaving ||
+                    !isEmbeddedMode ||
+                    !hasSelectedProject
+                  }
+                />
 
-            {settings.embeddedSystemAgents.length === 0 ? (
-              <View style={styles.tableEmptyRow}>
-                <ThemedText style={styles.hintText}>
-                  No agents configured.
-                </ThemedText>
+                <ActionButton
+                  label="-"
+                  size="sm"
+                  onPress={() => {
+                    if (!hasSelectedProject) return;
+                    if (selectedAgentIndex == null) return;
+
+                    clearError();
+                    dispatch(removeEmbeddedSystemAgent(selectedAgentIndex));
+                    setSelectedAgentIndex(null);
+                  }}
+                  disabled={
+                    isLoading ||
+                    isSaving ||
+                    !isEmbeddedMode ||
+                    !hasSelectedProject ||
+                    selectedAgentIndex == null
+                  }
+                />
               </View>
-            ) : (
-              settings.embeddedSystemAgents.map((agent, index) => (
-                <Pressable
-                  key={index}
-                  onPress={() => setSelectedAgentIndex(index)}
-                  style={[
-                    styles.tableEditRow,
-                    selectedAgentIndex === index && styles.tableRowSelected,
-                  ]}
-                >
-                  <View style={styles.tableInputCell}>
-                    <TextInput
-                      size="sm"
-                      value={agent.agentName}
-                      onChangeText={(value) => {
-                        clearError();
-                        dispatch(
-                          setEmbeddedSystemAgentField({
-                            index,
-                            key: "agentName",
-                            value,
-                          }),
-                        );
-                      }}
-                      disabled={isLoading || isSaving}
-                    />
-                  </View>
+            </View>
 
-                  <View style={styles.tableInputCell}>
-                    <TextInput
-                      size="sm"
-                      value={agent.className}
-                      onChangeText={(value) => {
-                        clearError();
-                        dispatch(
-                          setEmbeddedSystemAgentField({
-                            index,
-                            key: "className",
-                            value,
-                          }),
-                        );
-                      }}
-                      disabled={isLoading || isSaving}
-                    />
-                  </View>
-                </Pressable>
-              ))
-            )}
+            <View
+              style={[
+                styles.agentTable,
+                (!isEmbeddedMode || !hasSelectedProject) && styles.disabledArea,
+              ]}
+            >
+              <View style={styles.tableHeader}>
+                <ThemedText style={styles.tableCell}>Agent Name</ThemedText>
+                <ThemedText style={styles.tableCell}>Agent Class</ThemedText>
+              </View>
+
+              {settings.embeddedSystemAgents.length === 0 ? (
+                <View style={styles.tableEmptyRow}>
+                  <ThemedText style={styles.hintText}>
+                    No agents configured.
+                  </ThemedText>
+                </View>
+              ) : (
+                settings.embeddedSystemAgents.map((agent, index) => (
+                  <Pressable
+                    key={index}
+                    onPress={() => {
+                      if (!hasSelectedProject || !isEmbeddedMode) return;
+                      setSelectedAgentIndex(index);
+                    }}
+                    disabled={!hasSelectedProject || !isEmbeddedMode}
+                    style={[
+                      styles.tableEditRow,
+                      selectedAgentIndex === index && styles.tableRowSelected,
+                    ]}
+                  >
+                    <View style={styles.tableInputCell}>
+                      <TextInput
+                        size="sm"
+                        value={agent.agentName}
+                        onChangeText={(value) => {
+                          if (!hasSelectedProject) return;
+
+                          clearError();
+                          dispatch(
+                            setEmbeddedSystemAgentField({
+                              index,
+                              key: "agentName",
+                              value,
+                            }),
+                          );
+                        }}
+                        disabled={
+                          isLoading ||
+                          isSaving ||
+                          !isEmbeddedMode ||
+                          !hasSelectedProject
+                        }
+                      />
+                    </View>
+
+                    <View style={styles.tableInputCell}>
+                      <TextInput
+                        size="sm"
+                        value={agent.className}
+                        onChangeText={(value) => {
+                          if (!hasSelectedProject) return;
+
+                          clearError();
+                          dispatch(
+                            setEmbeddedSystemAgentField({
+                              index,
+                              key: "className",
+                              value,
+                            }),
+                          );
+                        }}
+                        disabled={
+                          isLoading ||
+                          isSaving ||
+                          !isEmbeddedMode ||
+                          !hasSelectedProject
+                        }
+                      />
+                    </View>
+                  </Pressable>
+                ))
+              )}
+            </View>
           </View>
+
+          <Modal
+            visible={isAgentModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setIsAgentModalVisible(false)}
+          >
+            <View style={styles.modalBackdrop}>
+              <View style={styles.modalCard}>
+                <H4 style={styles.sectionTitle}>Class-Selector</H4>
+
+                <ThemedText style={styles.fieldLabel}>
+                  Please select the agent that you want to start:
+                </ThemedText>
+
+                <TextInput
+                  size="sm"
+                  value={newAgentName}
+                  onChangeText={setNewAgentName}
+                  placeholder="Agent name"
+                />
+
+                <View style={styles.modalActions}>
+                  <ActionButton
+                    label="Apply"
+                    size="sm"
+                    onPress={() => {
+                      if (!selectedAgentClass) return;
+
+                      const nextAgentName =
+                        newAgentName.trim() ||
+                        selectedAgentClass.split(".").pop() ||
+                        "Agent";
+
+                      dispatch(
+                        addEmbeddedSystemAgent({
+                          agentName: nextAgentName,
+                          className: selectedAgentClass,
+                        }),
+                      );
+
+                      setSelectedAgentIndex(
+                        settings.embeddedSystemAgents.length,
+                      );
+                      setIsAgentModalVisible(false);
+                      setSelectedAgentClass("");
+                      setNewAgentName("");
+                    }}
+                    disabled={!selectedAgentClass}
+                  />
+
+                  <ActionButton
+                    label="Cancel"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => {
+                      setIsAgentModalVisible(false);
+                      setSelectedAgentClass("");
+                      setNewAgentName("");
+                    }}
+                  />
+                </View>
+
+                <View style={styles.modalSeparator} />
+
+                <ThemedText style={styles.fieldLabel}>
+                  Search & Select Class extends jade.core.Agent
+                </ThemedText>
+
+                <SelectableList
+                  items={availableAgentItems}
+                  value={selectedAgentClass}
+                  onChange={setSelectedAgentClass}
+                  maxHeight={420}
+                  minVisibleRows={8}
+                  size="xs"
+                  variant="secondary"
+                  showSearch
+                  emptyText="Keine Agent-Klassen geladen."
+                />
+              </View>
+            </View>
+          </Modal>
         </Section>
       )}
+
+      <Modal
+        visible={isIpModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setIsIpModalVisible(false);
+          setSelectedIp("");
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <H4 style={styles.sectionTitle}>IP-Selector</H4>
+
+            <ThemedText style={styles.fieldLabel}>
+              Please select the local IP address:
+            </ThemedText>
+
+            <SelectableList
+              items={localIpItems}
+              value={selectedIp}
+              onChange={setSelectedIp}
+              maxHeight={320}
+              minVisibleRows={5}
+              size="xs"
+              variant="secondary"
+              showSearch
+              emptyText="Keine lokalen IP-Adressen geladen."
+            />
+
+            <View style={styles.modalActions}>
+              <ActionButton
+                label="Apply"
+                size="sm"
+                onPress={() => {
+                  if (!selectedIp) return;
+
+                  dispatch(
+                    setExecSettingsField({
+                      key: "localMtpUrl",
+                      value: extractIpAddress(selectedIp),
+                    }),
+                  );
+
+                  setIsIpModalVisible(false);
+                  setSelectedIp("");
+                }}
+                disabled={!selectedIp}
+              />
+
+              <ActionButton
+                label="Cancel"
+                size="sm"
+                variant="secondary"
+                onPress={() => {
+                  setIsIpModalVisible(false);
+                  setSelectedIp("");
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Card>
   );
 }
@@ -696,6 +1047,7 @@ function FieldRow({
           label
         )}
       </View>
+
       <View style={styles.fieldContent}>{children}</View>
     </View>
   );
@@ -704,17 +1056,24 @@ function FieldRow({
 function RadioRow({
   label,
   selected,
+  disabled = false,
   onPress,
 }: {
   label: string;
   selected: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.radioRow}>
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      style={styles.radioRow}
+    >
       <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
         {selected && <View style={styles.radioInner} />}
       </View>
+
       <ThemedText>{label}</ThemedText>
     </Pressable>
   );
@@ -780,6 +1139,12 @@ const styles = StyleSheet.create((theme) => ({
     gap: 18,
   },
 
+  ipAddressOptionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   radioRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -797,14 +1162,14 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   radioOuterSelected: {
-    borderColor: theme.colors.primary ?? theme.colors,
+    borderColor: theme.colors.primary,
   },
 
   radioInner: {
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: theme.colors.primary ?? theme.colors,
+    backgroundColor: theme.colors.primary,
   },
 
   fieldRow: {
@@ -864,12 +1229,22 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "flex-start",
   },
 
+  disabledArea: {
+    opacity: 0.45,
+  },
+
   databaseStatusBox: {
     borderTopWidth: 1,
     borderColor: theme.colors.border,
     paddingTop: 16,
     marginTop: 8,
     gap: 6,
+  },
+
+  databaseStatusBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   successText: {
@@ -924,5 +1299,37 @@ const styles = StyleSheet.create((theme) => ({
   tableInputCell: {
     flex: 1,
     padding: 6,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+
+  modalCard: {
+    width: "90%",
+    maxWidth: 900,
+    maxHeight: "90%",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    padding: 16,
+    gap: 12,
+  },
+
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24,
+  },
+
+  modalSeparator: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    opacity: 0.9,
+    marginVertical: 4,
   },
 }));

@@ -16,19 +16,23 @@ type BackendResponse = {
 
 export type StartAsMode =
   | "APPLICATION"
-  | "BACKGROUND_SYSTEM"
+  | "SERVER"
   | "SERVICE_EMBEDDED_SYSTEM_AGENT"
   | string;
 
 export type LocalMtpCreationMode =
   | "ConfiguredByJADE"
-  | "ConfiguredByIPAddress"
+  | "ConfiguredByIPandPort"
   | string;
 
 export type DeviceSystemExecMode = "SETUP" | "AGENT" | string;
 
 export type EmbeddedSystemAgent = {
   agentName: string;
+  className: string;
+};
+
+export type AvailableExecAgent = {
   className: string;
 };
 
@@ -58,6 +62,8 @@ type ExecSettingsState = {
   settings: ExecSettings;
   projects: string[];
   projectSetups: string[];
+  availableAgents: AvailableExecAgent[];
+  localIpSelections: string[];
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -89,6 +95,8 @@ const initialState: ExecSettingsState = {
   settings: initialSettings,
   projects: [],
   projectSetups: [],
+  availableAgents: [],
+  localIpSelections: [],
   isLoading: false,
   isSaving: false,
   error: null,
@@ -175,7 +183,7 @@ function normalizeStartAs(value: string | undefined): StartAsMode {
 
     case "Background System":
     case "BACKGROUND_SYSTEM":
-      return "BACKGROUND_SYSTEM";
+      return "SERVER";
 
     case "Service / Embedded System Agent":
     case "SERVICE_EMBEDDED_SYSTEM_AGENT":
@@ -190,7 +198,7 @@ function mapEmbeddedSystemAgents(entries: PropertyEntry[]): EmbeddedSystemAgent[
   const agentIndexes = new Set<number>();
 
   entries.forEach((entry) => {
-    const match = entry.key.match(/^embeddedSystem\.agent\[(\d+)\]\./);
+    const match = entry.key.match(/^embeddedsystem\.agent\[(\d+)\]\./);
     if (match) {
       agentIndexes.add(Number(match[1]));
     }
@@ -200,14 +208,32 @@ function mapEmbeddedSystemAgents(entries: PropertyEntry[]): EmbeddedSystemAgent[
     .sort((a, b) => a - b)
     .map((index) => ({
       agentName:
-        findEntryValue(entries, `embeddedSystem.agent[${index}].agentName`) ??
+        findEntryValue(entries, `embeddedsystem.agent[${index}].agentname`) ??
         "",
       className:
-        findEntryValue(entries, `embeddedSystem.agent[${index}].className`) ??
+        findEntryValue(entries, `embeddedsystem.agent[${index}].classname`) ??
         "",
     }));
 }
 
+function mapAvailableExecAgents(entries: PropertyEntry[]): AvailableExecAgent[] {
+  return sortIndexedEntries(
+    entries.filter((entry) => {
+      const key = entry.key.toLowerCase();
+
+      return (
+        /^agent\[\d+\]\.classname$/i.test(entry.key) ||
+        /^agent\[\d+\]$/i.test(entry.key) ||
+        /^awb\.agent\[\d+\]\.classname$/i.test(entry.key) ||
+        key.endsWith(".classname")
+      );
+    }),
+  )
+    .map((entry) => ({
+      className: entry.value,
+    }))
+    .filter((agent) => agent.className.trim().length > 0);
+}
 function mapProjects(entries: PropertyEntry[]) {
   return sortIndexedEntries(
     entries.filter((entry) => /^project\[\d+\]$/.test(entry.key)),
@@ -216,7 +242,11 @@ function mapProjects(entries: PropertyEntry[]) {
 
 function mapProjectSetups(entries: PropertyEntry[]) {
   return sortIndexedEntries(
-    entries.filter((entry) => /^project\[\d+\]\.setup\[\d+\]$/.test(entry.key)),
+    entries.filter(
+      (entry) =>
+        /^project\[\d+\]\.setup\[\d+\]$/.test(entry.key) ||
+        /^setup\[\d+\]$/.test(entry.key),
+    ),
   ).map((entry) => entry.value);
 }
 
@@ -243,7 +273,7 @@ function mapExecSettings(entries: PropertyEntry[]): ExecSettings {
     localMtpProtocol: findEntryValue(entries, "local.mtp.protocol") ?? "HTTP",
 
     embeddedSystemProject:
-      findEntryValue(entries, "embeddedSystem.project") ?? "",
+      findEntryValue(entries, "embeddedsystem.project") ?? "",
     deviceSystemExecMode:
       findEntryValue(entries, "device_system_exec_mode") ?? "SETUP",
     serviceSetup: findEntryValue(entries, "service.service_setup") ?? "",
@@ -280,7 +310,7 @@ function buildExecSettingsEntries(payload: ExecSettings): PropertyEntry[] {
     toPropertyEntry("local.mtp.protocol", payload.localMtpProtocol, "STRING"),
 
     toPropertyEntry(
-      "embeddedSystem.project",
+      "embeddedsystem.project",
       payload.embeddedSystemProject,
       "STRING",
     ),
@@ -297,14 +327,15 @@ function buildExecSettingsEntries(payload: ExecSettings): PropertyEntry[] {
   payload.embeddedSystemAgents.forEach((agent, index) => {
     entries.push(
       toPropertyEntry(
-        `embeddedSystem.agent[${index}].className`,
+        `embeddedsystem.agent[${index}].classname`,
         agent.className,
         "STRING",
       ),
     );
+
     entries.push(
       toPropertyEntry(
-        `embeddedSystem.agent[${index}].agentName`,
+        `embeddedsystem.agent[${index}].agentname`,
         agent.agentName,
         "STRING",
       ),
@@ -325,7 +356,12 @@ export const fetchExecSettings = createAsyncThunk(
       });
 
       const data = ensureSuccessfulResponse(response);
-      return mapExecSettings(data.propertyEntries ?? []);
+      const entries = data.propertyEntries ?? [];
+
+      return {
+        settings: mapExecSettings(entries),
+        localIpSelections: mapLocalIpSelections(entries),
+      };
     } catch (error) {
       throw new Error(
         getBackendErrorMessage(
@@ -361,17 +397,16 @@ export const fetchProjectSetups = createAsyncThunk(
   "execSettings/fetchProjectSetups",
   async (projectName: string, thunkAPI) => {
     const api = getApi(thunkAPI);
+    const normalizedProjectName = String(projectName ?? "").trim();
 
-    if (!projectName) {
+    if (!normalizedProjectName) {
       return [];
     }
 
     try {
       const response = await api.getAppSettings({
         headers: {
-          "X-Performative": "PROJECT.SETUPS",
-          "X-Project": projectName,
-          "X-Argument": projectName,
+          "X-Performative": `PROJECT.SETUPS[${normalizedProjectName}]`,
         },
       });
 
@@ -387,7 +422,38 @@ export const fetchProjectSetups = createAsyncThunk(
     }
   },
 );
+function mapLocalIpSelections(entries: PropertyEntry[]) {
+  return sortIndexedEntries(
+    entries.filter((entry) =>
+      /^local\.ip\.selection\[\d+\]$/i.test(String(entry.key).trim()),
+    ),
+  )
+    .map((entry) => String(entry.value ?? "").trim())
+    .filter((value) => value.length > 0);
+}
 
+export const fetchAvailableExecAgents = createAsyncThunk(
+  "execSettings/fetchAvailableExecAgents",
+  async (_, thunkAPI) => {
+    const api = getApi(thunkAPI);
+
+    try {
+      const response = await api.getAppSettings({
+        headers: { "X-Performative": "awb.agents" },
+      });
+
+      const data = ensureSuccessfulResponse(response);
+      return mapAvailableExecAgents(data.propertyEntries ?? []);
+    } catch (error) {
+      throw new Error(
+        getBackendErrorMessage(
+          error,
+          "AWB Agents konnten nicht geladen werden.",
+        ),
+      );
+    }
+  },
+);
 export const saveExecSettings = createAsyncThunk(
   "execSettings/saveExecSettings",
   async (payload: ExecSettings, thunkAPI) => {
@@ -416,6 +482,8 @@ export const saveExecSettings = createAsyncThunk(
   },
 );
 
+
+
 const execSettingsSlice = createSlice({
   name: "execSettings",
   initialState,
@@ -432,11 +500,16 @@ const execSettingsSlice = createSlice({
         value as never;
     },
 
-    addEmbeddedSystemAgent: (state) => {
-      state.settings.embeddedSystemAgents.push({
-        agentName: "",
-        className: "",
-      });
+    addEmbeddedSystemAgent: (
+      state,
+      action: PayloadAction<EmbeddedSystemAgent | undefined>,
+    ) => {
+      state.settings.embeddedSystemAgents.push(
+        action.payload ?? {
+          agentName: "",
+          className: "",
+        },
+      );
     },
 
     removeEmbeddedSystemAgent: (state, action: PayloadAction<number>) => {
@@ -463,10 +536,12 @@ const execSettingsSlice = createSlice({
       state.error = null;
     },
 
-    resetExecSettings: (state) => {
+   resetExecSettings: (state) => {
       state.settings = initialSettings;
       state.projects = [];
       state.projectSetups = [];
+      state.availableAgents = [];
+      state.localIpSelections = [];
       state.error = null;
     },
   },
@@ -477,9 +552,10 @@ const execSettingsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchExecSettings.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.settings = action.payload;
-      })
+            state.isLoading = false;
+            state.settings = action.payload.settings;
+            state.localIpSelections = action.payload.localIpSelections;
+          })
       .addCase(fetchExecSettings.rejected, (state, action) => {
         state.isLoading = false;
         state.error =
@@ -515,6 +591,20 @@ const execSettingsSlice = createSlice({
           "Project setups konnten nicht geladen werden.";
       })
 
+      .addCase(fetchAvailableExecAgents.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAvailableExecAgents.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.availableAgents = action.payload;
+      })
+      .addCase(fetchAvailableExecAgents.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error =
+          action.error.message ?? "EXEC Agents konnten nicht geladen werden.";
+      })
+
       .addCase(saveExecSettings.pending, (state) => {
         state.isSaving = true;
         state.error = null;
@@ -543,15 +633,25 @@ export const {
 
 export const selectExecSettings = (state: RootState) =>
   state.execSettings.settings;
+
 export const selectExecSettingsProjects = (state: RootState) =>
   state.execSettings.projects;
+
 export const selectExecSettingsProjectSetups = (state: RootState) =>
   state.execSettings.projectSetups;
+
+export const selectAvailableExecAgents = (state: RootState) =>
+  state.execSettings.availableAgents;
+
 export const selectExecSettingsLoading = (state: RootState) =>
   state.execSettings.isLoading;
+
 export const selectExecSettingsSaving = (state: RootState) =>
   state.execSettings.isSaving;
+
 export const selectExecSettingsError = (state: RootState) =>
   state.execSettings.error;
+export const selectLocalIpSelections = (state: RootState) =>
+  state.execSettings.localIpSelections;
 
 export default execSettingsSlice.reducer;
