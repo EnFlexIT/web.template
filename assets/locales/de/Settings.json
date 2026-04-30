@@ -49,11 +49,8 @@
       "description": "Individuelle Einstellungen für dein Konto und deine Präferenzen."
     },
    "options": {
-        "title": "Optionen",
+        "title": "Programmstart",
         "description": "App-Optionen, Datenschutz und Verbindungsverwaltung."
       }
-   
-  
-
   }
 }

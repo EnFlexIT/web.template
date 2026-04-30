@@ -16,7 +16,7 @@ import { useAppSelector } from "../hooks/useAppSelector";
 import { setReady } from "../redux/slices/readySlice";
 import { foldl } from "../util/func";
 
-// ✅ WICHTIG: so wie in deinem apiSlice
+//  WICHTIG: so wie in deinem apiSlice
 import {
   Configuration as RestApiConfiguration,
   InfoApi,

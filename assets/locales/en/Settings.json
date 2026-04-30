@@ -48,7 +48,7 @@
         "description": "Individual settings for your account and preferences."
       },
       "options": {
-        "title": "Options",
+        "title": "options",
         "description": "App options, privacy and connection management."
       }
 }
