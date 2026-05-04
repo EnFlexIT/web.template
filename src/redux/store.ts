@@ -13,6 +13,7 @@ import dbSettingsReducer from "./slices/dbSettingsSlice";
 import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
 import notificationsReducer from "./slices/notificationSlice";
 import execSettingsReducer from "./slices/execSettingsSlice";
+import dataAnalysisSlice from "./slices/dataAnalysisSlice";
 export const store = configureStore({
   reducer: {
     language: languageReducer,
@@ -29,7 +30,7 @@ export const store = configureStore({
     passwordChangePrompt: passwordChangePromptReducer,
     notifications: notificationsReducer,
     execSettings: execSettingsReducer,
-
+    dataAnalysis: dataAnalysisSlice,
   },
 });
 

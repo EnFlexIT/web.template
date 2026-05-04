@@ -18,6 +18,7 @@ import { isMenuEnabled } from "./featureFlags";
 
 import { withAutoTabs } from "../../components/config/tabAuto";
 import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
+import { DataAnalyzingTab } from "../../screens/AgentWorkbenchOptions/DataAnalyzingTab";
 
 export type StaticMenuItem = {
   caption: string;
@@ -133,6 +134,7 @@ export function getStaticMenu(): StaticMenuItem[] {
       parentID: 3021,
       Screen: ProgramStartTab,
     },
+  
     { 
       caption: "databaseConnectionsAndSettings", 
       menuID: 3010, 

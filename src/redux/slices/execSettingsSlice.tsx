@@ -18,7 +18,6 @@ const SERVICE_SERVICE_SETUP: string = "service.service_setup";
 const LOCAL_IP_SELECTION: string = "local.ip.selection[X]";
 const FACTORY_ID: string = "factory_id";
 
-
 type PropertyEntry = {
   key: string;
   value: string;
@@ -270,7 +269,7 @@ function mapProjectSetups(entries: PropertyEntry[]) {
 
 function mapExecSettings(entries: PropertyEntry[]): ExecSettings {
   return {
-    startAs: normalizeStartAs(findEntryValue(entries, "exec.mode")),
+    startAs: normalizeStartAs(findEntryValue(entries, EXEC_MODE)),
 
     serverMasterUrl: findEntryValue(entries,SERVER_MASTER_URL) ?? "",
     serverMasterPort: toNumber(findEntryValue(entries, SERVER_MASTER_PORT), 1099,),
@@ -292,7 +291,7 @@ function mapExecSettings(entries: PropertyEntry[]): ExecSettings {
 
 function buildExecSettingsEntries(payload: ExecSettings): PropertyEntry[] {
   const entries: PropertyEntry[] = [
-    toPropertyEntry("exec.mode", payload.startAs, "STRING"),
+    toPropertyEntry(EXEC_MODE, payload.startAs, "STRING"),
 
     toPropertyEntry(SERVER_MASTER_URL, payload.serverMasterUrl, "STRING"),
     toPropertyEntry(SERVER_MASTER_PORT, payload.serverMasterPort, "INTEGER"),
@@ -463,7 +462,7 @@ export const saveExecSettings = createAsyncThunk(
 
       const response = await api.setAppSettings(
         {
-          performative: "exec.mode",
+          performative: EXEC_MODE,
           propertyEntries,
         } as any,
       );

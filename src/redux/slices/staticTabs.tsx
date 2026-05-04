@@ -13,6 +13,7 @@ import { UpdateGeneralTab } from "../../screens/update/tabs/UpdateGeneralTab";
 import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
 import { UpdateBackendTab } from "../../screens/update/tabs/UpdateBackendTab";
 import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
+import { DataAnalyzingTab } from "../../screens/AgentWorkbenchOptions/DataAnalyzingTab";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 export type StaticTabItem = {
@@ -88,6 +89,13 @@ export const STATIC_TABS: StaticTabItem[] = [
     caption: "Program Start",
     position: 1,
     Content: ProgramStartTab,
+  },
+  {
+    menuID: 3023,
+    tabKey: "data-analyzing",
+    caption: "Data Analyzing",
+    position: 2,
+    Content: DataAnalyzingTab,
   }
 
   // { menuID: 3010, tabKey: "newTab", caption: "New Tab", position: 4, featureID: 5002, Content: NewTabComponent },
