@@ -59,15 +59,28 @@ export type BackgroundPlatform = {
   currentThresholdExceeded: boolean;
 };
 
+export type DataAnalysisHistoryEntry = {
+  timestamp: number;
+  platformName: string;
+  cpuLoad: number;
+  memoryLoad: number;
+  memoryLoadJvm: number;
+  threads: number;
+};
+
 export type DataAnalysisState = {
   platforms: BackgroundPlatform[];
+  history: DataAnalysisHistoryEntry[];
   isMasterServer: boolean;
   isLoading: boolean;
   error: string | null;
 };
 
+const MAX_HISTORY_ENTRIES = 120;
+
 const initialState: DataAnalysisState = {
   platforms: [],
+  history: [],
   isMasterServer: false,
   isLoading: false,
   error: null,
@@ -90,7 +103,6 @@ function getBackendErrorMessage(error: unknown, fallback: string) {
 
 function ensureSuccessfulResponse(response: any): BackendResponse {
   const data: BackendResponse = response?.data ?? {};
-
   const messageType = String(data.messageType ?? "").toUpperCase();
 
   if (messageType === "ERROR") {
@@ -124,6 +136,33 @@ function toBoolean(value: string | undefined, fallback = false) {
   if (value == null || value === "") return fallback;
 
   return String(value).trim().toLowerCase() === "true";
+}
+
+function getPlatformDisplayName(
+  platform: BackgroundPlatform,
+  index: number,
+): string {
+  return (
+    platform.platformName ||
+    platform.ipAddress ||
+    platform.contactAgent ||
+    `Platform ${index + 1}`
+  );
+}
+
+function createHistoryEntries(
+  platforms: BackgroundPlatform[],
+): DataAnalysisHistoryEntry[] {
+  const timestamp = Date.now();
+
+  return platforms.map((platform, index) => ({
+    timestamp,
+    platformName: getPlatformDisplayName(platform, index),
+    cpuLoad: platform.currentCpuLoad,
+    memoryLoad: platform.currentMemoryLoad,
+    memoryLoadJvm: platform.currentMemoryLoadJvm,
+    threads: platform.currentNumThreads,
+  }));
 }
 
 function mapBackgroundPlatforms(
@@ -161,9 +200,7 @@ function mapBackgroundPlatforms(
         platformName:
           getBgValue(entries, BGPLATFORM.PLATFORM_NAME, index) ?? "",
 
-        server: toBoolean(
-          getBgValue(entries, BGPLATFORM.SERVER, index),
-        ),
+        server: toBoolean(getBgValue(entries, BGPLATFORM.SERVER, index)),
 
         ipAddress:
           getBgValue(entries, BGPLATFORM.IP_ADDRESS, index) ?? "",
@@ -280,9 +317,7 @@ export const fetchDataAnalysis = createAsyncThunk(
 
       return {
         platforms,
-        isMasterServer: platforms.some(
-          (platform) => platform.server,
-        ),
+        isMasterServer: platforms.some((platform) => platform.server),
       };
     } catch (error) {
       throw new Error(
@@ -305,6 +340,10 @@ const dataAnalysisSlice = createSlice({
       state.error = null;
     },
 
+    clearDataAnalysisHistory: (state) => {
+      state.history = [];
+    },
+
     resetDataAnalysis: () => initialState,
   },
 
@@ -320,8 +359,12 @@ const dataAnalysisSlice = createSlice({
 
         state.platforms = action.payload.platforms;
 
-        state.isMasterServer =
-          action.payload.isMasterServer;
+        state.history = [
+          ...state.history,
+          ...createHistoryEntries(action.payload.platforms),
+        ].slice(-MAX_HISTORY_ENTRIES);
+
+        state.isMasterServer = action.payload.isMasterServer;
       })
 
       .addCase(fetchDataAnalysis.rejected, (state, action) => {
@@ -340,12 +383,17 @@ const dataAnalysisSlice = createSlice({
 
 export const {
   clearDataAnalysisError,
+  clearDataAnalysisHistory,
   resetDataAnalysis,
 } = dataAnalysisSlice.actions;
 
 export const selectDataAnalysisPlatforms = (
   state: RootState,
 ): BackgroundPlatform[] => state.dataAnalysis.platforms;
+
+export const selectDataAnalysisHistory = (
+  state: RootState,
+): DataAnalysisHistoryEntry[] => state.dataAnalysis.history;
 
 export const selectIsMasterServer = (
   state: RootState,

@@ -55,12 +55,12 @@ function RenderTime({ content }: { content: SiteContentTimeSeriesChart }) {
 
   return (
     <View
-      style={{ width: "100%", height: 260 }}
+      style={{ width: "100%", height: "100%" }}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
       {w > 0 ? (
-        <VictoryChart theme={chartTheme} height={260} width={w}>
-          <VictoryArea data={data as any} y="value" x="isoDateTime" />
+        <VictoryChart theme={chartTheme} height={320} width={w}>
+          <VictoryArea data={data as any} y="value" x="xvalue" />
         </VictoryChart>
       ) : null}
     </View>
@@ -81,7 +81,7 @@ function RenderBar({ content }: { content: SiteContentBarChart }) {
 
   return (
     <View
-      style={{ width: "100%", height: 260 }}
+     style={{ width: "100%", height: "100%" }}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
       {w > 0 ? (
@@ -111,7 +111,7 @@ function RenderLine({ content }: { content: SiteContentLineChart }) {
 
   return (
     <View
-      style={{ width: "100%", height: 260 }}
+      style={{ width: "100%", height: "100%" }}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
       {w > 0 ? (
