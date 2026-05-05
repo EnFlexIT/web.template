@@ -33,7 +33,7 @@ function getStatus(platform: BackgroundPlatform): string {
 }
 
 function getRole(platform: BackgroundPlatform): string {
-  return platform.server ? "Master" : "Slave";
+  return platform.server ? "Slave" : "Client";
 }
 
 export function DataAnalysisPlatformTable({ platforms }: Props) {
@@ -55,7 +55,7 @@ export function DataAnalysisPlatformTable({ platforms }: Props) {
       <CellText key="platform" strong>
         {text(platform.platformName)}
       </CellText>,
-      <BadgeText key="role">{getRole(platform)}</BadgeText>,
+      <CellText key="role">{getRole(platform)}</CellText>,
       <StatusText key="status" status={getStatus(platform)} />,
       <CellText key="cpu">{percent(platform.currentCpuLoad)}</CellText>,
       <CellText key="memory">{percent(platform.currentMemoryLoad)}</CellText>,
@@ -115,14 +115,6 @@ function CellText({
   );
 }
 
-function BadgeText({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={styles.badge}>
-      <ThemedText style={styles.badgeText}>{children}</ThemedText>
-    </View>
-  );
-}
-
 function StatusText({ status }: { status: string }) {
   return (
     <View style={styles.statusRow}>
@@ -132,10 +124,10 @@ function StatusText({ status }: { status: string }) {
           status === "Online"
             ? styles.statusOnline
             : status === "Warning"
-              ? styles.statusWarning
-              : styles.statusOffline,
-        ]}
-      />
+             ? styles.statusWarning
+             : styles.statusOffline,]}
+       />
+
       <ThemedText style={styles.cellText}>{status}</ThemedText>
     </View>
   );
@@ -185,8 +177,8 @@ const styles = StyleSheet.create((theme) => ({
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
+   
+   
     borderColor: theme.colors.border,
   },
 

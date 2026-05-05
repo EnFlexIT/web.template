@@ -98,7 +98,7 @@ export const STATIC_TABS: StaticTabItem[] = [
     Content: DataAnalyzingTab,
   }
 
-  // { menuID: 3010, tabKey: "newTab", caption: "New Tab", position: 4, featureID: 5002, Content: NewTabComponent },
+
 ];
 
 export function getTabsForMenu(menuID: number): StaticTabItem[] {

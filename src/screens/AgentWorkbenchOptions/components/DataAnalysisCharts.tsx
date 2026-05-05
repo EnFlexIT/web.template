@@ -22,7 +22,7 @@ type ChartPoint = {
 
 function createSeries(
   history: DataAnalysisHistoryEntry[],
-  key: "cpuLoad" | "memoryLoad",
+  key: "cpuLoad" | "memoryLoad" | "threads",
 ): ChartPoint[] {
   return history.map((entry, index) => ({
     x: index + 1,
@@ -32,9 +32,10 @@ function createSeries(
 
 function getLastValue(
   history: DataAnalysisHistoryEntry[],
-  key: "cpuLoad" | "memoryLoad",
+  key: "cpuLoad" | "memoryLoad" | "threads",
 ): number {
   const last = history[history.length - 1];
+
   if (!last) return 0;
 
   return Number(last[key]) || 0;
@@ -44,7 +45,11 @@ function formatPercent(value: number): string {
   return `${value.toFixed(2)} %`;
 }
 
-export function DataAnalysisCharts({ history }: Props) {
+/* =========================================================
+   CPU + MEMORY CHARTS
+========================================================= */
+
+export function CpuMemoryCharts({ history }: Props) {
   const cpuData = createSeries(history, "cpuLoad");
   const memoryData = createSeries(history, "memoryLoad");
 
@@ -70,6 +75,28 @@ export function DataAnalysisCharts({ history }: Props) {
   );
 }
 
+/* =========================================================
+   THREAD CHART
+========================================================= */
+
+export function ThreadChart({ history }: Props) {
+  const threadData = createSeries(history, "threads");
+  const threadValue = getLastValue(history, "threads");
+
+  return (
+    <DashboardChart
+      title="Threads"
+      value={String(Math.round(threadValue))}
+      subtitle="Anzahl Threads"
+      data={threadData}
+    />
+  );
+}
+
+/* =========================================================
+   REUSABLE CHART
+========================================================= */
+
 function DashboardChart({
   title,
   value,
@@ -82,7 +109,12 @@ function DashboardChart({
   data: ChartPoint[];
 }) {
   const { theme } = useUnistyles();
-  const chartTheme = useMemo(() => createEnFlexChart(theme), [theme]);
+
+  const chartTheme = useMemo(
+    () => createEnFlexChart(theme),
+    [theme],
+  );
+
   const [width, setWidth] = useState(0);
 
   return (
@@ -90,15 +122,22 @@ function DashboardChart({
       <View style={styles.chartHeader}>
         <View>
           <H4>{title}</H4>
-          <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
+
+          <ThemedText style={styles.subtitle}>
+            {subtitle}
+          </ThemedText>
         </View>
 
-        <ThemedText style={styles.chartValue}>{value}</ThemedText>
+        <ThemedText style={styles.chartValue}>
+          {value}
+        </ThemedText>
       </View>
 
       <View
         style={styles.chartBox}
-        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+        onLayout={(event) =>
+          setWidth(event.nativeEvent.layout.width)
+        }
       >
         {width > 0 ? (
           <VictoryChart
@@ -112,13 +151,21 @@ function DashboardChart({
               right: 24,
             }}
           >
-            <VictoryArea data={data} x="x" y="y" />
+            <VictoryArea
+              data={data}
+              x="x"
+              y="y"
+            />
           </VictoryChart>
         ) : null}
       </View>
     </Card>
   );
 }
+
+/* =========================================================
+   STYLES
+========================================================= */
 
 const styles = StyleSheet.create((theme) => ({
   container: {

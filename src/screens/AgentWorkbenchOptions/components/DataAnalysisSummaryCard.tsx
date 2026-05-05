@@ -74,11 +74,7 @@ export function DataAnalysisSummaryCard({ platforms }: Props) {
         <StatBox label="Platforms" value={String(platformCount)} />
         <StatBox label="Master" value={String(masterServers)} />
         <StatBox label="Available" value={availabilityText} />
-        <StatBox
-          label="Threshold"
-          value={thresholdExceeded > 0 ? String(thresholdExceeded) : "OK"}
-          emphasized={thresholdExceeded === 0}
-        />
+        <StatBox label="Threshold" value={thresholdExceeded > 0 ? String(thresholdExceeded) : "OK"} emphasized={thresholdExceeded === 0} />
       </View>
 
       <View style={styles.metricList}>
@@ -144,6 +140,7 @@ const styles = StyleSheet.create((theme) => ({
     marginTop: 3,
     fontSize: 12,
     opacity: 0.65,
+    marginBottom: 6,
   },
 
   statusBadge: {
@@ -179,6 +176,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: 12,
     justifyContent: "space-between",
     backgroundColor: theme.colors.background,
+    marginBottom: 8,
   },
 
   statLabel: {
@@ -200,8 +198,8 @@ const styles = StyleSheet.create((theme) => ({
   metricList: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
-    paddingTop: 14,
-    gap: 11,
+    paddingTop: 16,
+    gap: 10,
   },
 
   metricRow: {
