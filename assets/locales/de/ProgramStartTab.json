@@ -1,0 +1,79 @@
+{
+ 
+
+  "dataAnalyzing": {
+    "title": "Datenanalyse",
+    "subtitle": "Master- / Slave-Plattformübersicht",
+    "platformSelector": "Plattform auswählen",
+    "cpuUsage": "CPU-Auslastung",
+    "memoryUsage": "Speicherauslastung",
+    "threadUsage": "Thread-Auslastung",
+    "server": "Server",
+    "client": "Client",
+    "slave": "Slave",
+    "status": "Status",
+    "available": "Verfügbar",
+    "notAvailable": "Nicht verfügbar",
+    "thresholdExceeded": "Grenzwert überschritten",
+    "overview": "Übersicht",
+    "history": "Verlauf",
+    "summary": "Zusammenfassung",
+    "platforms": "Plattformen",
+    "connections": "Verbindungen",
+    "systemLoad": "Systemauslastung",
+    "lastUpdate": "Letzte Aktualisierung",
+    "error": "Fehler beim Laden der Datenanalyse.",
+    
+
+    "table": {
+      "title": "Server / Master Tabelle",
+      "subtitle": "Live Übersicht aller Background-Plattformen",
+      "countLabel": "Plattformen",
+      "columns": {
+        "platform": "Plattform",
+        "role": "Rolle",
+        "status": "Status",
+        "cpu": "CPU",
+        "memory": "Speicher",
+        "jvm": "JVM",
+        "threads": "Threads",
+        "os": "OS",
+        "ip": "IP",
+        "jade": "JADE",
+        "lastContact": "Letzter Kontakt"
+      },
+      "roles": {
+        "slave": "Slave",
+        "client": "Client"
+      },
+      "status": {
+        "online": "Online",
+        "warning": "Warnung",
+        "offline": "Offline"
+      }
+    },
+    "summary": {
+      "title": "Systemübersicht",
+      "subtitle": "Live Master- / Slave-Status",
+
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "ok": "OK",
+
+      "stats": {
+        "platforms": "Plattformen",
+        "master": "Master",
+        "available": "Verfügbar",
+        "threshold": "Grenzwert"
+      },
+
+      "metrics": {
+        "avgCpu": "Ø CPU",
+        "avgMemory": "Ø Speicher",
+        "jvmMemory": "JVM Speicher",
+        "threads": "Threads"
+      }
+    }
+  }
+    
+  }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 import { DataAnalysisPlatformTable } from "./components/DataAnalysisPlatformTable";
-import { CpuMemoryCharts,ThreadChart,} from "./components/DataAnalysisCharts";
+import { CpuMemoryCharts, ThreadChart } from "./components/DataAnalysisCharts";
 import { DataAnalysisSummaryCard } from "./components/DataAnalysisSummaryCard";
 import { Card } from "../../components/ui-elements/Card";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
@@ -11,7 +12,12 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import type { BackgroundPlatform } from "../../redux/slices/dataAnalysisSlice";
-import {fetchDataAnalysis, selectDataAnalysisError,selectDataAnalysisHistory,selectDataAnalysisPlatforms,} from "../../redux/slices/dataAnalysisSlice";
+import {
+  fetchDataAnalysis,
+  selectDataAnalysisError,
+  selectDataAnalysisHistory,
+  selectDataAnalysisPlatforms,
+} from "../../redux/slices/dataAnalysisSlice";
 
 function safeText(value: unknown, fallback = "-"): string {
   if (value === undefined || value === null || value === "") return fallback;
@@ -19,11 +25,7 @@ function safeText(value: unknown, fallback = "-"): string {
 }
 
 function getPlatformName(platform: BackgroundPlatform) {
-  return (
-    platform.platformName ||
-    platform.ipAddress ||
-    platform.contactAgent
-  );
+  return platform.platformName || platform.ipAddress || platform.contactAgent;
 }
 
 function getPlatformTone(
@@ -34,11 +36,14 @@ function getPlatformTone(
   return "green";
 }
 
-function getPlatformRole(platform: BackgroundPlatform): string {
-  return platform.server ? "Slave" : "Client";
+function getPlatformRole(platform: BackgroundPlatform, t: any): string {
+  return platform.server
+    ? t("dataAnalyzing.slave")
+    : t("dataAnalyzing.client");
 }
 
 export function DataAnalyzingTab() {
+  const { t } = useTranslation(["programStart"]);
   const dispatch = useAppDispatch();
 
   const platforms = useAppSelector(selectDataAnalysisPlatforms);
@@ -85,15 +90,18 @@ export function DataAnalyzingTab() {
       const name = getPlatformName(platform);
 
       acc[name] = {
-        subtitle: `${getPlatformRole(platform)} · CPU ${platform.currentCpuLoad.toFixed(
-          2,
-        )} % · Threads ${platform.currentNumThreads}`,
+        subtitle: `${getPlatformRole(
+          platform,
+          t,
+        )} · CPU ${platform.currentCpuLoad.toFixed(2)} % · Threads ${
+          platform.currentNumThreads
+        }`,
         tone: getPlatformTone(platform),
       };
 
       return acc;
     }, {});
-  }, [platforms]);
+  }, [platforms, t]);
 
   const selectedHistory = useMemo(() => {
     if (!selectedPlatformName) return [];
@@ -108,10 +116,8 @@ export function DataAnalyzingTab() {
       <Card style={styles.pageCard}>
         <View style={styles.pageHeader}>
           <View style={styles.headerTextBox}>
-            <H4>Data Analyzing</H4>
-            <ThemedText>
-              Master / Slave Plattform Übersicht
-            </ThemedText>
+            <H4>{t("dataAnalyzing.title")}</H4>
+            <ThemedText>{t("dataAnalyzing.subtitle")}</ThemedText>
           </View>
         </View>
 
@@ -120,28 +126,26 @@ export function DataAnalyzingTab() {
             <ThemedText>{safeText(error)}</ThemedText>
           </Card>
         ) : null}
-        
 
         {platforms.length > 0 ? (
           <View style={styles.content}>
             <Card style={styles.tableCard}>
               <DataAnalysisPlatformTable platforms={platforms} />
             </Card>
-            
-          <View style={styles.headerActions}>
-            {selectedPlatformName ? (
-              <Dropdown
-                value={selectedPlatformName}
-                options={platformOptions}
-                optionMeta={platformOptionMeta}
-                onChange={setSelectedPlatformName}
-                size="sm"
-                menuWidth={320}
-                maxMenuHeight={360}
-              
-              />
-            ) : null}
-          </View>
+
+            <View style={styles.headerActions}>
+              {selectedPlatformName ? (
+                <Dropdown
+                  value={selectedPlatformName}
+                  options={platformOptions}
+                  optionMeta={platformOptionMeta}
+                  onChange={setSelectedPlatformName}
+                  size="sm"
+                  menuWidth={320}
+                  maxMenuHeight={360}
+                />
+              ) : null}
+            </View>
 
             <View style={styles.dashboardGrid}>
               <View style={styles.mainColumn}>
@@ -196,7 +200,6 @@ const styles = StyleSheet.create((theme: any) => ({
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-   
   },
 
   content: {

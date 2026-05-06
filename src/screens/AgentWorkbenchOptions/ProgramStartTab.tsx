@@ -2,27 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Modal } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
-
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { TextInput } from "../../components/ui-elements/TextInput";
 import { Card } from "../../components/ui-elements/Card";
 import { H4 } from "../../components/stylistic/H4";
 import { ThemedText } from "../../components/themed/ThemedText";
-import {
-  SelectableList,
-  SelectableItem,
-} from "../../components/ui-elements/SelectableList";
-
+import {SelectableList, SelectableItem,} from "../../components/ui-elements/SelectableList";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-
-import {
-  fetchDbSettings,
-  selectFactories,
-  selectFactoryStates,
-} from "../../redux/slices/dbSettingsSlice";
-
+import { fetchDbSettings, selectFactories, selectFactoryStates,} from "../../redux/slices/dbSettingsSlice";
 import {
   addEmbeddedSystemAgent,
   clearExecSettingsError,

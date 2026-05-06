@@ -1,0 +1,83 @@
+{
+  "title": "Program Start",
+  "subtitle": "App options, privacy and connection management.",
+
+  "dataAnalyzing": {
+    "title": "Data Analyzing",
+    "subtitle": "Master / Slave platform overview",
+    "platformSelector": "Select platform",
+    "cpuUsage": "CPU Usage",
+    "memoryUsage": "Memory Usage",
+    "threadUsage": "Thread Usage",
+    "server": "Server",
+    "client": "Client",
+    "slave": "Slave",
+    "status": "Status",
+    "available": "Available",
+    "notAvailable": "Not Available",
+    "thresholdExceeded": "Threshold Exceeded",
+    "overview": "Overview",
+    "history": "History",
+    "summary": "Summary",
+    "platforms": "Platforms",
+    "connections": "Connections",
+    "systemLoad": "System Load",
+    "lastUpdate": "Last Update",
+    "error": "Error while loading data analysis.",
+ 
+     "table": {
+      "title": "Server / Master Table",
+      "subtitle": "Live overview of all background platforms",
+      "countLabel": "Platforms",
+
+      "columns": {
+        "platform": "Platform",
+        "role": "Role",
+        "status": "Status",
+        "cpu": "CPU",
+        "memory": "Memory",
+        "jvm": "JVM",
+        "threads": "Threads",
+        "os": "OS",
+        "ip": "IP",
+        "jade": "JADE",
+        "lastContact": "Last Contact"
+      },
+
+      "roles": {
+        "slave": "Slave",
+        "client": "Client"
+      },
+
+      "status": {
+        "online": "Online",
+        "warning": "Warning",
+        "offline": "Offline"
+      }
+    },
+    "summary": {
+      "title": "System Overview",
+      "subtitle": "Live Master / Slave Status",
+
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "ok": "OK",
+
+      "stats": {
+        "platforms": "Platforms",
+        "master": "Master",
+        "available": "Available",
+        "threshold": "Threshold"
+      },
+
+      "metrics": {
+        "avgCpu": "Avg CPU",
+        "avgMemory": "Avg Memory",
+        "jvmMemory": "JVM Memory",
+        "threads": "Threads"
+      }
+    }
+  }
+ 
+  
+}

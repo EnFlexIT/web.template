@@ -16,7 +16,7 @@ const resources = {
     Update: require("./assets/locales/en/Update.json"),
     Notifications: require("./assets/locales/en/Notification.json"),
     DataBase: require("./assets/locales/en/DataBase.json"),
-    //programStart : require("./assets/locales/en/programStart.json"),
+    programStart : require("./assets/locales/en/ProgramStartTab.json"),
     },
   de: {
     Login: require("./assets/locales/de/Login.json"),
@@ -32,7 +32,7 @@ const resources = {
     Update: require("./assets/locales/de/Update.json"),
     Notifications: require("./assets/locales/de/Notification.json"),
     DataBase: require("./assets/locales/de/DataBase.json"),
-    //programStart : require("./assets/locales/de/programStart.json"),
+    programStart : require("./assets/locales/de/ProgramStartTab.json"),
   },
 };
 

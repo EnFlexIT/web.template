@@ -1,5 +1,6 @@
 import React from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
 import { Card } from "../../../components/ui-elements/Card";
@@ -22,6 +23,8 @@ function formatPercent(value: number): string {
 }
 
 export function DataAnalysisSummaryCard({ platforms }: Props) {
+  const { t } = useTranslation(["programStart"]);
+
   const platformCount = platforms.length;
 
   const masterServers = platforms.filter((platform) => platform.server).length;
@@ -50,6 +53,7 @@ export function DataAnalysisSummaryCard({ platforms }: Props) {
   );
 
   const isOnline = masterServers > 0;
+
   const availabilityText =
     platformCount > 0 ? `${availablePlatforms}/${platformCount}` : "0/0";
 
@@ -57,31 +61,69 @@ export function DataAnalysisSummaryCard({ platforms }: Props) {
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.titleArea}>
-          <H4>System Overview</H4>
+          <H4>{t("dataAnalyzing.summary.title")}</H4>
+
           <ThemedText style={styles.subtitle}>
-            Live Master / Slave Status
+            {t("dataAnalyzing.summary.subtitle")}
           </ThemedText>
         </View>
 
         <View style={[styles.statusBadge, !isOnline && styles.statusOffline]}>
           <ThemedText style={styles.statusText}>
-            {isOnline ? "ONLINE" : "OFFLINE"}
+            {isOnline
+              ? t("dataAnalyzing.summary.online")
+              : t("dataAnalyzing.summary.offline")}
           </ThemedText>
         </View>
       </View>
 
       <View style={styles.summaryGrid}>
-        <StatBox label="Platforms" value={String(platformCount)} />
-        <StatBox label="Master" value={String(masterServers)} />
-        <StatBox label="Available" value={availabilityText} />
-        <StatBox label="Threshold" value={thresholdExceeded > 0 ? String(thresholdExceeded) : "OK"} emphasized={thresholdExceeded === 0} />
+        <StatBox
+          label={t("dataAnalyzing.summary.stats.platforms")}
+          value={String(platformCount)}
+        />
+
+        <StatBox
+          label={t("dataAnalyzing.summary.stats.master")}
+          value={String(masterServers)}
+        />
+
+        <StatBox
+          label={t("dataAnalyzing.summary.stats.available")}
+          value={availabilityText}
+        />
+
+        <StatBox
+          label={t("dataAnalyzing.summary.stats.threshold")}
+          value={
+            thresholdExceeded > 0
+              ? String(thresholdExceeded)
+              : t("dataAnalyzing.summary.ok")
+          }
+          emphasized={thresholdExceeded === 0}
+        />
       </View>
 
       <View style={styles.metricList}>
-        <MetricRow label="Avg CPU" value={formatPercent(avgCpu)} />
-        <MetricRow label="Avg Memory" value={formatPercent(avgMemory)} />
-        <MetricRow label="JVM Memory" value={formatPercent(avgJvmMemory)} />
-        <MetricRow label="Threads" value={String(totalThreads)} />
+        <MetricRow
+          label={t("dataAnalyzing.summary.metrics.avgCpu")}
+          value={formatPercent(avgCpu)}
+        />
+
+        <MetricRow
+          label={t("dataAnalyzing.summary.metrics.avgMemory")}
+          value={formatPercent(avgMemory)}
+        />
+
+        <MetricRow
+          label={t("dataAnalyzing.summary.metrics.jvmMemory")}
+          value={formatPercent(avgJvmMemory)}
+        />
+
+        <MetricRow
+          label={t("dataAnalyzing.summary.metrics.threads")}
+          value={String(totalThreads)}
+        />
       </View>
     </Card>
   );
@@ -99,6 +141,7 @@ function StatBox({
   return (
     <View style={styles.statBox}>
       <ThemedText style={styles.statLabel}>{label}</ThemedText>
+
       <ThemedText
         style={[styles.statValue, emphasized && styles.statValueEmphasized]}
       >
