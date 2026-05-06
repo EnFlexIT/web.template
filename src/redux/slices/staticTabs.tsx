@@ -4,7 +4,7 @@ import { ComponentType } from "react";
 
 
 import { isTabEnabled } from "./tabFeatureFlags";
-
+import type { RootState } from "../../redux/store";
 // Tabs (deine Imports)
 import { DerbyNetworkServerTab } from "../../screens/settings/database/DerbyNetworkServerTab";
 import { FactorySettingsTab } from "../../screens/settings/database/FactorySettingsTab";
@@ -15,6 +15,7 @@ import { UpdateBackendTab } from "../../screens/update/tabs/UpdateBackendTab";
 import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
 import { DataAnalyzingTab } from "../../screens/AgentWorkbenchOptions/DataAnalyzingTab";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
+
 
 export type StaticTabItem = {
   menuID: number;
@@ -95,19 +96,25 @@ export const STATIC_TABS: StaticTabItem[] = [
     tabKey: "data-analyzing",
     caption: "Data Analyzing",
     position: 2,
+    featureID: 3000, // diese Tab hat eine Feature Flag (3000) - siehe tabFeatureFlags.ts
     Content: DataAnalyzingTab,
   }
 
 
 ];
-
-export function getTabsForMenu(menuID: number): StaticTabItem[] {
+export function getTabsForMenu(
+  menuID: number,
+  state?: RootState,
+): StaticTabItem[] {
   return STATIC_TABS
     .filter((t) => t.menuID === menuID)
-    .filter((t) => (t.featureID ? isTabEnabled(t.featureID) : true))
+    .filter((t) => (t.featureID ? isTabEnabled(t.featureID, state) : true))
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 }
 
-export function hasTabsForMenu(menuID: number): boolean {
-  return getTabsForMenu(menuID).length > 0;
+export function hasTabsForMenu(
+  menuID: number,
+  state?: RootState,
+): boolean {
+  return getTabsForMenu(menuID, state).length > 0;
 }

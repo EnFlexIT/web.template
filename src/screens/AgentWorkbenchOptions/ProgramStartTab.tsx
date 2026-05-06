@@ -55,18 +55,23 @@ type FactoryStateMeta = {
   color: string;
   iconName: React.ComponentProps<typeof AntDesign>["name"];
 };
-
 function mapBackendStartModeToUi(value: string): StartMode {
   switch (value) {
     case "APPLICATION":
     case "Application":
       return "application";
+
     case "BACKGROUND_SYSTEM":
     case "SERVER":
+    case "SERVER_MASTER":
+    case "SERVER_SLAVE":
       return "SERVER";
+
     case "DEVICE_SYSTEM":
     case "Service / Embedded System Agent":
+    case "SERVICE_EMBEDDED_SYSTEM_AGENT":
       return "service";
+
     default:
       return "application";
   }
@@ -258,7 +263,7 @@ export function ProgramStartTab() {
   useEffect(() => {
     dispatch(fetchExecSettings());
     dispatch(fetchProjects());
-    dispatch(fetchAvailableExecAgents());
+   
     dispatch(fetchDbSettings());
   }, [dispatch]);
 

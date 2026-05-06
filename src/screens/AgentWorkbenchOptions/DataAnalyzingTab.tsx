@@ -2,10 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { DataAnalysisPlatformTable } from "./components/DataAnalysisPlatformTable";
-import {
-  CpuMemoryCharts,
-  ThreadChart,
-} from "./components/DataAnalysisCharts";
+import { CpuMemoryCharts,ThreadChart,} from "./components/DataAnalysisCharts";
 import { DataAnalysisSummaryCard } from "./components/DataAnalysisSummaryCard";
 import { Card } from "../../components/ui-elements/Card";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
@@ -14,12 +11,7 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import type { BackgroundPlatform } from "../../redux/slices/dataAnalysisSlice";
-import {
-  fetchDataAnalysis,
-  selectDataAnalysisError,
-  selectDataAnalysisHistory,
-  selectDataAnalysisPlatforms,
-} from "../../redux/slices/dataAnalysisSlice";
+import {fetchDataAnalysis, selectDataAnalysisError,selectDataAnalysisHistory,selectDataAnalysisPlatforms,} from "../../redux/slices/dataAnalysisSlice";
 
 function safeText(value: unknown, fallback = "-"): string {
   if (value === undefined || value === null || value === "") return fallback;

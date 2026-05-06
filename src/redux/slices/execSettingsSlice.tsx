@@ -34,6 +34,9 @@ type BackendResponse = {
 export type StartAsMode =
   | "APPLICATION"
   | "SERVER"
+  | "SERVER_MASTER"
+  | "SERVER_SLAVE"
+  | "DEVICE_SYSTEM"
   | "SERVICE_EMBEDDED_SYSTEM_AGENT"
   | string;
 
@@ -77,6 +80,7 @@ export type ExecSettings = {
 
 type ExecSettingsState = {
   settings: ExecSettings;
+  appliedStartAs: StartAsMode;
   projects: string[];
   projectSetups: string[];
   availableAgents: AvailableExecAgent[];
@@ -110,6 +114,7 @@ const initialSettings: ExecSettings = {
 
 const initialState: ExecSettingsState = {
   settings: initialSettings,
+  appliedStartAs: initialSettings.startAs,
   projects: [],
   projectSetups: [],
   availableAgents: [],
@@ -200,7 +205,17 @@ function normalizeStartAs(value: string | undefined): StartAsMode {
 
     case "Background System":
     case "BACKGROUND_SYSTEM":
+    case "SERVER":
       return "SERVER";
+
+    case "SERVER_MASTER":
+      return "SERVER_MASTER";
+
+    case "SERVER_SLAVE":
+      return "SERVER_SLAVE";
+
+    case "DEVICE_SYSTEM":
+      return "DEVICE_SYSTEM";
 
     case "Service / Embedded System Agent":
     case "SERVICE_EMBEDDED_SYSTEM_AGENT":
@@ -550,10 +565,11 @@ const execSettingsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchExecSettings.fulfilled, (state, action) => {
-            state.isLoading = false;
-            state.settings = action.payload.settings;
-            state.localIpSelections = action.payload.localIpSelections;
-          })
+          state.isLoading = false;
+          state.settings = action.payload.settings;
+          state.appliedStartAs = action.payload.settings.startAs;
+          state.localIpSelections = action.payload.localIpSelections;
+        })
       .addCase(fetchExecSettings.rejected, (state, action) => {
         state.isLoading = false;
         state.error =
@@ -608,9 +624,10 @@ const execSettingsSlice = createSlice({
         state.error = null;
       })
       .addCase(saveExecSettings.fulfilled, (state, action) => {
-        state.isSaving = false;
-        state.settings = action.payload;
-      })
+          state.isSaving = false;
+          state.settings = action.payload;
+          state.appliedStartAs = action.payload.startAs;
+        })
       .addCase(saveExecSettings.rejected, (state, action) => {
         state.isSaving = false;
         state.error =
@@ -651,5 +668,10 @@ export const selectExecSettingsError = (state: RootState) =>
   state.execSettings.error;
 export const selectLocalIpSelections = (state: RootState) =>
   state.execSettings.localIpSelections;
+export const selectAppliedStartAs = (state: RootState) =>
+  state.execSettings.appliedStartAs;
+
+export const selectIsAppliedServerMaster = (state: RootState): boolean =>
+  state.execSettings.appliedStartAs === "SERVER_MASTER";
 
 export default execSettingsSlice.reducer;

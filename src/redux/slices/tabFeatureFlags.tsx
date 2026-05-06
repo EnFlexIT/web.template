@@ -1,11 +1,17 @@
-// src/config/tabFeatureFlags.ts
+import type { RootState } from "../store";
 
-export const tabFeatureFlags: Record<number, boolean> = {
-  5001: true, // Factory Tab 
-  3111: true, // Update Backend Tab
-  3000: true, // Data Analyzing Tab
-};
+export function isTabEnabled(flagID: number, state?: RootState): boolean {
+  switch (flagID) {
+    case 5001:
+      return true;
 
-export function isTabEnabled(flagID: number): boolean {
-  return tabFeatureFlags[flagID] ?? true;
+    case 3111:
+      return true;
+
+    case 3000:
+      return state?.execSettings?.appliedStartAs === "SERVER_MASTER";
+
+    default:
+      return true;
+  }
 }
