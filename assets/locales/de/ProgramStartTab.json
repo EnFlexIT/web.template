@@ -17,7 +17,7 @@
     "thresholdExceeded": "Grenzwert überschritten",
     "overview": "Übersicht",
     "history": "Verlauf",
-    "summary": "Zusammenfassung",
+    "summaryLabel": "Zusammenfassung",
     "platforms": "Plattformen",
     "connections": "Verbindungen",
     "systemLoad": "Systemauslastung",
