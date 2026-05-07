@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 import { Card } from "../../../components/ui-elements/Card";
@@ -50,6 +51,8 @@ function formatPercent(value: number): string {
 ========================================================= */
 
 export function CpuMemoryCharts({ history }: Props) {
+  const { t } = useTranslation(["programStart"]);
+
   const cpuData = createSeries(history, "cpuLoad");
   const memoryData = createSeries(history, "memoryLoad");
 
@@ -59,16 +62,16 @@ export function CpuMemoryCharts({ history }: Props) {
   return (
     <View style={styles.container}>
       <DashboardChart
-        title="CPU Load"
+        title={t("dataAnalyzing.charts.cpu.title")}
         value={formatPercent(cpuValue)}
-        subtitle="Live CPU Auslastung"
+        subtitle={t("dataAnalyzing.charts.cpu.subtitle")}
         data={cpuData}
       />
 
       <DashboardChart
-        title="Memory Load"
+        title={t("dataAnalyzing.charts.memory.title")}
         value={formatPercent(memoryValue)}
-        subtitle="Live RAM Auslastung"
+        subtitle={t("dataAnalyzing.charts.memory.subtitle")}
         data={memoryData}
       />
     </View>
@@ -80,14 +83,16 @@ export function CpuMemoryCharts({ history }: Props) {
 ========================================================= */
 
 export function ThreadChart({ history }: Props) {
+  const { t } = useTranslation(["programStart"]);
+
   const threadData = createSeries(history, "threads");
   const threadValue = getLastValue(history, "threads");
 
-  return (
+ return (
     <DashboardChart
-      title="Threads"
+      title={t("dataAnalyzing.charts.threads.title")}
       value={String(Math.round(threadValue))}
-      subtitle="Anzahl Threads"
+      subtitle={t("dataAnalyzing.charts.threads.subtitle")}
       data={threadData}
     />
   );
@@ -169,19 +174,22 @@ function DashboardChart({
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    gap: 20,
+    gap: 25,
   },
 
   chartCard: {
-    gap: 12,
-    padding: 16,
+  height: 450,
+  minHeight: 450,
+  gap: 12,
+ 
+  justifyContent: "space-between",
   },
 
   chartHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 16,
+    gap: 10,
   },
 
   subtitle: {
@@ -190,7 +198,7 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   chartValue: {
-    fontSize: 24,
+    fontSize: 17,
     fontWeight: "700",
     color: theme.colors.primary,
   },
@@ -198,5 +206,7 @@ const styles = StyleSheet.create((theme) => ({
   chartBox: {
     width: "100%",
     height: 280,
+    marginTop: 20,
+  
   },
 }));

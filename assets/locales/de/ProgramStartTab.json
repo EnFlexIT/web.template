@@ -1,6 +1,4 @@
 {
- 
-
   "dataAnalyzing": {
     "title": "Datenanalyse",
     "subtitle": "Master- / Slave-Plattformübersicht",
@@ -23,12 +21,12 @@
     "systemLoad": "Systemauslastung",
     "lastUpdate": "Letzte Aktualisierung",
     "error": "Fehler beim Laden der Datenanalyse.",
-    
 
     "table": {
       "title": "Server / Master Tabelle",
       "subtitle": "Live Übersicht aller Background-Plattformen",
       "countLabel": "Plattformen",
+
       "columns": {
         "platform": "Plattform",
         "role": "Rolle",
@@ -42,16 +40,19 @@
         "jade": "JADE",
         "lastContact": "Letzter Kontakt"
       },
+
       "roles": {
         "slave": "Slave",
         "client": "Client"
       },
+
       "status": {
         "online": "Online",
         "warning": "Warnung",
         "offline": "Offline"
       }
     },
+
     "summary": {
       "title": "Systemübersicht",
       "subtitle": "Live Master- / Slave-Status",
@@ -68,12 +69,29 @@
       },
 
       "metrics": {
-        "avgCpu": "Ø CPU",
-        "avgMemory": "Ø Speicher",
+        "avgCpu": "CPU",
+        "avgMemory": "Speicher",
         "jvmMemory": "JVM Speicher",
         "threads": "Threads"
       }
+    },
+
+    "charts": {
+      "cpu": {
+        "title": "CPU-Auslastung",
+        "subtitle": "Live CPU-Auslastung"
+      },
+       "threads": {
+    "title": "Threads",
+    "subtitle": "Anzahl der Threads"
+  },
+
+      "memory": {
+        "title": "Speicherauslastung",
+        "subtitle": "Live RAM-Auslastung"
+      }
+
+      
     }
   }
-    
-  }
+}

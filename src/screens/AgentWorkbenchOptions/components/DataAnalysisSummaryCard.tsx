@@ -162,21 +162,23 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    height: 360,
-    minHeight: 385,
-    padding: 18,
-    justifyContent: "space-between",
+  height: 450,
+  minHeight: 450,
+  padding: 18,
+  justifyContent: "space-between",
   },
 
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 15,
+    marginBottom: 8,
   },
 
   titleArea: {
     flex: 1,
+    bottom:20,
   },
 
   subtitle: {
@@ -191,6 +193,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: theme.colors.primary,
+    bottom: 20,
   },
 
   statusOffline: {

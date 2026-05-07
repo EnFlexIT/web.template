@@ -24,8 +24,8 @@
     "systemLoad": "System Load",
     "lastUpdate": "Last Update",
     "error": "Error while loading data analysis.",
- 
-     "table": {
+
+    "table": {
       "title": "Server / Master Table",
       "subtitle": "Live overview of all background platforms",
       "countLabel": "Platforms",
@@ -55,6 +55,7 @@
         "offline": "Offline"
       }
     },
+
     "summary": {
       "title": "System Overview",
       "subtitle": "Live Master / Slave Status",
@@ -76,8 +77,23 @@
         "jvmMemory": "JVM Memory",
         "threads": "Threads"
       }
+    },
+
+    "charts": {
+      "cpu": {
+        "title": "CPU Load",
+        "subtitle": "Live CPU usage"
+      },
+
+      "memory": {
+        "title": "Memory Load",
+        "subtitle": "Live RAM usage"
+      },
+
+      "threads": {
+        "title": "Threads",
+        "subtitle": "Number of threads"
+      }
     }
   }
- 
-  
 }
