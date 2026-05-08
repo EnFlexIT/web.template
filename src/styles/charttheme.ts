@@ -13,13 +13,13 @@ const defaultColorScale = [
   rgb(112, 173, 71),
   rgb(37, 94, 145),
   rgb(158, 72, 14),
-  rgb(99, 99, 99),
+  rgb(58, 58, 58),
   rgb(153, 115, 0),
 ];
 
 const blueScale = ["#728cffff", "#002fffff", "#0020b1ff", "#010102ff", "#000727ff"];
 
-// ✅ Factory: Theme kommt rein, ChartTheme kommt raus
+//Factory: Theme kommt rein, ChartTheme kommt raus
 export function createEnFlexChart(theme: any) {
   const c: any = theme?.colors ?? {};
 
@@ -33,7 +33,7 @@ export function createEnFlexChart(theme: any) {
   return {
     ...VictoryTheme.clean,
 
-    // ✅ Global Axis / Grid (super wichtig, sonst sieht man in Darkmode nix)
+    //  Global Axis / Grid (super wichtig, sonst sieht man in Darkmode nix)
     axis: {
       style: {
         axis: { stroke: border, strokeWidth: 1 },
