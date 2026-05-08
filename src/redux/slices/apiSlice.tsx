@@ -214,25 +214,29 @@ async function detectServerAndMode(baseUrl: string): Promise<{
 }> {
   const base = normalizeBaseUrl(baseUrl);
 
-  const infoApi = new InfoApi({
-    isJsonMime: new RestApiConfiguration().isJsonMime,
-    basePath: `${base}/api`,
-  });
-
   try {
-    const { data, status } = await infoApi.getAppSettings();
+    const response = await fetch(`${base}/api/app/settings/get`, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    const status = response.status;
+    const contentType = response.headers.get("content-type") ?? "";
 
     console.log("[DETECT SERVER] baseUrl:", base);
     console.log("[DETECT SERVER] status:", status);
-    console.log("[DETECT SERVER] data:", data);
+    console.log("[DETECT SERVER] content-type:", contentType);
 
     if (status === 401 || status === 403) {
-    return {
-      isPointingToServer: true,
-      authenticationMethod: "unknown",
-      isBaseMode: false,
-    };
-  }
+      return {
+        isPointingToServer: true,
+        authenticationMethod: "unknown",
+        isBaseMode: false,
+      };
+    }
 
     if (status !== 200) {
       return {
@@ -241,6 +245,20 @@ async function detectServerAndMode(baseUrl: string): Promise<{
         isBaseMode: false,
       };
     }
+
+    if (!contentType.includes("application/json")) {
+      console.warn("[DETECT SERVER] expected JSON but got:", contentType);
+
+      return {
+        isPointingToServer: false,
+        authenticationMethod: "unknown",
+        isBaseMode: false,
+      };
+    }
+
+    const data = await response.json();
+
+    console.log("[DETECT SERVER] data:", data);
 
     const entries = Array.isArray((data as any)?.propertyEntries)
       ? (data as any).propertyEntries
