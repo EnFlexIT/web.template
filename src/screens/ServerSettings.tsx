@@ -109,7 +109,6 @@ export function ServerSettingsScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const { theme } = useUnistyles();
-
   const serversState = useAppSelector(selectServers);
   const servers: Server[] = serversState?.servers ?? [];
   const activeServerId = serversState?.selectedServerId ?? "local";

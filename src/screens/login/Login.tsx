@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  View,
-  StyleSheet as NativeStyleSheet,
-  Platform,
-  Linking,
-} from "react-native";
+import {ActivityIndicator,Pressable, ScrollView, View, StyleSheet as NativeStyleSheet, Platform, Linking,} from "react-native";
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
-
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -24,17 +15,10 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {
-  selectApi,
-  selectAuthenticationMethod,
-  selectIp,
-  switchServer,
-} from "../../redux/slices/apiSlice";
+import { selectApi,selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
-
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
-
 import { styles } from "./styles";
 import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
