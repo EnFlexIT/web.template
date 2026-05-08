@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Modal,Pressable, View, StyleSheet as NativeStyleSheet, } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
-
 import { Logo } from "../../components/Logo";
 import { H1 } from "../../components/stylistic/H1";
 import { TextInput } from "../../components/ui-elements/TextInput";
