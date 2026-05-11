@@ -32,6 +32,7 @@ import {
   setEmbeddedSystemAgentField,
   setExecSettingsField,
 } from "../../redux/slices/execSettingsSlice";
+import { Screen } from "../../components/Screen";
 
 const AntDesign = withUnistyles(AntDesign_);
 
@@ -437,6 +438,7 @@ const onChangeLocalAddressMode = (value: LocalAddressMode) => {
   };
 
   return (
+  
     <Card padding="sm" contentStyle={styles.container}>
       {!!error && (
         <Card padding="sm" style={styles.errorCard}>
@@ -1008,6 +1010,7 @@ const onChangeLocalAddressMode = (value: LocalAddressMode) => {
         </View>
       </Modal>
     </Card>
+   
   );
 }
 
@@ -1045,6 +1048,7 @@ function FieldRow({
 
       <View style={styles.fieldContent}>{children}</View>
     </View>
+
   );
 }
 

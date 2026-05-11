@@ -18,6 +18,7 @@ import {
   selectDataAnalysisHistory,
   selectDataAnalysisPlatforms,
 } from "../../redux/slices/dataAnalysisSlice";
+import { Screen } from "../../components/Screen";
 
 function safeText(value: unknown, fallback = "-"): string {
   if (value === undefined || value === null || value === "") return fallback;
@@ -112,10 +113,11 @@ export function DataAnalyzingTab() {
   }, [history, selectedPlatformName]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Card style={styles.pageCard}>
-        <View style={styles.pageHeader}>
-          <View style={styles.headerTextBox}>
+   
+      <ScrollView contentContainerStyle={styles.container}>
+        <Card style={styles.pageCard}>
+          <View style={styles.pageHeader}>
+            <View style={styles.headerTextBox}>
             <H4>{t("dataAnalyzing.title")}</H4>
             <ThemedText>{t("dataAnalyzing.subtitle")}</ThemedText>
           </View>
@@ -166,71 +168,76 @@ export function DataAnalyzingTab() {
         ) : null}
       </Card>
     </ScrollView>
+    
   );
 }
 
-const styles = StyleSheet.create((theme: any) => ({
-  container: {
-    width: "100%",
-    alignSelf: "center",
-    padding: 24,
-  },
+const styles = StyleSheet.create((theme: any, rt) => {
+  const isSmallScreen = rt.screen.width < 900;
 
-  pageCard: {
-    width: "100%",
-    gap: 24,
-  },
+  return {
+    container: {
+      width: "100%",
+      alignSelf: "center",
+      padding: isSmallScreen ? 12 : 24,
+    },
 
-  pageHeader: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 8,
-    bottom: 4,
-  },
+    pageCard: {
+      width: "100%",
+      gap: isSmallScreen ? 14 : 24,
+    },
 
-  headerTextBox: {
-    flex: 1,
-    gap: 4,
-  },
+    pageHeader: {
+      width: "100%",
+      flexDirection: isSmallScreen ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isSmallScreen ? "stretch" : "center",
+      gap: 16,
+      marginBottom: 8,
+    },
 
-  headerActions: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    headerTextBox: {
+      flex: 1,
+      gap: 4,
+    },
 
-  content: {
-    width: "100%",
-    gap: 24,
-  },
+    headerActions: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+    },
 
-  dashboardGrid: {
-    width: "100%",
-    flexDirection: "row",
-    gap: 24,
-    alignItems: "flex-start",
-  },
+    content: {
+      width: "100%",
+      gap: isSmallScreen ? 14 : 24,
+    },
 
-  mainColumn: {
-    flex: 1,
-    minWidth: 0,
-  },
+    dashboardGrid: {
+      width: "100%",
+      flexDirection: isSmallScreen ? "column" : "row",
+      gap: isSmallScreen ? 14 : 24,
+      alignItems: "stretch",
+    },
 
-  sideColumn: {
-    width: 320,
-    gap: 24,
-  },
+    mainColumn: {
+      width: "100%",
+      flex: isSmallScreen ? undefined : 1,
+      minWidth: 0,
+    },
 
-  errorCard: {
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-  },
+    sideColumn: {
+      width: isSmallScreen ? "100%" : 320,
+      gap: isSmallScreen ? 14 : 24,
+    },
 
-  tableCard: {
-    width: "100%",
-    gap: 12,
-  },
-}));
+    errorCard: {
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+    },
+
+    tableCard: {
+      width: "100%",
+      gap: 12,
+    },
+  };
+});
