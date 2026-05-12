@@ -1078,257 +1078,281 @@ function RadioRow({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  container: {
-    gap: 14,
-  },
+const styles = StyleSheet.create((theme, rt) => {
+  const isSmallScreen = rt.screen.width < 900;
 
-  flex: {
-    flex: 1,
-  },
+  return {
+    container: {
+      gap: isSmallScreen ? 10 : 14,
+      width: "100%",
+    },
 
-  errorCard: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
+    flex: {
+      flex: 1,
+      minWidth: 0,
+    },
 
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 12,
-  },
+    errorCard: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
 
-  startModeBlock: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
-    flex: 1,
-  },
+    topRow: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isSmallScreen ? "stretch" : "flex-start",
+      gap: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: isSmallScreen ? 10 : 12,
+    },
 
-  startModeTitle: {
-    fontWeight: "700",
-    paddingTop: 2,
-  },
+    startModeBlock: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      alignItems: isSmallScreen ? "stretch" : "flex-start",
+      gap: isSmallScreen ? 10 : 16,
+      flex: 1,
+    },
 
-  section: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
+    startModeTitle: {
+      fontWeight: "700",
+      paddingTop: 2,
+    },
 
-  sectionTitle: {
-    fontWeight: "700",
-    marginBottom: 8,
-  },
+    section: {
+      width: "100%",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
 
-  sectionBody: {
-    gap: 12,
-  },
+    sectionTitle: {
+      fontWeight: "700",
+      marginBottom: 8,
+    },
 
-  radioGroup: {
-    gap: 8,
-  },
+    sectionBody: {
+      gap: 12,
+    },
 
-  radioInlineGroup: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 18,
-  },
+    radioGroup: {
+      gap: 8,
+    },
 
-  ipAddressOptionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+    radioInlineGroup: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      flexWrap: "wrap",
+      gap: isSmallScreen ? 10 : 18,
+      alignItems: isSmallScreen ? "stretch" : "center",
+    },
 
-  radioRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+    ipAddressOptionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flexWrap: "wrap",
+    },
 
-  radioOuter: {
-    width: 16,
-    height: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    radioRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 1,
+    },
 
-  radioOuterSelected: {
-    borderColor: theme.colors.primary,
-  },
+    radioOuter: {
+      width: 16,
+      height: 16,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  radioInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: theme.colors.primary,
-  },
+    radioOuterSelected: {
+      borderColor: theme.colors.primary,
+    },
 
-  fieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
+    radioInner: {
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: theme.colors.primary,
+    },
 
-  fieldLabelWrap: {
-    width: 140,
-  },
+    fieldRow: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      alignItems: isSmallScreen ? "stretch" : "center",
+      gap: isSmallScreen ? 6 : 16,
+      width: "100%",
+    },
 
-  fieldLabel: {
-    fontWeight: "700",
-  },
+    fieldLabelWrap: {
+      width: isSmallScreen ? "100%" : 140,
+    },
 
-  fieldContent: {
-    flex: 1,
-  },
+    fieldLabel: {
+      fontWeight: "700",
+    },
 
-  inlineInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+    fieldContent: {
+      flex: 1,
+      width: "100%",
+      minWidth: 0,
+    },
 
-  inlineHintRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+    inlineInputRow: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      alignItems: isSmallScreen ? "stretch" : "center",
+      gap: 8,
+      width: "100%",
+    },
 
-  protocolWrap: {
-    width: 120,
-  },
+    inlineHintRow: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      alignItems: isSmallScreen ? "stretch" : "center",
+      gap: 8,
+      width: "100%",
+    },
 
-  smallInputWrap: {
-    width: 110,
-  },
+    protocolWrap: {
+      width: isSmallScreen ? "100%" : 120,
+    },
 
-  hintText: {
-    opacity: 0.75,
-  },
+    smallInputWrap: {
+      width: isSmallScreen ? "100%" : 110,
+    },
 
-  localModeArea: {
-    flexDirection: "row",
-    gap: 20,
-  },
+    hintText: {
+      opacity: 0.75,
+      flexShrink: 1,
+    },
 
-  leftLocalMode: {
-    flex: 1,
-    gap: 14,
-  },
+    localModeArea: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      gap: isSmallScreen ? 12 : 20,
+      width: "100%",
+    },
 
-  rightLocalMode: {
-    width: 240,
-    justifyContent: "flex-start",
-  },
+    leftLocalMode: {
+      flex: 1,
+      gap: 14,
+      minWidth: 0,
+    },
 
-  disabledArea: {
-    opacity: 0.45,
-  },
+    rightLocalMode: {
+      width: isSmallScreen ? "100%" : 240,
+      justifyContent: "flex-start",
+    },
 
-  databaseStatusBox: {
-    borderTopWidth: 1,
-    borderColor: theme.colors.border,
-    paddingTop: 16,
-    marginTop: 8,
-    gap: 6,
-  },
+    disabledArea: {
+      opacity: 0.45,
+    },
 
-  databaseStatusBody: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+    databaseStatusBox: {
+      borderTopWidth: 1,
+      borderColor: theme.colors.border,
+      paddingTop: 16,
+      marginTop: 8,
+      gap: 6,
+    },
 
-  successText: {
-    fontWeight: "700",
-  },
+    databaseStatusBody: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      alignItems: isSmallScreen ? "flex-start" : "center",
+      gap: 8,
+    },
 
-  embeddedHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
+    successText: {
+      fontWeight: "700",
+      flexShrink: 1,
+    },
 
-  tableActions: {
-    flexDirection: "row",
-    gap: 6,
-  },
+    embeddedHeader: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isSmallScreen ? "stretch" : "center",
+      gap: 8,
+      marginTop: 8,
+    },
 
-  agentTable: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    minHeight: 110,
-  },
+    tableActions: {
+      flexDirection: "row",
+      gap: 6,
+    },
 
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: theme.colors.border,
-  },
+    agentTable: {
+      width: "100%",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      minHeight: 110,
+    },
 
-  tableCell: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    fontWeight: "700",
-  },
+    tableHeader: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderColor: theme.colors.border,
+    },
 
-  tableEmptyRow: {
-    padding: 12,
-  },
+    tableCell: {
+      flex: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      fontWeight: "700",
+      flexShrink: 1,
+    },
 
-  tableEditRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: theme.colors.border,
-  },
+    tableEmptyRow: {
+      padding: 12,
+    },
 
-  tableRowSelected: {
-    opacity: 0.85,
-  },
+    tableEditRow: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      borderBottomWidth: 1,
+      borderColor: theme.colors.border,
+    },
 
-  tableInputCell: {
-    flex: 1,
-    padding: 6,
-  },
+    tableRowSelected: {
+      opacity: 0.85,
+    },
 
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
+    tableInputCell: {
+      flex: 1,
+      width: "100%",
+      padding: 6,
+      minWidth: 0,
+    },
 
-  modalCard: {
-    width: "90%",
-    maxWidth: 900,
-    maxHeight: "90%",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    padding: 16,
-    gap: 12,
-  },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.35)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: isSmallScreen ? 12 : 24,
+    },
 
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 24,
-  },
+    modalCard: {
+      width: isSmallScreen ? "100%" : "90%",
+      maxWidth: 900,
+      maxHeight: "90%",
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      padding: isSmallScreen ? 12 : 16,
+      gap: 12,
+    },
 
-  modalSeparator: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-    opacity: 0.9,
-    marginVertical: 4,
-  },
-}));
+    modalActions: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      justifyContent: "center",
+      gap: isSmallScreen ? 10 : 24,
+    },
+
+    modalSeparator: {
+      height: 1,
+      backgroundColor: theme.colors.border,
+      opacity: 0.9,
+      marginVertical: 4,
+    },
+  };
+});

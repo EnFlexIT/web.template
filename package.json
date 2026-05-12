@@ -2,15 +2,17 @@
   "name": "enflex.it-template",
   "version": "0.0.4",
   "main": "index.ts",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "AWB-RestAPI": "openapi-generator-cli generate -i src/api/definition/AWB-RestAPI.yaml -g typescript-axios -o src/api/implementation/AWB-RestAPI",
-    "Dynamic-Content-Api": "openapi-generator-cli generate -i src/api/definition/Dynamic-Content-Api.yaml -g typescript-axios -o src/api/implementation/Dynamic-Content-Api",
-    "api": "npm run AWB-RestAPI && npm run Dynamic-Content-Api"
-  },
+      "scripts": {
+      "start": "expo start",
+      "android": "expo start --android",
+      "ios": "expo start --ios",
+      "web": "expo start --web",
+      "test": "jest",
+      "test:watch": "jest --watch",
+      "AWB-RestAPI": "openapi-generator-cli generate -i src/api/definition/AWB-RestAPI.yaml -g typescript-axios -o src/api/implementation/AWB-RestAPI",
+      "Dynamic-Content-Api": "openapi-generator-cli generate -i src/api/definition/Dynamic-Content-Api.yaml -g typescript-axios -o src/api/implementation/Dynamic-Content-Api",
+      "api": "npm run AWB-RestAPI && npm run Dynamic-Content-Api"
+    },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -43,6 +45,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.10",
     "i18next": "^25.3.2",
+    "jest-expo": "~54.0.17",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.555.0",
     "react": "19.1.0",
@@ -64,13 +67,16 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@openapitools/openapi-generator-cli": "^2.23.1",
+    "@testing-library/react-native": "^13.3.3",
     "@types/jest": "29.5.14",
     "@types/react": "~19.1.10",
     "@types/react-dom": "~19.1.7",
     "baseline-browser-mapping": "^2.9.2",
     "jest": "~29.7.0",
+    "react-test-renderer": "^19.1.0",
     "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
+
   "private": true
 }

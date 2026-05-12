@@ -1,28 +1,53 @@
+/// <reference types="jest" />
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
+jest.mock("../redux/slices/staticMenu", () => ({
+  getStaticMenu: () => [
+    {
+      menuID: 3003,
+      caption: "settings",
+      position: 0,
+      Screen: () => null,
+    },
+  ],
+}));
+
+jest.mock("../redux/slices/featureFlags", () => ({
+  isMenuEnabled: () => true,
+}));
+
 import reducer, {
   MenuState,
   setActiveMenuId,
   rawListToTrees,
   getDepthFromList,
   isDynamicMenuItem,
-  
   MenuItem,
+  initializeMenu,
 } from "../redux/slices/menuSlice";
-import { initializeMenu } from "../redux/slices/menuSlice";
 
 describe("menuSlice", () => {
-  const initialState: MenuState = {
-    menu: [],
-    rawMenu: [],
-    activeMenuId: 1,
-  };
+const emptyState: MenuState = {
+  menu: [],
+  rawMenu: [],
+  activeMenuId: 1,
+};
 
-  it("should return the initial state", () => {
-    const state = reducer(undefined, { type: "unknown" });
-    expect(state).toEqual(initialState);
-  });
+it("should return the initial state with static menu", () => {
+  const state = reducer(undefined, { type: "unknown" });
+
+  expect(state.activeMenuId).toBe(3003);
+  expect(state.rawMenu).toHaveLength(1);
+  expect(state.rawMenu[0].menuID).toBe(3003);
+  expect(state.menu).toHaveLength(1);
+  expect(state.menu[0].val.menuID).toBe(3003);
+});
 
   it("should set activeMenuId", () => {
-    const state = reducer(initialState, setActiveMenuId(5));
+    const state = reducer(emptyState, setActiveMenuId(5))
     expect(state.activeMenuId).toBe(5);
   });
 
@@ -48,7 +73,7 @@ describe("menuSlice", () => {
       payload: apiMenu,
     };
 
-    const state = reducer(initialState, action);
+    const state = reducer(emptyState, action)
 
     // rawMenu enthält API-Daten + statische Settings-Einträge
     expect(state.rawMenu.length).toBeGreaterThan(apiMenu.length);
@@ -122,3 +147,42 @@ describe("menuSlice helpers (pure functions)", () => {
     //expect(isStaticMenuItem(staticItem)).toBe(true);
   });
 });
+/**
+ * ============================================================
+ * FILE
+ * ============================================================
+ * src/testes/menuSlice.test.ts
+ *
+ * ============================================================
+ * PURPOSE
+ * ============================================================
+ * Testet den Redux menuSlice unabhängig von der UI.
+ *
+ * Fokus:
+ * - Initial State
+ * - Reducer
+ * - Menübaum-Aufbau
+ * - Helper-Funktionen
+ * - initializeMenu.fulfilled
+ *
+ * ============================================================
+ * PROTECTED FEATURES
+ * ============================================================
+ * Diese Tests verhindern:
+ * - leeres Menü nach Refactoring
+ * - falsche activeMenuId
+ * - kaputten Menübaum
+ * - fehlerhafte Verarbeitung dynamischer Menüs
+ * - Fehler beim Zusammenführen von static + dynamic menu
+ *
+ * ============================================================
+ * DEPENDENCIES MOCKED
+ * ============================================================
+ * - AsyncStorage
+ * - staticMenu
+ * - featureFlags
+ *
+ * Ziel:
+ * Slice isoliert testen ohne React Native UI.
+ * ============================================================
+ */

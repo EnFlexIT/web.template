@@ -160,108 +160,115 @@ function MetricRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  card: {
-  height: 450,
-  minHeight: 450,
-  padding: 18,
-  justifyContent: "space-between",
-  },
+const styles = StyleSheet.create((theme, rt) => {
+  const isSmallScreen = rt.screen.width < 900;
 
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 15,
-    marginBottom: 8,
-  },
+  return {
+    card: {
+      width: "100%",
+      minHeight: isSmallScreen ? undefined : 450,
+      padding: isSmallScreen ? 14 : 18,
+      justifyContent: "space-between",
+    },
 
-  titleArea: {
-    flex: 1,
-    bottom:20,
-  },
+    header: {
+      flexDirection: isSmallScreen ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isSmallScreen ? "stretch" : "flex-start",
+      gap: 12,
+      marginBottom: 8,
+    },
 
-  subtitle: {
-    marginTop: 3,
-    fontSize: 12,
-    opacity: 0.65,
-    marginBottom: 6,
-  },
+    titleArea: {
+      flex: 1,
+    },
 
-  statusBadge: {
-    borderRadius: 0,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: theme.colors.primary,
-    bottom: 20,
-  },
+    subtitle: {
+      marginTop: 3,
+      fontSize: 12,
+      opacity: 0.65,
+      marginBottom: 6,
+    },
 
-  statusOffline: {
-    backgroundColor: theme.colors.notification,
-  },
+    statusBadge: {
+      alignSelf: isSmallScreen ? "flex-start" : "auto",
+      borderRadius: 0,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      backgroundColor: theme.colors.primary,
+    },
 
-  statusText: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
+    statusOffline: {
+      backgroundColor: theme.colors.notification,
+    },
 
-  summaryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
+    statusText: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.4,
+    },
 
-  statBox: {
-    width: "47%",
-    minHeight: 68,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    justifyContent: "space-between",
-    backgroundColor: theme.colors.background,
-    marginBottom: 8,
-  },
+    summaryGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+    },
 
-  statLabel: {
-    fontSize: 11,
-    opacity: 0.65,
-  },
+    statBox: {
+      width: isSmallScreen ? "100%" : "47%",
+      minHeight: 68,
+      borderRadius: 0,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      justifyContent: "space-between",
+      backgroundColor: theme.colors.background,
+      marginBottom: 8,
+    },
 
-  statValue: {
-    fontSize: 22,
-    lineHeight: 26,
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
+    statLabel: {
+      fontSize: 11,
+      opacity: 0.65,
+      flexShrink: 1,
+    },
 
-  statValueEmphasized: {
-    letterSpacing: 0.2,
-  },
+    statValue: {
+      fontSize: 22,
+      lineHeight: 26,
+      fontWeight: "700",
+      color: theme.colors.primary,
+    },
 
-  metricList: {
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingTop: 16,
-    gap: 10,
-  },
+    statValueEmphasized: {
+      letterSpacing: 0.2,
+    },
 
-  metricRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+    metricList: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingTop: 16,
+      gap: 10,
+    },
 
-  metricLabel: {
-    fontSize: 13,
-    opacity: 0.72,
-  },
+    metricRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+    },
 
-  metricValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: theme.colors.primary,
-  },
-}));
+    metricLabel: {
+      fontSize: 13,
+      opacity: 0.72,
+      flexShrink: 1,
+    },
+
+    metricValue: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: theme.colors.primary,
+      textAlign: "right",
+    },
+  };
+});
