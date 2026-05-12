@@ -1,5 +1,6 @@
 import { View, ViewProps, ScrollView } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { isMobileShellRuntime } from "../util/runtime";
 
 type Props = ViewProps & {
   scrollable?: boolean;
@@ -24,6 +25,7 @@ export function Screen({ scrollable = true, ...props }: Props) {
 
 const styles = StyleSheet.create((theme, rt) => {
   const isSmallScreen = rt.screen.width < 900;
+  const isMobileShell = isMobileShellRuntime();
 
   return {
     scroll: {
@@ -33,9 +35,21 @@ const styles = StyleSheet.create((theme, rt) => {
 
     container: {
       width: "100%",
-      maxWidth: isSmallScreen ? "100%" : theme.info.maxContentWidth,
-      alignSelf: "center",
-      padding: isSmallScreen ? 12 : theme.info.screenMargin,
+
+      maxWidth: isMobileShell
+        ? "100%"
+        : isSmallScreen
+          ? "100%"
+          : theme.info.maxContentWidth,
+
+      
+
+      padding: isMobileShell
+        ? 12
+        : isSmallScreen
+          ? 12
+          : theme.info.screenMargin,
+
       flexGrow: 1,
     },
   };
