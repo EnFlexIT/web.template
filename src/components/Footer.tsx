@@ -15,7 +15,7 @@ import {
   type AuthMethod,
 } from "../redux/slices/apiSlice";
 import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
-
+import { Buffer } from "buffer";
 import {
   selectSelectedServer,
   selectServers,

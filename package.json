@@ -2,17 +2,17 @@
   "name": "enflex.it-template",
   "version": "0.0.4",
   "main": "index.ts",
-      "scripts": {
-      "start": "expo start",
-      "android": "expo start --android",
-      "ios": "expo start --ios",
-      "web": "expo start --web",
-      "test": "jest",
-      "test:watch": "jest --watch",
-      "AWB-RestAPI": "openapi-generator-cli generate -i src/api/definition/AWB-RestAPI.yaml -g typescript-axios -o src/api/implementation/AWB-RestAPI",
-      "Dynamic-Content-Api": "openapi-generator-cli generate -i src/api/definition/Dynamic-Content-Api.yaml -g typescript-axios -o src/api/implementation/Dynamic-Content-Api",
-      "api": "npm run AWB-RestAPI && npm run Dynamic-Content-Api"
-    },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "AWB-RestAPI": "openapi-generator-cli generate -i src/api/definition/AWB-RestAPI.yaml -g typescript-axios -o src/api/implementation/AWB-RestAPI",
+    "Dynamic-Content-Api": "openapi-generator-cli generate -i src/api/definition/Dynamic-Content-Api.yaml -g typescript-axios -o src/api/implementation/Dynamic-Content-Api",
+    "api": "npm run AWB-RestAPI && npm run Dynamic-Content-Api"
+  },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -35,6 +35,7 @@
     "@tiptap/react": "^3.4.2",
     "@tiptap/starter-kit": "^3.4.2",
     "axios": "^1.11.0",
+    "buffer": "^6.0.3",
     "enflex.it-graph": "^0.1.1",
     "expo": "^54.0.33",
     "expo-auth-session": "~7.0.10",
@@ -77,6 +78,5 @@
     "ts-jest": "^29.4.6",
     "typescript": "~5.9.2"
   },
-
   "private": true
 }

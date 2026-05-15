@@ -24,7 +24,7 @@ import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
-
+import { Buffer } from "buffer";
 WebBrowser.maybeCompleteAuthSession();
 
 function toBase64(str: string): string {
