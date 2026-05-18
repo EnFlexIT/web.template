@@ -9,9 +9,34 @@ export function normalizeName(name: string) {
   return (name ?? "").toString().trim();
 }
 
+function isReachableStatus(status?: number): boolean {
+  if (status == null) {
+    return false;
+  }
+
+  // 2xx = OK
+  // 3xx = Redirect/Login/OIDC
+  // 4xx = Server antwortet trotzdem
+  // Erst ab 5xx oder Network Error wirklich offline
+  return status >= 200 && status < 500;
+}
+
+async function fetchReachable(url: string): Promise<Response> {
+  return fetch(url, {
+    method: "GET",
+    mode: "cors",
+    cache: "no-store",
+    credentials: "include",
+    redirect: "manual",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+}
+
 /**
- * Reiner Reachability-Check:
- * Wenn der Server überhaupt mit HTTP antwortet, gilt er als erreichbar.
+ * Prüft nur:
+ * Antwortet der Server überhaupt?
  */
 export async function checkServerReachable(
   baseUrl: string,
@@ -20,43 +45,53 @@ export async function checkServerReachable(
 
   console.log("[checkServerReachable] checking:", base);
 
-  try {
-    const res = await fetch(`${base}/api/app/settings/get`, {
-      method: "GET",
-      mode: "cors",
-      cache: "no-store",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    console.log(
-      "[checkServerReachable] status:",
-      res.status,
-      "url:",
-      `${base}/api/app/settings/get`,
-    );
-
-    // 200 = ok
-    // 400 = Server lebt, aber Session/Cookies evtl. kaputt
-    // 401/403 = Server lebt, aber nicht autorisiert
-    if ([200, 400, 401, 403].includes(res.status)) {
-      return { ok: true };
-    }
-
+  if (!base) {
     return {
       ok: false,
-      message: `Server antwortet, aber Status ${res.status}. Bitte URL prüfen.`,
-    };
-  } catch (error) {
-    console.log("[checkServerReachable] failed:", base, error);
-
-    return {
-      ok: false,
-      message: "Server nicht erreichbar. Bitte andere URL verwenden.",
+      message: "Server-URL fehlt.",
     };
   }
+
+  const urls = [
+    `${base}/api/alive`,
+    `${base}/api/app/settings/get`,
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetchReachable(url);
+
+      console.log(
+        "[checkServerReachable] status:",
+        res.status,
+        "url:",
+        url,
+      );
+
+      // WICHTIG:
+      // 303 = erreichbar
+      // 401 = erreichbar
+      // 403 = erreichbar
+      // 404 = erreichbar
+      if (isReachableStatus(res.status)) {
+        return {
+          ok: true,
+        };
+      }
+    } catch (error) {
+      console.log(
+        "[checkServerReachable] failed:",
+        url,
+        error,
+      );
+    }
+  }
+
+  return {
+    ok: false,
+    message:
+      "Server nicht erreichbar. Bitte andere URL verwenden.",
+  };
 }
 
 export type ServerAuthInfo = {
@@ -66,11 +101,17 @@ export type ServerAuthInfo = {
   sessionInvalid: boolean;
 };
 
-export function parseServerSettings(data: any, jwt: string | null): ServerAuthInfo {
-  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+export function parseServerSettings(
+  data: any,
+  jwt: string | null,
+): ServerAuthInfo {
+  const entries = Array.isArray(data?.propertyEntries)
+    ? data.propertyEntries
+    : [];
 
   const authCfg = entries.find(
-    (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
+    (entry: any) =>
+      entry?.key === "_ServerWideSecurityConfiguration",
   )?.value;
 
   const authenticatedRaw = entries.find(
@@ -86,7 +127,8 @@ export function parseServerSettings(data: any, jwt: string | null): ServerAuthIn
   );
 
   const hasSessionPathParameter = entries.some(
-    (entry: any) => entry?.key === "_session.pathParameter",
+    (entry: any) =>
+      entry?.key === "_session.pathParameter",
   );
 
   const authenticated =
@@ -98,19 +140,27 @@ export function parseServerSettings(data: any, jwt: string | null): ServerAuthIn
 
   if (authCfg === "OIDCSecurityHandler") {
     authenticationMethod = "oidc";
-  } else if (authCfg === "JwtSingleUserSecurityHandler") {
+  } else if (
+    authCfg === "JwtSingleUserSecurityHandler"
+  ) {
     authenticationMethod = "jwt";
-  } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
+  } else if (
+    oidcBearer ||
+    hasSessionId ||
+    hasSessionPathParameter
+  ) {
     authenticationMethod = "oidc";
   } else if (jwt) {
-    // nur wenn wirklich ein JWT lokal bekannt ist
     authenticationMethod = "jwt";
   }
 
   return {
     authenticated,
     authenticationMethod,
-    oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
+    oidcBearer:
+      typeof oidcBearer === "string"
+        ? oidcBearer
+        : null,
     sessionInvalid: false,
   };
 }
@@ -121,19 +171,32 @@ export async function checkServerAuthenticated(
 ): Promise<ServerAuthInfo> {
   const base = normalizeBaseUrl(baseUrl);
 
-  console.log("[checkServerAuthenticated] checking:", base, "hasJwt:", !!jwt);
+  console.log(
+    "[checkServerAuthenticated] checking:",
+    base,
+    "hasJwt:",
+    !!jwt,
+  );
 
   try {
-    const res = await fetch(`${base}/api/app/settings/get`, {
-      method: "GET",
-      mode: "cors",
-      cache: "no-store",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+    const res = await fetch(
+      `${base}/api/app/settings/get`,
+      {
+        method: "GET",
+        mode: "cors",
+        cache: "no-store",
+        credentials: "include",
+        redirect: "manual",
+        headers: {
+          Accept: "application/json",
+          ...(jwt
+            ? {
+                Authorization: `Bearer ${jwt}`,
+              }
+            : {}),
+        },
       },
-    });
+    );
 
     console.log(
       "[checkServerAuthenticated] status:",
@@ -142,7 +205,6 @@ export async function checkServerAuthenticated(
       `${base}/api/app/settings/get`,
     );
 
-    // Typischer Fall nach Server-Neustart / kaputten alten Cookies
     if (res.status === 400) {
       return {
         authenticated: false,
@@ -164,11 +226,18 @@ export async function checkServerAuthenticated(
     const data = await res.json();
     const parsed = parseServerSettings(data, jwt);
 
-    console.log("[checkServerAuthenticated] parsed:", parsed);
+    console.log(
+      "[checkServerAuthenticated] parsed:",
+      parsed,
+    );
 
     return parsed;
   } catch (error) {
-    console.log("[checkServerAuthenticated] failed:", base, error);
+    console.log(
+      "[checkServerAuthenticated] failed:",
+      base,
+      error,
+    );
 
     return {
       authenticated: false,

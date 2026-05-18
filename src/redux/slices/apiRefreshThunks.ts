@@ -8,7 +8,7 @@ import {
   getJwtForServer,
 } from "./apiSlice";
 import { getJwtRemainingMs } from "../../util/jwtTime";
-
+import { Buffer } from "buffer";
 const JWT_KEY = "jwt";
 let lastRenewAttempt = 0;
 

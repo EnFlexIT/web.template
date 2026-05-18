@@ -1,10 +1,20 @@
-import React, { useEffect, useState } from "react";
-import {ActivityIndicator,Pressable, ScrollView, View, StyleSheet as NativeStyleSheet, Platform, Linking,} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet as NativeStyleSheet,
+  View,
+} from "react-native";
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
+import { Buffer } from "buffer";
+
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -15,7 +25,12 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import { selectApi,selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
+import {
+  selectApi,
+  selectAuthenticationMethod,
+  selectIp,
+  switchServer,
+} from "../../redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
@@ -24,7 +39,7 @@ import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
-import { Buffer } from "buffer";
+
 WebBrowser.maybeCompleteAuthSession();
 
 function toBase64(str: string): string {
@@ -35,8 +50,9 @@ function toBase64(str: string): string {
 
 function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const m = value.match(/Bearer\s+(.+)/i);
-  return m?.[1]?.trim() ?? null;
+
+  const match = value.match(/Bearer\s+(.+)/i);
+  return match?.[1]?.trim() ?? null;
 }
 
 function normalizeBaseUrl(url: string): string {
@@ -44,15 +60,16 @@ function normalizeBaseUrl(url: string): string {
 }
 
 function buildServerOidcStartUrl(baseUrl: string): string {
-  const normalized = normalizeBaseUrl(baseUrl);
-  return `${normalized}/`;
+  return `${normalizeBaseUrl(baseUrl)}/`;
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchOidcBearerFromServer(baseUrl: string): Promise<string | null> {
+async function fetchOidcBearerFromServer(
+  baseUrl: string,
+): Promise<string | null> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 
   const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
@@ -79,7 +96,9 @@ async function fetchOidcBearerFromServer(baseUrl: string): Promise<string | null
   }
 
   const data = await response.json();
-  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+  const entries = Array.isArray(data?.propertyEntries)
+    ? data.propertyEntries
+    : [];
 
   const authenticatedRaw = entries.find(
     (entry: any) => entry?.key === "_Authenticated",
@@ -114,10 +133,7 @@ async function waitForOidcBearer(
         return bearer;
       }
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === "duplicate_sessions"
-      ) {
+      if (error instanceof Error && error.message === "duplicate_sessions") {
         throw error;
       }
     }
@@ -135,7 +151,7 @@ export function LoginScreen() {
   const { theme } = useUnistyles();
 
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-  const { isPointingToServer, isLoggedIn } = useAppSelector(selectApi);
+  const { isLoggedIn } = useAppSelector(selectApi);
   const ip = useAppSelector(selectIp);
 
   const language = useAppSelector(selectLanguage);
@@ -144,13 +160,14 @@ export function LoginScreen() {
   const serversState = useAppSelector(selectServers);
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
-  const selectedServer = servers.find((s) => s.id === selectedServerId);
+  const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
 
-  const [highlight, setHighlight] = useState(false);
+  const oidcStartedRef = useRef(false);
+
+  const [highlight] = useState(false);
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
-  const [oidcAutoStarted, setOidcAutoStarted] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
 
   const [username, setUsername] = useState("");
@@ -186,23 +203,10 @@ export function LoginScreen() {
 
   const isWeb = Platform.OS === "web";
   const isExpoGo = Constants.appOwnership === "expo";
-  const isPopupWindow =
-  typeof window !== "undefined" && window.opener != null;
 
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
-
-  const shouldShowOidcButton = showOidcLogin && (isWeb || isExpoGo);
-  const shouldAutoStartOidc =
-    showOidcLogin &&
-    isPointingToServer &&
-    !isLoggedIn &&
-    !oidcAutoStarted &&
-    !oidcLoginInProgress &&
-    !isWeb &&
-    !isExpoGo &&
-    !isPopupWindow;
 
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
@@ -212,7 +216,7 @@ export function LoginScreen() {
     }
 
     const basic = toBase64(`${username}:${password}`);
-    const loginUrl = `${selectedBaseUrl}/api/user/login`;
+    const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
 
     const response = await fetch(loginUrl, {
       method: "GET",
@@ -262,9 +266,7 @@ export function LoginScreen() {
   }
 
   async function loginWithOidc(): Promise<void> {
-    if (oidcLoginInProgress) {
-      return;
-    }
+    if (oidcLoginInProgress) return;
 
     setOidcLoginInProgress(true);
 
@@ -278,40 +280,7 @@ export function LoginScreen() {
       }
 
       if (isWeb) {
-        const popup = window.open(
-          oidcStartUrl,
-          "oidcLogin",
-          "width=520,height=720,resizable=yes,scrollbars=yes,status=yes",
-        );
-
-        if (!popup) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("OIDC-Popup konnte nicht geöffnet werden.");
-          return;
-        }
-
-        const bearer = await waitForOidcBearer(selectedBaseUrl, 60, 1000);
-
-        if (!popup.closed) {
-          popup.close();
-        }
-
-        if (!bearer) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback(t("please_check_server_version"));
-          return;
-        }
-
-        await dispatch(
-          switchServer({
-            url: selectedBaseUrl,
-            providedJwt: bearer,
-            initializeMenu: true,
-          }),
-        );
-
-        setLoginRequestStatus("successful");
-        setLoginFeedback(null);
+        window.location.replace(oidcStartUrl);
         return;
       }
 
@@ -370,9 +339,7 @@ export function LoginScreen() {
         case "unknown":
         default:
           setLoginRequestStatus("failed");
-          setLoginFeedback(
-            t("auth_method_unknown")
-          );
+          setLoginFeedback(t("auth_method_unknown"));
           return;
       }
     } catch (error: unknown) {
@@ -385,7 +352,7 @@ export function LoginScreen() {
 
       if (msg.includes("duplicate_sessions")) {
         setLoginFeedback(
-          "Es gibt doppelte Server-Sessions. Bitte alte OIDC-Sitzungen schließen und erneut anmelden."
+          "Es gibt doppelte Server-Sessions. Bitte alte OIDC-Sitzungen schließen und erneut anmelden.",
         );
       } else if (
         msg.includes("failed to fetch") ||
@@ -403,16 +370,29 @@ export function LoginScreen() {
   }
 
   useEffect(() => {
-    setOidcAutoStarted(false);
+    oidcStartedRef.current = false;
     setOidcLoginInProgress(false);
-  }, [selectedBaseUrl, authenticationMethod]);
+  }, [selectedBaseUrl]);
 
   useEffect(() => {
-    if (shouldAutoStartOidc) {
-      setOidcAutoStarted(true);
-      void login();
+    if (isLoggedIn) return;
+    if (!selectedBaseUrl) return;
+    if (oidcStartedRef.current) return;
+    if (showJwtLogin) return;
+
+    oidcStartedRef.current = true;
+    setLoginRequestIssued(true);
+    setLoginRequestStatus("loading");
+
+    if (isWeb) {
+      window.location.replace(`${normalizeBaseUrl(selectedBaseUrl)}/`);
+      return;
     }
-  }, [shouldAutoStartOidc]);
+
+    if (showOidcLogin || showUnknownAuth) {
+      void loginWithOidc();
+    }
+  }, [isLoggedIn, selectedBaseUrl, showJwtLogin, showOidcLogin, showUnknownAuth]);
 
   return (
     <View style={[styles.container]}>
@@ -451,7 +431,7 @@ export function LoginScreen() {
                 value={password}
                 returnKeyType="done"
                 onSubmitEditing={() => {
-                  if (isPointingToServer && username && password) {
+                  if (username && password) {
                     void login();
                   }
                 }}
@@ -468,33 +448,16 @@ export function LoginScreen() {
             </>
           )}
 
-          {showOidcLogin && (
-            <>
-              {shouldShowOidcButton && (
-                <ActionButton
-                  label={t("login")}
-                  variant="secondary"
-                  onPress={() => {
-                    void login();
-                  }}
-                  size="xs"
-                  disabled={oidcLoginInProgress}
-                />
-              )}
-            </>
-          )}
-
-          {showUnknownAuth && (
-            <>
+          {!showJwtLogin && (
+            <View style={localStyles.oidcLoading}>
               <ThemedText style={localStyles.infoText}>
-                {t("auth_method_unknown")}
+                Anmeldung wird gestartet...
               </ThemedText>
-              <ThemedText style={localStyles.infoSubText}>
-                {t("please_check_server_version")}
-              </ThemedText>
-            </>
+              <ActivityIndicator />
+            </View>
           )}
         </View>
+
         <View style={[styles.lowerHalf]}>
           <Pressable
             style={[styles.advancedSettingsTitleContainer]}
@@ -517,14 +480,6 @@ export function LoginScreen() {
                       {selectedBaseUrl || "-"}
                     </Text>
                   </View>
-
-                  <View style={[styles.statusPill, styles.border]}>
-                    <H4>
-                      {isPointingToServer
-                        ? t("serverReachable")
-                        : t("serverNotReachable")}
-                    </H4>
-                  </View>
                 </View>
               </Card>
 
@@ -543,11 +498,14 @@ export function LoginScreen() {
                 <Dropdown<"system" | "light" | "dark">
                   value={currentThemeValue}
                   options={themeOptions}
-                  onChange={(v) => {
+                  onChange={(value) => {
                     const next =
-                      v === "system"
+                      value === "system"
                         ? { adaptive: true, theme: themeInfo.theme }
-                        : { adaptive: false, theme: v as "light" | "dark" };
+                        : {
+                            adaptive: false,
+                            theme: value as "light" | "dark",
+                          };
 
                     dispatch(setTheme(next));
                   }}
@@ -561,7 +519,7 @@ export function LoginScreen() {
 
       {!!loginFeedback && (
         <View style={localStyles.feedbackWrap}>
-          <Feather name={"alert-triangle"} size={15} color={"#dc2626"} />
+          <Feather name="alert-triangle" size={15} color="#dc2626" />
           <ThemedText style={localStyles.feedbackText}>
             {loginFeedback}
           </ThemedText>
@@ -592,6 +550,7 @@ function LoginRequestStatusIndicator({
   status: "loading" | "successful" | "failed";
 }) {
   styles.useVariants({ status });
+
   const { t } = useTranslation(["Login"]);
 
   if (!issued) return null;
@@ -643,13 +602,8 @@ const localStyles = NativeStyleSheet.create({
     textAlign: "center",
     fontSize: 14,
   },
-  infoSubText: {
-    textAlign: "center",
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  debugText: {
-    fontSize: 12,
-    opacity: 0.7,
+  oidcLoading: {
+    gap: 8,
+    alignItems: "center",
   },
 });

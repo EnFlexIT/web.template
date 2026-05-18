@@ -39,10 +39,10 @@ function isRenewLoginEndpoint(url?: string): boolean {
 function forceRedirectToLogin() {
   if (typeof window === "undefined") return;
 
-  // wenn du /login route hast
-  if (window.location.pathname !== "/login") {
-    window.location.replace("/login");
-  }
+  const frontendOrigin =
+    process.env.EXPO_PUBLIC_FRONTEND_ORIGIN ?? window.location.origin;
+
+  window.location.replace(`${frontendOrigin}`);
 }
 
 function doLogout(reason: "401" | "network") {

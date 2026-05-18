@@ -3,8 +3,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootState } from "../store";
-import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
-
 const STORAGE_KEY = "servers" as const;
 
 export type ServerEnvironment = "DEV" | "TEST" | "PROD";
@@ -23,16 +21,13 @@ export type ServersState = {
 };
 
 function getDefaultServer(): SavedServer {
-  const runtimeBaseUrl = resolveRuntimeBaseUrl();
-
   const fallbackBaseUrl =
-    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP 
-  
+    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8080";
 
   return {
     id: "local",
     name: "Smart Home Systeme",
-    baseUrl: runtimeBaseUrl ?? fallbackBaseUrl,
+    baseUrl: fallbackBaseUrl,
     environment: "DEV",
   };
 }

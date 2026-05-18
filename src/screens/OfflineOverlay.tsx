@@ -1,20 +1,22 @@
 // src/components/OfflineOverlay.tsx
 import React, { useState } from "react";
-import { Modal, Pressable, View } from "react-native";
+import { Modal, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
+
 import {
   checkAlive,
-  dismissBackOnline,
   selectConnectivity,
 } from "../redux/slices/connectivitySlice";
+
 import {
   selectSelectedServer,
   selectServers,
 } from "../redux/slices/serverSlice";
+
 import { selectIp } from "../redux/slices/apiSlice";
 
 import { Infobox } from "../components/ui-elements/Infobox";
@@ -27,7 +29,7 @@ export function OfflineOverlay() {
   const { theme } = useUnistyles();
   const { t } = useTranslation(["NotAvailable"]);
 
-  const { isOffline, showBackOnline, checking } =
+  const { isOffline, checking } =
     useAppSelector(selectConnectivity);
 
   const serversState = useAppSelector(selectServers);
@@ -36,99 +38,78 @@ export function OfflineOverlay() {
 
   const [serverModalVisible, setServerModalVisible] = useState(false);
 
-  const showOffline = isOffline;
-  const showOnline = showBackOnline && !isOffline;
-
-  if (!showOffline && !showOnline) return null;
-
-  if (showOffline) {
-    return (
-      <>
-        <Modal transparent visible animationType="fade">
-          <View style={styles.backdrop}>
-            <Infobox
-              tone="danger"
-              title={t("offlineTitle")}
-              style={[
-                styles.box,
-                {
-                  backgroundColor: theme.colors.background,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-            >
-              <ThemedText>{t("OfflineMessage")}</ThemedText>
-
-              <View style={styles.buttonRow}>
-                <View style={styles.buttonWrap}>
-                  <ActionButton
-                    variant="primary"
-                    label={checking ? t("checking") : t("refresh")}
-                    size="xs"
-                    disabled={checking}
-                    onPress={async () => {
-                      const res = await dispatch(checkAlive()).unwrap();
-                      if (res?.isOnline && typeof window !== "undefined") {
-                        window.location.reload();
-                      }
-                    }}
-                  />
-                </View>
-
-                <View style={styles.buttonWrap}>
-                  <ActionButton
-                    variant="secondary"
-                    label={t("changserver")}
-                    size="xs"
-                    onPress={() => setServerModalVisible(true)}
-                  />
-                </View>
-              </View>
-            </Infobox>
-          </View>
-        </Modal>
-
-        <ServerModal
-          visible={serverModalVisible}
-          onClose={() => setServerModalVisible(false)}
-          servers={serversState?.servers ?? []}
-          selectedServerId={selectedServer?.id ?? ""}
-          selectedBaseUrl={selectedBaseUrl ?? ""}
-        />
-      </>
-    );
+  // Nur anzeigen wenn wirklich offline
+  if (!isOffline) {
+    return null;
   }
 
   return (
-    <Modal transparent visible animationType="fade">
-      <Pressable
-        style={styles.backdrop}
-        onPress={() => dispatch(dismissBackOnline())}
-      >
-        <Infobox
-          tone="success"
-          title={t("onlineTitle")}
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.colors.background,
-              borderColor: theme.colors.border,
-            },
-          ]}
-        >
-          <ThemedText>{t("onlineMessage")}</ThemedText>
+    <>
+      <Modal transparent visible animationType="fade">
+        <View style={styles.backdrop}>
+          <Infobox
+            tone="danger"
+            title={t("offlineTitle")}
+            style={[
+              styles.box,
+              {
+                backgroundColor: theme.colors.background,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <ThemedText>
+              {t("OfflineMessage")}
+            </ThemedText>
 
-          <View style={styles.singleButtonRow}>
-            <ActionButton
-              variant="primary"
-              label="OK"
-              size="xs"
-              onPress={() => dispatch(dismissBackOnline())}
-            />
-          </View>
-        </Infobox>
-      </Pressable>
-    </Modal>
+            <View style={styles.buttonRow}>
+              <View style={styles.buttonWrap}>
+                <ActionButton
+                  variant="primary"
+                  label={checking ? t("checking") : t("refresh")}
+                  size="xs"
+                  disabled={checking}
+                  onPress={async () => {
+                    const res = await dispatch(
+                      checkAlive(),
+                    ).unwrap();
+
+                    // Wenn Server wieder online:
+                    // Overlay verschwindet automatisch,
+                    // weil isOffline=false gesetzt wird
+                    if (
+                      res?.isOnline &&
+                      typeof window !== "undefined"
+                    ) {
+                      window.location.reload();
+                    }
+                  }}
+                />
+              </View>
+
+              <View style={styles.buttonWrap}>
+                <ActionButton
+                  variant="secondary"
+                  label={t("changserver")}
+                  size="xs"
+                  onPress={() =>
+                    setServerModalVisible(true)
+                  }
+                />
+              </View>
+            </View>
+          </Infobox>
+        </View>
+      </Modal>
+
+      <ServerModal
+        visible={serverModalVisible}
+        onClose={() => setServerModalVisible(false)}
+        servers={serversState?.servers ?? []}
+        selectedServerId={selectedServer?.id ?? ""}
+        selectedBaseUrl={selectedBaseUrl ?? ""}
+      />
+    </>
   );
 }
 
@@ -156,9 +137,5 @@ const styles = StyleSheet.create({
 
   buttonWrap: {
     minWidth: 140,
-  },
-
-  singleButtonRow: {
-    marginTop: 8,
   },
 });

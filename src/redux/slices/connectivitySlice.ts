@@ -26,6 +26,16 @@ const initialState: ConnectivityState = {
   lastError: null,
 };
 
+function isReachableStatus(status?: number): boolean {
+  if (status == null) return false;
+
+  // 2xx = OK
+  // 3xx = Redirect/Login/OIDC -> Server lebt
+  // 4xx = Server antwortet, aber Request/Auth passt nicht
+  // 5xx oder Network-Error = wirklich problematisch
+  return status >= 200 && status < 500;
+}
+
 async function ping(
   url: string,
   timeoutMs = 4000,
@@ -38,26 +48,20 @@ async function ping(
       method: "GET",
       cache: "no-store",
       signal: ctrl.signal,
+      redirect: "manual",
+      credentials: "include",
       headers: {
         Accept: "application/json",
       },
     });
 
     return {
-      ok: res.ok,
+      ok: isReachableStatus(res.status),
       status: res.status,
     };
   } finally {
     clearTimeout(id);
   }
-}
-
-function isReachableStatus(status?: number): boolean {
-  if (status == null) return false;
-
-  // Alles unter 500 bedeutet:
-  // Server antwortet. Auch 401/403 = erreichbar, aber Auth fehlt.
-  return status >= 200 && status < 500;
 }
 
 function getErrorMessage(error: unknown, silent: boolean): string | null {
@@ -81,7 +85,7 @@ export const checkAlive = createAsyncThunk<
 >("connectivity/checkAlive", async (arg, thunkAPI) => {
   const state = thunkAPI.getState() as RootState;
 
-  if (state.api.isSwitchingServer) {
+  if (state.api.isSwitchingServer || state.api.isLoggingOut) {
     return {
       isOnline: !state.connectivity.isOffline,
       wentOnline: false,
@@ -107,8 +111,7 @@ export const checkAlive = createAsyncThunk<
     };
   }
 
-  const candidateUrls = [`${baseUrl}/api/alive`];
-
+const candidateUrls = [`${baseUrl}/api/app/settings/get`];
   let lastStatus: number | undefined;
   let lastUrl: string | null = null;
   let lastError: unknown = null;
@@ -122,7 +125,7 @@ export const checkAlive = createAsyncThunk<
 
       console.log("[checkAlive] response:", url, "status:", result.status);
 
-      if (isReachableStatus(result.status)) {
+      if (result.ok) {
         return {
           isOnline: true,
           wentOnline: wasOffline,
@@ -182,7 +185,7 @@ const connectivitySlice = createSlice({
         const wasOffline = state.isOffline;
 
         state.isOffline = false;
-        state.showBackOnline = wasOffline ? true : state.showBackOnline;
+        state.showBackOnline = wasOffline;
       } else {
         state.isOffline = true;
         state.showBackOnline = false;
@@ -198,7 +201,8 @@ const connectivitySlice = createSlice({
   },
 });
 
-export const { dismissBackOnline, setOfflineLocal } = connectivitySlice.actions;
+export const { dismissBackOnline, setOfflineLocal } =
+  connectivitySlice.actions;
 
 export const selectConnectivity = (state: RootState) => state.connectivity;
 
