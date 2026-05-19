@@ -316,10 +316,10 @@ function RootStack() {
         screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
-           {isLoggedIn && <OfflineOverlay />}
+           <OfflineOverlay />
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
-            {isLoggedIn && <UpdateNotificationWatcher />}
+            <UpdateNotificationWatcher />
             <NotificationPopup />
             {children}
           </View>

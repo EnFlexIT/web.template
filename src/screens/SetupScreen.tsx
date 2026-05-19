@@ -142,7 +142,7 @@ function AddServerModal({ isVisibile, setIsVisible }: AddServerModalProps) {
 
       const baseUrl = normalizeBaseUrl(ipAdress);
 
-      // ✅ check genau wie apiSlice: `${ip}/api`
+  
       const infoApi = new InfoApi({
         isJsonMime: new RestApiConfiguration().isJsonMime,
         basePath: `${baseUrl}/api`,
@@ -249,7 +249,7 @@ function AddServerModal({ isVisibile, setIsVisible }: AddServerModalProps) {
                   name: serverName,
                   organization: {
                     cookie_preference: "",
-                    ip_adress: baseUrl, // ✅ normalisiert speichern
+                    ip_adress: baseUrl,
                     last_jwt: "",
                     last_successful_connection: "",
                   },

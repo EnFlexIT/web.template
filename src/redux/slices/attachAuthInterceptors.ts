@@ -106,10 +106,7 @@ function attach(instance: AxiosInstance) {
         return Promise.reject(err);
       }
 
-      /*
-       * Alle anderen 401:
-       * Nur lokal ausloggen, aber NIEMALS window.location.replace().
-       */
+     
       if (status === 401) {
         doLocalLogoutOnly("401");
         return Promise.reject(err);

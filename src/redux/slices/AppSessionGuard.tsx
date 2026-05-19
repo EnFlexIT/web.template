@@ -56,17 +56,13 @@ export function AppSessionGuard() {
       runningRef.current = true;
 
       try {
-        await dispatch(refreshServerStatus());
-
-        if (authenticationMethod === "oidc") {
-          return;
-        }
+   
 
         const aliveRes = await dispatch(checkAlive({ silent: true })).unwrap();
 
         if (cancelled) return;
         if (!aliveRes.isOnline) return;
-        if (!aliveRes.wentOnline) return;
+        if (!aliveRes.wentOnline) return; 
 
         const renewResults = await dispatch(
           renewAllServerJwtsIfNeeded({
@@ -93,17 +89,12 @@ export function AppSessionGuard() {
       }
     };
 
-    intervalRef.current = setInterval(() => {
-      void run();
-    }, 5000);
+    
 
     return () => {
       cancelled = true;
 
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+     
     };
   }, [dispatch, isLoggedIn, activeBaseUrl, authenticationMethod]);
 

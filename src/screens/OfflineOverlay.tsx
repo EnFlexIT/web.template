@@ -17,7 +17,11 @@ import {
   selectServers,
 } from "../redux/slices/serverSlice";
 
-import { selectIp } from "../redux/slices/apiSlice";
+import {
+  selectAuthenticationMethod,
+  selectIp,
+  selectIsLoggedIn,
+} from "../redux/slices/apiSlice";
 
 import { Infobox } from "../components/ui-elements/Infobox";
 import { ActionButton } from "../components/ui-elements/ActionButton";
@@ -29,8 +33,10 @@ export function OfflineOverlay() {
   const { theme } = useUnistyles();
   const { t } = useTranslation(["NotAvailable"]);
 
-  const { isOffline, checking } =
-    useAppSelector(selectConnectivity);
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+
+  const { isOffline, checking } = useAppSelector(selectConnectivity);
 
   const serversState = useAppSelector(selectServers);
   const selectedServer = useAppSelector(selectSelectedServer);
@@ -38,7 +44,19 @@ export function OfflineOverlay() {
 
   const [serverModalVisible, setServerModalVisible] = useState(false);
 
-  // Nur anzeigen wenn wirklich offline
+  /*
+   * Wichtig:
+   * Auf Login/OIDC-Seiten kein OfflineOverlay anzeigen.
+   * _Authenticated=false oder 303 ist nicht offline.
+   */
+  if (!isLoggedIn) {
+    return null;
+  }
+
+  if (authenticationMethod === "oidc" && !isOffline) {
+    return null;
+  }
+
   if (!isOffline) {
     return null;
   }
@@ -58,9 +76,7 @@ export function OfflineOverlay() {
               },
             ]}
           >
-            <ThemedText>
-              {t("OfflineMessage")}
-            </ThemedText>
+            <ThemedText>{t("OfflineMessage")}</ThemedText>
 
             <View style={styles.buttonRow}>
               <View style={styles.buttonWrap}>
@@ -70,19 +86,12 @@ export function OfflineOverlay() {
                   size="xs"
                   disabled={checking}
                   onPress={async () => {
-                    const res = await dispatch(
-                      checkAlive(),
+                  
+                    await dispatch(
+                      checkAlive({
+                        silent: false,
+                      }),
                     ).unwrap();
-
-                    // Wenn Server wieder online:
-                    // Overlay verschwindet automatisch,
-                    // weil isOffline=false gesetzt wird
-                    if (
-                      res?.isOnline &&
-                      typeof window !== "undefined"
-                    ) {
-                      window.location.reload();
-                    }
                   }}
                 />
               </View>
@@ -92,9 +101,7 @@ export function OfflineOverlay() {
                   variant="secondary"
                   label={t("changserver")}
                   size="xs"
-                  onPress={() =>
-                    setServerModalVisible(true)
-                  }
+                  onPress={() => setServerModalVisible(true)}
                 />
               </View>
             </View>
