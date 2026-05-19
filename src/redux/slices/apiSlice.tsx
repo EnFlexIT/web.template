@@ -329,6 +329,7 @@ function isJwtStillValid(jwt: string | null): boolean {
   }
 }
 
+
 function computeLoggedIn(params: {
   authenticationMethod: AuthMethod;
   jwt: string | null;
@@ -446,7 +447,26 @@ export const setIpAsync = createAsyncThunk(
     return { ip, isPointingToServer, authenticationMethod, isBaseMode };
   },
 );
+async function removeJwtForServer(ip: string) {
+  const normalizedIp = (ip ?? "")
+    .trim()
+    .toLowerCase();
 
+  const raw = await AsyncStorage.getItem(jwtByServerKey);
+
+  if (!raw) {
+    return;
+  }
+
+  const parsed = JSON.parse(raw) as Record<string, string>;
+
+  delete parsed[normalizedIp];
+
+  await AsyncStorage.setItem(
+    jwtByServerKey,
+    JSON.stringify(parsed),
+  );
+}
 export const refreshServerStatus = createAsyncThunk(
   "api/refreshServerStatus",
   async (_, thunkAPI) => {
@@ -464,8 +484,36 @@ export const refreshServerStatus = createAsyncThunk(
     const ip = state.api.ip;
     const storedJwt = await getJwtForServer(ip);
 
-    const { isPointingToServer, authenticationMethod, isBaseMode } =
-      await detectServerAndMode(ip);
+    const {
+      isPointingToServer,
+      authenticationMethod,
+      isBaseMode,
+    } = await detectServerAndMode(ip);
+
+    // Wichtig für OIDC:
+    // Server sagt: nicht mehr authentifiziert.
+    // Dann lokalen alten Token löschen.
+    if (authenticationMethod === "oidc" && isBaseMode) {
+      await removeJwtForServer(ip);
+      await AsyncStorage.removeItem(jwtKey);
+
+      thunkAPI.dispatch(
+        setConnectionLocal({
+          ip,
+          jwt: null,
+          isPointingToServer,
+          authenticationMethod,
+          isBaseMode,
+        }),
+      );
+
+      return {
+        isPointingToServer,
+        authenticationMethod,
+        isBaseMode,
+        skipped: false,
+      };
+    }
 
     thunkAPI.dispatch(
       setConnectionLocal({

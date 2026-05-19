@@ -11,7 +11,11 @@ import { checkAlive } from "./redux/slices/connectivitySlice";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
-import { refreshServerStatus } from "./redux/slices/apiSlice";
+import {
+  initializeApi,
+  refreshServerStatus,
+  selectIsLoggedIn,
+} from "./redux/slices/apiSlice";
 import { ServerSwitchOverlay } from "./screens/ServerSwitchOverlay";
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
@@ -20,14 +24,9 @@ import { OfflineOverlay } from "./screens/OfflineOverlay";
 import { store } from "./redux/store";
 import { initializeLanguage } from "./redux/slices/languageSlice";
 import { initializeTheme } from "./redux/slices/themeSlice";
-import { initializeApi, selectIsLoggedIn } from "./redux/slices/apiSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
-import {
-  initializeOrganizations,
-  selectOrganizations,
-} from "./redux/slices/organizationsSlice";
+import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 import { NotificationPopup } from "./components/NotificationPopup";
-import { selectReady } from "./redux/slices/readySlice";
 import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
@@ -43,22 +42,13 @@ import {
 import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
-
-// Slug-Routing Helper
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
 
-/* =========================
-   Unistyles Init
-   ========================= */
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
 
 const Drawer = createDrawerNavigator();
-
-/* =========================
-   URL Helpers
-   ========================= */
 
 function normalizePath(p: string) {
   if (!p) return "/";
@@ -79,10 +69,6 @@ function getNumericIdFromPath(pathname: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/* =========================
-   RootStack
-   ========================= */
-
 function RootStack() {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
@@ -90,7 +76,6 @@ function RootStack() {
   const [isLoading, setIsLoading] = useState(true);
 
   const isWide = useIsWide();
-
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
   const didBootRef = useRef(false);
@@ -98,22 +83,24 @@ function RootStack() {
 
   const { pathById, idByPath } = useMemo(
     () => buildMenuPaths(rawMenu),
-    [rawMenu]
+    [rawMenu],
   );
 
   const screensConfig = useMemo(() => {
     const out: Record<string, string> = {};
+
     for (const m of rawMenu) {
       if (!m.menuID) continue;
+
       const p = pathById[m.menuID];
-      if (p) out[String(m.menuID)] = p;
+      if (p) {
+        out[String(m.menuID)] = p;
+      }
     }
+
     return out;
   }, [rawMenu, pathById]);
 
-  /* =========================
-     BOOT (läuft exakt 1x)
-     ========================= */
   useEffect(() => {
     if (didBootRef.current) return;
     didBootRef.current = true;
@@ -136,7 +123,9 @@ function RootStack() {
       } catch (e) {
         console.error("BOOT ERROR:", e);
       } finally {
-        if (alive) setIsLoading(false);
+        if (alive) {
+          setIsLoading(false);
+        }
       }
     })();
 
@@ -145,9 +134,6 @@ function RootStack() {
     };
   }, [dispatch]);
 
-  /* =========================
-     Global Connectivity Watcher
-     ========================= */
   useEffect(() => {
     if (isLoading) return;
 
@@ -163,14 +149,14 @@ function RootStack() {
       }
     };
 
-    runCheck();
+    void runCheck();
 
     const intervalId = setInterval(() => {
-      runCheck();
+      void runCheck();
     }, 10000);
 
     const onFocus = () => {
-      runCheck();
+      void runCheck();
     };
 
     if (typeof window !== "undefined") {
@@ -187,9 +173,6 @@ function RootStack() {
     };
   }, [dispatch, isLoading]);
 
-  /* =========================
-     Optional: Serverstatus refresh
-     ========================= */
   useEffect(() => {
     if (isLoading) return;
 
@@ -200,9 +183,6 @@ function RootStack() {
     return () => clearInterval(intervalId);
   }, [dispatch, isLoading]);
 
-  /* =========================
-     Redirect Mapping (1x)
-     ========================= */
   useEffect(() => {
     if (didHandleUrlRef.current) return;
     if (!rawMenu || rawMenu.length === 0) return;
@@ -211,33 +191,31 @@ function RootStack() {
 
     const pathname = normalizePath(window.location.pathname || "/");
 
-    // Login-Pfade hier bewusst überspringen
     if (pathname === "/login" || pathname === "/base-login") {
+      window.history.replaceState(null, "", "/");
       return;
     }
 
-    // A) Slug → menuID
     const slugId = idByPath[pathname];
+
     if (slugId && isMenuEnabled(slugId)) {
       dispatch(setActiveMenuId(slugId));
       return;
     }
 
-    // B) Numeric → Redirect → Slug
     const numericId = getNumericIdFromPath(pathname);
+
     if (numericId && isMenuEnabled(numericId)) {
       const slugPath = pathById[numericId];
+
       if (slugPath) {
         window.history.replaceState(null, "", slugPath);
       }
+
       dispatch(setActiveMenuId(numericId));
     }
   }, [dispatch, rawMenu, pathById, idByPath]);
 
-  /* =========================
-     Wenn bereits eingeloggt:
-     /login -> auf gültige App-Seite umleiten
-     ========================= */
   useEffect(() => {
     if (isLoading) return;
     if (!isLoggedIn) return;
@@ -268,20 +246,6 @@ function RootStack() {
     }
   }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
 
-  /* =========================
-     Wenn NICHT eingeloggt:
-     App-Pfade -> /login umleiten
-     ========================= */
-  useEffect(() => {
-    if (isLoading) return;
-
-    const pathname = normalizePath(window.location.pathname || "/");
-
-    if (!isLoggedIn && pathname !== "/login") {
-      window.history.replaceState(null, "", "/login");
-    }
-  }, [isLoading, isLoggedIn]);
-
   const navigationMenu =
     menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 
@@ -298,7 +262,7 @@ function RootStack() {
       dark: false,
       fonts: theme.fonts,
     }),
-    [theme]
+    [theme],
   );
 
   if (isLoading) {
@@ -352,10 +316,10 @@ function RootStack() {
         screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
-            <OfflineOverlay />
+           {isLoggedIn && <OfflineOverlay />}
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
-            <UpdateNotificationWatcher />
+            {isLoggedIn && <UpdateNotificationWatcher />}
             <NotificationPopup />
             {children}
           </View>
@@ -379,14 +343,18 @@ function RootStack() {
 
                   return <DynamicScreen node={node} />;
                 }}
-                options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
+                options={{
+                  title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
+                }}
               />
             ))}
 
             <Drawer.Screen
               name="NotFound"
               component={NotAvailableScreen}
-              options={{ title: process.env.EXPO_PUBLIC_APPLICATION_TITLE }}
+              options={{
+                title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
+              }}
             />
           </Drawer.Group>
         ) : (
@@ -405,10 +373,6 @@ function RootStack() {
   );
 }
 
-/* =========================
-   App
-   ========================= */
-
 export default function App() {
   return (
     <Provider store={store}>
@@ -421,9 +385,6 @@ export default function App() {
     </Provider>
   );
 }
-/* =========================
-   Styles
-   ========================= */
 
 const styles = StyleSheet.create({
   drawer: { width: 200 },

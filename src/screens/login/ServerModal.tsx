@@ -308,38 +308,27 @@ export function ServerModal({
     setShowDeleteConfirm(false);
   }
 
-  async function proceedUseServerAfterOptionalSave(skipSave = false) {
-    let url = "";
+ async function proceedUseServerAfterOptionalSave(skipSave = false) {
+  let url = "";
 
-    if (hasUnsavedChanges() && !skipSave) {
-      const saved = await validateAndSaveOnly();
-      if (!saved.ok || !saved.baseUrl) return;
+  if (hasUnsavedChanges() && !skipSave) {
+    const saved = await validateAndSaveOnly();
+    if (!saved.ok || !saved.baseUrl) return;
 
-      url = normalizeBaseUrl(saved.baseUrl);
-    } else {
-      const currentSelected = servers.find((s) => s.id === selectedServerId);
-      url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
-    }
-
-    const online = await ensureSelectedServerOnline(url);
-    if (!online) return;
-
-    await dispatch(switchServer(url));
-
-    const applicationMode = getApplicationMode();
-
-    if (applicationMode === "CENTRAL_SHELL") {
-      onClose();
-      return;
-    }
-
-    if (Platform.OS === "web") {
-      window.location.assign(`${url}/login`);
-      return;
-    }
-
-    onClose();
+    url = normalizeBaseUrl(saved.baseUrl);
+  } else {
+    const currentSelected = servers.find((s) => s.id === selectedServerId);
+    url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
   }
+
+  const online = await ensureSelectedServerOnline(url);
+  if (!online) return;
+
+  await dispatch(switchServer(url));
+
+
+  onClose();
+}
 
   function handleUseServer() {
     if (hasUnsavedChanges()) {

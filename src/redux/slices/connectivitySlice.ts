@@ -25,16 +25,18 @@ const initialState: ConnectivityState = {
   checking: false,
   lastError: null,
 };
+function isReachableResponse(res: Response): boolean {
+  if (res.type === "opaqueredirect") {
+    return true;
+  }
 
-function isReachableStatus(status?: number): boolean {
-  if (status == null) return false;
+  if (res.status === 0) {
+    return true;
+  }
 
-  // 2xx = OK
-  // 3xx = Redirect/Login/OIDC -> Server lebt
-  // 4xx = Server antwortet, aber Request/Auth passt nicht
-  // 5xx oder Network-Error = wirklich problematisch
-  return status >= 200 && status < 500;
+  return res.status >= 200 && res.status < 500;
 }
+
 
 async function ping(
   url: string,
@@ -55,10 +57,10 @@ async function ping(
       },
     });
 
-    return {
-      ok: isReachableStatus(res.status),
-      status: res.status,
-    };
+   return {
+  ok: isReachableResponse(res),
+  status: res.status,
+};
   } finally {
     clearTimeout(id);
   }
@@ -111,7 +113,10 @@ export const checkAlive = createAsyncThunk<
     };
   }
 
-const candidateUrls = [`${baseUrl}/api/app/settings/get`];
+const candidateUrls = [
+  `${baseUrl}/api/alive`,
+  `${baseUrl}/api/app/settings/get`,
+];
   let lastStatus: number | undefined;
   let lastUrl: string | null = null;
   let lastError: unknown = null;

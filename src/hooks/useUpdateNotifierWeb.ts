@@ -102,7 +102,7 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const api = useAppSelector(selectApi);
   const ip = api.ip;
   const jwt = api.jwt;
-
+const isLoggedIn = api.isLoggedIn;
   const isWeb = Platform.OS === "web";
   const serverKey = normalizeServerKey(ip);
   const storageKey = getServerScopedStorageKey(
@@ -117,76 +117,110 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const [acceptedFull, setAcceptedFull] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("-");
 
-  const checkNow = useCallback(async () => {
-    if (!isWeb || !ip) return;
-
-    const query = new URLSearchParams();
-    query.set("_ts", String(Date.now()));
-
-    const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
-    const data = await fetchJsonNoCache({ url, jwt });
-
-    if (data === null) {
-      setStatus("Network error");
-      setUpdateAvailable(false);
-      return;
-    }
-
-    if ((data as any)?.__status) {
-      const st = Number((data as any).__status);
-      setStatus(st === 401 ? "401 (Unauthorized)" : `HTTP ${st}`);
-      setUpdateAvailable(false);
-      return;
-    }
-
-    const parsed = extractServerWebApp(data);
-    if (!parsed) {
-      setStatus("Unexpected format");
-      setUpdateAvailable(false);
-      return;
-    }
-
-    setCurrentFull(parsed.versionFull);
-
-    const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
-
-    if (!accepted) {
-      await AsyncStorage.setItem(storageKey, parsed.versionFull);
-      setAcceptedFull(parsed.versionFull);
-      setUpdateAvailable(false);
-      setStatus("OK (baseline stored)");
-      return;
-    }
-
-    setAcceptedFull(accepted);
-
-    if (accepted !== parsed.versionFull) {
-      setUpdateAvailable(true);
-      setStatus(`Update verfügbar: ${accepted} → ${parsed.versionFull}`);
-
-      dispatch(
-        addNotification({
-          id: `web-update-${serverKey}-${parsed.versionFull}`,
-          serverKey,
-          type: "update",
-          title: t("new_version_available"),
-          message: ` ${parsed.versionFull}`,
-          createdAt: new Date().toISOString(),
-          read: false,
-          severity: "info",
-          action: {
-            type: "navigate",
-            menuId: 3014,
-          },
-        }),
-      );
-
-      return;
-    }
-
+const checkNow = useCallback(async () => {
+  /*
+   * Wichtig:
+   * Wenn ausgeloggt oder kein JWT vorhanden ist,
+   * darf /api/version NICHT aufgerufen werden.
+   */
+  if (!isWeb || !ip || !isLoggedIn || !jwt) {
     setUpdateAvailable(false);
-    setStatus("Up to date");
-  }, [dispatch, ip, isWeb, jwt, serverKey, storageKey]);
+    setStatus("Skipped");
+    return;
+  }
+
+  const query = new URLSearchParams();
+  query.set("_ts", String(Date.now()));
+
+  const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
+
+  const data = await fetchJsonNoCache({
+    url,
+    jwt,
+  });
+
+  /*
+   * Kein Server offline Popup daraus ableiten.
+   * Das kann bei OIDC auch Redirect/CORS bedeuten.
+   */
+  if (data === null) {
+    setStatus("Skipped / not authenticated");
+    setUpdateAvailable(false);
+    return;
+  }
+
+  if ((data as any)?.__status) {
+    const st = Number((data as any).__status);
+
+    if (st === 401 || st === 403 || st === 303) {
+      setStatus("Not authenticated");
+      setUpdateAvailable(false);
+      return;
+    }
+
+    setStatus(`HTTP ${st}`);
+    setUpdateAvailable(false);
+    return;
+  }
+
+  const parsed = extractServerWebApp(data);
+
+  if (!parsed) {
+    setStatus("Unexpected format");
+    setUpdateAvailable(false);
+    return;
+  }
+
+  setCurrentFull(parsed.versionFull);
+
+  const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
+
+  if (!accepted) {
+    await AsyncStorage.setItem(storageKey, parsed.versionFull);
+    setAcceptedFull(parsed.versionFull);
+    setUpdateAvailable(false);
+    setStatus("OK (baseline stored)");
+    return;
+  }
+
+  setAcceptedFull(accepted);
+
+  if (accepted !== parsed.versionFull) {
+    setUpdateAvailable(true);
+    setStatus(`Update verfügbar: ${accepted} → ${parsed.versionFull}`);
+
+    dispatch(
+      addNotification({
+        id: `web-update-${serverKey}-${parsed.versionFull}`,
+        serverKey,
+        type: "update",
+        title: t("new_version_available"),
+        message: ` ${parsed.versionFull}`,
+        createdAt: new Date().toISOString(),
+        read: false,
+        severity: "info",
+        action: {
+          type: "navigate",
+          menuId: 3014,
+        },
+      }),
+    );
+
+    return;
+  }
+
+  setUpdateAvailable(false);
+  setStatus("Up to date");
+}, [
+  dispatch,
+  ip,
+  isWeb,
+  isLoggedIn,
+  jwt,
+  serverKey,
+  storageKey,
+  t,
+]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!isWeb) return;

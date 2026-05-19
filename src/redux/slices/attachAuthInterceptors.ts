@@ -1,10 +1,15 @@
 // src/redux/slices/attachAuthInterceptors.ts
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import { store } from "../store";
-import { logoutAsync } from "./apiSlice";
+import { logoutAsync, selectAuthenticationMethod } from "./apiSlice";
+import { isLogoutFlowActive } from "./logoutFlowGuard";
 
 let installed = false;
 let inFlightLogout = false;
+
+function normalizeUrl(url?: string) {
+  return (url ?? "").toLowerCase();
+}
 
 function isNetworkError(err: AxiosError) {
   return (
@@ -17,12 +22,7 @@ function isNetworkError(err: AxiosError) {
   );
 }
 
-function normalizeUrl(url?: string) {
-  return (url ?? "").toLowerCase();
-}
-
-
-function isSoft401Endpoint(url?: string): boolean {
+function isSoftEndpoint(url?: string): boolean {
   const u = normalizeUrl(url);
 
   return (
@@ -31,33 +31,29 @@ function isSoft401Endpoint(url?: string): boolean {
     u.includes("/api/app/settings/get")
   );
 }
+
 function isRenewLoginEndpoint(url?: string): boolean {
-  const u = normalizeUrl(url);
-  return u.includes("/api/user/login");
+  return normalizeUrl(url).includes("/api/user/login");
 }
 
-function forceRedirectToLogin() {
-  if (typeof window === "undefined") return;
-
-  const frontendOrigin =
-    process.env.EXPO_PUBLIC_FRONTEND_ORIGIN ?? window.location.origin;
-
-  window.location.replace(`${frontendOrigin}`);
+function getAuthMethod(): string | undefined {
+  const state = store.getState();
+  return selectAuthenticationMethod(state as any);
 }
 
-function doLogout(reason: "401" | "network") {
+function doLocalLogoutOnly(reason: "401" | "renew-401") {
   if (inFlightLogout) return;
+  if (isLogoutFlowActive()) return;
+
   inFlightLogout = true;
 
   store.dispatch(logoutAsync());
-
-  forceRedirectToLogin();
 
   setTimeout(() => {
     inFlightLogout = false;
   }, 1500);
 
-  console.log(`Logged out due to: ${reason}`);
+  console.log(`[AUTH INTERCEPTOR] Local logout only: ${reason}`);
 }
 
 function attach(instance: AxiosInstance) {
@@ -66,36 +62,56 @@ function attach(instance: AxiosInstance) {
     (err: AxiosError) => {
       const status = err.response?.status;
 
-      // URL aus config holen (OpenAPI/axios hängt sie dort rein)
       const cfg = err.config as any;
       const url: string | undefined =
         cfg?.url || err.response?.config?.url || undefined;
 
-      // 1) Network errors: KEIN Logout (sonst nervig)
-      if (isNetworkError(err)) {
-        // OPTIONAL: offline state setzen
-        // store.dispatch(
-        //   setOfflineLocal({ error: "Netzwerkfehler / Server nicht erreichbar" }),
-        // );
+      const authMethod = getAuthMethod();
+      const isOidc = authMethod === "oidc" || authMethod === "unknown";
 
+      /*
+       * Network Error:
+       * Kein Logout, kein Redirect, kein Popup.
+       */
+      if (isNetworkError(err)) {
         return Promise.reject(err);
       }
 
-      // 2) 401 Handling
+      /*
+       * Soft Endpoints:
+       * alive/version/settings/get dürfen niemals Logout-Popup auslösen.
+       */
+      if (isSoftEndpoint(url)) {
+        return Promise.reject(err);
+      }
+
+      /*
+       * OIDC:
+       * 401 heißt Session abgelaufen/weg.
+       * Kein forceRedirect.
+       * Kein Popup.
+       * Nur lokalen State bereinigen.
+       */
+      if (status === 401 && isOidc) {
+        doLocalLogoutOnly("401");
+        return Promise.reject(err);
+      }
+
+      /*
+       * JWT Renew/Login:
+       * bei Basic/JWT darf 401 lokalen Logout machen.
+       */
+      if (status === 401 && isRenewLoginEndpoint(url)) {
+        doLocalLogoutOnly("renew-401");
+        return Promise.reject(err);
+      }
+
+      /*
+       * Alle anderen 401:
+       * Nur lokal ausloggen, aber NIEMALS window.location.replace().
+       */
       if (status === 401) {
-        // a) Soft endpoints (alive/version/settings/get) => NICHT logouten
-        if (isSoft401Endpoint(url)) {
-          return Promise.reject(err);
-        }
-
-        // b) Renew/Login endpoint => wenn 401 => Session kaputt => logout
-        if (isRenewLoginEndpoint(url)) {
-          doLogout("401");
-          return Promise.reject(err);
-        }
-
-        // c) Alle anderen 401 => logout
-        doLogout("401");
+        doLocalLogoutOnly("401");
         return Promise.reject(err);
       }
 
@@ -103,7 +119,6 @@ function attach(instance: AxiosInstance) {
     },
   );
 }
-
 
 export function attachAuthInterceptors(http: AxiosInstance) {
   if (installed) return;

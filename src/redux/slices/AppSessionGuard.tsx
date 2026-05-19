@@ -7,8 +7,10 @@ import {
   selectIsLoggedIn,
   selectIp,
   logoutAsync,
+  selectAuthenticationMethod,
 } from "../../redux/slices/apiSlice";
 import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
+import { isLogoutFlowActive } from "./logoutFlowGuard";
 
 function shouldLogoutFromRenewReason(reason?: string) {
   return (
@@ -22,6 +24,7 @@ export function AppSessionGuard() {
   const dispatch = useAppDispatch();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const activeBaseUrl = useAppSelector(selectIp);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
 
   const runningRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -45,39 +48,31 @@ export function AppSessionGuard() {
 
     const run = async () => {
       if (runningRef.current || cancelled) return;
+      if (isLogoutFlowActive()) return;
 
       const elapsed = Date.now() - loginStartedAtRef.current;
-      if (elapsed < 12_000) {
-        return;
-      }
+      if (elapsed < 12_000) return;
 
       runningRef.current = true;
 
       try {
         await dispatch(refreshServerStatus());
 
-        const aliveRes = await dispatch(
-          checkAlive({ silent: true })
-        ).unwrap();
+        if (authenticationMethod === "oidc") {
+          return;
+        }
+
+        const aliveRes = await dispatch(checkAlive({ silent: true })).unwrap();
 
         if (cancelled) return;
-
-        // Solange Server offline ist: nichts tun
-        if (!aliveRes.isOnline) {
-          return;
-        }
-
-        // Nur wenn die Verbindung gerade zurückgekommen ist:
-        // genau EIN Renew-Versuch
-        if (!aliveRes.wentOnline) {
-          return;
-        }
+        if (!aliveRes.isOnline) return;
+        if (!aliveRes.wentOnline) return;
 
         const renewResults = await dispatch(
           renewAllServerJwtsIfNeeded({
             force: true,
             cooldownMs: 10_000,
-          }) as any
+          }) as any,
         ).unwrap();
 
         if (cancelled) return;
@@ -90,7 +85,6 @@ export function AppSessionGuard() {
 
         if (shouldLogoutFromRenewReason(activeReason)) {
           await dispatch(logoutAsync());
-          return;
         }
       } catch (error) {
         console.log("[AppSessionGuard] failed:", error);
@@ -111,7 +105,7 @@ export function AppSessionGuard() {
         intervalRef.current = null;
       }
     };
-  }, [dispatch, isLoggedIn, activeBaseUrl]);
+  }, [dispatch, isLoggedIn, activeBaseUrl, authenticationMethod]);
 
   return null;
 }
