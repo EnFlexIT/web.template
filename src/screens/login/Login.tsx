@@ -286,7 +286,7 @@ const isOidc =
       const currentOrigin = window.location.origin;
 
       const oidcStartUrl =
-        `${normalizeBaseUrl(selectedBaseUrl)}/api/j_security_check`;
+        `${normalizeBaseUrl(selectedBaseUrl)}`;
 
       console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
       console.log("[OIDC] currentOrigin:", currentOrigin);
