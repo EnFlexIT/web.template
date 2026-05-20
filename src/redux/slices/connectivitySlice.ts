@@ -44,6 +44,12 @@ async function ping(
 ): Promise<{ ok: boolean; status?: number }> {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  function isReachableResponse(res: Response): boolean {
+  if (res.type === "opaqueredirect") return true;
+  if (res.status === 0) return true;
+
+  return res.status >= 200 && res.status < 500;
+}
 
   try {
     const res = await fetch(url, {
@@ -129,17 +135,21 @@ const candidateUrls = [
       lastUrl = url;
 
       console.log("[checkAlive] response:", url, "status:", result.status);
+if (result.ok) {
+  console.log("[checkAlive] ONLINE DETECTED", {
+    url,
+    status: result.status,
+  });
 
-      if (result.ok) {
-        return {
-          isOnline: true,
-          wentOnline: wasOffline,
-          error: null,
-          skipped: false,
-          checkedUrl: url,
-          checkedStatus: result.status,
-        };
-      }
+  return {
+    isOnline: true,
+    wentOnline: wasOffline,
+    error: null,
+    skipped: false,
+    checkedUrl: url,
+    checkedStatus: result.status,
+  };
+}
     } catch (err: unknown) {
       lastUrl = url;
       lastError = err;
@@ -147,7 +157,11 @@ const candidateUrls = [
       console.log("[checkAlive] failed:", url, err);
     }
   }
-
+console.log("[checkAlive] OFFLINE DETECTED", {
+  lastUrl,
+  lastStatus,
+  lastError,
+});
   return {
     isOnline: false,
     wentOnline: false,
@@ -155,7 +169,10 @@ const candidateUrls = [
     skipped: false,
     checkedUrl: lastUrl,
     checkedStatus: lastStatus,
+    
   };
+
+  
 });
 
 const connectivitySlice = createSlice({
@@ -199,7 +216,7 @@ const connectivitySlice = createSlice({
 
     builder.addCase(checkAlive.rejected, (state, action) => {
       state.checking = false;
-      state.isOffline = true;
+      state.isOffline = false;
       state.showBackOnline = false;
       state.lastError = action.error?.message ?? "Server nicht erreichbar";
     });

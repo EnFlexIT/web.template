@@ -79,10 +79,14 @@ export function AppSessionGuard() {
 
         const activeReason = activeResult?.reason;
 
-        if (shouldLogoutFromRenewReason(activeReason)) {
-          await dispatch(logoutAsync());
-        }
-      } catch (error) {
+          if (
+      shouldLogoutFromRenewReason(activeReason) &&
+      authenticationMethod !== "oidc" &&
+      authenticationMethod !== "unknown"
+    ) {
+      await dispatch(logoutAsync());
+    }
+          } catch (error) {
         console.log("[AppSessionGuard] failed:", error);
       } finally {
         runningRef.current = false;

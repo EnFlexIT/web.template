@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
+
 import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
-import { selectApi } from "../redux/slices/apiSlice";
+import { selectApi, selectAuthenticationMethod } from "../redux/slices/apiSlice";
 import { addNotification } from "../redux/slices/notificationSlice";
 import {
   getServerScopedStorageKey,
@@ -47,6 +48,7 @@ function fmtFull(v: ApiVersion | null | undefined) {
 
 function extractServerWebApp(data: any): { versionFull: string } | null {
   const list = data?.SoftwareComponentList ?? data?.softwareComponentList;
+
   if (!Array.isArray(list) || list.length === 0) return null;
 
   const item =
@@ -55,6 +57,7 @@ function extractServerWebApp(data: any): { versionFull: string } | null {
     ) ?? list[0];
 
   const version = item?.version ?? item?.Version;
+
   if (!version || typeof version !== "object") return null;
 
   const v: ApiVersion = {
@@ -75,11 +78,21 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
       headers: params.jwt
         ? {
             Authorization: `Bearer ${params.jwt}`,
+            Accept: "application/json",
           }
-        : undefined,
+        : {
+            Accept: "application/json",
+          },
     });
 
     if (!res.ok) return { __status: res.status };
+
+    const contentType = res.headers.get("content-type") ?? "";
+
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return null;
+    }
+
     return await res.json();
   } catch {
     return null;
@@ -97,130 +110,146 @@ function hardReloadWeb(cacheKey: string) {
 
 export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation(["Notifications"]);
+
   const intervalMs = opts?.intervalMs ?? 5 * 60 * 1000;
-  const{t}= useTranslation(["Notifications"]);
+
   const api = useAppSelector(selectApi);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+
   const ip = api.ip;
   const jwt = api.jwt;
-const isLoggedIn = api.isLoggedIn;
+  const isLoggedIn = api.isLoggedIn;
+
   const isWeb = Platform.OS === "web";
+  const isOidc =
+    authenticationMethod === "oidc" || authenticationMethod === "unknown";
+
   const serverKey = normalizeServerKey(ip);
   const storageKey = getServerScopedStorageKey(
     LAST_ACCEPTED_KEY_PREFIX,
     ip,
   );
 
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [currentFull, setCurrentFull] = useState<string | null>(null);
   const [acceptedFull, setAcceptedFull] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("-");
 
-const checkNow = useCallback(async () => {
-  /*
-   * Wichtig:
-   * Wenn ausgeloggt oder kein JWT vorhanden ist,
-   * darf /api/version NICHT aufgerufen werden.
-   */
-  if (!isWeb || !ip || !isLoggedIn || !jwt) {
-    setUpdateAvailable(false);
-    setStatus("Skipped");
-    return;
-  }
+  const checkNow = useCallback(async () => {
+    /*
+     * OIDC:
+     * /api/version darf NICHT im Hintergrund geprüft werden.
+     * Der Server redirectet sonst zu login.enflex.it.
+     * Das erzeugt CORS-Fehler und kann die App zurück zum Login bringen.
+     */
+    if (isOidc) {
+      setUpdateAvailable(false);
+      setStatus("OIDC_DISABLED");
+      return;
+    }
 
-  const query = new URLSearchParams();
-  query.set("_ts", String(Date.now()));
+    /*
+     * JWT / Basic:
+     * Nur prüfen, wenn wirklich eingeloggt und JWT vorhanden ist.
+     */
+    if (!isWeb || !ip || !isLoggedIn || !jwt) {
+      setUpdateAvailable(false);
+      setStatus("Skipped");
+      return;
+    }
 
-  const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
+    const query = new URLSearchParams();
+    query.set("_ts", String(Date.now()));
 
-  const data = await fetchJsonNoCache({
-    url,
-    jwt,
-  });
+    const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
 
-  /*
-   * Kein Server offline Popup daraus ableiten.
-   * Das kann bei OIDC auch Redirect/CORS bedeuten.
-   */
-  if (data === null) {
-    setStatus("Skipped / not authenticated");
-    setUpdateAvailable(false);
-    return;
-  }
+    const data = await fetchJsonNoCache({
+      url,
+      jwt,
+    });
 
-  if ((data as any)?.__status) {
-    const st = Number((data as any).__status);
-
-    if (st === 401 || st === 403 || st === 303) {
-      setStatus("Not authenticated");
+    if (data === null) {
+      setStatus("Skipped / not authenticated");
       setUpdateAvailable(false);
       return;
     }
 
-    setStatus(`HTTP ${st}`);
+    if ((data as any)?.__status) {
+      const st = Number((data as any).__status);
+
+      if (st === 401 || st === 403 || st === 303) {
+        setStatus("Not authenticated");
+        setUpdateAvailable(false);
+        return;
+      }
+
+      setStatus(`HTTP ${st}`);
+      setUpdateAvailable(false);
+      return;
+    }
+
+    const parsed = extractServerWebApp(data);
+
+    if (!parsed) {
+      setStatus("Unexpected format");
+      setUpdateAvailable(false);
+      return;
+    }
+
+    setCurrentFull(parsed.versionFull);
+
+    const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
+
+    if (!accepted) {
+      await AsyncStorage.setItem(storageKey, parsed.versionFull);
+      setAcceptedFull(parsed.versionFull);
+      setUpdateAvailable(false);
+      setStatus("OK (baseline stored)");
+      return;
+    }
+
+    setAcceptedFull(accepted);
+
+    if (accepted !== parsed.versionFull) {
+      setUpdateAvailable(true);
+      setStatus(`Update verfügbar: ${accepted} → ${parsed.versionFull}`);
+
+      dispatch(
+        addNotification({
+          id: `web-update-${serverKey}-${parsed.versionFull}`,
+          serverKey,
+          type: "update",
+          title: t("new_version_available"),
+          message: ` ${parsed.versionFull}`,
+          createdAt: new Date().toISOString(),
+          read: false,
+          severity: "info",
+          action: {
+            type: "navigate",
+            menuId: 3014,
+          },
+        }),
+      );
+
+      return;
+    }
+
     setUpdateAvailable(false);
-    return;
-  }
-
-  const parsed = extractServerWebApp(data);
-
-  if (!parsed) {
-    setStatus("Unexpected format");
-    setUpdateAvailable(false);
-    return;
-  }
-
-  setCurrentFull(parsed.versionFull);
-
-  const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
-
-  if (!accepted) {
-    await AsyncStorage.setItem(storageKey, parsed.versionFull);
-    setAcceptedFull(parsed.versionFull);
-    setUpdateAvailable(false);
-    setStatus("OK (baseline stored)");
-    return;
-  }
-
-  setAcceptedFull(accepted);
-
-  if (accepted !== parsed.versionFull) {
-    setUpdateAvailable(true);
-    setStatus(`Update verfügbar: ${accepted} → ${parsed.versionFull}`);
-
-    dispatch(
-      addNotification({
-        id: `web-update-${serverKey}-${parsed.versionFull}`,
-        serverKey,
-        type: "update",
-        title: t("new_version_available"),
-        message: ` ${parsed.versionFull}`,
-        createdAt: new Date().toISOString(),
-        read: false,
-        severity: "info",
-        action: {
-          type: "navigate",
-          menuId: 3014,
-        },
-      }),
-    );
-
-    return;
-  }
-
-  setUpdateAvailable(false);
-  setStatus("Up to date");
-}, [
-  dispatch,
-  ip,
-  isWeb,
-  isLoggedIn,
-  jwt,
-  serverKey,
-  storageKey,
-  t,
-]);
+    setStatus("Up to date");
+  }, [
+    dispatch,
+    ip,
+    isOidc,
+    isWeb,
+    isLoggedIn,
+    jwt,
+    serverKey,
+    storageKey,
+    t,
+  ]);
 
   const applyUpdateNow = useCallback(async () => {
     if (!isWeb) return;
@@ -240,25 +269,41 @@ const checkNow = useCallback(async () => {
     setAcceptedFull(null);
     setStatus("-");
 
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    /*
+     * OIDC:
+     * gar keinen Timer starten.
+     */
+    if (isOidc) {
+      setStatus("OIDC_DISABLED");
+      return;
+    }
+
     void checkNow();
 
-    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       void checkNow();
     }, intervalMs);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [checkNow, intervalMs, isWeb, serverKey]);
+  }, [checkNow, intervalMs, isOidc, isWeb, serverKey]);
 
   return {
     updateAvailable,
-    status,
-    acceptedFull,
     currentFull,
+    acceptedFull,
+    status,
     checkNow,
     applyUpdateNow,
-    canCheck: isWeb && !!ip,
+    canCheck: isWeb && !!ip && !isOidc,
   };
 }

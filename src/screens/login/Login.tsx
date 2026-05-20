@@ -11,7 +11,6 @@ import {
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
-import * as WebBrowser from "expo-web-browser";
 import Constants from "expo-constants";
 import { Buffer } from "buffer";
 
@@ -40,8 +39,6 @@ import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
 
-WebBrowser.maybeCompleteAuthSession();
-
 function toBase64(str: string): string {
   return typeof btoa !== "undefined"
     ? btoa(str)
@@ -55,12 +52,22 @@ function extractBearerToken(value: unknown): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
-function normalizeBaseUrl(url: string): string {
-  return (url ?? "").trim().replace(/\/+$/, "");
+export function normalizeBaseUrl(url: string): string {
+  const clean = (url ?? "").trim();
+
+  try {
+    const parsed = new URL(clean);
+    parsed.pathname = parsed.pathname.replace(/\/login\/?$/, "");
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return clean.replace(/\/login\/?$/, "").replace(/\/+$/, "");
+  }
 }
 
 function buildServerOidcStartUrl(baseUrl: string): string {
-  return `${normalizeBaseUrl(baseUrl)}/`;
+  return `${normalizeBaseUrl(baseUrl)}`;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -122,7 +129,7 @@ async function fetchOidcBearerFromServer(
 
 async function waitForOidcBearer(
   baseUrl: string,
-  retries = 20,
+  retries = 90,
   delayMs = 1000,
 ): Promise<string | null> {
   for (let i = 0; i < retries; i += 1) {
@@ -163,7 +170,7 @@ export function LoginScreen() {
   const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
 
-  const oidcStartedRef = useRef(false);
+  const loginWindowRef = useRef<Window | null>(null);
 
   const [highlight] = useState(false);
   const [folded, setFolded] = useState(true);
@@ -203,7 +210,9 @@ export function LoginScreen() {
 
   const isWeb = Platform.OS === "web";
   const isExpoGo = Constants.appOwnership === "expo";
-
+const isOidc =
+  authenticationMethod === "oidc" ||
+  authenticationMethod === "unknown";
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
@@ -268,11 +277,14 @@ export function LoginScreen() {
   async function loginWithOidc(): Promise<void> {
     if (oidcLoginInProgress) return;
 
+    setLoginRequestIssued(true);
+    setLoginRequestStatus("loading");
+    setLoginFeedback(null);
     setOidcLoginInProgress(true);
 
-    try {
-      const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
 
+    try {
       if (!oidcStartUrl) {
         setLoginRequestStatus("failed");
         setLoginFeedback("OIDC-Start-URL fehlt.");
@@ -280,7 +292,39 @@ export function LoginScreen() {
       }
 
       if (isWeb) {
-        window.location.replace(oidcStartUrl);
+        loginWindowRef.current = window.open(
+          oidcStartUrl,
+          "awb-oidc-login",
+          "width=1000,height=850",
+        );
+
+        if (!loginWindowRef.current) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("Popup wurde blockiert. Bitte Popups erlauben.");
+          return;
+        }
+
+        const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
+
+        if (!bearer) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("Login wurde nicht abgeschlossen.");
+          return;
+        }
+
+       
+
+        await dispatch(
+          switchServer({
+            url: selectedBaseUrl,
+            providedJwt: bearer,
+            initializeMenu: true,
+          }),
+        );
+      loginWindowRef.current?.close();
+      window.focus();
+        setLoginRequestStatus("successful");
+        setLoginFeedback(null);
         return;
       }
 
@@ -292,9 +336,9 @@ export function LoginScreen() {
         return;
       }
 
-      await WebBrowser.openBrowserAsync(oidcStartUrl);
+      await Linking.openURL(oidcStartUrl);
 
-      const bearer = await waitForOidcBearer(selectedBaseUrl, 20, 1000);
+      const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
 
       if (!bearer) {
         setLoginRequestStatus("failed");
@@ -370,11 +414,9 @@ export function LoginScreen() {
   }
 
   useEffect(() => {
-    oidcStartedRef.current = false;
     setOidcLoginInProgress(false);
+    loginWindowRef.current = null;
   }, [selectedBaseUrl]);
-
-
 
   return (
     <View style={[styles.container]}>
@@ -431,16 +473,22 @@ export function LoginScreen() {
           )}
 
           {!showJwtLogin && (
-           <View style={localStyles.oidcLoading}>
+            <View style={localStyles.oidcLoading}>
               <ActionButton
-                label={t("login")}
+                label={oidcLoginInProgress ? t("loading") : t("login")}
                 variant="secondary"
                 size="xs"
                 onPress={() => {
                   void loginWithOidc();
                 }}
               />
+
+              {oidcLoginInProgress && <ActivityIndicator />}
             </View>
+          )}
+
+          {showUnknownAuth && (
+            <Text style={localStyles.infoText}>{t("auth_method_unknown")}</Text>
           )}
         </View>
 

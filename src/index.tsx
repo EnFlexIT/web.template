@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
-
+import { selectAuthenticationMethod } from "./redux/slices/apiSlice";
 import { checkAlive } from "./redux/slices/connectivitySlice";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
@@ -45,6 +45,7 @@ import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
 
+
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
 
@@ -74,7 +75,7 @@ function RootStack() {
   const { theme } = useUnistyles();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
-
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const isWide = useIsWide();
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
@@ -319,7 +320,7 @@ function RootStack() {
            <OfflineOverlay />
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
-            <UpdateNotificationWatcher />
+            {authenticationMethod !== "oidc" && <UpdateNotificationWatcher />}
             <NotificationPopup />
             {children}
           </View>

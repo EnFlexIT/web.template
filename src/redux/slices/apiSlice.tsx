@@ -246,15 +246,13 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       };
     }
 
-    if (!contentType.includes("application/json")) {
-      console.warn("[DETECT SERVER] expected JSON but got:", contentType);
-
-      return {
-        isPointingToServer: false,
-        authenticationMethod: "unknown",
-        isBaseMode: false,
-      };
-    }
+   if (!contentType.includes("application/json")) {
+        return {
+          isPointingToServer: true,
+          authenticationMethod: "oidc",
+          isBaseMode: true,
+        };
+      }
 
     const data = await response.json();
 
