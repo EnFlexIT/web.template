@@ -274,57 +274,67 @@ const isOidc =
     setLoginFeedback(t("login_failed"));
   }
 
- if (isWeb) {
-  const selectedOrigin = new URL(normalizeBaseUrl(selectedBaseUrl)).origin;
-  const currentOrigin = window.location.origin;
+ const loginWithOidc = async () => {
+  try {
+    setLoginRequestStatus("loading");
 
-  const oidcStartUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/j_security_check`;
+    if (isWeb) {
+      const selectedOrigin = new URL(
+        normalizeBaseUrl(selectedBaseUrl),
+      ).origin;
 
-  console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
-  console.log("[OIDC] currentOrigin:", currentOrigin);
-  console.log("[OIDC] selectedOrigin:", selectedOrigin);
-  console.log("[OIDC] oidcStartUrl:", oidcStartUrl);
+      const currentOrigin = window.location.origin;
 
-  // Wenn App direkt auf gleichem Server läuft, z.B. localhost:8080:
-  // KEIN Popup öffnen.
-  if (selectedOrigin === currentOrigin) {
-    console.log("[OIDC] same origin -> no popup, redirect same tab");
-    window.location.href = oidcStartUrl;
-    return;
+      const oidcStartUrl =
+        `${normalizeBaseUrl(selectedBaseUrl)}/api/j_security_check`;
+
+      console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
+      console.log("[OIDC] currentOrigin:", currentOrigin);
+      console.log("[OIDC] selectedOrigin:", selectedOrigin);
+      console.log("[OIDC] oidcStartUrl:", oidcStartUrl);
+
+      // Gleicher Server -> kein Popup
+      if (selectedOrigin === currentOrigin) {
+        console.log("[OIDC] same origin -> no popup");
+        window.location.href = oidcStartUrl;
+        return;
+      }
+
+      // Unterschiedlicher Server -> Popup
+      console.log("[OIDC] different origin -> popup");
+
+      loginWindowRef.current = window.open(
+        oidcStartUrl,
+        "awb-oidc-login",
+        "width=1000,height=850",
+      );
+
+      if (!loginWindowRef.current) {
+        throw new Error("OIDC popup blocked");
+      }
+
+     const bearer = await waitForOidcBearer(selectedBaseUrl);
+
+      await dispatch(
+        switchServer({
+          url: selectedBaseUrl,
+          providedJwt: bearer,
+          initializeMenu: true,
+        }),
+      ).unwrap();
+
+      loginWindowRef.current?.close();
+      window.focus();
+
+      setLoginRequestStatus("successful");
+      return;
+    }
+  } catch (error) {
+    console.error("[OIDC] login failed:", error);
+    setLoginRequestStatus("failed");
   }
+};
 
-  // Nur wenn App und Server unterschiedlich sind, z.B. Expo 8081 -> Server 8080:
-  // Popup benutzen.
-  console.log("[OIDC] different origin -> open popup");
-
-  loginWindowRef.current = window.open(
-    oidcStartUrl,
-    "awb-oidc-login",
-    "width=1000,height=850",
-  );
-
-  if (!loginWindowRef.current) {
-    throw new Error("OIDC popup blocked");
-  }
-
-  const bearer = await waitForOidcBearer(selectedBaseUrl, () => {
-    return loginWindowRef.current?.closed === true;
-  });
-
-  await dispatch(
-    switchServer({
-      url: selectedBaseUrl,
-      providedJwt: bearer,
-      initializeMenu: true,
-    }),
-  ).unwrap();
-
-  loginWindowRef.current?.close();
-  window.focus();
-
-  setLoginRequestStatus("successful");
-  return;
-}
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
       return;
