@@ -24,12 +24,7 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {
-  selectApi,
-  selectAuthenticationMethod,
-  selectIp,
-  switchServer,
-} from "../../redux/slices/apiSlice";
+import {  selectApi,selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
@@ -152,6 +147,7 @@ async function waitForOidcBearer(
 }
 
 export function LoginScreen() {
+  // Redux state and dispatch and other hooks used in the component   
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
   const Feather = withUnistyles(Feather_);
@@ -167,6 +163,7 @@ export function LoginScreen() {
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
   const loginWindowRef = useRef<Window | null>(null);
   const [highlight] = useState(false);
+   styles.useVariants({ highlight });
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
@@ -176,7 +173,6 @@ export function LoginScreen() {
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
   const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed" >("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
-  styles.useVariants({ highlight });
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
   const languageOptions = {de: "Deutsch", en: "English",} as const;
   const themeOptions = { system: t("system"),light: t("light"), dark: t("dark"),} as const;
@@ -186,7 +182,52 @@ export function LoginScreen() {
   const showUnknownAuth = authenticationMethod === "unknown";
   const basic = toBase64(`${username}:${password}`);
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
+  const isExpoWeb =isWeb && typeof window !== "undefined" &&window.location.origin.includes("localhost:8081");
+  const autoOidcDoneRef = useRef(false);
 
+/******************************************************************************************************************************************** */
+
+// Effect to automatically attempt OIDC login on component mount if OIDC is the selected authentication method, and to prevent multiple attempts using a ref flag
+useEffect(() => {
+  if (authenticationMethod !== "oidc") return;
+  if (autoOidcDoneRef.current) return;
+
+  autoOidcDoneRef.current = true;
+
+  const run = async () => {
+    const bearer = await fetchOidcBearerFromServer(selectedBaseUrl);
+
+    if (!bearer) {
+      autoOidcDoneRef.current = false;
+      return;
+    }
+
+    await dispatch(
+      switchServer({
+        url: selectedBaseUrl,
+        providedJwt: bearer,
+        initializeMenu: !isExpoWeb,
+      }),
+    );
+
+    setLoginRequestStatus("successful");
+    setLoginFeedback(null);
+  };
+
+  void run();
+}, [authenticationMethod, selectedBaseUrl, dispatch, isExpoWeb]);
+
+
+// Helper function to check if the selected server's origin matches the web app's origin, used to determine if OIDC login can be performed in a popup or needs to fallback to redirect
+function isSameOriginAsSelectedServer(): boolean {
+  if (!isWeb || typeof window === "undefined") return false;
+
+  try {
+    return new URL(normalizeBaseUrl(selectedBaseUrl)).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
   // Cleanup function to close the login window if it's still open when the component unmounts
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
@@ -262,6 +303,15 @@ export function LoginScreen() {
     }
 
     if (isWeb) {
+      const sameOrigin = isSameOriginAsSelectedServer();
+
+      // Server normal auf 8080 geöffnet -> KEIN Popup
+      if (sameOrigin) {
+        window.location.href = oidcStartUrl;
+        return;
+      }
+
+      // Expo 8081 -> Server 8080 -> Popup nötig
       loginWindowRef.current = window.open(
         oidcStartUrl,
         "awb-oidc-login",
