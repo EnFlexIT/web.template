@@ -156,67 +156,38 @@ export function LoginScreen() {
   const dispatch = useAppDispatch();
   const Feather = withUnistyles(Feather_);
   const { theme } = useUnistyles();
-
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-  const { isLoggedIn } = useAppSelector(selectApi);
   const ip = useAppSelector(selectIp);
-
   const language = useAppSelector(selectLanguage);
   const themeInfo = useAppSelector(selectThemeInfo);
-
   const serversState = useAppSelector(selectServers);
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
-
   const loginWindowRef = useRef<Window | null>(null);
-
   const [highlight] = useState(false);
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  const shouldPromptPasswordChange =
-    username.trim().toLowerCase() === "admin" && password === "admin";
-
+  const shouldPromptPasswordChange = username.trim().toLowerCase() === "admin" && password === "admin";
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
-  const [loginRequestStatus, setLoginRequestStatus] = useState<
-    "loading" | "successful" | "failed"
-  >("loading");
+  const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed" >("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
-
   styles.useVariants({ highlight });
-
   const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
-
-  const languageOptions = {
-    de: "Deutsch",
-    en: "English",
-  } as const;
-
-  const themeOptions = {
-    system: t("system"),
-    light: t("light"),
-    dark: t("dark"),
-  } as const;
-
-  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive
-    ? "system"
-    : themeInfo.theme;
-
+  const languageOptions = {de: "Deutsch", en: "English",} as const;
+  const themeOptions = { system: t("system"),light: t("light"), dark: t("dark"),} as const;
+  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive? "system": themeInfo.theme;
   const isWeb = Platform.OS === "web";
-  const isExpoGo = Constants.appOwnership === "expo";
-const isOidc =
-  authenticationMethod === "oidc" ||
-  authenticationMethod === "unknown";
   const showJwtLogin = authenticationMethod === "jwt";
-  const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
+  const basic = toBase64(`${username}:${password}`);
+  const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
 
+  // Cleanup function to close the login window if it's still open when the component unmounts
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
       setLoginRequestStatus("failed");
@@ -224,9 +195,8 @@ const isOidc =
       return;
     }
 
-    const basic = toBase64(`${username}:${password}`);
-    const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
 
+   // Close any open login window before starting a new login attempt
     const response = await fetch(loginUrl, {
       method: "GET",
       headers: {
@@ -234,7 +204,7 @@ const isOidc =
         Accept: "application/json",
       },
     });
-
+  // Try to extract bearer token from headers or body, depending on server implementation
     const wwwAuthenticate =
       response.headers.get("www-authenticate") ??
       response.headers.get("WWW-Authenticate") ??
@@ -311,14 +281,18 @@ const isOidc =
         setLoginFeedback("Login wurde nicht abgeschlossen.");
         return;
       }
+        const isExpoWeb =
+          Platform.OS === "web" &&
+          typeof window !== "undefined" &&
+          window.location.origin.includes("localhost:8081");
 
-      await dispatch(
-        switchServer({
-          url: selectedBaseUrl,
-          providedJwt: bearer,
-          initializeMenu: true,
-        }),
-      );
+        await dispatch(
+          switchServer({
+            url: selectedBaseUrl,
+            providedJwt: bearer,
+            initializeMenu: !isExpoWeb,
+          }),
+        );
 
       loginWindowRef.current?.close();
       window.focus();
@@ -331,7 +305,7 @@ const isOidc =
     setOidcLoginInProgress(false);
   }
 }
-
+// Main login function that handles both JWT and OIDC login flows based on the selected authentication method
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
       return;
@@ -383,7 +357,7 @@ const isOidc =
       setLoginRequestStatus("failed");
     }
   }
-
+ // Effect to clean up login window reference when selectedBaseUrl changes (e.g., user selects a different server)
   useEffect(() => {
     setOidcLoginInProgress(false);
     loginWindowRef.current = null;

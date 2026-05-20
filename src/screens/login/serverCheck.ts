@@ -44,6 +44,14 @@ export async function checkServerReachable(
   const base = normalizeBaseUrl(baseUrl);
 
   console.log("[checkServerReachable] checking:", base);
+  if (base === "http://localhost:8081") {
+  console.log("[checkServerReachable] skip Expo frontend:", base);
+
+  return {
+    ok: false,
+    message: "Expo frontend is not backend.",
+  };
+}
 
   if (!base) {
     return {
@@ -74,7 +82,7 @@ export async function checkServerReachable(
       // 403 = erreichbar
       // 404 = erreichbar
      if (isReachableStatus(res.status) || res.status === 0 || res.type === "opaqueredirect") {
-          console.warn("[checkServerReachable] redirect detected but server is reachable:", {
+          console.log("[checkServerReachable] redirect detected but server is reachable:", {
             status: res.status,
             type: res.type,
             url,

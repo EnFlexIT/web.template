@@ -482,36 +482,31 @@ export const refreshServerStatus = createAsyncThunk(
     const ip = state.api.ip;
     const storedJwt = await getJwtForServer(ip);
 
-    const {
-      isPointingToServer,
-      authenticationMethod,
-      isBaseMode,
-    } = await detectServerAndMode(ip);
+    const {isPointingToServer, authenticationMethod,isBaseMode,} = await detectServerAndMode(ip);
 
     // Wichtig für OIDC:
     // Server sagt: nicht mehr authentifiziert.
     // Dann lokalen alten Token löschen.
-    if (authenticationMethod === "oidc" && isBaseMode) {
-      await removeJwtForServer(ip);
-      await AsyncStorage.removeItem(jwtKey);
+   if (authenticationMethod === "oidc" && isBaseMode) {
+  const currentJwt = state.api.jwt ?? storedJwt;
 
-      thunkAPI.dispatch(
-        setConnectionLocal({
-          ip,
-          jwt: null,
-          isPointingToServer,
-          authenticationMethod,
-          isBaseMode,
-        }),
-      );
+  thunkAPI.dispatch(
+    setConnectionLocal({
+      ip,
+      jwt: currentJwt,
+      isPointingToServer,
+      authenticationMethod,
+      isBaseMode,
+    }),
+  );
 
-      return {
-        isPointingToServer,
-        authenticationMethod,
-        isBaseMode,
-        skipped: false,
-      };
-    }
+  return {
+    isPointingToServer,
+    authenticationMethod,
+    isBaseMode,
+    skipped: false,
+  };
+}
 
     thunkAPI.dispatch(
       setConnectionLocal({
