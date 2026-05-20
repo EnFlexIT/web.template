@@ -67,7 +67,25 @@ export function normalizeBaseUrl(url: string): string {
 }
 
 function buildServerOidcStartUrl(baseUrl: string): string {
-  return `${normalizeBaseUrl(baseUrl)}`;
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  const issuer = process.env.EXPO_PUBLIC_OIDC_ISSUER;
+  const clientId = process.env.EXPO_PUBLIC_OIDC_CLIENT_ID;
+  const scopes = process.env.EXPO_PUBLIC_OIDC_SCOPES ?? "openid";
+
+  if (!issuer || !clientId) {
+    throw new Error("OIDC env fehlt");
+  }
+
+  const url = new URL(`${issuer}/protocol/openid-connect/auth`);
+
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", normalizedBaseUrl);
+  url.searchParams.set("scope", scopes);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("state", Math.random().toString(36).slice(2));
+
+  return url.toString();
 }
 
 function sleep(ms: number): Promise<void> {
@@ -285,8 +303,7 @@ const isOidc =
 
       const currentOrigin = window.location.origin;
 
-      const oidcStartUrl =
-        `${normalizeBaseUrl(selectedBaseUrl)}`;
+    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
 
       console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
       console.log("[OIDC] currentOrigin:", currentOrigin);
