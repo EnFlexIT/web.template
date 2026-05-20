@@ -275,74 +275,40 @@ const isOidc =
   }
 
   async function loginWithOidc(): Promise<void> {
-    if (oidcLoginInProgress) return;
+  if (oidcLoginInProgress) return;
 
-    setLoginRequestIssued(true);
-    setLoginRequestStatus("loading");
-    setLoginFeedback(null);
-    setOidcLoginInProgress(true);
+  setLoginRequestIssued(true);
+  setLoginRequestStatus("loading");
+  setLoginFeedback(null);
+  setOidcLoginInProgress(true);
 
-    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+  const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
 
-    try {
-      if (!oidcStartUrl) {
+  try {
+    if (!oidcStartUrl) {
+      setLoginRequestStatus("failed");
+      setLoginFeedback("OIDC-Start-URL fehlt.");
+      return;
+    }
+
+    if (isWeb) {
+      loginWindowRef.current = window.open(
+        oidcStartUrl,
+        "awb-oidc-login",
+        "width=1000,height=850",
+      );
+
+      if (!loginWindowRef.current) {
         setLoginRequestStatus("failed");
-        setLoginFeedback("OIDC-Start-URL fehlt.");
+        setLoginFeedback("Popup wurde blockiert. Bitte Popups erlauben.");
         return;
       }
-
-      if (isWeb) {
-        loginWindowRef.current = window.open(
-          oidcStartUrl,
-          "awb-oidc-login",
-          "width=1000,height=850",
-        );
-
-        if (!loginWindowRef.current) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("Popup wurde blockiert. Bitte Popups erlauben.");
-          return;
-        }
-
-        const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
-
-        if (!bearer) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("Login wurde nicht abgeschlossen.");
-          return;
-        }
-
-       
-
-        await dispatch(
-          switchServer({
-            url: selectedBaseUrl,
-            providedJwt: bearer,
-            initializeMenu: true,
-          }),
-        );
-      loginWindowRef.current?.close();
-      window.focus();
-        setLoginRequestStatus("successful");
-        setLoginFeedback(null);
-        return;
-      }
-
-      const canOpen = await Linking.canOpenURL(oidcStartUrl);
-
-      if (!canOpen) {
-        setLoginRequestStatus("failed");
-        setLoginFeedback(t("cannot_open_oidc_url"));
-        return;
-      }
-
-      await Linking.openURL(oidcStartUrl);
 
       const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
 
       if (!bearer) {
         setLoginRequestStatus("failed");
-        setLoginFeedback(t("please_check_server_version"));
+        setLoginFeedback("Login wurde nicht abgeschlossen.");
         return;
       }
 
@@ -354,12 +320,17 @@ const isOidc =
         }),
       );
 
+      loginWindowRef.current?.close();
+      window.focus();
+
       setLoginRequestStatus("successful");
       setLoginFeedback(null);
-    } finally {
-      setOidcLoginInProgress(false);
+      return;
     }
+  } finally {
+    setOidcLoginInProgress(false);
   }
+}
 
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
