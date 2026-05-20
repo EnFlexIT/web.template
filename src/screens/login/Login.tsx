@@ -67,25 +67,7 @@ export function normalizeBaseUrl(url: string): string {
 }
 
 function buildServerOidcStartUrl(baseUrl: string): string {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-
-  const issuer = process.env.EXPO_PUBLIC_OIDC_ISSUER;
-  const clientId = process.env.EXPO_PUBLIC_OIDC_CLIENT_ID;
-  const scopes = process.env.EXPO_PUBLIC_OIDC_SCOPES ?? "openid";
-
-  if (!issuer || !clientId) {
-    throw new Error("OIDC env fehlt");
-  }
-
-  const url = new URL(`${issuer}/protocol/openid-connect/auth`);
-
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("redirect_uri", normalizedBaseUrl);
-  url.searchParams.set("scope", scopes);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("state", Math.random().toString(36).slice(2));
-
-  return url.toString();
+  return `${normalizeBaseUrl(baseUrl)}`;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -292,45 +274,77 @@ const isOidc =
     setLoginFeedback(t("login_failed"));
   }
 
- const loginWithOidc = async () => {
-  try {
+  async function loginWithOidc(): Promise<void> {
+    if (oidcLoginInProgress) return;
+
+    setLoginRequestIssued(true);
     setLoginRequestStatus("loading");
+    setLoginFeedback(null);
+    setOidcLoginInProgress(true);
 
-    if (isWeb) {
-      const selectedOrigin = new URL(
-        normalizeBaseUrl(selectedBaseUrl),
-      ).origin;
+    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
 
-      const currentOrigin = window.location.origin;
-
-    const oidcStartUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/j_security_check`;
-
-      console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
-      console.log("[OIDC] currentOrigin:", currentOrigin);
-      console.log("[OIDC] selectedOrigin:", selectedOrigin);
-      console.log("[OIDC] oidcStartUrl:", oidcStartUrl);
-
-      // Gleicher Server -> kein Popup
-      if (selectedOrigin === currentOrigin) {
-        console.log("[OIDC] same origin -> no popup");
-        window.location.href = oidcStartUrl;
+    try {
+      if (!oidcStartUrl) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback("OIDC-Start-URL fehlt.");
         return;
       }
 
-      // Unterschiedlicher Server -> Popup
-      console.log("[OIDC] different origin -> popup");
+      if (isWeb) {
+        loginWindowRef.current = window.open(
+          oidcStartUrl,
+          "awb-oidc-login",
+          "width=1000,height=850",
+        );
 
-      loginWindowRef.current = window.open(
-        oidcStartUrl,
-        "awb-oidc-login",
-        "width=1000,height=850",
-      );
+        if (!loginWindowRef.current) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("Popup wurde blockiert. Bitte Popups erlauben.");
+          return;
+        }
 
-      if (!loginWindowRef.current) {
-        throw new Error("OIDC popup blocked");
+        const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
+
+        if (!bearer) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("Login wurde nicht abgeschlossen.");
+          return;
+        }
+
+       
+
+        await dispatch(
+          switchServer({
+            url: selectedBaseUrl,
+            providedJwt: bearer,
+            initializeMenu: true,
+          }),
+        );
+      loginWindowRef.current?.close();
+      window.focus();
+        setLoginRequestStatus("successful");
+        setLoginFeedback(null);
+        return;
       }
 
-     const bearer = await waitForOidcBearer(selectedBaseUrl);
+      const canOpen = await Linking.canOpenURL(oidcStartUrl);
+
+      if (!canOpen) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback(t("cannot_open_oidc_url"));
+        return;
+      }
+
+      await Linking.openURL(oidcStartUrl);
+
+      const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
+
+      if (!bearer) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback(t("please_check_server_version"));
+        return;
+      }
 
       await dispatch(
         switchServer({
@@ -338,19 +352,14 @@ const isOidc =
           providedJwt: bearer,
           initializeMenu: true,
         }),
-      ).unwrap();
-
-      loginWindowRef.current?.close();
-      window.focus();
+      );
 
       setLoginRequestStatus("successful");
-      return;
+      setLoginFeedback(null);
+    } finally {
+      setOidcLoginInProgress(false);
     }
-  } catch (error) {
-    console.error("[OIDC] login failed:", error);
-    setLoginRequestStatus("failed");
   }
-};
 
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
