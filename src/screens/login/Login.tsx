@@ -274,93 +274,57 @@ const isOidc =
     setLoginFeedback(t("login_failed"));
   }
 
-  async function loginWithOidc(): Promise<void> {
-    if (oidcLoginInProgress) return;
+ if (isWeb) {
+  const selectedOrigin = new URL(normalizeBaseUrl(selectedBaseUrl)).origin;
+  const currentOrigin = window.location.origin;
 
-    setLoginRequestIssued(true);
-    setLoginRequestStatus("loading");
-    setLoginFeedback(null);
-    setOidcLoginInProgress(true);
+  const oidcStartUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/j_security_check`;
 
-    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+  console.log("[OIDC] selectedBaseUrl:", selectedBaseUrl);
+  console.log("[OIDC] currentOrigin:", currentOrigin);
+  console.log("[OIDC] selectedOrigin:", selectedOrigin);
+  console.log("[OIDC] oidcStartUrl:", oidcStartUrl);
 
-    try {
-      if (!oidcStartUrl) {
-        setLoginRequestStatus("failed");
-        setLoginFeedback("OIDC-Start-URL fehlt.");
-        return;
-      }
-
-      if (isWeb) {
-        loginWindowRef.current = window.open(
-          oidcStartUrl,
-          "awb-oidc-login",
-          "width=1000,height=850",
-        );
-
-        if (!loginWindowRef.current) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("Popup wurde blockiert. Bitte Popups erlauben.");
-          return;
-        }
-
-        const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
-
-        if (!bearer) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("Login wurde nicht abgeschlossen.");
-          return;
-        }
-
-       
-
-        await dispatch(
-          switchServer({
-            url: selectedBaseUrl,
-            providedJwt: bearer,
-            initializeMenu: true,
-          }),
-        );
-      loginWindowRef.current?.close();
-      window.focus();
-        setLoginRequestStatus("successful");
-        setLoginFeedback(null);
-        return;
-      }
-
-      const canOpen = await Linking.canOpenURL(oidcStartUrl);
-
-      if (!canOpen) {
-        setLoginRequestStatus("failed");
-        setLoginFeedback(t("cannot_open_oidc_url"));
-        return;
-      }
-
-      await Linking.openURL(oidcStartUrl);
-
-      const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
-
-      if (!bearer) {
-        setLoginRequestStatus("failed");
-        setLoginFeedback(t("please_check_server_version"));
-        return;
-      }
-
-      await dispatch(
-        switchServer({
-          url: selectedBaseUrl,
-          providedJwt: bearer,
-          initializeMenu: true,
-        }),
-      );
-
-      setLoginRequestStatus("successful");
-      setLoginFeedback(null);
-    } finally {
-      setOidcLoginInProgress(false);
-    }
+  // Wenn App direkt auf gleichem Server läuft, z.B. localhost:8080:
+  // KEIN Popup öffnen.
+  if (selectedOrigin === currentOrigin) {
+    console.log("[OIDC] same origin -> no popup, redirect same tab");
+    window.location.href = oidcStartUrl;
+    return;
   }
 
+  // Nur wenn App und Server unterschiedlich sind, z.B. Expo 8081 -> Server 8080:
+  // Popup benutzen.
+  console.log("[OIDC] different origin -> open popup");
+
+  loginWindowRef.current = window.open(
+    oidcStartUrl,
+    "awb-oidc-login",
+    "width=1000,height=850",
+  );
+
+  if (!loginWindowRef.current) {
+    throw new Error("OIDC popup blocked");
+  }
+
+  const bearer = await waitForOidcBearer(selectedBaseUrl, () => {
+    return loginWindowRef.current?.closed === true;
+  });
+
+  await dispatch(
+    switchServer({
+      url: selectedBaseUrl,
+      providedJwt: bearer,
+      initializeMenu: true,
+    }),
+  ).unwrap();
+
+  loginWindowRef.current?.close();
+  window.focus();
+
+  setLoginRequestStatus("successful");
+  return;
+}
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
       return;
