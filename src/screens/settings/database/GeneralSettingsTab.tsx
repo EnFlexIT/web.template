@@ -11,22 +11,12 @@ import { H4 } from "../../../components/stylistic/H4";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
-import {
-  clearDbSettingsError,
-  fetchDbSystemParameters,
-  fetchGeneralDbConnectionSettings,
-  saveGeneralDbConnectionSettings,
-  testGeneralDbConnection,
-  selectDbSettingsError,
-  selectDbSettingsLoading,
-  selectDbSettingsSaving,
-  selectDbSystemParameters,
-  selectDbSystems,
-  selectGeneralConnection,
-  setGeneralConnectionField,
-} from "../../../redux/slices/dbSettingsSlice";
+import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "../../../redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
+import { Icon } from "../../../components/ui-elements/Icon/Icon";
+import Feather from "@expo/vector-icons/Feather";
 
+// Local type for messages displayed in the feedback area, can be an info, success, or error message, or null if no message should be displayed
 type LocalMessage =
   | {
       type: "info" | "success" | "error";
@@ -40,7 +30,7 @@ type ParsedConnectionUrl = {
   catalog: string;
   params: string;
 };
-
+// Helper function to split a JDBC URL into its base part and parameters part, handling both "?" and ";" as possible delimiters for parameters, used for parsing the URL into editable fields
 function splitUrlAndParams(url: string): { baseUrl: string; params: string } {
   if (!url) {
     return { baseUrl: "", params: "" };
@@ -75,7 +65,7 @@ function extractParamsDelimiter(mask: string, currentUrl: string): "?" | ";" {
   if (currentUrl.includes("?")) return "?";
   return ";";
 }
-
+// Helper function to parse a JDBC URL into its components (host, port, catalog, and parameters), handling different URL formats and extracting the relevant parts for editing in the UI
 function parseConnectionUrl(url: string): ParsedConnectionUrl {
   const { baseUrl, params } = splitUrlAndParams(url);
   const working = baseUrl.trim();
@@ -111,12 +101,7 @@ function parseConnectionUrl(url: string): ParsedConnectionUrl {
       }
     }
 
-    return {
-      host,
-      port,
-      catalog,
-      params,
-    };
+    return {host,port,catalog,params,};
   }
 
   const jdbcPrefixMatch = working.match(/^jdbc:[^:]+:(.*)$/);
@@ -126,12 +111,7 @@ function parseConnectionUrl(url: string): ParsedConnectionUrl {
     catalog = working;
   }
 
-  return {
-    host: "",
-    port: "",
-    catalog,
-    params,
-  };
+  return { host: "",port: "",catalog, params, };
 }
 
 function buildConnectionUrlFromMask(args: {
@@ -171,7 +151,7 @@ function buildConnectionUrlFromMask(args: {
 
   return params ? `${builtBase}${delimiter}${params}` : builtBase;
 }
-
+// Helper function to determine which fields should be visible in the UI based on the URL mask and current URL, checking for the presence of placeholders and actual values to infer which components are relevant for the selected database system
 function inferVisibleFields(urlMask: string, currentUrl: string) {
   const source = `${urlMask} ${currentUrl}`;
 
@@ -188,7 +168,7 @@ function inferVisibleFields(urlMask: string, currentUrl: string) {
     password: true,
   };
 }
-
+// Helper function to translate backend messages into user-friendly and localized text, checking for known messages and replacing them with translations, while also allowing for partial replacements in case the backend message contains additional context
 function translateBackendMessage(
   message: string,
   t: (key: string, options?: any) => string,
@@ -270,29 +250,25 @@ function translateBackendMessage(
 
   return translated;
 }
-
+//********************************** GeneralSettingsTab ********************************************************************* */
 export function GeneralSettingsTab() {
+
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["DataBase"]);
-
   const dbSystems = useAppSelector(selectDbSystems);
   const dbSystemParameters = useAppSelector(selectDbSystemParameters);
   const generalConnection = useAppSelector(selectGeneralConnection);
   const isLoading = useAppSelector(selectDbSettingsLoading);
   const isSaving = useAppSelector(selectDbSettingsSaving);
   const error = useAppSelector(selectDbSettingsError);
-
   const [localMessage, setLocalMessage] = useState<LocalMessage>(null);
-
-  const fallbackInfoText = t("messageInfoBoxDefault", {
-    defaultValue: "Info Box",
-  });
-
+  const fallbackInfoText = t("messageInfoBoxDefault", {defaultValue: "Info Box", });
+   // On component mount, fetch the database system parameters and the current general database connection settings from the backend to populate the form fields and options
   useEffect(() => {
     dispatch(fetchDbSystemParameters());
     dispatch(fetchGeneralDbConnectionSettings());
   }, [dispatch]);
-
+// If the general connection does not have a selected database system but there are available systems, automatically fill in the form with the parameters of the first available system as a fallback, to ensure the user has a valid starting point for configuring the general connection
   useEffect(() => {
     if (!generalConnection.dbSystem && dbSystems.length > 0) {
       const fallbackDbSystem = dbSystems[0];
@@ -344,7 +320,7 @@ export function GeneralSettingsTab() {
       );
     }
   }, [dispatch, dbSystems, dbSystemParameters, generalConnection.dbSystem]);
-
+// Memoized options for the database system dropdown, constructed from the list of available database systems, to provide a user-friendly selection of database types in the form
   const databaseSystemOptions = useMemo<Record<string, string>>(() => {
     return dbSystems.reduce<Record<string, string>>((acc, system) => {
       acc[system] = system;
@@ -368,7 +344,7 @@ export function GeneralSettingsTab() {
   }, [selectedDbSystemDefinition?.urlMask, generalConnection.url]);
 
   const isUsingGeneralConnection = generalConnection.useForEveryFactory;
-
+// Memoized message to be displayed in the feedback area, which prioritizes error messages from the Redux state, then local messages set by the component, and finally an informational message if the general connection is inactive, to provide clear and relevant feedback to the user based on the current state of the form and any actions taken
   const displayedMessage = useMemo(() => {
     if (error) {
       return {
@@ -403,7 +379,7 @@ export function GeneralSettingsTab() {
     }
     setLocalMessage(null);
   };
-
+// Handler for updating the general connection fields in the Redux state, which takes a partial object of connection properties and updates each one accordingly, used for handling changes to individual form fields and keeping the state in sync
   const updateConnection = (
     partial: Partial<{
       useForEveryFactory: boolean;
@@ -431,15 +407,13 @@ export function GeneralSettingsTab() {
       );
     });
   };
-
+// Handler for rebuilding the JDBC URL based on changes to individual components (host, port, catalog, params), which uses the URL mask of the selected database system to construct the new URL and updates the Redux state accordingly, while also clearing any messages in the feedback area
   const rebuildUrl = (partial: Partial<ParsedConnectionUrl>) => {
     const currentParsed = parseConnectionUrl(generalConnection.url);
-
     const nextHost = partial.host ?? currentParsed.host;
     const nextPort = partial.port ?? currentParsed.port;
     const nextCatalog = partial.catalog ?? generalConnection.defaultCatalog;
     const nextParams = partial.params ?? currentParsed.params;
-
     const nextUrl = buildConnectionUrlFromMask({
       mask: selectedDbSystemDefinition?.urlMask ?? "",
       currentUrl: generalConnection.url,
@@ -460,7 +434,7 @@ export function GeneralSettingsTab() {
       }),
     );
   };
-
+   // Handler for changing the "Use settings for every database connection" checkbox, which updates the Redux state and optionally fills in default values based on the first available database system if enabling the general connection without a selected system, while also providing user feedback on the action taken
   const onChangeCheckbox = async (value: boolean) => {
     clearMessages();
 
@@ -516,7 +490,7 @@ export function GeneralSettingsTab() {
       dispatch(fetchGeneralDbConnectionSettings());
     }
   };
-
+  // Handler for changing the selected database system, which updates the form fields based on the predefined parameters for that system, and resets any messages in the feedback area
   const onChangeDbSystem = (value: string) => {
     clearMessages();
 
@@ -597,8 +571,8 @@ export function GeneralSettingsTab() {
       });
     }
   };
-
- const onSave = async () => {
+ // Handler for saving the general database connection settings, which validates the input, updates the Redux state, and sends the updated settings to the backend, while also providing user feedback on success or failure of the operation
+  const onSave = async () => {
   clearMessages();
 
   const nextConnection = {
@@ -643,19 +617,7 @@ export function GeneralSettingsTab() {
           <View style={styles.separator} />
         </View>
 
-        <View style={styles.feedbackSlot}>
-          <Card
-            padding="sm"
-            style={[
-              styles.messageCard,
-              displayedMessage.type === "error" && styles.errorCard,
-              displayedMessage.type === "success" && styles.successCard,
-              displayedMessage.type === "info" && styles.infoCard,
-            ]}
-          >
-            <ThemedText>{displayedMessage.text}</ThemedText>
-          </Card>
-        </View>
+
 
         <Checkbox
           label={t("labelUseForEveryFactory")}
@@ -812,6 +774,13 @@ export function GeneralSettingsTab() {
           />
         </View>
       </View>
+       <View style={styles.feedbackSlot}>
+       <Feather
+          name="info"
+          size={20}
+          color={styles.color.color}/>
+        <ThemedText>{displayedMessage.text}</ThemedText>
+        </View>
     </Card>
   );
 }
@@ -855,8 +824,12 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   feedbackSlot: {
-    minHeight: 64,
+    minHeight: 60,
     justifyContent: "flex-start",
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   errorCard: {
@@ -921,6 +894,9 @@ const styles = StyleSheet.create((theme) => ({
 
   fieldInputWrap: {
     flex: 1,
+  },
+    color: {
+    color: theme.colors.text,
   },
 
   actions: {

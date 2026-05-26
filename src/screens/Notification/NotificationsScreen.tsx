@@ -9,16 +9,10 @@ import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H1 } from "../../components/stylistic/H1";
-
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-import {
-  markServerNotificationsRead,
-  markNotificationRead,
-  selectAllNotifications,
-  selectUnreadNotificationCount,
-} from "../../redux/slices/notificationSlice";
+import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "../../redux/slices/notificationSlice";
 import { setActiveMenuId } from "../../redux/slices/menuSlice";
 import { selectActiveServerKey } from "../../redux/selectors/serverSelectors";
 
@@ -51,7 +45,7 @@ export function NotificationsScreen() {
   const activeServerKey = useAppSelector(selectActiveServerKey);
   const notifications = useAppSelector(selectAllNotifications);
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
-
+// We use useMemo here to compute the subtitle text based on the number of notifications and unread count, so that it only recalculates when those values change, improving performance by avoiding unnecessary string concatenation on every render
   const subtitle = useMemo(() => {
     if (notifications.length === 0) return t("Nonotificationsyet");
     if (unreadCount === 0) return t("Allread");

@@ -1,19 +1,10 @@
+//import
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet as NativeStyleSheet,
-  View,
-} from "react-native";
+import {Platform, Pressable, ScrollView, StyleSheet as NativeStyleSheet,View,} from "react-native";
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
-import Constants from "expo-constants";
 import { Buffer } from "buffer";
-
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -24,7 +15,7 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {  selectApi,selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
+import {selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
@@ -33,20 +24,22 @@ import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Helper function to convert a string to Base64, compatible with both browser and Node.js environments
 
 function toBase64(str: string): string {
   return typeof btoa !== "undefined"
     ? btoa(str)
     : Buffer.from(str).toString("base64");
 }
-
+// Helper function to extract a Bearer token from a string, used to handle different server responses that might include the token in headers or body in various formats
 function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
 
   const match = value.match(/Bearer\s+(.+)/i);
   return match?.[1]?.trim() ?? null;
 }
-
+// Helper function to normalize the base URL by removing any trailing slashes and any "/login" suffix, used to ensure consistent URL formatting when making API calls and initiating OIDC login
 export function normalizeBaseUrl(url: string): string {
   const clean = (url ?? "").trim();
 
@@ -60,20 +53,20 @@ export function normalizeBaseUrl(url: string): string {
     return clean.replace(/\/login\/?$/, "").replace(/\/+$/, "");
   }
 }
-
+// Helper function to build the OIDC start URL by normalizing the base URL and appending the necessary path, used when initiating OIDC login
 function buildServerOidcStartUrl(baseUrl: string): string {
   return `${normalizeBaseUrl(baseUrl)}`;
 }
-
+// Helper function to create a delay, used for polling the server for the OIDC bearer token after initiating login in a popup
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
+// Helper function to fetch the OIDC bearer token from the server by calling the settings endpoint, used for both initial check on component mount and for polling after initiating OIDC login in a popup
 async function fetchOidcBearerFromServer(
   baseUrl: string,
 ): Promise<string | null> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-
+// Some servers might return a 400 with a specific message if there are duplicate sessions, so we check for that case explicitly to provide better feedback to the user
   const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
     method: "GET",
     cache: "no-store",
@@ -96,7 +89,7 @@ async function fetchOidcBearerFromServer(
   if (!response.ok) {
     return null;
   }
-
+// Try to extract bearer token from headers first (some servers might put it there), then fall back to body if not found in headers
   const data = await response.json();
   const entries = Array.isArray(data?.propertyEntries)
     ? data.propertyEntries
@@ -121,7 +114,7 @@ async function fetchOidcBearerFromServer(
 
   return typeof bearer === "string" && bearer.length > 0 ? bearer : null;
 }
-
+// Helper function that repeatedly tries to fetch the OIDC bearer token from the server with a delay between attempts, used for polling after initiating OIDC login in a popup
 async function waitForOidcBearer(
   baseUrl: string,
   retries = 90,
@@ -145,7 +138,7 @@ async function waitForOidcBearer(
 
   return null;
 }
-
+//******************************************************************************************************************************** */
 export function LoginScreen() {
   // Redux state and dispatch and other hooks used in the component   
   const { t } = useTranslation(["Login"]);
@@ -478,7 +471,7 @@ function isSameOriginAsSelectedServer(): boolean {
                 }}
               />
 
-              {oidcLoginInProgress && <ActivityIndicator />}
+              {oidcLoginInProgress}
             </View>
           )}
 
@@ -588,7 +581,6 @@ function LoginRequestStatusIndicator({
     return (
       <View style={[styles.loginRequestIndicatorContainer]}>
         <ThemedText>{t("loading")}</ThemedText>
-        <ActivityIndicator />
       </View>
     );
   }

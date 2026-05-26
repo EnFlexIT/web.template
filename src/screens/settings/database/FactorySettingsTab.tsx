@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-
+import Feather from "@expo/vector-icons/Feather";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { TextInput } from "../../../components/ui-elements/TextInput";
 import { H4 } from "../../../components/stylistic/H4";
@@ -13,27 +13,7 @@ import { H2 } from "../../../components/stylistic/H2";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
-import {
-  clearDbSettingsError,
-  fetchDbSystemParameters,
-  fetchFactoryDbConnectionSettings,
-  fetchGeneralDbConnectionSettings,
-  saveFactoryDbConnectionSettings,
-  testFactoryDbConnection,
-  selectDbSettingsError,
-  selectDbSettingsLoading,
-  selectDbSettingsSaving,
-  selectDbSystemParameters,
-  selectDbSystems,
-  selectFactories,
-  selectFactoryStates,
-  selectGeneralConnection,
-  selectSelectedFactoryConnection,
-  selectSelectedFactoryId,
-  setSelectedFactoryConnectionField,
-  setSelectedFactoryId,
-  fetchDbSettings,
-} from "../../../redux/slices/dbSettingsSlice";
+import { clearDbSettingsError, fetchDbSystemParameters,fetchFactoryDbConnectionSettings,fetchGeneralDbConnectionSettings,saveFactoryDbConnectionSettings,testFactoryDbConnection,selectDbSettingsError,selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters,selectDbSystems,selectFactories,selectFactoryStates, selectGeneralConnection,selectSelectedFactoryConnection,selectSelectedFactoryId,setSelectedFactoryConnectionField,setSelectedFactoryId,fetchDbSettings,} from "../../../redux/slices/dbSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
 
@@ -224,6 +204,7 @@ export function FactorySettingsTab() {
   const fallbackInfoText = t("messageInfoBoxDefault", {
     defaultValue: "Info Box",
   });
+  
    useEffect(() => {
       dispatch(fetchDbSettings());
     }, [dispatch]);
@@ -475,27 +456,16 @@ export function FactorySettingsTab() {
       });
     }
   };
-
+  // Determine whether to show the info box. It should be shown if there's a message to display and it's not the fallback info text.
+  const shouldShowInfoBox =
+  displayedMessage?.text &&
+  displayedMessage.text !== fallbackInfoText;
   return (
     <Card style={styles.card} padding="md">
       <View style={styles.container}>
         <View style={styles.header}>
           <H2>{t("labelfactoryDatabaseConnectionSettings")}</H2>
           <View style={styles.separator} />
-        </View>
-
-        <View style={styles.feedbackSlot}>
-          <Card
-            padding="sm"
-            style={[
-              styles.messageCard,
-              displayedMessage.type === "error" && styles.errorCard,
-              displayedMessage.type === "success" && styles.successCard,
-              displayedMessage.type === "info" && styles.infoCard,
-            ]}
-          >
-            <ThemedText>{displayedMessage.text}</ThemedText>
-          </Card>
         </View>
 
         <View style={styles.topSection}>
@@ -637,6 +607,16 @@ export function FactorySettingsTab() {
           />
         </View>
       </View>
+      {shouldShowInfoBox && (
+        <View style={styles.feedbackSlot}>
+          <Feather
+            name="info"
+            size={20}
+            color={styles.color.color}
+          />
+          <ThemedText>{displayedMessage.text}</ThemedText>
+        </View>
+      )}
     </Card>
   );
 }
@@ -684,8 +664,12 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   feedbackSlot: {
-    minHeight: 64,
+    minHeight: 60,
     justifyContent: "flex-start",
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   errorCard: {
@@ -720,6 +704,10 @@ const styles = StyleSheet.create((theme) => ({
   topField: {
     flex: 1,
     gap: 8,
+  },
+
+   color: {
+    color: theme.colors.text,
   },
 
   topLabel: {

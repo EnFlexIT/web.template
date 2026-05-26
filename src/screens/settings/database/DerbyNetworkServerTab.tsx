@@ -13,13 +13,9 @@ import {
   clearDbSettingsError,
   fetchDbSettings,
   saveDerbyNetworkServerSettings,
-  selectDerbyNetworkServer,
-  selectDbSettingsError,
-  selectDbSettingsLoading,
-  selectDbSettingsSaving,
-  setDerbyField,
-} from "../../../redux/slices/dbSettingsSlice";
+  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "../../../redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
+import Feather from "@expo/vector-icons/Feather";
 
 type LocalMessage =
   | {
@@ -171,6 +167,9 @@ export function DerbyNetworkServerTab() {
       text: t("messageDerbyNetworkServerTestInfo"),
     });
   };
+    const shouldShowInfoBox =
+  displayedMessage?.text &&
+  displayedMessage.text !== fallbackInfoText;
 
   return (
     <Card style={styles.card} padding="md">
@@ -185,19 +184,7 @@ export function DerbyNetworkServerTab() {
           />
         </View>
 
-        <View style={styles.feedbackSlot}>
-          <Card
-            padding="sm"
-            style={[
-              styles.messageCard,
-              displayedMessage.type === "error" && styles.errorCard,
-              displayedMessage.type === "success" && styles.successCard,
-              displayedMessage.type === "info" && styles.infoCard,
-            ]}
-          >
-            <ThemedText>{displayedMessage.text}</ThemedText>
-          </Card>
-        </View>
+      
 
         <View style={styles.settingsBox}>
           <Checkbox
@@ -302,6 +289,16 @@ export function DerbyNetworkServerTab() {
           />
         </View>
       </View>
+             {shouldShowInfoBox && (
+        <View style={styles.feedbackSlot}>
+          <Feather
+            name="info"
+            size={20}
+            color={styles.color.color}
+          />
+          <ThemedText>{displayedMessage.text}</ThemedText>
+        </View>
+      )}
     </Card>
   );
 }
@@ -327,10 +324,13 @@ const styles = StyleSheet.create((theme) => ({
   },
 
   feedbackSlot: {
-    minHeight: 64,
+    minHeight: 60,
     justifyContent: "flex-start",
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-
   errorCard: {
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: 24,
     paddingBottom: 24,
     gap: 20,
-    minHeight: 360,
+    minHeight: 430,
   },
 
   formArea: {
@@ -370,4 +370,9 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "flex-start",
     paddingTop: 4,
   },
+
+  color: {
+    color: theme.colors.text,
+  },
+
 }));
