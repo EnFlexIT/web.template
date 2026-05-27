@@ -233,7 +233,7 @@ export function Footer() {
               server.id,
               {
                 tone: "green" as const,
-                subtitle: t("eingeloggt"),
+                subtitle: t("einloggt"),
               },
             ] as const;
           }

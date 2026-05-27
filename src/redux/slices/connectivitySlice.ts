@@ -160,7 +160,7 @@ if (result.ok) {
       lastUrl = url;
       lastError = err;
 
-      console.log("[checkAlive] failed:", url, err);
+      //console.log("[checkAlive] failed:", url, err);
     }
   }
 console.log("[checkAlive] OFFLINE DETECTED", {

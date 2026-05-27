@@ -243,9 +243,9 @@ async function detectServerAndMode(baseUrl: string): Promise<{
     const status = response.status;
     const contentType = response.headers.get("content-type") ?? "";
 
-    console.log("[DETECT SERVER] baseUrl:", base);
-    console.log("[DETECT SERVER] status:", status);
-    console.log("[DETECT SERVER] content-type:", contentType);
+   // console.log("[DETECT SERVER] baseUrl:", base);
+   // console.log("[DETECT SERVER] status:", status);
+   // console.log("[DETECT SERVER] content-type:", contentType);
 
     if (status === 401 || status === 403) {
       return {
@@ -273,7 +273,7 @@ async function detectServerAndMode(baseUrl: string): Promise<{
 
     const data = await response.json();
 
-    console.log("[DETECT SERVER] data:", data);
+    //console.log("[DETECT SERVER] data:", data);
 
     const entries = Array.isArray((data as any)?.propertyEntries)
       ? (data as any).propertyEntries
@@ -322,7 +322,7 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       isBaseMode: authenticated === false,
     };
   } catch (error) {
-    console.error("[DETECT SERVER] failed:", error);
+    //console.error("[DETECT SERVER] failed:", error);
 
     return {
       isPointingToServer: false,
