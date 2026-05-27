@@ -148,9 +148,9 @@ function resolveActiveApiBaseUrl(params: {
   fallbackBaseUrl: string;
 }): string {
   return normalizeBaseUrl(
-    params.selectedServerBaseUrl ??
+    params.runtimeBaseUrl ??
+      params.selectedServerBaseUrl ??
       params.storedIp ??
-      params.runtimeBaseUrl ??
       params.fallbackBaseUrl,
   );
 }
