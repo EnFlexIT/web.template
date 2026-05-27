@@ -6,5 +6,5 @@ export function getAppEnvironment(): AppEnvironment {
 
   if (raw === "TEST") return "TEST";
   if (raw === "PROD") return "PROD";
-  return "TEST";
+  return raw;
 }

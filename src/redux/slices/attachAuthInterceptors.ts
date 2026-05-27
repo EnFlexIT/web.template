@@ -1,8 +1,8 @@
 import axios, { type AxiosError, type AxiosInstance } from "axios";
 import { store } from "../store";
-import { logoutAsync, selectAuthenticationMethod } from "./apiSlice";
+import { logoutLocal, selectAuthenticationMethod } from "./apiSlice";
+import { clearMenu } from "./menuSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
-
 let installed = false;
 let inFlightLogout = false;
 
@@ -48,7 +48,8 @@ function doLocalLogoutOnly(reason: "401" | "renew-401") {
 
   inFlightLogout = true;
 
-  store.dispatch(logoutAsync());
+  store.dispatch(logoutLocal());
+store.dispatch(clearMenu());
 
   setTimeout(() => {
     inFlightLogout = false;
@@ -89,7 +90,7 @@ function attach(instance: AxiosInstance) {
       /*
        * OIDC:
        * Aktuell gibt es noch keinen echten OIDC-Logout.
-       * Darum darf ein 401 NICHT automatisch logoutAsync() auslösen.
+      
        * Sonst fliegt die App direkt nach erfolgreichem Login wieder raus.
        */
       if (status === 401 && isOidc) {

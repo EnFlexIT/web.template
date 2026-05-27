@@ -148,8 +148,8 @@ function resolveActiveApiBaseUrl(params: {
   fallbackBaseUrl: string;
 }): string {
   return normalizeBaseUrl(
-    params.runtimeBaseUrl ??
-      params.selectedServerBaseUrl ??
+    params.selectedServerBaseUrl ??
+      params.runtimeBaseUrl ??
       params.storedIp ??
       params.fallbackBaseUrl,
   );
@@ -572,13 +572,40 @@ export const logoutAsync = createAsyncThunk(
   "api/logoutAsync",
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
+
     const currentIp = normalizeBaseUrl(state.api.ip);
+    const jwt = state.api.jwt;
+    const authenticationMethod = state.api.authenticationMethod;
+
+    const isOidc =
+      authenticationMethod === "oidc" || authenticationMethod === "unknown";
 
     thunkAPI.dispatch(setIsLoggingOut(true));
 
     try {
+      if (currentIp && jwt && !isOidc) {
+        try {
+          await fetch(`${currentIp}/api/user/logout`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+              Accept: "application/json",
+            },
+            credentials: "include",
+          });
+        } catch (error) {
+          console.warn("[LOGOUT] server logout failed", error);
+        }
+      }
+
       await setJwtForServer(currentIp, null);
       await AsyncStorage.removeItem(jwtKey);
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(
+          `postLoginAutoReloadChecked::${currentIp}`,
+        );
+      }
 
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());

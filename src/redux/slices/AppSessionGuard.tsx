@@ -15,8 +15,7 @@ import { isLogoutFlowActive } from "./logoutFlowGuard";
 function shouldLogoutFromRenewReason(reason?: string) {
   return (
     reason === "expired" ||
-    reason === "401-no-token" ||
-    reason === "no-jwt-for-server"
+    reason === "401-no-token"
   );
 }
 
