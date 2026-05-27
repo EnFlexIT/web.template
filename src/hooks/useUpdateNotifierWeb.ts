@@ -15,7 +15,7 @@ import {
 const API_PREFIX = "/api";
 const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
 
-function joinUrl(base: string, path: string) {
+export function joinUrl(base: string, path: string) {
   const b = normalizeServerKey(base);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${b}${p}`;
@@ -46,7 +46,7 @@ function fmtFull(v: ApiVersion | null | undefined) {
   return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
 
-function extractServerWebApp(data: any): { versionFull: string } | null {
+export function extractServerWebApp(data: any): { versionFull: string } | null {
   const list = data?.SoftwareComponentList ?? data?.softwareComponentList;
 
   if (!Array.isArray(list) || list.length === 0) return null;
@@ -70,7 +70,7 @@ function extractServerWebApp(data: any): { versionFull: string } | null {
   return { versionFull: fmtFull(v) };
 }
 
-async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
+export async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   try {
     const res = await fetch(params.url, {
       method: "GET",
@@ -99,7 +99,7 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
   }
 }
 
-function hardReloadWeb(cacheKey: string) {
+export function hardReloadWeb(cacheKey: string) {
   if (typeof window === "undefined") return;
 
   const u = new URL(window.location.href);

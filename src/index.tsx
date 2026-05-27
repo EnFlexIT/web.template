@@ -44,7 +44,7 @@ import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
-
+import { PostLoginUpdateWatcher } from "./redux/slices/PostLoginUpdateWatcher";
 
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
@@ -78,7 +78,6 @@ function RootStack() {
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const isWide = useIsWide();
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
-
   const didBootRef = useRef(false);
   const didHandleUrlRef = useRef(false);
 
@@ -321,6 +320,14 @@ function RootStack() {
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
             {authenticationMethod !== "oidc" && <UpdateNotificationWatcher />}
+           <PostLoginUpdateWatcher
+                  enabled={
+                    !isLoading &&
+                    isLoggedIn &&
+                    rawMenu.length > 0 &&
+                    authenticationMethod !== "oidc"
+                  }
+                />
             <NotificationPopup />
             {children}
           </View>
