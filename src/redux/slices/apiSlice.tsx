@@ -31,9 +31,26 @@ type JwtByServer = Record<string, string>;
 
 const defaultAuthenticationMethod: AuthMethod = "unknown";
 
-const fallbackDefaultIp: string = __DEV__
-  ? process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? ""
-  : process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "";
+function getRuntimeDefaultIp() {
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+
+    const isRealWebServer =
+      origin &&
+      !origin.includes("localhost") &&
+      !origin.includes("127.0.0.1");
+
+    if (isRealWebServer) {
+      return origin;
+    }
+  }
+
+  return __DEV__
+    ? process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? ""
+    : process.env.EXPO_PUBLIC_DEFAULT_PROD_IP ?? "";
+}
+
+const fallbackDefaultIp: string = getRuntimeDefaultIp();
 
 const defaultJwt: string | null = null;
 

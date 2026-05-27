@@ -40,16 +40,19 @@ function isReachableResponse(res: Response): boolean {
 
 async function ping(
   url: string,
+  jwt: string | null,
   timeoutMs = 4000,
 ): Promise<{ ok: boolean; status?: number }> {
   const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), timeoutMs);
-  function isReachableResponse(res: Response): boolean {
-  if (res.type === "opaqueredirect") return true;
-  if (res.status === 0) return true;
 
-  return res.status >= 200 && res.status < 500;
-}
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  function isReachableResponse(res: Response): boolean {
+    if (res.type === "opaqueredirect") return true;
+    if (res.status === 0) return true;
+
+    return res.status >= 200 && res.status < 500;
+  }
 
   try {
     const res = await fetch(url, {
@@ -60,18 +63,22 @@ async function ping(
       credentials: "include",
       headers: {
         Accept: "application/json",
+        ...(jwt
+          ? {
+              Authorization: `Bearer ${jwt}`,
+            }
+          : {}),
       },
     });
 
-   return {
-  ok: isReachableResponse(res),
-  status: res.status,
-};
+    return {
+      ok: isReachableResponse(res),
+      status: res.status,
+    };
   } finally {
     clearTimeout(id);
   }
 }
-
 function getErrorMessage(error: unknown, silent: boolean): string | null {
   if (silent) return null;
 
@@ -107,7 +114,6 @@ export const checkAlive = createAsyncThunk<
   const baseUrl = normalizeBaseUrl(selectIp(state));
   const wasOffline = state.connectivity.isOffline;
   const silent = arg?.silent === true;
-
   if (!baseUrl) {
     return {
       isOnline: false,
@@ -129,7 +135,7 @@ const candidateUrls = [
 
   for (const url of candidateUrls) {
     try {
-      const result = await ping(url, 4000);
+      const result = await ping(url, state.api.jwt, 4000);
 
       lastStatus = result.status;
       lastUrl = url;

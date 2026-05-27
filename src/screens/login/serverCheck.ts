@@ -21,7 +21,10 @@ function isReachableStatus(status?: number): boolean {
   return status >= 200 && status < 500;
 }
 
-async function fetchReachable(url: string): Promise<Response> {
+async function fetchReachable(
+  url: string,
+  jwt?: string | null,
+): Promise<Response> {
   return fetch(url, {
     method: "GET",
     mode: "cors",
@@ -30,6 +33,11 @@ async function fetchReachable(url: string): Promise<Response> {
     redirect: "manual",
     headers: {
       Accept: "application/json",
+      ...(jwt
+        ? {
+            Authorization: `Bearer ${jwt}`,
+          }
+        : {}),
     },
   });
 }
@@ -40,6 +48,7 @@ async function fetchReachable(url: string): Promise<Response> {
  */
 export async function checkServerReachable(
   baseUrl: string,
+  jwt?: string | null,
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
@@ -67,7 +76,7 @@ export async function checkServerReachable(
 
   for (const url of urls) {
     try {
-      const res = await fetchReachable(url);
+      const res = await fetchReachable(url, jwt);
 
       console.log(
         "[checkServerReachable] status:",

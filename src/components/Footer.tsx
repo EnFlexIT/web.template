@@ -209,9 +209,12 @@ export function Footer() {
     }
 
     const entries = await Promise.all(
+      
       servers.map(async (server) => {
+       const jwt = await getJwtForServer(server.baseUrl);
+
         try {
-          const reachable = await checkServerReachable(server.baseUrl);
+          const reachable = await checkServerReachable(server.baseUrl,jwt);
 
           if (!reachable.ok) {
             return [
@@ -223,7 +226,6 @@ export function Footer() {
             ] as const;
           }
 
-          const jwt = await getJwtForServer(server.baseUrl);
           const info = await checkServerAuthenticated(server.baseUrl, jwt);
 
           if (info.authenticated) {

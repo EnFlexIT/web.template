@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
-
+import { Buffer } from "buffer";
 import { Screen } from "../components/Screen";
 import { Card } from "../components/ui-elements/Card";
 import { ActionButton } from "../components/ui-elements/ActionButton";
