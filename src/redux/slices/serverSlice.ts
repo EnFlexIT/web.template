@@ -20,9 +20,29 @@ export type ServersState = {
   activeEnvironment: ServerEnvironment;
 };
 
+function getRuntimeBaseUrl(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const origin = window.location.origin;
+
+  if (
+    origin &&
+    !origin.includes("localhost") &&
+    !origin.includes("127.0.0.1")
+  ) {
+    return origin;
+  }
+
+  return null;
+}
+
 function getDefaultServer(): SavedServer {
+  const runtimeBaseUrl = getRuntimeBaseUrl();
+
   const fallbackBaseUrl =
-    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ?? "http://localhost:8080";
+    runtimeBaseUrl ??
+    process.env.EXPO_PUBLIC_DEFAULT_DEV_IP ??
+    "http://localhost:8080";
 
   return {
     id: "local",
@@ -41,7 +61,28 @@ function getDefaultState(): ServersState {
     activeEnvironment: "DEV",
   };
 }
+function migrateRuntimeServer(state: ServersState): ServersState {
+  const runtimeBaseUrl = getRuntimeBaseUrl();
 
+  if (!runtimeBaseUrl) return state;
+
+  return {
+    ...state,
+    servers: state.servers.map((server) => {
+      if (
+        server.id === "local" &&
+        server.baseUrl.includes("localhost")
+      ) {
+        return {
+          ...server,
+          baseUrl: runtimeBaseUrl,
+        };
+      }
+
+      return server;
+    }),
+  };
+}
 /** stellt sicher dass State gültig bleibt */
 function ensureValidState(
   input: ServersState | null | undefined
@@ -74,19 +115,33 @@ function persist(state: ServersState) {
 }
 
 export const initializeServers = createAsyncThunk(
-  "servers/initialize",
-  async (): Promise<ServersState> => {
+  "servers/initializeServers",
+  async () => {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
 
-    if (!raw) return getDefaultState();
+    if (!raw) {
+      return ensureValidState({
+        servers: [getDefaultServer()],
+        selectedServerId: "local",
+        activeEnvironment: "DEV",
+      });
+    }
 
     try {
       const parsed = JSON.parse(raw) as ServersState;
-      return ensureValidState(parsed);
+      const migrated = migrateRuntimeServer(parsed);
+
+      await persist(migrated);
+
+      return ensureValidState(migrated);
     } catch {
-      return getDefaultState();
+      return ensureValidState({
+        servers: [getDefaultServer()],
+        selectedServerId: "local",
+        activeEnvironment: "DEV",
+      });
     }
-  }
+  },
 );
 
 const initialState: ServersState = getDefaultState();
