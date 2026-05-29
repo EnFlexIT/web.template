@@ -108,11 +108,20 @@ async function fetchOidcBearerFromServer(
     return null;
   }
 
-  const bearer = entries.find(
+const accessToken =
+  entries.find(
+    (entry: any) => entry?.key === "_oidc.access_token",
+  )?.value ??
+  entries.find(
     (entry: any) => entry?.key === "_oidc.bearer",
   )?.value;
 
-  return typeof bearer === "string" && bearer.length > 0 ? bearer : null;
+console.log("[OIDC LOGIN] authenticated:", authenticated);
+console.log("[OIDC LOGIN] access token found:", !!accessToken);
+
+return typeof accessToken === "string" && accessToken.length > 0
+  ? accessToken
+  : null;
 }
 // Helper function that repeatedly tries to fetch the OIDC bearer token from the server with a delay between attempts, used for polling after initiating OIDC login in a popup
 async function waitForOidcBearer(

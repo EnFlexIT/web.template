@@ -295,9 +295,11 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       (entry: any) => entry?.key === "_session.pathParameter",
     );
 
-    const hasOidcBearer = entries.some(
-      (entry: any) => entry?.key === "_oidc.bearer",
-    );
+  const hasOidcBearer = entries.some(
+  (entry: any) =>
+    entry?.key === "_oidc.bearer" ||
+    entry?.key === "_oidc.access_token",
+);
 
     const authenticated =
       typeof authenticatedRaw === "boolean"
