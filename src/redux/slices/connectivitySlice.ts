@@ -135,7 +135,13 @@ const candidateUrls = [
 
   for (const url of candidateUrls) {
     try {
-      const result = await ping(url, state.api.jwt, 4000);
+      
+    const jwtForPing =
+  state.api.authenticationMethod === "jwt"
+    ? state.api.jwt
+    : null;
+
+const result = await ping(url, jwtForPing, 4000);
 
       lastStatus = result.status;
       lastUrl = url;

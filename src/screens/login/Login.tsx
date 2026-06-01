@@ -240,13 +240,15 @@ function isSameOriginAsSelectedServer(): boolean {
 
 
    // Close any open login window before starting a new login attempt
-    const response = await fetch(loginUrl, {
-      method: "GET",
-      headers: {
-        Authorization: `Basic ${basic}`,
-        Accept: "application/json",
-      },
-    });
+      const response = await fetch(loginUrl, {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          Accept: "application/json",
+        },
+      });
   // Try to extract bearer token from headers or body, depending on server implementation
     const wwwAuthenticate =
       response.headers.get("www-authenticate") ??

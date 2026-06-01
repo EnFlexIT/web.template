@@ -24,21 +24,23 @@ function isReachableStatus(status?: number): boolean {
 async function fetchReachable(
   url: string,
   jwt?: string | null,
+  authenticationMethod: AuthMethod = "unknown",
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (authenticationMethod === "jwt" && jwt) {
+    headers.Authorization = `Bearer ${jwt}`;
+  }
+
   return fetch(url, {
     method: "GET",
     mode: "cors",
     cache: "no-store",
     credentials: "include",
     redirect: "manual",
-    headers: {
-      Accept: "application/json",
-      ...(jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-          }
-        : {}),
-    },
+    headers,
   });
 }
 
@@ -49,6 +51,7 @@ async function fetchReachable(
 export async function checkServerReachable(
   baseUrl: string,
   jwt?: string | null,
+  authenticationMethod: AuthMethod = "unknown",
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
@@ -76,7 +79,7 @@ export async function checkServerReachable(
 
   for (const url of urls) {
     try {
-      const res = await fetchReachable(url, jwt);
+      const res = await fetchReachable(url, jwt,authenticationMethod);
 
       console.log(
         "[checkServerReachable] status:",

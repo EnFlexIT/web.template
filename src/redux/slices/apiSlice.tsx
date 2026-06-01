@@ -250,7 +250,7 @@ async function detectServerAndMode(baseUrl: string): Promise<{
     if (status === 401 || status === 403) {
       return {
         isPointingToServer: true,
-        authenticationMethod: "unknown",
+        authenticationMethod: "jwt",
         isBaseMode: false,
       };
     }
