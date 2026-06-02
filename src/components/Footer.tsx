@@ -467,7 +467,7 @@ export function Footer() {
   return (
     <>
       <View style={styles.footer}>
-        <ThemedText>{env}</ThemedText>
+      
         <ThemedText style={styles.separator}>|</ThemedText>
 
         <View
