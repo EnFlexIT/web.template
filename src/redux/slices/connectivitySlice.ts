@@ -125,10 +125,10 @@ export const checkAlive = createAsyncThunk<
     };
   }
 
-const candidateUrls = [
+ const candidateUrls = [
   `${baseUrl}/api/alive`,
   `${baseUrl}/api/app/settings/get`,
-];
+  ];
   let lastStatus: number | undefined;
   let lastUrl: string | null = null;
   let lastError: unknown = null;
