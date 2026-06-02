@@ -16,7 +16,7 @@ import { selectMenu, setActiveMenuId } from "../redux/slices/menuSlice";
 
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-
+import {selectAuthenticationMethod,} from "../redux/slices/apiSlice";
 import { useMenuNavigation } from "../components/routing/useMenuNavigation";
 
 type ChildItem = StaticMenuItem;
@@ -30,6 +30,7 @@ export function MenuHubScreen() {
   const { t } = useTranslation(["Settings"]); // du kannst auch ["Drawer"] nehmen - je nach keys
   const dispatch = useAppDispatch();
   const { goTo } = useMenuNavigation();
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
 
   // wir lesen activeMenuId (weil hub-screen immer als "aktueller Ordner" fungiert)
   const { activeMenuId } = useAppSelector(selectMenu);
@@ -40,11 +41,9 @@ export function MenuHubScreen() {
   }, [activeMenuId, dispatch]);
 
   // static menu (bereits gefiltert, aber safety)
-  const staticMenu = useMemo(() => getStaticMenu(), []);
-  const enabledMenu = useMemo(
-    () => staticMenu.filter((it) => it.menuID && isMenuEnabled(it.menuID)),
-    [staticMenu]
-  );
+   const staticMenu = useMemo(() => getStaticMenu(authenticationMethod),[authenticationMethod],);
+
+const enabledMenu = useMemo(() =>staticMenu.filter((it) =>it.menuID && isMenuEnabled(it.menuID, authenticationMethod),),[staticMenu, authenticationMethod],);
 
   //  aktuellen Knoten finden
   const currentItem = useMemo(() => {

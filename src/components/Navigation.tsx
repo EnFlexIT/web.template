@@ -8,7 +8,11 @@ import { useTranslation } from "react-i18next";
 import { ToolBox } from "./ToolBox";
 import { Logo } from "./Logo";
 import { Text } from "./stylistic/Text";
+import {
+  selectAuthenticationMethod,
+} from "../redux/slices/apiSlice";
 
+import { isMenuEnabled } from "../redux/slices/featureFlags";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { useEffect } from "react";
@@ -42,7 +46,7 @@ function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) 
   const { t } = useTranslation(["Drawer"]);
 
   const { rawMenu, activeMenuId } = useAppSelector(selectMenu);
-
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod,);
   const [hovered, setHovered] = useState(false);
 
   const id = node.val.menuID!;
@@ -71,6 +75,9 @@ function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) 
     return next;
   });
 }, [activeMenuId, rawMenu]);
+if (!isMenuEnabled(id, authenticationMethod)) {
+  return null;
+}
 
   return (
     <View style={styles.innerContainer}>
