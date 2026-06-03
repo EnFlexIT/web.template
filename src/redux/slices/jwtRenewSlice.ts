@@ -303,15 +303,15 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
     thunkAPI,
   ) => {
     if (isLogoutFlowActive()) {
-      console.log("[JWT RENEW ALL] skipped because logout flow guard is active");
+      //console.log("[JWT RENEW ALL] skipped because logout flow guard is active");
       return [];
     }
 
     const state = thunkAPI.getState();
     const servers = state.servers.servers ?? [];
 
-    console.log("[JWT RENEW ALL] ==================================");
-    console.log("[JWT RENEW ALL] redux servers:", servers);
+    //console.log("[JWT RENEW ALL] ==================================");
+    //console.log("[JWT RENEW ALL] redux servers:", servers);
 
     const uniqueBaseUrls = Array.from(
       new Set(
@@ -321,7 +321,7 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
       ),
     );
 
-    console.log("[JWT RENEW ALL] unique baseUrls:", uniqueBaseUrls);
+    //console.log("[JWT RENEW ALL] unique baseUrls:", uniqueBaseUrls);
 
     const results = await Promise.all(
       uniqueBaseUrls.map((currentBaseUrl) =>
@@ -337,8 +337,8 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
       ),
     );
 
-    console.log("[JWT RENEW ALL] results:", results);
-    console.log("[JWT RENEW ALL] ==================================");
+    //console.log("[JWT RENEW ALL] results:", results);
+    //console.log("[JWT RENEW ALL] ==================================");
 
     return results;
   },

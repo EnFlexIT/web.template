@@ -55,9 +55,9 @@ export async function checkServerReachable(
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
-  console.log("[checkServerReachable] checking:", base);
+  //console.log("[checkServerReachable] checking:", base);
   if (base === "http://localhost:8081") {
-  console.log("[checkServerReachable] skip Expo frontend:", base);
+  //console.log("[checkServerReachable] skip Expo frontend:", base);
 
   return {
     ok: false,

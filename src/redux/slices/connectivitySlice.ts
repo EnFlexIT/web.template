@@ -169,11 +169,7 @@ if (result.ok) {
       //console.log("[checkAlive] failed:", url, err);
     }
   }
-console.log("[checkAlive] OFFLINE DETECTED", {
-  lastUrl,
-  lastStatus,
-  lastError,
-});
+ //console.log("[checkAlive] OFFLINE DETECTED", { lastUrl,lastStatus, lastError,});
   return {
     isOnline: false,
     wentOnline: false,
