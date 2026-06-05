@@ -126,7 +126,19 @@ export function UpdateWebAppTab() {
   const [lastCheckedAt, setLastCheckedAt] = useState<string>("-");
   const [updateStatus, setUpdateStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
-  
+  useEffect(() => {
+  setUpdateStatus(
+        updateState.frontend.isAvailable
+          ? t("serverWeb.statusTexts.updateAvailable", {
+              version: updateState.frontend.version,
+            })
+          : t("serverWeb.statusTexts.upToDate"),
+      );
+
+      if (updateState.frontend.lastCheck) {
+        setLastCheckedAt(updateState.frontend.lastCheck);
+      }
+    }, [updateState.frontend, t]);
 
   const resetLocalState = useCallback(() => {
     setServerBundle("-");
@@ -160,7 +172,7 @@ export function UpdateWebAppTab() {
     const data = await fetchJsonNoCache({ url, jwt });
 
     if (data === null) {
-      setUpdateStatus(t("serverWeb.statusTexts.networkError"));
+    //  setUpdateStatus(t("serverWeb.statusTexts.networkError"));
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -171,11 +183,7 @@ export function UpdateWebAppTab() {
 
     if ((data as any)?.__status) {
       const st = Number((data as any).__status);
-      setUpdateStatus(
-        st === 401
-          ? t("serverWeb.statusTexts.unauthorized")
-          : t("serverWeb.statusTexts.httpError", { status: st }),
-      );
+      //setUpdateStatus( st === 401  ? t("serverWeb.statusTexts.unauthorized"): t("serverWeb.statusTexts.httpError", { status: st }),);
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -186,7 +194,7 @@ export function UpdateWebAppTab() {
 
     const parsed = extractServerWebApp(data);
     if (!parsed) {
-      setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
+      //setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
       setServerBundle("-");
       setServerRelease("-");
       setServerFull("-");
@@ -208,7 +216,7 @@ export function UpdateWebAppTab() {
       await AsyncStorage.setItem(storageKey, full);
       setLastAccepted(full);
       setPendingUpdateFull(null);
-      setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
+      //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
       setIsChecking(false);
       return;
     }
@@ -217,15 +225,13 @@ export function UpdateWebAppTab() {
 
     if (acceptedStored !== full) {
       setPendingUpdateFull(full);
-      setUpdateStatus(
-        t("serverWeb.statusTexts.updateAvailable", { version: full }),
-      );
+      //setUpdateStatus(  t("serverWeb.statusTexts.updateAvailable", { version: full }), );
       setIsChecking(false);
       return;
     }
 
     setPendingUpdateFull(null);
-    setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
+    //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
     setIsChecking(false);
   }, [ip, jwt, storageKey, t]);
 
@@ -241,7 +247,7 @@ export function UpdateWebAppTab() {
     }
 
     setPendingUpdateFull(null);
-    setUpdateStatus(t("serverWeb.statusTexts.updateAcceptedNative"));
+    //setUpdateStatus(t("serverWeb.statusTexts.updateAcceptedNative"));
   }, [pendingUpdateFull, storageKey, t]);
 
   useEffect(() => {
@@ -279,9 +285,9 @@ export function UpdateWebAppTab() {
     <Card>
       <View style={s.container}>
         <H3>{t("serverWeb.title", "Web-App")}</H3>
-
         <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
         <Row label={t("serverWeb.fields.status")} value={updateStatus} />
+        <Row label={t("serverWeb.fields.lastCheck", "Letzte Prüfung")} value={lastCheckedAt}/>
 
         <View style={s.btnRow}>
           <ActionButton
@@ -296,7 +302,7 @@ export function UpdateWebAppTab() {
             disabled={isChecking || !ip}
           />
 
-          {pendingUpdateFull ? (
+          {!updateState.autoUpdate && (
             <ActionButton
               label={t("serverWeb.actions.reloadNow")}
               variant="primary"
@@ -304,7 +310,7 @@ export function UpdateWebAppTab() {
               onPress={applyUpdateNow}
               disabled={isChecking || !ip}
             />
-          ) : null}
+          ) }
         </View>
       </View>
     </Card>

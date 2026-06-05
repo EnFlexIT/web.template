@@ -128,7 +128,7 @@ export function useJwtSessionTimerWeb({
       }
       lastHeartbeatAtRef.current = now;
 
-      console.log("[SESSION TIMER] heartbeat triggered");
+      //console.log("[SESSION TIMER] heartbeat triggered");
 
       // Bestehendes Verhalten beibehalten
       onHeartbeat?.();

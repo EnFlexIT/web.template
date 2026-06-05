@@ -146,13 +146,9 @@ const result = await ping(url, jwtForPing, 4000);
       lastStatus = result.status;
       lastUrl = url;
 
-      console.log("[checkAlive] response:", url, "status:", result.status);
+      //console.log("[checkAlive] response:", url, "status:", result.status);
 if (result.ok) {
-  console.log("[checkAlive] ONLINE DETECTED", {
-    url,
-    status: result.status,
-  });
-
+  // console.log("[checkAlive] ONLINE DETECTED", {url,status: result.status, });
   return {
     isOnline: true,
     wentOnline: wasOffline,

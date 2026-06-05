@@ -98,7 +98,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 
     if (isLogoutFlowActive()) {
-      console.log("[JWT RENEW] skipped because logout flow guard is active");
+      //console.log("[JWT RENEW] skipped because logout flow guard is active");
       return {
         renewed: false,
         reason: "logout-flow-active",
@@ -109,13 +109,13 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     const state = thunkAPI.getState();
     const isActiveServer = state.api.ip === normalizedBaseUrl;
 
-    console.log("[JWT RENEW] --------------------------------------");
-    console.log("[JWT RENEW] checking server:", normalizedBaseUrl);
-    console.log("[JWT RENEW] active redux server:", state.api.ip);
-    console.log("[JWT RENEW] force:", force);
+    //console.log("[JWT RENEW] --------------------------------------");
+    //console.log("[JWT RENEW] checking server:", normalizedBaseUrl);
+    //console.log("[JWT RENEW] active redux server:", state.api.ip);
+    //console.log("[JWT RENEW] force:", force);
 
     if (state.api.isLoggingOut || state.api.isLogoutDialogOpen) {
-      console.log("[JWT RENEW] skipped because logout flow is active");
+      //console.log("[JWT RENEW] skipped because logout flow is active");
       return {
         renewed: false,
         reason: "logout-flow-active",
@@ -124,7 +124,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     }
 
     if (state.api.isSwitchingServer) {
-      console.log("[JWT RENEW] skipped because switching server");
+      //console.log("[JWT RENEW] skipped because switching server");
       return {
         renewed: false,
         reason: "switching-server",
@@ -133,7 +133,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     }
 
     if (!normalizedBaseUrl) {
-      console.log("[JWT RENEW] skipped because baseUrl empty");
+      //console.log("[JWT RENEW] skipped because baseUrl empty");
       return {
         renewed: false,
         reason: "no-baseurl",
@@ -143,10 +143,10 @@ export const renewJwtForSpecificServer = createAsyncThunk<
 
     const jwt = await getJwtForServer(normalizedBaseUrl);
 
-    console.log("[JWT RENEW] jwt exists:", !!jwt);
+    //console.log("[JWT RENEW] jwt exists:", !!jwt);
 
     if (!jwt) {
-      console.log("[JWT RENEW] no jwt stored for server:", normalizedBaseUrl);
+      //console.log("[JWT RENEW] no jwt stored for server:", normalizedBaseUrl);
       return {
         renewed: false,
         reason: "no-jwt-for-server",
@@ -155,7 +155,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     }
 
     if (isActiveServer && state.api.jwt !== jwt) {
-      console.log("[JWT RENEW] syncing redux jwt from storage for active server");
+      //console.log("[JWT RENEW] syncing redux jwt from storage for active server");
       thunkAPI.dispatch(setJwtLocal(jwt));
     }
 
@@ -163,7 +163,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     const lastAttempt = lastRenewAttemptByServer[normalizedBaseUrl] ?? 0;
 
     if (cooldownMs > 0 && now - lastAttempt < cooldownMs) {
-      console.log("[JWT RENEW] skipped because cooldown active");
+      //console.log("[JWT RENEW] skipped because cooldown active");
       return {
         renewed: false,
         reason: "cooldown",
@@ -176,7 +176,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     const basic = toBase64(`:${jwt}`);
     const renewUrl = `${normalizedBaseUrl}/api/user/login`;
 
-    console.log("[JWT RENEW] sending request to:", renewUrl);
+    //console.log("[JWT RENEW] sending request to:", renewUrl);
 
     try {
       const res = await fetch(renewUrl, {
@@ -201,16 +201,16 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         res.headers.get("authorization") ??
         res.headers.get("Authorization");
 
-      console.log("[JWT RENEW] header token exists:", !!hdr);
+      //console.log("[JWT RENEW] header token exists:", !!hdr);
 
       const bodyText = await res.text();
       const newJwt = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
 
-      console.log("[JWT RENEW] extracted new jwt exists:", !!newJwt);
+      //console.log("[JWT RENEW] extracted new jwt exists:", !!newJwt);
 
       if (newJwt) {
         if (newJwt === jwt) {
-          console.log("[JWT RENEW] same token returned for:", normalizedBaseUrl);
+          //console.log("[JWT RENEW] same token returned for:", normalizedBaseUrl);
           return {
             renewed: false,
             reason: "same-token",
@@ -220,7 +220,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         }
 
         await setJwtForServer(normalizedBaseUrl, newJwt);
-        console.log("[JWT RENEW] stored new token for:", normalizedBaseUrl);
+        //console.log("[JWT RENEW] stored new token for:", normalizedBaseUrl);
 
         if (isActiveServer) {
           thunkAPI.dispatch(setJwtLocal(newJwt));
@@ -240,12 +240,12 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       }
 
       if (res.status === 401) {
-        console.log("[JWT RENEW] 401 without token for:", normalizedBaseUrl);
+        //console.log("[JWT RENEW] 401 without token for:", normalizedBaseUrl);
 
         const authenticated = await fetchServerAuthenticated(normalizedBaseUrl, jwt);
 
         if (authenticated === false) {
-          console.log("[JWT RENEW] auth check says unauthenticated, clearing jwt");
+          //console.log("[JWT RENEW] auth check says unauthenticated, clearing jwt");
           await clearServerJwt(normalizedBaseUrl, isActiveServer, thunkAPI);
 
           return {
@@ -265,7 +265,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       const authenticated = await fetchServerAuthenticated(normalizedBaseUrl, jwt);
 
       if (authenticated === false) {
-        console.log("[JWT RENEW] no token and auth false, clearing jwt");
+        //console.log("[JWT RENEW] no token and auth false, clearing jwt");
         await clearServerJwt(normalizedBaseUrl, isActiveServer, thunkAPI);
 
         return {

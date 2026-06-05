@@ -3,7 +3,7 @@ import { View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-
+import { loadUpdateSettings } from "../../../redux/slices/updateSlice";
 import { Card } from "../../../components/ui-elements/Card";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
@@ -152,7 +152,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function UpdateGeneralTab() {
   const { t } = useTranslation(["Update"]);
   const api = useAppSelector(selectApi);
-
+  const updateState = useAppSelector((state) => state.update);
   const ip = api.ip;
   const jwt = api.jwt;
   const webStorageKey = getServerScopedStorageKey(LAST_ACCEPTED_KEY_PREFIX, ip);
@@ -285,26 +285,21 @@ export function UpdateGeneralTab() {
 
   return (
     <Card>
-      <View style={s.container}>
-        <H3>{t("general.title", "General")}</H3>
-
-        <View style={s.block}>
-          <ThemedText style={s.blockTitle}>
-            {t("general.webapp", "Web-App")}
-          </ThemedText>
+        <View style={s.container}>
+          <H3>{t("general.title", "General")}</H3>
+          <View style={s.block}>
+          <ThemedText style={s.blockTitle}>Update-Strategie </ThemedText>
+          <Row label="Auto Update" value={updateState.autoUpdate ? "Aktiv" : "Inaktiv"}/>
+          </View>
+          <View style={s.block}>
+          <ThemedText style={s.blockTitle}>{t("general.webapp", "Web-App")} </ThemedText>
           <Row label={t("general.webStatus", "Status")} value={webStatus} />
+          </View>
+          <View style={s.block}>
+          <ThemedText style={s.blockTitle}>{t("general.backend", "Backend")} </ThemedText>
+          <Row label={t("general.backendStatus", "Status")} value={backendStatus}/>
+          </View>
         </View>
-
-        <View style={s.block}>
-          <ThemedText style={s.blockTitle}>
-            {t("general.backend", "Backend")}
-          </ThemedText>
-          <Row
-            label={t("general.backendStatus", "Status")}
-            value={backendStatus}
-          />
-        </View>
-      </View>
     </Card>
   );
 }

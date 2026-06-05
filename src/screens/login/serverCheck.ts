@@ -94,11 +94,7 @@ export async function checkServerReachable(
       // 403 = erreichbar
       // 404 = erreichbar
      if (isReachableStatus(res.status) || res.status === 0 || res.type === "opaqueredirect") {
-          console.log("[checkServerReachable] redirect detected but server is reachable:", {
-            status: res.status,
-            type: res.type,
-            url,
-          });
+          //console.log("[checkServerReachable] redirect detected but server is reachable:", {status: res.status,type: res.type,url, });
 
           return {
             ok: true,
