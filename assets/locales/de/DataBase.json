@@ -34,7 +34,6 @@
   "messageTestingConnection": "Teste Verbindung...",
   "messageConnectionTestError": "Verbindungstest fehlgeschlagen: {{error}}",
   "messageSettingsSaveError": "Fehler beim Speichern der Einstellungen: {{error}}",
-
   "backendMessageDone": "Erfolgreich abgeschlossen.",
   "backendMessageConnectionTestFailed": "Verbindungstest fehlgeschlagen.",
   "backendMessageConnectionTestSuccessful": "Verbindungstest erfolgreich.",

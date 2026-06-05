@@ -27,7 +27,7 @@ function sortByPosition(a: StaticMenuItem, b: StaticMenuItem) {
 
 export function MenuHubScreen() {
   const { theme } = useUnistyles();
-  const { t } = useTranslation(["Settings"]); // du kannst auch ["Drawer"] nehmen - je nach keys
+  const { t } = useTranslation(["Settings", "Drawer"]); 
   const dispatch = useAppDispatch();
   const { goTo } = useMenuNavigation();
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
@@ -67,12 +67,13 @@ const enabledMenu = useMemo(() =>staticMenu.filter((it) =>it.menuID && isMenuEna
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Header */}
         <View style={{ gap: 6 }}>
-          <H3>
-            {hubKey ? t(`cards.${hubKey}.title`) : t("title")}
-          </H3>
-          <ThemedText style={{ opacity: 0.85 }}>
-            {hubKey ? t(`cards.${hubKey}.description`) : t("subtitle")}
-          </ThemedText>
+            <H3>
+              {hubKey ? t(`Drawer:${hubKey}`) : t("Settings:title")}
+            </H3>
+
+            <ThemedText style={{ opacity: 0.85 }}>
+              {hubKey ? t(`Settings:cards.${hubKey}.description`) : t("Settings:subtitle")}
+            </ThemedText>
         </View>
 
         {/* Children Cards */}
@@ -90,10 +91,10 @@ const enabledMenu = useMemo(() =>staticMenu.filter((it) =>it.menuID && isMenuEna
                 padding="lg"
                 key={child.menuID}
                 onPress={() => goTo(child.menuID)}>
-                <H4>{t(`cards.${child.caption}.title`)}</H4>
-                <ThemedText style={{ opacity: 0.85 }}>
-                  {t(`cards.${child.caption}.description`)}
-                </ThemedText>
+                <H4>{t(`Drawer:${child.caption}`)}</H4>
+              <ThemedText style={{ opacity: 0.85 }}>
+                {t(`Settings:cards.${child.caption}.description`)}
+              </ThemedText>
               </Card>
             ))
           )}

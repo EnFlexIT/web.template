@@ -42,7 +42,7 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
       Screen: NotificationsScreen,
     },
     {
-      caption: "System Settings",
+      caption: "SystemSettings",
       menuID: 3021,
       parentID: 3003,
       Screen: MenuHubScreen,

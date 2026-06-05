@@ -30,7 +30,7 @@
       "title": "Developer",
       "description": "Tools and views for development and debugging."
     },
-      "System Settings": {
+      "SystemSettings": {
       "title": "System Settings",
       "description": "System-wide configurations and management."
     },
@@ -48,7 +48,7 @@
         "description": "Individual settings for your account and preferences."
       },
       "options": {
-        "title": "options",
+        
         "description": "App options, privacy and connection management."
       }
 }

@@ -47,18 +47,15 @@ function buildTree(items: StaticMenuItem[]): UiNode[] {
 
 export function SettingsScreen() {
   const { theme } = useUnistyles();
-  const { t } = useTranslation(["Settings"]);
-
+  const { t } = useTranslation(["Settings", "Drawer"]);
   // goTo() navigiert automatisch per menuID auf den slug-path
   const { goTo } = useMenuNavigation();
 
   // Folder open/close pro menuID
   const [openById, setOpenById] = useState<Record<number, boolean>>({});
-
   const toggleFolder = useCallback((id: number) => {
     setOpenById((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
   }, []);
-
   // static menu (safety: enabled)
   const staticMenu = useMemo(() => getStaticMenu(), []);
   const enabledMenu = useMemo(
@@ -92,8 +89,6 @@ export function SettingsScreen() {
   (node: UiNode) => {
     const id = node.item.menuID;
     const isFolder = node.children.length > 0;
-
-   
     const folderHasOwnScreen =
       isFolder && node.item.Screen && node.item.menuID !== SETTINGS_ROOT_ID;
 
@@ -112,7 +107,7 @@ export function SettingsScreen() {
           ]}
         >
           <View style={styles.folderHeader}>
-            <H4>{t(`cards.${node.item.caption}.title`)}</H4>
+            <H4>{t(`Drawer:${node.item.caption}`)}</H4>
           </View>
 
           <ThemedText style={{ opacity: 0.85 }}>
@@ -133,7 +128,7 @@ export function SettingsScreen() {
           },
         ]}
       >
-        <H4>{t(`cards.${node.item.caption}.title`)}</H4>
+        <H4>{t(`Drawer:${node.item.caption}`)}</H4>
         <ThemedText style={{ opacity: 0.85 }}>
           {t(`cards.${node.item.caption}.description`)}
         </ThemedText>

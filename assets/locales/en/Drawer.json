@@ -16,9 +16,8 @@
   "changeOrganization": "Server Settings",
   "notifications":"Notifications",
   "serverSettings": "Server Settings",
-  "System Settings": "System Settings",
+  "SystemSettings": "System Settings",
   "Appearance": "Appearance",
   "personalSettings": "Personal Settings",
-  "options": "Start Options"
-
+  "options": "Options"
 }
