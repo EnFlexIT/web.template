@@ -22,7 +22,6 @@ interface UpdateState {
 
 const initialState: UpdateState = {
   autoUpdate: false,
-
   frontend: {
     isPending: false,
     isAvailable: false,
@@ -84,7 +83,53 @@ export const loadUpdateSettings = createAsyncThunk(
     };
   }
 );
+export const checkFrontendUpdate = createAsyncThunk(
+  "update/checkFrontendUpdate",
+  async (_, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
+    const api = state.api.awb_rest_api.infoApi;
 
+    const response = await api.getAppSettings({
+      headers: {
+        "X-Performative": "UPDATE.FRONTEND.CHECK[isForceCheck=true]",
+      },
+    });
+
+    return response.data?.propertyEntries ?? [];
+  }
+);
+export const saveAutoUpdate = createAsyncThunk(
+  "update/saveAutoUpdate",
+  async (next: boolean, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
+    const api = state.api.awb_rest_api.infoApi;
+
+    console.log("SAVE AUTO UPDATE START", next);
+
+    const response = await api.setAppSettings({
+      performative: "UPDATE.STRATEGY",
+      propertyEntries: [
+        {
+          key: "isautoupdate",
+          value: String(next),
+          valueType: "BOOLEAN",
+        },
+      ],
+    } as any);
+
+    console.log("SAVE AUTO UPDATE RESPONSE", response.data);
+
+    const verify = await api.getAppSettings({
+      headers: {
+        "X-Performative": "UPDATE.STRATEGY",
+      },
+    });
+
+    console.log("VERIFY AFTER SAVE", verify.data);
+
+    return next;
+  }
+);
 const updateSlice = createSlice({
   name: "update",
   initialState,
@@ -107,13 +152,34 @@ const updateSlice = createSlice({
     },
   },
 
-  extraReducers: (builder) => {
-    builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
-      state.autoUpdate = action.payload.autoUpdate;
-      state.frontend = action.payload.frontend;
-      state.backend = action.payload.backend;
-    });
-  },
+extraReducers: (builder) => {
+  builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
+    state.autoUpdate = action.payload.autoUpdate;
+    state.frontend = action.payload.frontend;
+    state.backend = action.payload.backend;
+  });
+
+  builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
+    state.autoUpdate = action.payload;
+  });
+
+  builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {
+    const entries = action.payload;
+
+    const findValue = (key: string) =>
+      entries.find((entry: any) => entry.key === key)?.value;
+
+    const toBoolean = (value: any) =>
+      String(value ?? "").trim().toLowerCase() === "true";
+
+    state.frontend = {
+      isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
+      isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
+      lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
+      version: findValue("updatecheck.frontend.version") ?? "",
+    };
+  });
+},
 });
 
 export const {

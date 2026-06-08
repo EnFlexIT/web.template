@@ -9,11 +9,11 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
 import { H3 } from "../../../components/stylistic/H3";
-import {
-  getServerScopedStorageKey,
-  normalizeServerKey,
-} from "../../../redux/selectors/serverSelectors";
-
+import {getServerScopedStorageKey, normalizeServerKey,} from "../../../redux/selectors/serverSelectors";
+import  {TableSwitchCell} from "../../../components/ui-elements/TableSwitchCell";
+import { setAutoUpdate } from "../../../redux/slices/updateSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { saveAutoUpdate } from "../../../redux/slices/updateSlice";
 const API_PREFIX = "/api";
 
 const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
@@ -56,6 +56,8 @@ function fmtFull(v: ApiVersion | null | undefined) {
 
   return normalizedQualifier ? `${base}.${normalizedQualifier}` : base;
 }
+
+
 
 function extractServerWebApp(data: any): {
   bundleName: string;
@@ -156,7 +158,7 @@ export function UpdateGeneralTab() {
   const ip = api.ip;
   const jwt = api.jwt;
   const webStorageKey = getServerScopedStorageKey(LAST_ACCEPTED_KEY_PREFIX, ip);
-
+  const dispatch = useAppDispatch();
   const [webStatus, setWebStatus] = useState("-");
   const [backendStatus, setBackendStatus] = useState("-");
 
@@ -280,8 +282,9 @@ export function UpdateGeneralTab() {
   }, [ip, jwt, t, webStorageKey]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+  dispatch(loadUpdateSettings());
+  load();
+}, [dispatch, load]);;
 
   return (
     <Card>
@@ -290,6 +293,7 @@ export function UpdateGeneralTab() {
           <View style={s.block}>
           <ThemedText style={s.blockTitle}>Update-Strategie </ThemedText>
           <Row label="Auto Update" value={updateState.autoUpdate ? "Aktiv" : "Inaktiv"}/>
+            <TableSwitchCell value={updateState.autoUpdate} onChange={(next) => { dispatch(saveAutoUpdate(next)); }}/>
           </View>
           <View style={s.block}>
           <ThemedText style={s.blockTitle}>{t("general.webapp", "Web-App")} </ThemedText>

@@ -10,8 +10,7 @@ import { selectApi } from "../../../redux/slices/apiSlice";
 import {getServerScopedStorageKey,normalizeServerKey,} from "../../../redux/selectors/serverSelectors";
 import { H3 } from "../../../components/stylistic/H3";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { loadUpdateSettings } from "../../../redux/slices/updateSlice";
-
+import { loadUpdateSettings,checkFrontendUpdate } from "../../../redux/slices/updateSlice";
 
 //********************************************************************************************************** */
 const LAST_ACCEPTED_KEY_PREFIX = "appInfo_lastAcceptedServerWebAppVersionFull";
@@ -163,63 +162,66 @@ export function UpdateWebAppTab() {
 
     if (!ip) return;
     setIsChecking(true);
-    setLastCheckedAt(new Date().toLocaleString());
-
-    const query = new URLSearchParams();
-    query.set("_ts", String(Date.now()));
-
-    const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
-    const data = await fetchJsonNoCache({ url, jwt });
-
-    if (data === null) {
-    //  setUpdateStatus(t("serverWeb.statusTexts.networkError"));
-      setServerBundle("-");
-      setServerRelease("-");
-      setServerFull("-");
-      setPendingUpdateFull(null);
+      await dispatch(checkFrontendUpdate());
+      await dispatch(loadUpdateSettings());
       setIsChecking(false);
-      return;
-    }
+      setLastCheckedAt(new Date().toLocaleString());
 
-    if ((data as any)?.__status) {
-      const st = Number((data as any).__status);
-      //setUpdateStatus( st === 401  ? t("serverWeb.statusTexts.unauthorized"): t("serverWeb.statusTexts.httpError", { status: st }),);
-      setServerBundle("-");
-      setServerRelease("-");
-      setServerFull("-");
-      setPendingUpdateFull(null);
-      setIsChecking(false);
-      return;
-    }
+      const query = new URLSearchParams();
+      query.set("_ts", String(Date.now()));
 
-    const parsed = extractServerWebApp(data);
-    if (!parsed) {
-      //setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
-      setServerBundle("-");
-      setServerRelease("-");
-      setServerFull("-");
-      setPendingUpdateFull(null);
-      setIsChecking(false);
-      return;
-    }
+      const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
+      const data = await fetchJsonNoCache({ url, jwt });
 
-    const release = fmtRelease(parsed.version);
-    const full = fmtFull(parsed.version);
+      if (data === null) {
+      //  setUpdateStatus(t("serverWeb.statusTexts.networkError"));
+        setServerBundle("-");
+        setServerRelease("-");
+        setServerFull("-");
+        setPendingUpdateFull(null);
+        setIsChecking(false);
+        return;
+      }
 
-    setServerBundle(parsed.bundleName || "-");
-    setServerRelease(release);
-    setServerFull(full);
+      if ((data as any)?.__status) {
+        const st = Number((data as any).__status);
+        //setUpdateStatus( st === 401  ? t("serverWeb.statusTexts.unauthorized"): t("serverWeb.statusTexts.httpError", { status: st }),);
+        setServerBundle("-");
+        setServerRelease("-");
+        setServerFull("-");
+        setPendingUpdateFull(null);
+        setIsChecking(false);
+        return;
+      }
 
-    const acceptedStored = (await AsyncStorage.getItem(storageKey)) ?? null;
+      const parsed = extractServerWebApp(data);
+      if (!parsed) {
+        //setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
+        setServerBundle("-");
+        setServerRelease("-");
+        setServerFull("-");
+        setPendingUpdateFull(null);
+        setIsChecking(false);
+        return;
+      }
 
-    if (!acceptedStored) {
-      await AsyncStorage.setItem(storageKey, full);
-      setLastAccepted(full);
-      setPendingUpdateFull(null);
-      //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
-      setIsChecking(false);
-      return;
-    }
+      const release = fmtRelease(parsed.version);
+      const full = fmtFull(parsed.version);
+
+      setServerBundle(parsed.bundleName || "-");
+      setServerRelease(release);
+      setServerFull(full);
+
+      const acceptedStored = (await AsyncStorage.getItem(storageKey)) ?? null;
+
+      if (!acceptedStored) {
+        await AsyncStorage.setItem(storageKey, full);
+        setLastAccepted(full);
+        setPendingUpdateFull(null);
+        //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
+        setIsChecking(false);
+        return;
+       }
 
     setLastAccepted(acceptedStored);
 
@@ -290,27 +292,29 @@ export function UpdateWebAppTab() {
         <Row label={t("serverWeb.fields.lastCheck", "Letzte Prüfung")} value={lastCheckedAt}/>
 
         <View style={s.btnRow}>
-          <ActionButton
-            label={
-              isChecking
-                ? t("serverWeb.actions.checking")
-                : t("serverWeb.actions.checkNow")
-            }
-            variant="secondary"
-            size="xs"
-            onPress={checkNow}
-            disabled={isChecking || !ip}
-          />
+          {!updateState.frontend.isAvailable && !updateState.autoUpdate && (
+            <ActionButton
+              label={
+                isChecking
+                  ? t("serverWeb.actions.checking")
+                  : t("serverWeb.actions.checkNow")
+              }
+              variant="secondary"
+              size="xs"
+              onPress={checkNow}
+              disabled={isChecking || !ip}
+            />
+          )}
 
-          {!updateState.autoUpdate && (
+          {updateState.frontend.isAvailable && (
             <ActionButton
               label={t("serverWeb.actions.reloadNow")}
               variant="primary"
               size="xs"
-              onPress={applyUpdateNow}
-              disabled={isChecking || !ip}
+              onPress={() => window.location.reload()}
+              disabled={isChecking}
             />
-          ) }
+          )}
         </View>
       </View>
     </Card>
