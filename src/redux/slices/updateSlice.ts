@@ -47,8 +47,8 @@ export const loadUpdateSettings = createAsyncThunk(
     const toBoolean = (value: any) =>String(value ?? "").trim().toLowerCase() === "true";
     const toNumber = (value: any) => { const parsed = Number(value);  return Number.isFinite(parsed) ? parsed : 0;  };
     const strategyRes = await api.getAppSettings({headers: { "X-Performative": "UPDATE.STRATEGY" }, });
-    const frontendRes = await api.getAppSettings({headers: {"X-Performative": "UPDATE.FRONTEND.CHECK[isForceCheck=false]",},});
-    const backendRes = await api.getAppSettings({ headers: {"X-Performative": "UPDATE.BACKEND.CHECK[isForceCheck=false]",},});
+    const frontendRes = await api.getAppSettings({headers: {"X-Performative": "UPDATE.FRONTEND.CHECK[true]",},});
+    const backendRes = await api.getAppSettings({ headers: {"X-Performative": "UPDATE.BACKEND.CHECK[false]",},});
     const strategyEntries = strategyRes.data?.propertyEntries ?? [];
     const frontendEntries = frontendRes.data?.propertyEntries ?? [];
     const backendEntries = backendRes.data?.propertyEntries ?? [];
