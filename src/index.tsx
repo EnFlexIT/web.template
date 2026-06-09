@@ -135,7 +135,7 @@ function RootStack() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !isLoggedIn) return;
 
     let active = true;
 
@@ -153,7 +153,7 @@ function RootStack() {
 
     const intervalId = setInterval(() => {
       void runCheck();
-    }, 10000);
+    }, 60000);
 
     const onFocus = () => {
       void runCheck();

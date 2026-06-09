@@ -1,10 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { checkAlive } from "./connectivitySlice";
 import {
   logoutAsync,
-  refreshServerStatus,
   selectAuthenticationMethod,
   selectIp,
   selectIsLoggedIn,
@@ -13,10 +11,7 @@ import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
 
 function shouldLogoutFromRenewReason(reason?: string) {
-  return (
-    reason === "expired" ||
-    reason === "401-no-token"
-  );
+  return reason === "expired" || reason === "401-no-token";
 }
 
 function isOidcAuth(authenticationMethod?: string) {
@@ -25,9 +20,11 @@ function isOidcAuth(authenticationMethod?: string) {
 
 export function AppSessionGuard() {
   const dispatch = useAppDispatch();
+
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const activeBaseUrl = useAppSelector(selectIp);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+  const isOffline = useAppSelector((state) => state.connectivity.isOffline);
 
   const runningRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -59,27 +56,19 @@ export function AppSessionGuard() {
         return;
       }
 
+      if (isOffline) {
+        console.log("[AppSessionGuard] server offline, skip logout");
+        return;
+      }
+
+      if (isOidcAuth(authenticationMethod)) {
+        console.log("[AppSessionGuard] OIDC auth detected, skip JWT renew");
+        return;
+      }
+
       runningRef.current = true;
 
       try {
-        const aliveRes = await dispatch(checkAlive({ silent: true })).unwrap();
-
-        if (cancelled) return;
-
-        if (!aliveRes.isOnline) {
-          console.log("[AppSessionGuard] server offline, skip logout");
-          return;
-        }
-
-        if (isOidcAuth(authenticationMethod)) {
-          console.log("[AppSessionGuard] OIDC auth detected, skip JWT renew");
-          return;
-        }
-
-        if (!aliveRes.wentOnline) {
-          return;
-        }
-
         const renewResults = await dispatch(
           renewAllServerJwtsIfNeeded({
             force: true,
@@ -119,7 +108,13 @@ export function AppSessionGuard() {
         intervalRef.current = null;
       }
     };
-  }, [dispatch, isLoggedIn, activeBaseUrl, authenticationMethod]);
+  }, [
+    dispatch,
+    isLoggedIn,
+    activeBaseUrl,
+    authenticationMethod,
+    isOffline,
+  ]);
 
   return null;
 }

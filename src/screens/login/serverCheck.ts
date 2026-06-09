@@ -1,6 +1,17 @@
 import type { AuthMethod } from "../../redux/slices/apiSlice";
 import { ServerCheckResult } from "./types";
 
+const REACHABLE_CACHE_MS = 10_000;
+const AUTH_CACHE_MS = 10_000;
+
+let lastReachableKey: string | null = null;
+let lastReachableResult: ServerCheckResult | null = null;
+let lastReachableAt = 0;
+
+let lastAuthKey: string | null = null;
+let lastAuthResult: ServerAuthInfo | null = null;
+let lastAuthAt = 0;
+
 export function normalizeBaseUrl(url: string) {
   return (url ?? "").toString().trim().replace(/\/+$/, "");
 }
@@ -10,15 +21,37 @@ export function normalizeName(name: string) {
 }
 
 function isReachableStatus(status?: number): boolean {
-  if (status == null) {
-    return false;
-  }
-
-  // 2xx = OK
-  // 3xx = Redirect/Login/OIDC
-  // 4xx = Server antwortet trotzdem
-  // Erst ab 5xx oder Network Error wirklich offline
+  if (status == null) return false;
   return status >= 200 && status < 500;
+}
+
+function getReachableCacheKey(
+  base: string,
+  jwt?: string | null,
+  authenticationMethod: AuthMethod = "unknown",
+) {
+  return `${base}|${authenticationMethod}|${jwt ? "jwt" : "no-jwt"}`;
+}
+
+function setReachableCache(
+  key: string,
+  result: ServerCheckResult,
+): ServerCheckResult {
+  lastReachableKey = key;
+  lastReachableResult = result;
+  lastReachableAt = Date.now();
+  return result;
+}
+
+function getAuthCacheKey(base: string, jwt: string | null) {
+  return `${base}|${jwt ? "jwt" : "no-jwt"}`;
+}
+
+function setAuthCache(key: string, result: ServerAuthInfo): ServerAuthInfo {
+  lastAuthKey = key;
+  lastAuthResult = result;
+  lastAuthAt = Date.now();
+  return result;
 }
 
 async function fetchReachable(
@@ -44,10 +77,6 @@ async function fetchReachable(
   });
 }
 
-/**
- * Prüft nur:
- * Antwortet der Server überhaupt?
- */
 export async function checkServerReachable(
   baseUrl: string,
   jwt?: string | null,
@@ -55,15 +84,12 @@ export async function checkServerReachable(
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
-  //console.log("[checkServerReachable] checking:", base);
   if (base === "http://localhost:8081") {
-  //console.log("[checkServerReachable] skip Expo frontend:", base);
-
-  return {
-    ok: false,
-    message: "Expo frontend is not backend.",
-  };
-}
+    return {
+      ok: false,
+      message: "Expo frontend is not backend.",
+    };
+  }
 
   if (!base) {
     return {
@@ -72,48 +98,39 @@ export async function checkServerReachable(
     };
   }
 
-  const urls = [
-    `${base}/api/alive`,
-    `${base}/api/app/settings/get`,
-  ];
+  const cacheKey = getReachableCacheKey(base, jwt, authenticationMethod);
+  const now = Date.now();
+
+  if (
+    lastReachableKey === cacheKey &&
+    lastReachableResult &&
+    now - lastReachableAt < REACHABLE_CACHE_MS
+  ) {
+    return lastReachableResult;
+  }
+
+  const urls = [`${base}/api/app/settings/get`];
 
   for (const url of urls) {
     try {
-      const res = await fetchReachable(url, jwt,authenticationMethod);
+      const res = await fetchReachable(url, jwt, authenticationMethod);
 
-      console.log(
-        "[checkServerReachable] status:",
-        res.status,
-        "url:",
-        url,
-      );
-
-      // WICHTIG:
-      // 303 = erreichbar
-      // 401 = erreichbar
-      // 403 = erreichbar
-      // 404 = erreichbar
-     if (isReachableStatus(res.status) || res.status === 0 || res.type === "opaqueredirect") {
-          //console.log("[checkServerReachable] redirect detected but server is reachable:", {status: res.status,type: res.type,url, });
-
-          return {
-            ok: true,
-          };
-        }
-    } catch (error) {
-      console.log(
-        "[checkServerReachable] failed:",
-        url,
-        error,
-      );
+      if (
+        isReachableStatus(res.status) ||
+        res.status === 0 ||
+        res.type === "opaqueredirect"
+      ) {
+        return setReachableCache(cacheKey, { ok: true });
+      }
+    } catch {
+      // Der nächste Fallback-Endpunkt wird geprüft.
     }
   }
 
-  return {
+  return setReachableCache(cacheKey, {
     ok: false,
-    message:
-      "Server nicht erreichbar. Bitte andere URL verwenden.",
-  };
+    message: "Server nicht erreichbar. Bitte andere URL verwenden.",
+  });
 }
 
 export type ServerAuthInfo = {
@@ -132,8 +149,7 @@ export function parseServerSettings(
     : [];
 
   const authCfg = entries.find(
-    (entry: any) =>
-      entry?.key === "_ServerWideSecurityConfiguration",
+    (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
   )?.value;
 
   const authenticatedRaw = entries.find(
@@ -149,8 +165,7 @@ export function parseServerSettings(
   );
 
   const hasSessionPathParameter = entries.some(
-    (entry: any) =>
-      entry?.key === "_session.pathParameter",
+    (entry: any) => entry?.key === "_session.pathParameter",
   );
 
   const authenticated =
@@ -162,15 +177,9 @@ export function parseServerSettings(
 
   if (authCfg === "OIDCSecurityHandler") {
     authenticationMethod = "oidc";
-  } else if (
-    authCfg === "JwtSingleUserSecurityHandler"
-  ) {
+  } else if (authCfg === "JwtSingleUserSecurityHandler") {
     authenticationMethod = "jwt";
-  } else if (
-    oidcBearer ||
-    hasSessionId ||
-    hasSessionPathParameter
-  ) {
+  } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
     authenticationMethod = "oidc";
   } else if (jwt) {
     authenticationMethod = "jwt";
@@ -179,10 +188,7 @@ export function parseServerSettings(
   return {
     authenticated,
     authenticationMethod,
-    oidcBearer:
-      typeof oidcBearer === "string"
-        ? oidcBearer
-        : null,
+    oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
     sessionInvalid: false,
   };
 }
@@ -193,80 +199,64 @@ export async function checkServerAuthenticated(
 ): Promise<ServerAuthInfo> {
   const base = normalizeBaseUrl(baseUrl);
 
-  console.log(
-    "[checkServerAuthenticated] checking:",
-    base,
-    "hasJwt:",
-    !!jwt,
-  );
+  const fallbackResult: ServerAuthInfo = {
+    authenticated: false,
+    authenticationMethod: "unknown",
+    oidcBearer: null,
+    sessionInvalid: false,
+  };
+
+  if (!base) {
+    return fallbackResult;
+  }
+
+  const cacheKey = getAuthCacheKey(base, jwt);
+  const now = Date.now();
+
+  if (
+    lastAuthKey === cacheKey &&
+    lastAuthResult &&
+    now - lastAuthAt < AUTH_CACHE_MS
+  ) {
+    return lastAuthResult;
+  }
 
   try {
-    const res = await fetch(
-      `${base}/api/app/settings/get`,
-      {
-        method: "GET",
-        mode: "cors",
-        cache: "no-store",
-        credentials: "include",
-        redirect: "manual",
-        headers: {
-          Accept: "application/json",
-          ...(jwt
-            ? {
-                Authorization: `Bearer ${jwt}`,
-              }
-            : {}),
-        },
+    const res = await fetch(`${base}/api/app/settings/get`, {
+      method: "GET",
+      mode: "cors",
+      cache: "no-store",
+      credentials: "include",
+      redirect: "manual",
+      headers: {
+        Accept: "application/json",
+        ...(jwt
+          ? {
+              Authorization: `Bearer ${jwt}`,
+            }
+          : {}),
       },
-    );
-
-    console.log(
-      "[checkServerAuthenticated] status:",
-      res.status,
-      "url:",
-      `${base}/api/app/settings/get`,
-    );
+    });
 
     if (res.status === 400) {
-      return {
+      return setAuthCache(cacheKey, {
         authenticated: false,
         authenticationMethod: "unknown",
         oidcBearer: null,
         sessionInvalid: true,
-      };
+      });
     }
 
     if (!res.ok) {
-      return {
-        authenticated: false,
-        authenticationMethod: "unknown",
-        oidcBearer: null,
-        sessionInvalid: false,
-      };
+      return setAuthCache(cacheKey, fallbackResult);
     }
 
     const data = await res.json();
     const parsed = parseServerSettings(data, jwt);
 
-    console.log(
-      "[checkServerAuthenticated] parsed:",
-      parsed,
-    );
-
-    return parsed;
-  } catch (error) {
-    console.log(
-      "[checkServerAuthenticated] failed:",
-      base,
-      error,
-    );
-
-    return {
-      authenticated: false,
-      authenticationMethod: "unknown",
-      oidcBearer: null,
-      sessionInvalid: false,
-    };
+    return setAuthCache(cacheKey, parsed);
+  } catch {
+    return setAuthCache(cacheKey, fallbackResult);
   }
 }
 

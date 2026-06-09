@@ -1,12 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
-import { withUnistyles } from "react-native-unistyles";
+import { Buffer } from "buffer";
+import { useTranslation } from "react-i18next";
+
 import { ThemedText } from "./themed/ThemedText";
 import { Dropdown } from "./ui-elements/Dropdown";
 import { useAppSelector } from "../hooks/useAppSelector";
 import { useAppDispatch } from "../hooks/useAppDispatch";
+
+import {
+  checkServerAuthenticated,
+  normalizeBaseUrl,
+} from "../screens/login/serverCheck";
+
 import {
   selectIsSwitchingServer,
   switchServer,
@@ -14,8 +22,8 @@ import {
   selectIsLoggedIn,
   type AuthMethod,
 } from "../redux/slices/apiSlice";
+
 import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
-import { Buffer } from "buffer";
 import {
   selectSelectedServer,
   selectServers,
@@ -30,13 +38,9 @@ import {
 
 import { getAppEnvironment } from "../util/appEnvironment";
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
-import { checkServerReachable } from "../screens/login/serverCheck";
 
-import { useTranslation } from "react-i18next";
-
-function normalizeBaseUrl(url: string) {
-  return (url ?? "").trim().replace(/\/+$/, "");
-}
+const Feather = withUnistyles(Feather_);
+const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
 function toBase64(str: string) {
   return typeof btoa !== "undefined"
@@ -57,118 +61,20 @@ type ServerOptionMeta = {
   subtitle: string;
 };
 
-type ServerAuthInfo = {
-  authenticated: boolean;
-  authenticationMethod: AuthMethod;
-  oidcBearer: string | null;
-  sessionInvalid: boolean;
-};
-
-const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
-
-async function checkServerAuthenticated(
-  baseUrl: string,
-  jwt: string | null,
-): Promise<ServerAuthInfo> {
-  const normalized = normalizeBaseUrl(baseUrl);
-
-  try {
-    const res = await fetch(`${normalized}/api/app/settings/get`, {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-      },
-    });
-
-    if (res.status === 400) {
-      return {
-        authenticated: false,
-        authenticationMethod: "unknown",
-        oidcBearer: null,
-        sessionInvalid: true,
-      };
-    }
-
-    if (!res.ok) {
-      return {
-        authenticated: false,
-        authenticationMethod: "unknown",
-        oidcBearer: null,
-        sessionInvalid: false,
-      };
-    }
-
-    const data = await res.json();
-    const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
-
-    const authCfg = entries.find(
-      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
-    )?.value;
-
-    const authenticatedRaw = entries.find(
-      (entry: any) => entry?.key === "_Authenticated",
-    )?.value;
-
-    const oidcBearer = entries.find(
-      (entry: any) => entry?.key === "_oidc.bearer",
-    )?.value;
-
-    const hasSessionId = entries.some(
-      (entry: any) => entry?.key === "_session.id",
-    );
-
-    const hasSessionPathParameter = entries.some(
-      (entry: any) => entry?.key === "_session.pathParameter",
-    );
-
-    const authenticated =
-      typeof authenticatedRaw === "boolean"
-        ? authenticatedRaw
-        : String(authenticatedRaw).toLowerCase() === "true";
-
-    let authenticationMethod: AuthMethod = "unknown";
-
-    if (authCfg === "OIDCSecurityHandler") {
-      authenticationMethod = "oidc";
-    } else if (authCfg === "JwtSingleUserSecurityHandler") {
-      authenticationMethod = "jwt";
-    } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
-      authenticationMethod = "oidc";
-    } else if (jwt) {
-      authenticationMethod = "jwt";
-    } else {
-      authenticationMethod = "jwt";
-    }
-
-    return {
-      authenticated,
-      authenticationMethod,
-      oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
-      sessionInvalid: false,
-    };
-  } catch {
-    return {
-      authenticated: false,
-      authenticationMethod: "unknown",
-      oidcBearer: null,
-      sessionInvalid: false,
-    };
-  }
-}
-
 export function Footer() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Login"]);
+
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
   const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
-  const Feather = withUnistyles(Feather_);
+
   const env = getAppEnvironment();
+  const servers = serversState?.servers ?? [];
+
+  const refreshServerStatusesRunningRef = useRef(false);
 
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -191,8 +97,6 @@ export function Footer() {
   const showNotificationButton =
     !isLoginPage && (isLoggedIn || unreadNotificationCount > 0);
 
-  const servers = serversState?.servers ?? [];
-
   const serverOptions = useMemo(() => {
     const entries = servers.map((server) => [
       server.id,
@@ -203,20 +107,51 @@ export function Footer() {
   }, [servers]);
 
   const refreshServerStatuses = useCallback(async () => {
-    if (!servers.length) {
-      setServerOptionMeta({});
-      return;
-    }
+    if (refreshServerStatusesRunningRef.current) return;
 
-    const entries = await Promise.all(
-      
-      servers.map(async (server) => {
-       const jwt = await getJwtForServer(server.baseUrl);
+    refreshServerStatusesRunningRef.current = true;
 
-        try {
-          const reachable = await checkServerReachable(server.baseUrl,jwt);
+    try {
+      if (!servers.length) {
+        setServerOptionMeta({});
+        return;
+      }
 
-          if (!reachable.ok) {
+      const entries = await Promise.all(
+        servers.map(async (server) => {
+          const jwt = await getJwtForServer(server.baseUrl);
+
+          try {
+            const info = await checkServerAuthenticated(server.baseUrl, jwt);
+
+            if (info.authenticated) {
+              return [
+                server.id,
+                {
+                  tone: "green" as const,
+                  subtitle: t("einloggt"),
+                },
+              ] as const;
+            }
+
+            if (info.sessionInvalid) {
+              return [
+                server.id,
+                {
+                  tone: "yellow" as const,
+                  subtitle: t("Session ungültig / neu anmelden"),
+                },
+              ] as const;
+            }
+
+            return [
+              server.id,
+              {
+                tone: "yellow" as const,
+                subtitle: t("erreichbarNichtEinloggt"),
+              },
+            ] as const;
+          } catch {
             return [
               server.id,
               {
@@ -225,49 +160,13 @@ export function Footer() {
               },
             ] as const;
           }
+        }),
+      );
 
-          const info = await checkServerAuthenticated(server.baseUrl, jwt);
-
-          if (info.authenticated) {
-            return [
-              server.id,
-              {
-                tone: "green" as const,
-                subtitle: t("einloggt"),
-              },
-            ] as const;
-          }
-
-          if (info.sessionInvalid) {
-            return [
-              server.id,
-              {
-                tone: "yellow" as const,
-                subtitle: t("Session ungültig / neu anmelden"),
-              },
-            ] as const;
-          }
-
-          return [
-            server.id,
-            {
-              tone: "yellow" as const,
-              subtitle: t("erreichbarNichtEinloggt"),
-            },
-          ] as const;
-        } catch {
-          return [
-            server.id,
-            {
-              tone: "red" as const,
-              subtitle: t("nichtErreichbar"),
-            },
-          ] as const;
-        }
-      }),
-    );
-
-    setServerOptionMeta(Object.fromEntries(entries));
+      setServerOptionMeta(Object.fromEntries(entries));
+    } finally {
+      refreshServerStatusesRunningRef.current = false;
+    }
   }, [servers, t]);
 
   useEffect(() => {
@@ -282,7 +181,7 @@ export function Footer() {
 
     const intervalId = setInterval(() => {
       void safeRefresh();
-    }, 10000);
+    }, 60000);
 
     const onRefreshEvent = () => {
       void safeRefresh();
@@ -399,8 +298,7 @@ export function Footer() {
 
       const trimmedUsername = params.username.trim();
       const shouldPromptPasswordChange =
-        trimmedUsername.toLowerCase() === "admin" &&
-        params.password === "admin";
+        trimmedUsername.toLowerCase() === "admin" && params.password === "admin";
 
       const basic = toBase64(`${trimmedUsername}:${params.password}`);
 
@@ -419,8 +317,7 @@ export function Footer() {
         res.headers.get("Authorization");
 
       const bodyText = await res.text();
-      const bearerToken =
-        extractBearerToken(hdr) ?? extractBearerToken(bodyText);
+      const bearerToken = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
 
       if (!bearerToken) {
         throw new Error("Anmeldung fehlgeschlagen.");
@@ -467,7 +364,6 @@ export function Footer() {
   return (
     <>
       <View style={styles.footer}>
-      
         <ThemedText style={styles.separator}>|</ThemedText>
 
         <View
