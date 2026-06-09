@@ -4,12 +4,14 @@ import { RootState } from "../store";
 interface UpdateState {
   autoUpdate: boolean;
 
-  frontend: {
-    isPending: boolean;
-    isAvailable: boolean;
-    lastCheck: string;
-    version: string;
-  };
+ frontend: {
+  isPending: boolean;
+  isAvailable: boolean;
+  lastCheck: string;
+  version: string;
+  newVersion: string;
+  currentVersion: string;
+};
 
   backend: {
     isPending: boolean;
@@ -27,6 +29,8 @@ const initialState: UpdateState = {
     isAvailable: false,
     lastCheck: "",
     version: "",
+    newVersion: "",
+    currentVersion: "",
   },
 
   backend: {
@@ -47,15 +51,16 @@ export const loadUpdateSettings = createAsyncThunk(
     const toBoolean = (value: any) =>String(value ?? "").trim().toLowerCase() === "true";
     const toNumber = (value: any) => { const parsed = Number(value);  return Number.isFinite(parsed) ? parsed : 0;  };
     const strategyRes = await api.getAppSettings({headers: { "X-Performative": "UPDATE.STRATEGY" }, });
-    const frontendRes = await api.getAppSettings({headers: {"X-Performative": "UPDATE.FRONTEND.CHECK[true]",},});
-    const backendRes = await api.getAppSettings({ headers: {"X-Performative": "UPDATE.BACKEND.CHECK[false]",},});
+    const frontendRes = await api.getAppSettings({headers: {"X-Performative": "UPDATE.FRONTEND.CHECK",},});
+    const backendRes = await api.getAppSettings({ headers: {"X-Performative": "UPDATE.BACKEND.CHECK",},});
     const strategyEntries = strategyRes.data?.propertyEntries ?? [];
     const frontendEntries = frontendRes.data?.propertyEntries ?? [];
     const backendEntries = backendRes.data?.propertyEntries ?? [];
+
     return {
       autoUpdate: toBoolean(findValue(strategyEntries, "isautoupdate")),
 
-      frontend: {
+     frontend: {
         isPending: toBoolean(
           findValue(frontendEntries, "updatecheck.frontend.ispending")
         ),
@@ -66,6 +71,10 @@ export const loadUpdateSettings = createAsyncThunk(
           findValue(frontendEntries, "updatecheck.frontend.lastcheck") ?? "",
         version:
           findValue(frontendEntries, "updatecheck.frontend.version") ?? "",
+        newVersion:
+          findValue(frontendEntries, "updatecheck.frontend.newversion") ?? "",
+        currentVersion:
+          findValue(frontendEntries, "updatecheck.frontend.currentversion") ?? "",
       },
 
       backend: {
@@ -91,7 +100,7 @@ export const checkFrontendUpdate = createAsyncThunk(
 
     const response = await api.getAppSettings({
       headers: {
-        "X-Performative": "UPDATE.FRONTEND.CHECK[isForceCheck=true]",
+        "X-Performative": "UPDATE.FRONTEND.CHECK",
       },
     });
 
@@ -173,11 +182,13 @@ extraReducers: (builder) => {
       String(value ?? "").trim().toLowerCase() === "true";
 
     state.frontend = {
-      isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
-      isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
-      lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
-      version: findValue("updatecheck.frontend.version") ?? "",
-    };
+          isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
+          isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
+          lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
+          version: findValue("updatecheck.frontend.version") ?? "",
+          newVersion: findValue("updatecheck.frontend.newversion") ?? "",
+          currentVersion: findValue("updatecheck.frontend.currentversion") ?? "",
+        };
   });
 },
 });

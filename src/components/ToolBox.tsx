@@ -71,8 +71,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const showLogout =
     isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
 
-  const update = useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
+useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
 
+const updateState = useAppSelector((state) => state.update);
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
 
@@ -101,8 +102,8 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
   useEffect(() => {
     if (!isWeb) return;
-    if (update.updateAvailable) setOpenPopup("update");
-  }, [update.updateAvailable, isWeb]);
+    if (updateState.frontend.isAvailable) setOpenPopup("update");
+  }, [updateState.frontend.isAvailable, isWeb]);
 
   useEffect(() => {
     if (!isWeb || !showLogout) return;
@@ -160,15 +161,15 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   }, []);
 
   const updateTitle = useMemo(() => {
-    return update.updateAvailable ? "Update verfügbar" : "Keine Updates";
-  }, [update.updateAvailable]);
+    return updateState.frontend.isAvailable ? "Update verfügbar" : "Keine Updates";
+  }, [updateState.frontend.isAvailable]);
 
   const updateBody = useMemo(() => {
-    if (update.updateAvailable) {
+    if (updateState.frontend.isAvailable) {
       return "Eine neue Version ist verfügbar. Bitte speichere deine Arbeit und lade dann neu.";
     }
     return "Keine Updates verfügbar. Du bist auf dem aktuellen Stand.";
-  }, [update.updateAvailable]);
+  }, [updateState.frontend.isAvailable]);
 
   return (
     <>

@@ -158,83 +158,18 @@ export function UpdateWebAppTab() {
                      console.log("UPDATE STATE", updateState);
                     }, [updateState]);
 
-  const checkNow = useCallback(async () => {
+ const checkNow = useCallback(async () => {
+  if (!ip) return;
 
-    if (!ip) return;
-    setIsChecking(true);
-      await dispatch(checkFrontendUpdate());
-      await dispatch(loadUpdateSettings());
-      setIsChecking(false);
-      setLastCheckedAt(new Date().toLocaleString());
+  setIsChecking(true);
 
-      const query = new URLSearchParams();
-      query.set("_ts", String(Date.now()));
+  await dispatch(checkFrontendUpdate());
+  await dispatch(loadUpdateSettings());
 
-      const url = joinUrl(ip, `${API_PREFIX}/version?${query.toString()}`);
-      const data = await fetchJsonNoCache({ url, jwt });
+  setIsChecking(false);
+  return;
 
-      if (data === null) {
-      //  setUpdateStatus(t("serverWeb.statusTexts.networkError"));
-        setServerBundle("-");
-        setServerRelease("-");
-        setServerFull("-");
-        setPendingUpdateFull(null);
-        setIsChecking(false);
-        return;
-      }
 
-      if ((data as any)?.__status) {
-        const st = Number((data as any).__status);
-        //setUpdateStatus( st === 401  ? t("serverWeb.statusTexts.unauthorized"): t("serverWeb.statusTexts.httpError", { status: st }),);
-        setServerBundle("-");
-        setServerRelease("-");
-        setServerFull("-");
-        setPendingUpdateFull(null);
-        setIsChecking(false);
-        return;
-      }
-
-      const parsed = extractServerWebApp(data);
-      if (!parsed) {
-        //setUpdateStatus(t("serverWeb.statusTexts.unexpectedFormat"));
-        setServerBundle("-");
-        setServerRelease("-");
-        setServerFull("-");
-        setPendingUpdateFull(null);
-        setIsChecking(false);
-        return;
-      }
-
-      const release = fmtRelease(parsed.version);
-      const full = fmtFull(parsed.version);
-
-      setServerBundle(parsed.bundleName || "-");
-      setServerRelease(release);
-      setServerFull(full);
-
-      const acceptedStored = (await AsyncStorage.getItem(storageKey)) ?? null;
-
-      if (!acceptedStored) {
-        await AsyncStorage.setItem(storageKey, full);
-        setLastAccepted(full);
-        setPendingUpdateFull(null);
-        //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
-        setIsChecking(false);
-        return;
-       }
-
-    setLastAccepted(acceptedStored);
-
-    if (acceptedStored !== full) {
-      setPendingUpdateFull(full);
-      //setUpdateStatus(  t("serverWeb.statusTexts.updateAvailable", { version: full }), );
-      setIsChecking(false);
-      return;
-    }
-
-    setPendingUpdateFull(null);
-    //setUpdateStatus(t("serverWeb.statusTexts.upToDate"));
-    setIsChecking(false);
   }, [ip, jwt, storageKey, t]);
 
   const applyUpdateNow = useCallback(async () => {
@@ -287,7 +222,8 @@ export function UpdateWebAppTab() {
     <Card>
       <View style={s.container}>
         <H3>{t("serverWeb.title", "Web-App")}</H3>
-        <Row label={t("serverWeb.fields.acceptedVersion")} value={lastAccepted} />
+        <Row label={t("serverWeb.fields.acceptedVersion")} value={updateState.frontend.currentVersion || lastAccepted}/>
+        <Row label={t("serverWeb.fields.newVersion", "Neue Version")} value={updateState.frontend.newVersion || updateState.frontend.version || "-"}/>
         <Row label={t("serverWeb.fields.status")} value={updateStatus} />
         <Row label={t("serverWeb.fields.lastCheck", "Letzte Prüfung")} value={lastCheckedAt}/>
 
