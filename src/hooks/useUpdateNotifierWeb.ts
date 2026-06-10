@@ -5,15 +5,17 @@ import { useTranslation } from "react-i18next";
 import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { addNotification } from "../redux/slices/notificationSlice";
-import { loadUpdateSettings } from "../redux/slices/updateSlice";
+import { loadUpdateSettingsIfNeeded } from "../redux/slices/updateSlice";
 import { selectApi } from "../redux/slices/apiSlice";
 import { normalizeServerKey } from "../redux/selectors/serverSelectors";
+
+const UPDATE_CHECK_MAX_AGE_MS = 60 * 60 * 1000;
 
 export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Notifications"]);
 
-  const intervalMs = opts?.intervalMs ?? 5 * 60 * 1000;
+  const intervalMs = opts?.intervalMs ?? UPDATE_CHECK_MAX_AGE_MS;
 
   const api = useAppSelector(selectApi);
   const updateState = useAppSelector((state) => state.update);
@@ -28,10 +30,19 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   useEffect(() => {
     if (!isWeb || !ip || !isLoggedIn) return;
 
-    dispatch(loadUpdateSettings());
+    const checkUpdates = () => {
+      dispatch(
+        loadUpdateSettingsIfNeeded({
+          force: false,
+          maxAgeMs: UPDATE_CHECK_MAX_AGE_MS,
+        }),
+      );
+    };
+
+    checkUpdates();
 
     const timer = setInterval(() => {
-      dispatch(loadUpdateSettings());
+      checkUpdates();
     }, intervalMs);
 
     return () => clearInterval(timer);

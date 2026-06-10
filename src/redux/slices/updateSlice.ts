@@ -2,8 +2,9 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 interface UpdateState {
-  autoUpdate: boolean;
-
+ autoUpdate: boolean;
+ loading: boolean;
+ lastLoadedAt: number | null;
  frontend: {
   isPending: boolean;
   isAvailable: boolean;
@@ -23,6 +24,8 @@ interface UpdateState {
 }
 
 const initialState: UpdateState = {
+  loading: false,
+  lastLoadedAt: null,
   autoUpdate: false,
   frontend: {
     isPending: false,
@@ -91,6 +94,35 @@ export const loadUpdateSettings = createAsyncThunk(
       },
     };
   }
+);
+export const loadUpdateSettingsIfNeeded = createAsyncThunk(
+  "update/loadUpdateSettingsIfNeeded",
+  async (
+    options: { force?: boolean; maxAgeMs?: number } | undefined,
+    thunkAPI,
+  ) => {
+    const state = thunkAPI.getState() as RootState;
+    const updateState = state.update;
+
+    const force = options?.force === true;
+    const maxAgeMs = options?.maxAgeMs ?? 30 * 60 * 1000;
+
+    if (!force && updateState.loading) {
+      return null;
+    }
+
+    if (
+      !force &&
+      updateState.lastLoadedAt &&
+      Date.now() - updateState.lastLoadedAt < maxAgeMs
+    ) {
+      return null;
+    }
+
+    await thunkAPI.dispatch(loadUpdateSettings() as any);
+
+    return true;
+  },
 );
 export const checkFrontendUpdate = createAsyncThunk(
   "update/checkFrontendUpdate",
@@ -162,10 +194,21 @@ const updateSlice = createSlice({
   },
 
 extraReducers: (builder) => {
+  builder.addCase(loadUpdateSettings.pending, (state) => {
+    state.loading = true;
+  });
+
   builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
+    state.loading = false;
+    state.lastLoadedAt = Date.now();
+
     state.autoUpdate = action.payload.autoUpdate;
     state.frontend = action.payload.frontend;
     state.backend = action.payload.backend;
+  });
+
+  builder.addCase(loadUpdateSettings.rejected, (state) => {
+    state.loading = false;
   });
 
   builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
@@ -182,13 +225,13 @@ extraReducers: (builder) => {
       String(value ?? "").trim().toLowerCase() === "true";
 
     state.frontend = {
-          isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
-          isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
-          lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
-          version: findValue("updatecheck.frontend.version") ?? "",
-          newVersion: findValue("updatecheck.frontend.newversion") ?? "",
-          currentVersion: findValue("updatecheck.frontend.currentversion") ?? "",
-        };
+      isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
+      isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
+      lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
+      version: findValue("updatecheck.frontend.version") ?? "",
+      newVersion: findValue("updatecheck.frontend.newversion") ?? "",
+      currentVersion: findValue("updatecheck.frontend.currentversion") ?? "",
+    };
   });
 },
 });

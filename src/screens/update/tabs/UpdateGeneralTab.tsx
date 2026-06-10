@@ -9,9 +9,7 @@ import { TableSwitchCell } from "../../../components/ui-elements/TableSwitchCell
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
-  loadUpdateSettings,
-  saveAutoUpdate,
-} from "../../../redux/slices/updateSlice";
+  loadUpdateSettingsIfNeeded,saveAutoUpdate,} from "../../../redux/slices/updateSlice";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -45,9 +43,7 @@ export function UpdateGeneralTab() {
   const updateState = useAppSelector((state) => state.update);
 
   // Lädt die aktuellen Update-Informationen zentral aus dem Redux-Update-Slice.
-  useEffect(() => {
-    dispatch(loadUpdateSettings());
-  }, [dispatch]);
+  useEffect(() => { dispatch(loadUpdateSettingsIfNeeded({force: false, maxAgeMs: 30 * 60 * 1000, }), );}, [dispatch]);
 
   const webStatus = updateState.frontend.isAvailable ? t("serverWeb.statusTexts.updateAvailable", "Update available")
     : t("serverWeb.statusTexts.upToDate", "Up to date");

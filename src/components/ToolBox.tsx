@@ -4,15 +4,11 @@ import AntDesign_ from "@expo/vector-icons/AntDesign";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-
-import { useUpdateNotifierWeb } from "../hooks/useUpdateNotifierWeb";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-
 import { logoutAsync, selectJwt } from "../redux/slices/apiSlice";
 import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
-
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { Text } from "./stylistic/Text";
 import { ActionButton } from "./ui-elements/ActionButton";
@@ -71,7 +67,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const showLogout =
     isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
 
-useUpdateNotifierWeb({ intervalMs: 5 * 60 * 1000 });
+
 
 const updateState = useAppSelector((state) => state.update);
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
