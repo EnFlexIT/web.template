@@ -70,10 +70,7 @@ export function AppSessionGuard() {
 
       try {
         const renewResults = await dispatch(
-          renewAllServerJwtsIfNeeded({
-            force: true,
-            cooldownMs: 10_000,
-          }) as any,
+          null as any as ReturnType<typeof renewAllServerJwtsIfNeeded>
         ).unwrap();
 
         if (cancelled) return;
