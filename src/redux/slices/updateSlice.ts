@@ -245,17 +245,43 @@ export const saveAutoUpdate = createAsyncThunk(
       ],
     } as any);
 
+    console.log("SAVE AUTO UPDATE RESPONSE", response.data);
+
     const verify = await api.getAppSettings({
       headers: {
         "X-Performative": "UPDATE.STRATEGY",
       },
     });
 
-    console.log("SAVE AUTO UPDATE RESPONSE", response.data);
     console.log("VERIFY AFTER SAVE", verify.data);
 
+    // Cache aktualisieren
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(
+          "update:settingsCache",
+        );
+
+        if (cached) {
+          const parsed = JSON.parse(cached);
+
+          parsed.autoUpdate = next;
+
+          localStorage.setItem(
+            "update:settingsCache",
+            JSON.stringify(parsed),
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "[UPDATE] failed to update settings cache",
+          error,
+        );
+      }
+    }
+
     return next;
-  },
+  }
 );
 
 const updateSlice = createSlice({

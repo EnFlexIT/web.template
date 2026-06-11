@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "./useAppDispatch";
 import { selectApi, selectAuthenticationMethod } from "../redux/slices/apiSlice";
 import {
   extractServerWebApp,
@@ -11,6 +12,7 @@ import {
   joinUrl,
 } from "./useUpdateNotifierWeb";
 import { getServerScopedStorageKey } from "../redux/selectors/serverSelectors";
+import { loadUpdateSettingsIfNeeded } from "../redux/slices/updateSlice";
 
 const API_PREFIX = "/api";
 
@@ -29,6 +31,8 @@ function getSessionCheckKey(ip: string) {
 }
 
 export function usePostLoginAutoReloadWeb({ enabled }: Params) {
+  const dispatch = useAppDispatch();
+
   const hasCheckedRef = useRef(false);
   const jwtRef = useRef<string | null>(null);
 
@@ -45,16 +49,24 @@ export function usePostLoginAutoReloadWeb({ enabled }: Params) {
   }, [jwt]);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      hasCheckedRef.current = false;
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
     async function run() {
       if (!enabled) return;
       if (!isWeb) return;
       if (!ip || !isLoggedIn) return;
       if (hasCheckedRef.current) return;
 
-      const isOidc =
-        authenticationMethod === "oidc" || authenticationMethod === "unknown";
+      const isOidc = authenticationMethod === "oidc";
 
       if (isOidc) return;
+
+      const currentJwt = jwtRef.current;
+      if (!currentJwt) return;
 
       const sessionCheckKey = getSessionCheckKey(ip);
 
@@ -66,14 +78,7 @@ export function usePostLoginAutoReloadWeb({ enabled }: Params) {
         return;
       }
 
-      const currentJwt = jwtRef.current;
-      if (!currentJwt) return;
-
       hasCheckedRef.current = true;
-
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(sessionCheckKey, "true");
-      }
 
       const storageKey = getServerScopedStorageKey(
         LAST_ACCEPTED_KEY_PREFIX,
@@ -90,11 +95,32 @@ export function usePostLoginAutoReloadWeb({ enabled }: Params) {
         jwt: currentJwt,
       });
 
-      if (data === null) return;
-      if ((data as any)?.__status) return;
+      if (data === null) {
+        hasCheckedRef.current = false;
+        return;
+      }
+
+      if ((data as any)?.__status) {
+        hasCheckedRef.current = false;
+        return;
+      }
 
       const parsed = extractServerWebApp(data);
-      if (!parsed) return;
+
+      if (!parsed) {
+        hasCheckedRef.current = false;
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(sessionCheckKey, "true");
+      }
+
+      await dispatch(
+        loadUpdateSettingsIfNeeded({
+          force: true,
+        }),
+      );
 
       const accepted = (await AsyncStorage.getItem(storageKey)) ?? null;
 
@@ -110,5 +136,5 @@ export function usePostLoginAutoReloadWeb({ enabled }: Params) {
     }
 
     void run();
-  }, [enabled, authenticationMethod, ip, isLoggedIn, isWeb]);
+  }, [dispatch, enabled, authenticationMethod, ip, isLoggedIn, isWeb]);
 }

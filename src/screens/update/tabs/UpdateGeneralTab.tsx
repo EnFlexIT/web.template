@@ -61,13 +61,12 @@ export function UpdateGeneralTab() {
             {t("general.updateStrategy", "Update-Strategie")}
           </ThemedText>
 
-          <SwitchRow
-            label={t("general.autoUpdate", "Auto Update")}
-            value={updateState.autoUpdate}
-            onChange={(next) => {
-              dispatch(saveAutoUpdate(next));
-            }}
-          />
+         <SwitchRow
+              label={t("general.autoUpdate", "Auto Update")}
+              value={updateState.autoUpdate}
+              onChange={async (next) => {
+                await dispatch(saveAutoUpdate(next));
+                dispatch( loadUpdateSettingsIfNeeded({force: true,  }), );}}/>
         </View>
 
         <View style={s.block}>
