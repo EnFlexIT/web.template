@@ -26,23 +26,35 @@ export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
   const serverKey = normalizeServerKey(ip);
 
   const lastNotifiedVersionRef = useRef<string | null>(null);
+  const postLoginCheckedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      postLoginCheckedRef.current = false;
+      lastNotifiedVersionRef.current = null;
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!isWeb || !ip || !isLoggedIn) return;
 
-    const checkUpdates = () => {
+    if (!postLoginCheckedRef.current) {
+      postLoginCheckedRef.current = true;
+
+      dispatch(
+        loadUpdateSettingsIfNeeded({
+          force: true,
+        }),
+      );
+    }
+
+    const timer = setInterval(() => {
       dispatch(
         loadUpdateSettingsIfNeeded({
           force: false,
           maxAgeMs: UPDATE_CHECK_MAX_AGE_MS,
         }),
       );
-    };
-
-    checkUpdates();
-
-    const timer = setInterval(() => {
-      checkUpdates();
     }, intervalMs);
 
     return () => clearInterval(timer);

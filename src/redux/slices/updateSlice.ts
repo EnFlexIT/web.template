@@ -2,17 +2,17 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 interface UpdateState {
- autoUpdate: boolean;
- loading: boolean;
- lastLoadedAt: number | null;
- frontend: {
-  isPending: boolean;
-  isAvailable: boolean;
-  lastCheck: string;
-  version: string;
-  newVersion: string;
-  currentVersion: string;
-};
+  autoUpdate: boolean;
+  loading: boolean;
+  lastLoadedAt: number | null;
+  frontend: {
+    isPending: boolean;
+    isAvailable: boolean;
+    lastCheck: string;
+    version: string;
+    newVersion: string;
+    currentVersion: string;
+  };
 
   backend: {
     isPending: boolean;
@@ -45,17 +45,68 @@ const initialState: UpdateState = {
   },
 };
 
+const UPDATE_LAST_LOADED_KEY = "update:lastLoadedAt";
+const UPDATE_SETTINGS_CACHE_KEY = "update:settingsCache";
+
+function hasValidUpdatePayload(payload: any) {
+  return Boolean(
+    payload?.frontend?.currentVersion ||
+      payload?.frontend?.lastCheck ||
+      payload?.backend?.lastCheck,
+  );
+}
+
+function applyUpdatePayload(state: UpdateState, payload: any) {
+  if (!payload) return;
+
+  state.lastLoadedAt = Date.now();
+
+  state.autoUpdate = payload.autoUpdate;
+
+  if (payload.frontend) {
+    state.frontend = {
+      ...state.frontend,
+      ...payload.frontend,
+    };
+  }
+
+  if (payload.backend) {
+    state.backend = {
+      ...state.backend,
+      ...payload.backend,
+    };
+  }
+}
+
 export const loadUpdateSettings = createAsyncThunk(
   "update/loadUpdateSettings",
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const api = state.api.awb_rest_api.infoApi;
-    const findValue = (entries: any[], key: string) =>entries.find((entry) => entry.key === key)?.value;
-    const toBoolean = (value: any) =>String(value ?? "").trim().toLowerCase() === "true";
-    const toNumber = (value: any) => { const parsed = Number(value);  return Number.isFinite(parsed) ? parsed : 0;  };
-    const strategyRes = await api.getAppSettings({headers: { "X-Performative": "UPDATE.STRATEGY" }, });
-    const frontendRes = await api.getAppSettings({headers: {"X-Performative": "UPDATE.FRONTEND.CHECK",},});
-    const backendRes = await api.getAppSettings({ headers: {"X-Performative": "UPDATE.BACKEND.CHECK",},});
+
+    const findValue = (entries: any[], key: string) =>
+      entries.find((entry) => entry.key === key)?.value;
+
+    const toBoolean = (value: any) =>
+      String(value ?? "").trim().toLowerCase() === "true";
+
+    const toNumber = (value: any) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const strategyRes = await api.getAppSettings({
+      headers: { "X-Performative": "UPDATE.STRATEGY" },
+    });
+
+    const frontendRes = await api.getAppSettings({
+      headers: { "X-Performative": "UPDATE.FRONTEND.CHECK" },
+    });
+
+    const backendRes = await api.getAppSettings({
+      headers: { "X-Performative": "UPDATE.BACKEND.CHECK" },
+    });
+
     const strategyEntries = strategyRes.data?.propertyEntries ?? [];
     const frontendEntries = frontendRes.data?.propertyEntries ?? [];
     const backendEntries = backendRes.data?.propertyEntries ?? [];
@@ -63,12 +114,12 @@ export const loadUpdateSettings = createAsyncThunk(
     return {
       autoUpdate: toBoolean(findValue(strategyEntries, "isautoupdate")),
 
-     frontend: {
+      frontend: {
         isPending: toBoolean(
-          findValue(frontendEntries, "updatecheck.frontend.ispending")
+          findValue(frontendEntries, "updatecheck.frontend.ispending"),
         ),
         isAvailable: toBoolean(
-          findValue(frontendEntries, "updatecheck.frontend.isavailable")
+          findValue(frontendEntries, "updatecheck.frontend.isavailable"),
         ),
         lastCheck:
           findValue(frontendEntries, "updatecheck.frontend.lastcheck") ?? "",
@@ -77,15 +128,16 @@ export const loadUpdateSettings = createAsyncThunk(
         newVersion:
           findValue(frontendEntries, "updatecheck.frontend.newversion") ?? "",
         currentVersion:
-          findValue(frontendEntries, "updatecheck.frontend.currentversion") ?? "",
+          findValue(frontendEntries, "updatecheck.frontend.currentversion") ??
+          "",
       },
 
       backend: {
         isPending: toBoolean(
-          findValue(backendEntries, "updatecheck.backend.ispending")
+          findValue(backendEntries, "updatecheck.backend.ispending"),
         ),
         isAvailable: toBoolean(
-          findValue(backendEntries, "updatecheck.backend.isavailable")
+          findValue(backendEntries, "updatecheck.backend.isavailable"),
         ),
         lastCheck:
           findValue(backendEntries, "updatecheck.backend.lastcheck") ?? "",
@@ -93,8 +145,9 @@ export const loadUpdateSettings = createAsyncThunk(
         progress: toNumber(findValue(backendEntries, "update.progress")),
       },
     };
-  }
+  },
 );
+
 export const loadUpdateSettingsIfNeeded = createAsyncThunk(
   "update/loadUpdateSettingsIfNeeded",
   async (
@@ -107,23 +160,58 @@ export const loadUpdateSettingsIfNeeded = createAsyncThunk(
     const force = options?.force === true;
     const maxAgeMs = options?.maxAgeMs ?? 30 * 60 * 1000;
 
+    const storedLastLoadedAt =
+      typeof window !== "undefined"
+        ? Number(localStorage.getItem(UPDATE_LAST_LOADED_KEY))
+        : updateState.lastLoadedAt;
+
     if (!force && updateState.loading) {
       return null;
     }
 
     if (
       !force &&
-      updateState.lastLoadedAt &&
-      Date.now() - updateState.lastLoadedAt < maxAgeMs
+      storedLastLoadedAt &&
+      Date.now() - storedLastLoadedAt < maxAgeMs
     ) {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem(UPDATE_SETTINGS_CACHE_KEY);
+
+        if (cached) {
+          try {
+            return JSON.parse(cached);
+          } catch (error) {
+            localStorage.removeItem(UPDATE_SETTINGS_CACHE_KEY);
+            localStorage.removeItem(UPDATE_LAST_LOADED_KEY);
+          }
+        }
+      }
+
       return null;
     }
 
-    await thunkAPI.dispatch(loadUpdateSettings() as any);
+    const result = await thunkAPI.dispatch(loadUpdateSettings() as any);
 
-    return true;
+    if (loadUpdateSettings.fulfilled.match(result)) {
+      const payload = result.payload;
+
+      if (hasValidUpdatePayload(payload)) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(UPDATE_LAST_LOADED_KEY, String(Date.now()));
+          localStorage.setItem(
+            UPDATE_SETTINGS_CACHE_KEY,
+            JSON.stringify(payload),
+          );
+        }
+
+        return payload;
+      }
+    }
+
+    return null;
   },
 );
+
 export const checkFrontendUpdate = createAsyncThunk(
   "update/checkFrontendUpdate",
   async (_, thunkAPI) => {
@@ -137,15 +225,14 @@ export const checkFrontendUpdate = createAsyncThunk(
     });
 
     return response.data?.propertyEntries ?? [];
-  }
+  },
 );
+
 export const saveAutoUpdate = createAsyncThunk(
   "update/saveAutoUpdate",
   async (next: boolean, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
     const api = state.api.awb_rest_api.infoApi;
-
-    console.log("SAVE AUTO UPDATE START", next);
 
     const response = await api.setAppSettings({
       performative: "UPDATE.STRATEGY",
@@ -158,19 +245,19 @@ export const saveAutoUpdate = createAsyncThunk(
       ],
     } as any);
 
-    console.log("SAVE AUTO UPDATE RESPONSE", response.data);
-
     const verify = await api.getAppSettings({
       headers: {
         "X-Performative": "UPDATE.STRATEGY",
       },
     });
 
+    console.log("SAVE AUTO UPDATE RESPONSE", response.data);
     console.log("VERIFY AFTER SAVE", verify.data);
 
     return next;
-  }
+  },
 );
+
 const updateSlice = createSlice({
   name: "update",
   initialState,
@@ -193,47 +280,71 @@ const updateSlice = createSlice({
     },
   },
 
-extraReducers: (builder) => {
-  builder.addCase(loadUpdateSettings.pending, (state) => {
-    state.loading = true;
-  });
+  extraReducers: (builder) => {
+    builder.addCase(loadUpdateSettings.pending, (state) => {
+      state.loading = true;
+    });
 
-  builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
-    state.loading = false;
-    state.lastLoadedAt = Date.now();
+    builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
+      state.loading = false;
 
-    state.autoUpdate = action.payload.autoUpdate;
-    state.frontend = action.payload.frontend;
-    state.backend = action.payload.backend;
-  });
+      if (!hasValidUpdatePayload(action.payload)) return;
 
-  builder.addCase(loadUpdateSettings.rejected, (state) => {
-    state.loading = false;
-  });
+      applyUpdatePayload(state, action.payload);
+    });
 
-  builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
-    state.autoUpdate = action.payload;
-  });
+    builder.addCase(loadUpdateSettings.rejected, (state) => {
+      state.loading = false;
+    });
 
-  builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {
-    const entries = action.payload;
+    builder.addCase(loadUpdateSettingsIfNeeded.fulfilled, (state, action) => {
+      if (!hasValidUpdatePayload(action.payload)) return;
 
-    const findValue = (key: string) =>
-      entries.find((entry: any) => entry.key === key)?.value;
+      applyUpdatePayload(state, action.payload);
+    });
 
-    const toBoolean = (value: any) =>
-      String(value ?? "").trim().toLowerCase() === "true";
+    builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
+      state.autoUpdate = action.payload;
+    });
 
-    state.frontend = {
-      isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
-      isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
-      lastCheck: findValue("updatecheck.frontend.lastcheck") ?? "",
-      version: findValue("updatecheck.frontend.version") ?? "",
-      newVersion: findValue("updatecheck.frontend.newversion") ?? "",
-      currentVersion: findValue("updatecheck.frontend.currentversion") ?? "",
-    };
-  });
-},
+    builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {
+      const entries = action.payload;
+
+      const findValue = (key: string) =>
+        entries.find((entry: any) => entry.key === key)?.value;
+
+      const toBoolean = (value: any) =>
+        String(value ?? "").trim().toLowerCase() === "true";
+
+      state.frontend = {
+        ...state.frontend,
+
+        isPending: toBoolean(
+          findValue("updatecheck.frontend.ispending"),
+        ),
+
+        isAvailable: toBoolean(
+          findValue("updatecheck.frontend.isavailable"),
+        ),
+
+        lastCheck:
+          findValue("updatecheck.frontend.lastcheck") ??
+          state.frontend.lastCheck,
+
+        version:
+          findValue("updatecheck.frontend.version") ??
+          state.frontend.version,
+
+        newVersion:
+          findValue("updatecheck.frontend.newversion") ??
+          state.frontend.newVersion,
+
+        currentVersion:
+          findValue("updatecheck.frontend.currentversion") ??
+          state.frontend.currentVersion,
+      };
+    });
+  },
 });
 
 export const {
