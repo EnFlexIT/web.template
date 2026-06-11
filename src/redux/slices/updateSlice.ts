@@ -227,7 +227,21 @@ export const checkFrontendUpdate = createAsyncThunk(
     return response.data?.propertyEntries ?? [];
   },
 );
+export const executeFrontendUpdate = createAsyncThunk(
+  "update/executeFrontendUpdate",
+  async (_, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
+    const api = state.api.awb_rest_api.infoApi;
 
+    const response = await api.getAppSettings({
+      headers: {
+        "X-Performative": "UPDATE.FRONTEND.EXECUTE",
+      },
+    });
+
+    return response.data?.propertyEntries ?? [];
+  },
+);
 export const saveAutoUpdate = createAsyncThunk(
   "update/saveAutoUpdate",
   async (next: boolean, thunkAPI) => {
@@ -331,6 +345,32 @@ const updateSlice = createSlice({
 
     builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
       state.autoUpdate = action.payload;
+    });
+
+    builder.addCase(executeFrontendUpdate.fulfilled, (state, action) => {
+      const entries = action.payload;
+
+      const findValue = (key: string) =>
+        entries.find((entry: any) => entry.key === key)?.value;
+
+      const toBoolean = (value: any) =>
+        String(value ?? "").trim().toLowerCase() === "true";
+
+      state.frontend = {
+        ...state.frontend,
+        isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
+        isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
+        lastCheck:
+          findValue("updatecheck.frontend.lastcheck") ?? state.frontend.lastCheck,
+        version:
+          findValue("updatecheck.frontend.version") ?? state.frontend.version,
+        newVersion:
+          findValue("updatecheck.frontend.newversion") ??
+          state.frontend.newVersion,
+        currentVersion:
+          findValue("updatecheck.frontend.currentversion") ??
+          state.frontend.currentVersion,
+      };
     });
 
     builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {

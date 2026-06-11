@@ -12,6 +12,7 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { selectApi } from "../../../redux/slices/apiSlice";
 import {
   checkFrontendUpdate,
+  executeFrontendUpdate,
   loadUpdateSettingsIfNeeded,
 } from "../../../redux/slices/updateSlice";
 
@@ -116,14 +117,38 @@ export function UpdateWebAppTab() {
           )}
 
           {updateState.frontend.isAvailable && (
-            <ActionButton
-              label={t("serverWeb.actions.reloadNow")}
-              variant="primary"
-              size="xs"
-              onPress={reloadWebApp}
-              disabled={isChecking}
-            />
-          )}
+                <ActionButton
+                  label={
+                    isChecking
+                      ? t("serverWeb.actions.installing", "Update wird installiert...")
+                      : t("serverWeb.actions.executeUpdate", "Update installieren")
+                  }
+                  variant="primary"
+                  size="xs"
+                  onPress={async () => {
+                    if (isChecking) return;
+
+                    setIsChecking(true);
+
+                    try {
+                      await dispatch(executeFrontendUpdate()).unwrap();
+
+                      await dispatch(
+                        loadUpdateSettingsIfNeeded({
+                          force: true,
+                        }),
+                      ).unwrap();
+
+                      if (typeof window !== "undefined") {
+                        window.location.reload();
+                      }
+                    } finally {
+                      setIsChecking(false);
+                    }
+                  }}
+                  disabled={isChecking || updateState.loading}
+                />
+              )}
         </View>
       </View>
     </Card>
@@ -164,8 +189,9 @@ const s = StyleSheet.create({
 
   btnRow: {
     flexDirection: "row",
-    gap: 5,
+    gap: 8,
     justifyContent: "flex-end",
-    padding: 5,
+    padding: 4,
+    left: 4,
   },
 });
