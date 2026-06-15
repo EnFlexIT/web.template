@@ -4,12 +4,16 @@
     "fields": {
       "releaseVersion": "Version (Release)",
       "acceptedVersion": "Version",
+      "newVersion": "New version",
+      "lastCheck": "Last check",
       "status": "Update status"
     },
     "actions": {
-      "checkNow": "search for updates",
+      "checkNow": "Search for updates",
       "checking": "Checking…",
-      "reloadNow": "Reload now"
+      "reloadNow": "Reload now",
+      "executeUpdate": "Install update",
+      "installing": "Installing update…"
     },
     "statusTexts": {
       "networkError": "Network error",
@@ -21,6 +25,62 @@
       "updateAcceptedNative": "Update accepted (native)"
     }
   },
-  "iInstalledFeatures":"Installed Features"
+  "general": {
+    "title": "General",
+    "updateStrategy": "Update strategy",
+    "autoUpdate": "Auto update",
+    "webApp": "Web App",
+    "webStatus": "Status",
+    "backend": "Backend",
+    "backendStatus": "Status"
+  },
+  "backend": {
+    "title": "Backend",
 
+    "fields": {
+      "lastCheck": "Last check",
+      "status": "Status",
+      "progress": "Progress"
+    },
+
+    "actions": {
+      "checkNow": "Search for updates",
+      "checking": "Searching for updates...",
+      "executeUpdate": "Install update"
+    },
+
+    "sections": {
+      "features": "Installed Features",
+      "bundles": "Bundles"
+    },
+
+    "empty": {
+      "noFeatures": "No features available",
+      "noBundles": "No bundles available"
+    },
+
+    "statusTexts": {
+      "upToDate": "Up to date",
+      "updateAvailable": "Update available",
+      "installing": "Installing backend update",
+      "restarting": "Server is restarting",
+      "reconnecting": "Restoring connection",
+      "logout": "Resetting login",
+      "completed": "Update completed successfully",
+      "failed": "Update failed"
+    },
+
+    "updateDialog": {
+      "title": "Installing backend update",
+      "description": "Please wait. The server is being updated.",
+
+      "steps": {
+        "installing": "Installing backend update...",
+        "restarting": "Server is restarting...",
+        "reconnecting": "Restoring connection...",
+        "logout": "Resetting login..."
+      }
+    }
+  },
+  "InstalledFeatures": "Installed Features"
 }

@@ -6,22 +6,24 @@ import Feather from "@expo/vector-icons/Feather";
 
 import { ThemedText } from "../../../components/themed/ThemedText";
 
+type BackendUpdatePhase =
+  | "installing"
+  | "restarting"
+  | "reconnecting"
+  | "logout";
+
 type Props = {
   visible: boolean;
-  progress?: number;
   statusText?: string;
-  phase?: "installing" | "restarting" | "reconnecting" | "logout";
+  phase?: BackendUpdatePhase;
 };
 
 export function BackendUpdateProgressDialog({
   visible,
-  progress = 0,
   statusText,
   phase = "installing",
 }: Props) {
   const { t } = useTranslation(["Update"]);
-
-  const safeProgress = Math.max(0, Math.min(100, progress));
 
   const phaseConfig = {
     installing: {
@@ -31,7 +33,6 @@ export function BackendUpdateProgressDialog({
         "Backend-Update wird installiert",
       ),
     },
-
     restarting: {
       icon: "refresh-cw" as const,
       title: t(
@@ -39,7 +40,6 @@ export function BackendUpdateProgressDialog({
         "Server wird neu gestartet",
       ),
     },
-
     reconnecting: {
       icon: "wifi" as const,
       title: t(
@@ -47,7 +47,6 @@ export function BackendUpdateProgressDialog({
         "Verbindung wird wiederhergestellt",
       ),
     },
-
     logout: {
       icon: "log-out" as const,
       title: t(
@@ -64,16 +63,10 @@ export function BackendUpdateProgressDialog({
       <View style={s.overlay}>
         <View style={s.dialog}>
           <View style={s.iconContainer}>
-            <Feather
-              name={current.icon}
-              size={34}
-              color="#2f80ed"
-            />
+            <Feather name={current.icon} size={34} color="#2f80ed" />
           </View>
 
-          <ThemedText style={s.title}>
-            {current.title}
-          </ThemedText>
+          <ThemedText style={s.title}>{current.title}</ThemedText>
 
           <ThemedText style={s.description}>
             {statusText ||
@@ -83,22 +76,7 @@ export function BackendUpdateProgressDialog({
               )}
           </ThemedText>
 
-          <View style={s.progressOuter}>
-            <View
-              style={[
-                s.progressInner,
-                { width: `${safeProgress}%` },
-              ]}
-            />
-          </View>
-
-          <View style={s.progressRow}>
-            <ActivityIndicator size="small" />
-
-            <ThemedText style={s.progressText}>
-              {safeProgress}%
-            </ThemedText>
-          </View>
+          <ActivityIndicator size="large" />
         </View>
       </View>
     </Modal>
@@ -140,30 +118,5 @@ const s = StyleSheet.create((theme) => ({
     fontSize: 13,
     opacity: 0.75,
     textAlign: "center",
-  },
-
-  progressOuter: {
-    width: "100%",
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.12)",
-    overflow: "hidden",
-  },
-
-  progressInner: {
-    height: "100%",
-    borderRadius: 999,
-    backgroundColor: "#2f80ed",
-  },
-
-  progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  progressText: {
-    fontSize: 13,
-    fontWeight: "700",
   },
 }));

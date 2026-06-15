@@ -26,7 +26,7 @@ import {
   loadUpdateSettingsIfNeeded,
 } from "../../../redux/slices/updateSlice";
 
-import { checkServerReachable} from "../../login/serverCheck";
+import { checkServerReachable } from "../../login/serverCheck";
 
 import { BackendUpdateProgressDialog } from "../Dialog/BackendUpdateProgressDialog";
 
@@ -38,6 +38,8 @@ import {
   SelectableList,
 } from "../../../components/ui-elements/SelectableList";
 import { H3 } from "../../../components/stylistic/H3";
+import { ThemedView } from "../../../components/themed/ThemedView";
+import { useUnistyles } from "react-native-unistyles";
 
 const API_PREFIX = "/api";
 const MAX_FEATURES_DRAWN = 5;
@@ -197,11 +199,11 @@ function pickTopNWithSelected<T extends { id: string }>(
   return [selected, ...picked].slice(0, n);
 }
 
-function RowLabelValue(props: { label: string; value: string }) {
+function InfoRow(props: { label: string; value: string }) {
   return (
-    <View style={s.statusRow}>
-      <ThemedText style={s.statusLabel}>{props.label}</ThemedText>
-      <ThemedText style={s.statusValue}>{props.value || "-"}</ThemedText>
+    <View style={s.infoRow}>
+      <ThemedText style={s.infoLabel}>{props.label}</ThemedText>
+      <ThemedText style={s.infoValue}>{props.value || "-"}</ThemedText>
     </View>
   );
 }
@@ -209,6 +211,7 @@ function RowLabelValue(props: { label: string; value: string }) {
 export function UpdateBackendTab() {
   const { t } = useTranslation(["Update"]);
   const dispatch = useAppDispatch();
+  const { theme } = useUnistyles();
 
   const api = useAppSelector(selectApi);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
@@ -218,7 +221,6 @@ export function UpdateBackendTab() {
   const jwt = api.jwt;
 
   const featureIntervalRef = useRef<any>(null);
-  const fakeProgressRef = useRef<any>(null);
   const reconnectTimerRef = useRef<any>(null);
 
   const [features, setFeatures] = useState<ParsedComponent[]>([]);
@@ -231,17 +233,11 @@ export function UpdateBackendTab() {
   const [isChecking, setIsChecking] = useState(false);
 
   const [showBackendUpdateDialog, setShowBackendUpdateDialog] = useState(false);
-  const [testProgress, setTestProgress] = useState(0);
-  const [testStatusText, setTestStatusText] = useState("");
+  const [statusText, setStatusText] = useState("");
   const [updatePhase, setUpdatePhase] =
     useState<BackendUpdatePhase>("installing");
 
   const clearUpdateTimers = useCallback(() => {
-    if (fakeProgressRef.current) {
-      clearInterval(fakeProgressRef.current);
-      fakeProgressRef.current = null;
-    }
-
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -253,9 +249,11 @@ export function UpdateBackendTab() {
 
     try {
       setUpdatePhase("logout");
-      setTestProgress(100);
-      setTestStatusText(
-        "Update abgeschlossen. Anmeldung wird zurückgesetzt...",
+      setStatusText(
+        t(
+          "backend.updateDialog.steps.logout",
+          "Anmeldung wird zurückgesetzt...",
+        ),
       );
 
       await dispatch(logoutAsync()).unwrap();
@@ -268,38 +266,7 @@ export function UpdateBackendTab() {
     } finally {
       setLogoutFlowActive(false);
     }
-  }, [dispatch]);
-
-  const startFakeBackendProgress = useCallback(() => {
-    if (fakeProgressRef.current) {
-      clearInterval(fakeProgressRef.current);
-    }
-
-    setTestProgress(0);
-
-    fakeProgressRef.current = setInterval(() => {
-      setTestProgress((prev) => {
-        if (prev >= 95) {
-          return 95;
-        }
-
-        const next = prev + 4;
-
-        if (next < 55) {
-          setUpdatePhase("installing");
-          setTestStatusText("Backend-Update wird installiert...");
-        } else if (next < 85) {
-          setUpdatePhase("restarting");
-          setTestStatusText("Server wird neu gestartet...");
-        } else {
-          setUpdatePhase("reconnecting");
-          setTestStatusText("Verbindung wird wiederhergestellt...");
-        }
-
-        return Math.min(next, 95);
-      });
-    }, 600);
-  }, []);
+  }, [dispatch, t]);
 
   const resetLists = useCallback(() => {
     setFeatures([]);
@@ -470,10 +437,12 @@ export function UpdateBackendTab() {
     setIsChecking(true);
     setShowBackendUpdateDialog(true);
     setUpdatePhase("installing");
-    setTestProgress(0);
-    setTestStatusText("Backend-Update wird vorbereitet...");
-
-    startFakeBackendProgress();
+    setStatusText(
+      t(
+        "backend.updateDialog.steps.installing",
+        "Backend-Update wird installiert...",
+      ),
+    );
 
     let attempts = 0;
     const maxAttempts = 90;
@@ -483,9 +452,11 @@ export function UpdateBackendTab() {
       clearUpdateTimers();
 
       setUpdatePhase("logout");
-      setTestProgress(100);
-      setTestStatusText(
-        "Update abgeschlossen. Anmeldung wird zurückgesetzt...",
+      setStatusText(
+        t(
+          "backend.updateDialog.steps.logout",
+          "Anmeldung wird zurückgesetzt...",
+        ),
       );
 
       setTimeout(() => {
@@ -512,21 +483,41 @@ export function UpdateBackendTab() {
 
         if (!reachable.ok) {
           setUpdatePhase("restarting");
-          setTestStatusText("Server wird neu gestartet...");
+          setStatusText(
+            t(
+              "backend.updateDialog.steps.restarting",
+              "Server wird neu gestartet...",
+            ),
+          );
         } else {
           setUpdatePhase("reconnecting");
-          setTestStatusText("Verbindung wird wiederhergestellt...");
+          setStatusText(
+            t(
+              "backend.updateDialog.steps.reconnecting",
+              "Verbindung wird wiederhergestellt...",
+            ),
+          );
         }
       } catch {
         setUpdatePhase("restarting");
-        setTestStatusText("Server wird neu gestartet...");
+        setStatusText(
+          t(
+            "backend.updateDialog.steps.restarting",
+            "Server wird neu gestartet...",
+          ),
+        );
       }
 
       if (attempts >= maxAttempts) {
         clearUpdateTimers();
 
         setUpdatePhase("reconnecting");
-        setTestStatusText("Server konnte nicht wieder erreicht werden.");
+        setStatusText(
+          t(
+            "backend.updateDialog.steps.failedReconnect",
+            "Server konnte nicht wieder erreicht werden.",
+          ),
+        );
         setIsChecking(false);
         return;
       }
@@ -538,7 +529,12 @@ export function UpdateBackendTab() {
       await dispatch(executeBackendUpdate()).unwrap();
 
       setUpdatePhase("restarting");
-      setTestStatusText("Server wird neu gestartet...");
+      setStatusText(
+        t(
+          "backend.updateDialog.steps.restarting",
+          "Server wird neu gestartet...",
+        ),
+      );
 
       reconnectTimerRef.current = setTimeout(waitForServer, 2000);
     } catch (error) {
@@ -548,7 +544,12 @@ export function UpdateBackendTab() {
       );
 
       setUpdatePhase("restarting");
-      setTestStatusText("Server wird neu gestartet...");
+      setStatusText(
+        t(
+          "backend.updateDialog.steps.restarting",
+          "Server wird neu gestartet...",
+        ),
+      );
 
       reconnectTimerRef.current = setTimeout(waitForServer, 2000);
     }
@@ -559,8 +560,8 @@ export function UpdateBackendTab() {
     isChecking,
     dispatch,
     clearUpdateTimers,
-    startFakeBackendProgress,
     autoLogoutAfterBackendUpdate,
+    t,
   ]);
 
   useEffect(() => {
@@ -639,57 +640,55 @@ export function UpdateBackendTab() {
     <Card>
       <BackendUpdateProgressDialog
         visible={showBackendUpdateDialog}
-        progress={testProgress}
-        statusText={testStatusText}
+        statusText={statusText}
         phase={updatePhase}
       />
 
-      <View style={s.container}>
-        <View style={s.headerRow}>
-          <View style={s.headerLeft}>
-            <H3>{t("backend.title", "Backend")}</H3>
-          </View>
+      <View style={{ backgroundColor: theme.colors.card, padding: 12, gap: 14 }}>
+        <H3>{t("backend.title", "Backend")}</H3>
 
-          <View style={s.headerRight}>
-            <View style={s.section}>
-              <RowLabelValue
-                label={t("backend.fields.lastCheck", "Letzte Prüfung")}
-                value={updateState.backend.lastCheck || "-"}
-              />
+        <View style={s.infoTable} >
+          <InfoRow
+            label={t("backend.fields.status", "Status")}
+            value={backendStatus}
+          />
 
-              <RowLabelValue
-                label={t("backend.fields.status", "Status")}
-                value={updateState.backend.status || backendStatus}
-              />
-            </View>
-          </View>
+          <InfoRow
+            label={t("backend.fields.lastCheck", "Letzte Prüfung")}
+            value={updateState.backend.lastCheck || "-"}
+          />
 
-          <View style={s.headerButtons}>
+          <InfoRow
+            label={t("backend.fields.backendStatus", "Backend-Status")}
+            value={updateState.backend.status || "-"}
+          />
+        </View>
+
+        <View style={s.buttonRow}>
+          <ActionButton
+            label={
+              isChecking
+                ? t("backend.actions.checking", "Suche nach Updates...")
+                : t("backend.actions.checkNow", "Nach Updates suchen")
+            }
+            variant="secondary"
+            size="xs"
+            onPress={checkBackendNow}
+            disabled={isChecking || !ip || updateState.loading}
+          />
+
+          {updateState.backend.isAvailable && (
             <ActionButton
-              label={
-                isChecking
-                  ? t("backend.actions.checking", "Suche nach Updates...")
-                  : t("serverWeb.actions.checkNow", "Jetzt überprüfen")
-              }
-              variant="secondary"
+              label={t(
+                "backend.actions.executeUpdate",
+                "Update installieren",
+              )}
+              variant="primary"
               size="xs"
-              onPress={checkBackendNow}
-              disabled={isChecking || !ip || updateState.loading}
+              onPress={installBackendUpdate}
+              disabled={isChecking || updateState.loading || !ip}
             />
-
-            {updateState.backend.isAvailable && (
-              <ActionButton
-                label={t(
-                  "backend.actions.executeUpdate",
-                  "Update installieren",
-                )}
-                variant="primary"
-                size="xs"
-                onPress={installBackendUpdate}
-                disabled={isChecking || updateState.loading || !ip}
-              />
-            )}
-          </View>
+          )}
         </View>
 
         <View style={s.section}>
@@ -743,46 +742,42 @@ const s = StyleSheet.create({
     gap: 14,
   },
 
-  headerRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 10,
+  infoTable: {
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.12)",
+    
+    overflow: "hidden",
   },
 
-  headerLeft: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 160,
-    gap: 4,
-  },
-
-  headerRight: {
-    flexShrink: 0,
-    minWidth: 170,
-  },
-
-  headerButtons: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    flexBasis: "100%",
-    justifyContent: "flex-start",
-  },
-
-  statusRow: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.08)",
+    gap: 12,
   },
 
-  statusLabel: {
-    opacity: 0.85,
+  infoLabel: {
+    fontSize: 12,
+    opacity: 0.75,
+    flex: 1,
   },
 
-  statusValue: {
+  infoValue: {
+    fontSize: 13,
     fontWeight: "700",
+    textAlign: "right",
+    flexShrink: 1,
+  },
+
+  buttonRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "flex-start",
   },
 
   section: {

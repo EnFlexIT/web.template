@@ -4,12 +4,16 @@
     "fields": {
       "releaseVersion": "Version (Release)",
       "acceptedVersion": "Version",
+      "newVersion": "Neue Version",
+      "lastCheck": "Letzte Prüfung",
       "status": "Update-Status"
     },
     "actions": {
       "checkNow": "Nach Updates suchen",
       "checking": "Prüfe…",
-      "reloadNow": "Aktualisieren"
+      "reloadNow": "Aktualisieren",
+      "executeUpdate": "Update installieren",
+      "installing": "Update wird installiert…"
     },
     "statusTexts": {
       "networkError": "Netzwerkfehler",
@@ -20,7 +24,63 @@
       "updateAvailable": "Neues Update verfügbar",
       "updateAcceptedNative": "Update akzeptiert (native)"
     }
-
   },
-  "InstalledFeatures":"Installierte Features"
+  "general": {
+    "title": "Allgemein",
+    "updateStrategy": "Update-Strategie",
+    "autoUpdate": "Automatische Updates",
+    "webApp": "Web-App",
+    "webStatus": "Status",
+    "backend": "Backend",
+    "backendStatus": "Status"
+  },
+ "backend": {
+    "title": "Backend",
+
+    "fields": {
+      "lastCheck": "Letzte Prüfung",
+      "status": "Status",
+      "progress": "Fortschritt"
+    },
+
+    "actions": {
+      "checkNow": "Nach Updates suchen",
+      "checking": "Suche nach Updates...",
+      "executeUpdate": "Update installieren"
+    },
+
+    "sections": {
+      "features": "Installierte Features",
+      "bundles": "Bundles"
+    },
+
+    "empty": {
+      "noFeatures": "Keine Features verfügbar",
+      "noBundles": "Keine Bundles verfügbar"
+    },
+
+    "statusTexts": {
+      "upToDate": "Aktuell",
+      "updateAvailable": "Neues Update verfügbar",
+      "installing": "Backend-Update wird installiert",
+      "restarting": "Server wird neu gestartet",
+      "reconnecting": "Verbindung wird wiederhergestellt",
+      "logout": "Anmeldung wird zurückgesetzt",
+      "completed": "Update erfolgreich abgeschlossen",
+      "failed": "Update fehlgeschlagen"
+    },
+
+    "updateDialog": {
+      "title": "Backend-Update wird installiert",
+      "description": "Bitte warten. Der Server wird aktualisiert.",
+
+      "steps": {
+        "installing": "Backend-Update wird installiert...",
+        "restarting": "Server wird neu gestartet...",
+        "reconnecting": "Verbindung wird wiederhergestellt...",
+        "logout": "Anmeldung wird zurückgesetzt..."
+      }
+    }
+  },
+  "InstalledFeatures": "Installierte Features"
 }
