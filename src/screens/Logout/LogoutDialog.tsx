@@ -20,10 +20,8 @@ import {
 } from "../../redux/slices/apiSlice";
 import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {
-  checkServerAuthenticated,
-  checkServerReachable,
-} from "../login/serverCheck";
+import {checkServerAuthenticated,checkServerReachable,} from "../login/serverCheck";
+
 
 type Props = {
   visible: boolean;

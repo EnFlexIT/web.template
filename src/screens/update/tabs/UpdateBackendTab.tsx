@@ -1,16 +1,41 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+
+import {
+  logoutAsync,
+  selectApi,
+  selectAuthenticationMethod,
+} from "../../../redux/slices/apiSlice";
+
+import { setLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
+
+import {
+  checkBackendUpdate,
+  executeBackendUpdate,
+  loadUpdateSettingsIfNeeded,
+} from "../../../redux/slices/updateSlice";
+
+import { checkServerReachable} from "../../login/serverCheck";
+
+import { BackendUpdateProgressDialog } from "../Dialog/BackendUpdateProgressDialog";
+
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../../components/themed/ThemedText";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import { selectApi } from "../../../redux/slices/apiSlice";
 import {
-  SelectableList,
   SelectableItem,
+  SelectableList,
 } from "../../../components/ui-elements/SelectableList";
 import { H3 } from "../../../components/stylistic/H3";
 
@@ -34,8 +59,13 @@ type ParsedComponent = {
 
 type LoadOptions = {
   featureId?: string;
-  showSource?: boolean;
 };
+
+type BackendUpdatePhase =
+  | "installing"
+  | "restarting"
+  | "reconnecting"
+  | "logout";
 
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
@@ -82,7 +112,11 @@ async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
     const res = await fetch(params.url, {
       method: "GET",
       cache: "no-store" as any,
-      headers: params.jwt ? { Authorization: `Bearer ${params.jwt}` } : undefined,
+      headers: params.jwt
+        ? {
+            Authorization: `Bearer ${params.jwt}`,
+          }
+        : undefined,
     });
 
     if (!res.ok) {
@@ -104,6 +138,7 @@ function uniqById(list: ParsedComponent[]) {
     const id = String(item?.id ?? "").trim();
     if (!id) continue;
     if (seen.has(id)) continue;
+
     seen.add(id);
     out.push(item);
   }
@@ -117,6 +152,7 @@ function parseSoftwareComponents(data: any): ParsedComponent[] {
 
   const parsed = list.map((x: any, idx: number) => {
     const version = x?.version ?? x?.Version;
+
     const parsedVersion =
       version && typeof version === "object"
         ? parseVersionObject(version)
@@ -128,7 +164,7 @@ function parseSoftwareComponents(data: any): ParsedComponent[] {
       type: String(x?.componentType ?? x?.ComponentType ?? x?.type ?? "-"),
       version: parsedVersion,
       raw: x,
-    } as ParsedComponent;
+    };
   });
 
   return uniqById(parsed);
@@ -137,16 +173,19 @@ function parseSoftwareComponents(data: any): ParsedComponent[] {
 function includesCI(haystack: string, needle: string) {
   const h = String(haystack ?? "").toLowerCase();
   const n = String(needle ?? "").toLowerCase().trim();
+
   if (!n) return true;
+
   return h.includes(n);
 }
 
 function pickTopNWithSelected<T extends { id: string }>(
   all: T[],
   selectedId: string,
-  n: number
+  n: number,
 ): T[] {
   const picked = all.slice(0, n);
+
   if (!selectedId) return picked;
 
   const alreadyIn = picked.some((x) => x.id === selectedId);
@@ -169,23 +208,98 @@ function RowLabelValue(props: { label: string; value: string }) {
 
 export function UpdateBackendTab() {
   const { t } = useTranslation(["Update"]);
+  const dispatch = useAppDispatch();
+
   const api = useAppSelector(selectApi);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+  const updateState = useAppSelector((state) => state.update);
 
   const ip = api.ip;
   const jwt = api.jwt;
 
-  const intervalRef = useRef<any>(null);
+  const featureIntervalRef = useRef<any>(null);
+  const fakeProgressRef = useRef<any>(null);
+  const reconnectTimerRef = useRef<any>(null);
 
-  const [isShowSource, setIsShowSource] = useState(true);
   const [features, setFeatures] = useState<ParsedComponent[]>([]);
   const [bundles, setBundles] = useState<ParsedComponent[]>([]);
   const [featureQuery] = useState<string>("");
-
   const [selectedFeatureId, setSelectedFeatureId] = useState<string>("");
   const [selectedBundleId, setSelectedBundleId] = useState<string>("");
 
-  const [status, setStatus] = useState<string>("-");
+  const [listStatus, setListStatus] = useState<string>("-");
   const [isChecking, setIsChecking] = useState(false);
+
+  const [showBackendUpdateDialog, setShowBackendUpdateDialog] = useState(false);
+  const [testProgress, setTestProgress] = useState(0);
+  const [testStatusText, setTestStatusText] = useState("");
+  const [updatePhase, setUpdatePhase] =
+    useState<BackendUpdatePhase>("installing");
+
+  const clearUpdateTimers = useCallback(() => {
+    if (fakeProgressRef.current) {
+      clearInterval(fakeProgressRef.current);
+      fakeProgressRef.current = null;
+    }
+
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
+  const autoLogoutAfterBackendUpdate = useCallback(async () => {
+    setLogoutFlowActive(true);
+
+    try {
+      setUpdatePhase("logout");
+      setTestProgress(100);
+      setTestStatusText(
+        "Update abgeschlossen. Anmeldung wird zurückgesetzt...",
+      );
+
+      await dispatch(logoutAsync()).unwrap();
+
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    } catch (err) {
+      console.error("[BACKEND UPDATE] Logout failed", err);
+    } finally {
+      setLogoutFlowActive(false);
+    }
+  }, [dispatch]);
+
+  const startFakeBackendProgress = useCallback(() => {
+    if (fakeProgressRef.current) {
+      clearInterval(fakeProgressRef.current);
+    }
+
+    setTestProgress(0);
+
+    fakeProgressRef.current = setInterval(() => {
+      setTestProgress((prev) => {
+        if (prev >= 95) {
+          return 95;
+        }
+
+        const next = prev + 4;
+
+        if (next < 55) {
+          setUpdatePhase("installing");
+          setTestStatusText("Backend-Update wird installiert...");
+        } else if (next < 85) {
+          setUpdatePhase("restarting");
+          setTestStatusText("Server wird neu gestartet...");
+        } else {
+          setUpdatePhase("reconnecting");
+          setTestStatusText("Verbindung wird wiederhergestellt...");
+        }
+
+        return Math.min(next, 95);
+      });
+    }, 600);
+  }, []);
 
   const resetLists = useCallback(() => {
     setFeatures([]);
@@ -198,167 +312,317 @@ export function UpdateBackendTab() {
     async (override?: LoadOptions) => {
       if (!ip) {
         resetLists();
-        setStatus("-");
+        setListStatus("-");
         return;
       }
 
       const effectiveFeatureId = override?.featureId ?? selectedFeatureId;
-      const effectiveShowSource = override?.showSource ?? isShowSource;
 
       setIsChecking(true);
 
       try {
-        /* -----------------------
-           1) FEATURES
-           ----------------------- */
         const q1 = new URLSearchParams();
         q1.set("_ts", String(Date.now()));
         q1.set("type", "FEATURE");
-        q1.set("isShowSource", String(effectiveShowSource));
 
-        const urlFeatures = joinUrl(ip, `${API_PREFIX}/version?${q1.toString()}`);
-        const dataFeatures = await fetchJsonNoCache({ url: urlFeatures, jwt });
+        const urlFeatures = joinUrl(
+          ip,
+          `${API_PREFIX}/version?${q1.toString()}`,
+        );
+
+        const dataFeatures = await fetchJsonNoCache({
+          url: urlFeatures,
+          jwt,
+        });
 
         if (dataFeatures === null) {
-          setStatus(t("serverWeb.statusTexts.networkError", "Network error"));
+          setListStatus(
+            t("serverWeb.statusTexts.networkError", "Network error"),
+          );
           resetLists();
-          setIsChecking(false);
           return;
         }
 
         if ((dataFeatures as any)?.__status) {
           const st = Number((dataFeatures as any).__status);
-          setStatus(
+
+          setListStatus(
             st === 401
               ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
               : t("serverWeb.statusTexts.httpError", {
                   status: st,
                   defaultValue: `HTTP ${st}`,
-                })
+                }),
           );
+
           resetLists();
-          setIsChecking(false);
           return;
         }
 
         const parsedFeatures = parseSoftwareComponents(dataFeatures).filter(
-          (x) => String(x.type).toUpperCase() === "FEATURE"
+          (x) => String(x.type).toUpperCase() === "FEATURE",
         );
 
-        console.log("[UpdateBackendTab] Features loaded:", parsedFeatures.length);
         setFeatures(parsedFeatures);
 
         const nextFeatureId =
-          effectiveFeatureId && parsedFeatures.some((x) => x.id === effectiveFeatureId)
+          effectiveFeatureId &&
+          parsedFeatures.some((x) => x.id === effectiveFeatureId)
             ? effectiveFeatureId
             : parsedFeatures[0]?.id ?? "";
 
         setSelectedFeatureId(nextFeatureId);
 
-        /* -----------------------
-           2) BUNDLES
-           ----------------------- */
         const bundleType = nextFeatureId ? "BUNDLE_OF_FEATURE" : "BUNDLE";
 
         const q2 = new URLSearchParams();
         q2.set("_ts", String(Date.now()));
         q2.set("type", bundleType);
-        q2.set("isShowSource", String(effectiveShowSource));
 
         if (bundleType === "BUNDLE_OF_FEATURE") {
           q2.set("filter", nextFeatureId);
         }
 
-        const urlBundles = joinUrl(ip, `${API_PREFIX}/version?${q2.toString()}`);
-        const dataBundles = await fetchJsonNoCache({ url: urlBundles, jwt });
+        const urlBundles = joinUrl(
+          ip,
+          `${API_PREFIX}/version?${q2.toString()}`,
+        );
+
+        const dataBundles = await fetchJsonNoCache({
+          url: urlBundles,
+          jwt,
+        });
 
         if (dataBundles === null) {
-          setStatus(t("serverWeb.statusTexts.networkError", "Network error"));
+          setListStatus(
+            t("serverWeb.statusTexts.networkError", "Network error"),
+          );
           setBundles([]);
           setSelectedBundleId("");
-          setIsChecking(false);
           return;
         }
 
         if ((dataBundles as any)?.__status) {
           const st = Number((dataBundles as any).__status);
-          setStatus(
+
+          setListStatus(
             st === 401
               ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
               : t("serverWeb.statusTexts.httpError", {
                   status: st,
                   defaultValue: `HTTP ${st}`,
-                })
+                }),
           );
+
           setBundles([]);
           setSelectedBundleId("");
-          setIsChecking(false);
           return;
         }
 
         const parsedBundles = parseSoftwareComponents(dataBundles);
         const onlyBundles = parsedBundles.filter(
-          (x) => String(x.type).toUpperCase() === "BUNDLE"
+          (x) => String(x.type).toUpperCase() === "BUNDLE",
         );
 
-        console.log("[UpdateBackendTab] Bundles loaded:", onlyBundles.length);
         setBundles(onlyBundles);
+
         setSelectedBundleId((prev) =>
-          prev && onlyBundles.some((b) => b.id === prev) ? prev : onlyBundles[0]?.id ?? ""
+          prev && onlyBundles.some((b) => b.id === prev)
+            ? prev
+            : onlyBundles[0]?.id ?? "",
         );
 
-        setStatus(t("serverWeb.statusTexts.upToDate", "Up to date"));
+        setListStatus(t("serverWeb.statusTexts.upToDate", "Up to date"));
       } catch (err) {
         console.log("[UpdateBackendTab] loadFeaturesAndBundles error:", err);
         resetLists();
-        setStatus("-");
+        setListStatus("-");
       } finally {
         setIsChecking(false);
       }
     },
-    [ip, jwt, selectedFeatureId, isShowSource, t, resetLists]
+    [ip, jwt, selectedFeatureId, t, resetLists],
   );
 
-  const checkNow = useCallback(async () => {
-    await loadFeaturesAndBundles();
-  }, [loadFeaturesAndBundles]);
+  const checkBackendNow = useCallback(async () => {
+    if (!ip || isChecking) return;
+
+    setIsChecking(true);
+
+    try {
+      await dispatch(checkBackendUpdate()).unwrap();
+
+      await dispatch(
+        loadUpdateSettingsIfNeeded({
+          force: true,
+        }),
+      ).unwrap();
+    } finally {
+      setIsChecking(false);
+    }
+  }, [dispatch, ip, isChecking]);
+
+  const installBackendUpdate = useCallback(async () => {
+    if (!ip || isChecking) return;
+
+    clearUpdateTimers();
+
+    setIsChecking(true);
+    setShowBackendUpdateDialog(true);
+    setUpdatePhase("installing");
+    setTestProgress(0);
+    setTestStatusText("Backend-Update wird vorbereitet...");
+
+    startFakeBackendProgress();
+
+    let attempts = 0;
+    const maxAttempts = 90;
+    let minimumWaitAttempts = 0;
+
+    const finishAndLogout = () => {
+      clearUpdateTimers();
+
+      setUpdatePhase("logout");
+      setTestProgress(100);
+      setTestStatusText(
+        "Update abgeschlossen. Anmeldung wird zurückgesetzt...",
+      );
+
+      setTimeout(() => {
+        void autoLogoutAfterBackendUpdate();
+      }, 1200);
+    };
+
+    const waitForServer = async () => {
+      attempts += 1;
+      minimumWaitAttempts += 1;
+
+      try {
+        const reachable = await checkServerReachable(
+          ip,
+          jwt,
+          authenticationMethod,
+          { force: true },
+        );
+
+        if (reachable.ok && minimumWaitAttempts >= 3) {
+          finishAndLogout();
+          return;
+        }
+
+        if (!reachable.ok) {
+          setUpdatePhase("restarting");
+          setTestStatusText("Server wird neu gestartet...");
+        } else {
+          setUpdatePhase("reconnecting");
+          setTestStatusText("Verbindung wird wiederhergestellt...");
+        }
+      } catch {
+        setUpdatePhase("restarting");
+        setTestStatusText("Server wird neu gestartet...");
+      }
+
+      if (attempts >= maxAttempts) {
+        clearUpdateTimers();
+
+        setUpdatePhase("reconnecting");
+        setTestStatusText("Server konnte nicht wieder erreicht werden.");
+        setIsChecking(false);
+        return;
+      }
+
+      reconnectTimerRef.current = setTimeout(waitForServer, 2000);
+    };
+
+    try {
+      await dispatch(executeBackendUpdate()).unwrap();
+
+      setUpdatePhase("restarting");
+      setTestStatusText("Server wird neu gestartet...");
+
+      reconnectTimerRef.current = setTimeout(waitForServer, 2000);
+    } catch (error) {
+      console.warn(
+        "[BACKEND UPDATE] Execute request failed, waiting for server restart...",
+        error,
+      );
+
+      setUpdatePhase("restarting");
+      setTestStatusText("Server wird neu gestartet...");
+
+      reconnectTimerRef.current = setTimeout(waitForServer, 2000);
+    }
+  }, [
+    ip,
+    jwt,
+    authenticationMethod,
+    isChecking,
+    dispatch,
+    clearUpdateTimers,
+    startFakeBackendProgress,
+    autoLogoutAfterBackendUpdate,
+  ]);
 
   useEffect(() => {
-    checkNow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadFeaturesAndBundles();
+
+    dispatch(
+      loadUpdateSettingsIfNeeded({
+        force: false,
+        maxAgeMs: 30 * 60 * 1000,
+      }),
+    );
+  }, [dispatch]);
 
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (featureIntervalRef.current) {
+      clearInterval(featureIntervalRef.current);
+    }
 
-    intervalRef.current = setInterval(() => {
-      checkNow();
+    featureIntervalRef.current = setInterval(() => {
+      loadFeaturesAndBundles();
     }, 5 * 60 * 1000);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (featureIntervalRef.current) {
+        clearInterval(featureIntervalRef.current);
+      }
     };
-  }, [checkNow]);
+  }, [loadFeaturesAndBundles]);
+
+  useEffect(() => {
+    return () => {
+      clearUpdateTimers();
+    };
+  }, [clearUpdateTimers]);
 
   const filteredFeatures = useMemo(() => {
     const q = featureQuery.trim();
+
     if (!q) return features;
 
     return features.filter(
-      (f) => includesCI(f.name, q) || includesCI(f.id, q) || includesCI(f.type, q)
+      (f) =>
+        includesCI(f.name, q) ||
+        includesCI(f.id, q) ||
+        includesCI(f.type, q),
     );
   }, [features, featureQuery]);
 
   const drawnFeatures = useMemo(() => {
-    return pickTopNWithSelected(filteredFeatures, selectedFeatureId, MAX_FEATURES_DRAWN);
+    return pickTopNWithSelected(
+      filteredFeatures,
+      selectedFeatureId,
+      MAX_FEATURES_DRAWN,
+    );
   }, [filteredFeatures, selectedFeatureId]);
 
-const featureItems = useMemo<SelectableItem<string>[]>(() => {
-  return filteredFeatures.map((f) => ({
-    id: f.id,
-    label: `${f.name} (${fmtFull(f.version)})`,
-  }));
-}, [filteredFeatures]);
+  const featureItems = useMemo<SelectableItem<string>[]>(() => {
+    return drawnFeatures.map((f) => ({
+      id: f.id,
+      label: `${f.name} (${fmtFull(f.version)})`,
+    }));
+  }, [drawnFeatures]);
 
   const bundleItems = useMemo<SelectableItem<string>[]>(() => {
     return bundles.map((b) => ({
@@ -367,8 +631,19 @@ const featureItems = useMemo<SelectableItem<string>[]>(() => {
     }));
   }, [bundles]);
 
+  const backendStatus = updateState.backend.isAvailable
+    ? t("serverWeb.statusTexts.updateAvailable", "Update available")
+    : t("serverWeb.statusTexts.upToDate", "Up to date");
+
   return (
     <Card>
+      <BackendUpdateProgressDialog
+        visible={showBackendUpdateDialog}
+        progress={testProgress}
+        statusText={testStatusText}
+        phase={updatePhase}
+      />
+
       <View style={s.container}>
         <View style={s.headerRow}>
           <View style={s.headerLeft}>
@@ -376,31 +651,44 @@ const featureItems = useMemo<SelectableItem<string>[]>(() => {
           </View>
 
           <View style={s.headerRight}>
-            <RowLabelValue
-              label={t("backend.updateStatusBadge", "Update Status")}
-              value={status}
-            />
+            <View style={s.section}>
+              <RowLabelValue
+                label={t("backend.fields.lastCheck", "Letzte Prüfung")}
+                value={updateState.backend.lastCheck || "-"}
+              />
+
+              <RowLabelValue
+                label={t("backend.fields.status", "Status")}
+                value={updateState.backend.status || backendStatus}
+              />
+            </View>
           </View>
 
           <View style={s.headerButtons}>
             <ActionButton
-              label={t("serverWeb.actions.checkNow", "Jetzt überprüfen")}
+              label={
+                isChecking
+                  ? t("backend.actions.checking", "Suche nach Updates...")
+                  : t("serverWeb.actions.checkNow", "Jetzt überprüfen")
+              }
               variant="secondary"
               size="xs"
-              onPress={checkNow}
-              disabled={isChecking || !ip}
+              onPress={checkBackendNow}
+              disabled={isChecking || !ip || updateState.loading}
             />
-            <ActionButton
-              label={isShowSource ? "Source: ON" : "Source: OFF"}
-              variant="secondary"
-              size="xs"
-              onPress={() => {
-                const next = !isShowSource;
-                setIsShowSource(next);
-                loadFeaturesAndBundles({ showSource: next });
-              }}
-              disabled={isChecking}
-            />
+
+            {updateState.backend.isAvailable && (
+              <ActionButton
+                label={t(
+                  "backend.actions.executeUpdate",
+                  "Update installieren",
+                )}
+                variant="primary"
+                size="xs"
+                onPress={installBackendUpdate}
+                disabled={isChecking || updateState.loading || !ip}
+              />
+            )}
           </View>
         </View>
 
@@ -409,6 +697,8 @@ const featureItems = useMemo<SelectableItem<string>[]>(() => {
             <ThemedText style={s.sectionTitle}>
               {t("InstalledFeatures", "Installed Features")}
             </ThemedText>
+
+            <ThemedText style={s.helperText}>{listStatus}</ThemedText>
           </View>
 
           <SelectableList<string>
@@ -419,7 +709,7 @@ const featureItems = useMemo<SelectableItem<string>[]>(() => {
               setSelectedBundleId("");
               loadFeaturesAndBundles({ featureId: id });
             }}
-            maxHeight={190}
+            maxHeight={140}
             minVisibleRows={5}
             size="xs0"
             variant="secondary"
@@ -449,7 +739,9 @@ const featureItems = useMemo<SelectableItem<string>[]>(() => {
 }
 
 const s = StyleSheet.create({
-  container: { gap: 14 },
+  container: {
+    gap: 14,
+  },
 
   headerRow: {
     flexDirection: "row",
@@ -457,12 +749,14 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+
   headerLeft: {
     flexGrow: 1,
     flexShrink: 1,
     minWidth: 160,
     gap: 4,
   },
+
   headerRight: {
     flexShrink: 0,
     minWidth: 170,
@@ -482,11 +776,24 @@ const s = StyleSheet.create({
     gap: 8,
     flexWrap: "wrap",
   },
-  statusLabel: { opacity: 0.85 },
-  statusValue: { fontWeight: "700" },
 
-  section: { gap: 8 },
-  sectionTitle: { fontSize: 13, fontWeight: "700", opacity: 0.9 },
+  statusLabel: {
+    opacity: 0.85,
+  },
+
+  statusValue: {
+    fontWeight: "700",
+  },
+
+  section: {
+    gap: 3,
+  },
+
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    opacity: 0.9,
+  },
 
   sectionTitleRow: {
     flexDirection: "row",
@@ -496,5 +803,8 @@ const s = StyleSheet.create({
     flexWrap: "wrap",
   },
 
-  helperText: { fontSize: 12, opacity: 0.75 },
+  helperText: {
+    fontSize: 12,
+    opacity: 0.75,
+  },
 });

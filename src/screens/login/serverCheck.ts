@@ -81,6 +81,7 @@ export async function checkServerReachable(
   baseUrl: string,
   jwt?: string | null,
   authenticationMethod: AuthMethod = "unknown",
+  options?: { force?: boolean },
 ): Promise<ServerCheckResult> {
   const base = normalizeBaseUrl(baseUrl);
 
@@ -98,10 +99,13 @@ export async function checkServerReachable(
     };
   }
 
+  const force = options?.force === true;
+
   const cacheKey = getReachableCacheKey(base, jwt, authenticationMethod);
   const now = Date.now();
 
   if (
+    !force &&
     lastReachableKey === cacheKey &&
     lastReachableResult &&
     now - lastReachableAt < REACHABLE_CACHE_MS
