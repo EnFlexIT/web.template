@@ -2,6 +2,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
 import { normalizeBaseUrl, selectIp } from "./apiSlice";
+import { checkServerReachable } from "../../screens/login/serverCheck";
 
 type ConnectivityState = {
   isOffline: boolean;
@@ -25,78 +26,10 @@ const initialState: ConnectivityState = {
   checking: false,
   lastError: null,
 };
-function isReachableResponse(res: Response): boolean {
-  if (res.type === "opaqueredirect") {
-    return true;
-  }
-
-  if (res.status === 0) {
-    return true;
-  }
-
-  return res.status >= 200 && res.status < 500;
-}
-
-
-async function ping(
-  url: string,
-  jwt: string | null,
-  timeoutMs = 4000,
-): Promise<{ ok: boolean; status?: number }> {
-  const ctrl = new AbortController();
-
-  const id = setTimeout(() => ctrl.abort(), timeoutMs);
-
-  function isReachableResponse(res: Response): boolean {
-    if (res.type === "opaqueredirect") return true;
-    if (res.status === 0) return true;
-
-    return res.status >= 200 && res.status < 500;
-  }
-
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      signal: ctrl.signal,
-      redirect: "manual",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(jwt
-          ? {
-              Authorization: `Bearer ${jwt}`,
-            }
-          : {}),
-      },
-    });
-
-    return {
-      ok: isReachableResponse(res),
-      status: res.status,
-    };
-  } finally {
-    clearTimeout(id);
-  }
-}
-function getErrorMessage(error: unknown, silent: boolean): string | null {
-  if (silent) return null;
-
-  if (
-    error &&
-    typeof error === "object" &&
-    "name" in error &&
-    (error as { name?: string }).name === "AbortError"
-  ) {
-    return "Server antwortet nicht (Timeout).";
-  }
-
-  return "Server nicht erreichbar.";
-}
 
 export const checkAlive = createAsyncThunk<
   CheckAliveResult,
-  { silent?: boolean } | undefined
+  { silent?: boolean; force?: boolean } | undefined
 >("connectivity/checkAlive", async (arg, thunkAPI) => {
   const state = thunkAPI.getState() as RootState;
 
@@ -114,6 +47,8 @@ export const checkAlive = createAsyncThunk<
   const baseUrl = normalizeBaseUrl(selectIp(state));
   const wasOffline = state.connectivity.isOffline;
   const silent = arg?.silent === true;
+  const force = arg?.force === true;
+
   if (!baseUrl) {
     return {
       isOnline: false,
@@ -125,58 +60,24 @@ export const checkAlive = createAsyncThunk<
     };
   }
 
- const candidateUrls = [
-  `${baseUrl}/api/alive`,
-  `${baseUrl}/api/app/settings/get`,
-  ];
-  let lastStatus: number | undefined;
-  let lastUrl: string | null = null;
-  let lastError: unknown = null;
+  const jwtForCheck =
+    state.api.authenticationMethod === "jwt" ? state.api.jwt : null;
 
-  for (const url of candidateUrls) {
-    try {
-      
-    const jwtForPing =
-  state.api.authenticationMethod === "jwt"
-    ? state.api.jwt
-    : null;
+  const result = await checkServerReachable(
+    baseUrl,
+    jwtForCheck,
+    state.api.authenticationMethod,
+    { force },
+  );
 
-const result = await ping(url, jwtForPing, 4000);
-
-      lastStatus = result.status;
-      lastUrl = url;
-
-      //console.log("[checkAlive] response:", url, "status:", result.status);
-if (result.ok) {
-  // console.log("[checkAlive] ONLINE DETECTED", {url,status: result.status, });
   return {
-    isOnline: true,
-    wentOnline: wasOffline,
-    error: null,
+    isOnline: result.ok,
+    wentOnline: result.ok && wasOffline,
+    error: result.ok ? null : silent ? null : result.message ?? "Server nicht erreichbar.",
     skipped: false,
-    checkedUrl: url,
-    checkedStatus: result.status,
+    checkedUrl: null,
+    checkedStatus: undefined,
   };
-}
-    } catch (err: unknown) {
-      lastUrl = url;
-      lastError = err;
-
-      //console.log("[checkAlive] failed:", url, err);
-    }
-  }
- //console.log("[checkAlive] OFFLINE DETECTED", { lastUrl,lastStatus, lastError,});
-  return {
-    isOnline: false,
-    wentOnline: false,
-    error: getErrorMessage(lastError, silent),
-    skipped: false,
-    checkedUrl: lastUrl,
-    checkedStatus: lastStatus,
-    
-  };
-
-  
 });
 
 const connectivitySlice = createSlice({
@@ -220,7 +121,7 @@ const connectivitySlice = createSlice({
 
     builder.addCase(checkAlive.rejected, (state, action) => {
       state.checking = false;
-      state.isOffline = false;
+      state.isOffline = true;
       state.showBackOnline = false;
       state.lastError = action.error?.message ?? "Server nicht erreichbar";
     });

@@ -7,6 +7,7 @@ import {
   setJwtForServer,
   getJwtForServer,
   normalizeBaseUrl,
+  loginWithBasic,
 } from "./apiSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
  import { Buffer } from "buffer";
@@ -179,34 +180,9 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     //console.log("[JWT RENEW] sending request to:", renewUrl);
 
     try {
-      const res = await fetch(renewUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Basic ${basic}`,
-          Accept: "application/json",
-        },
-        credentials: "include",
-      });
-
-      console.log(
-        "[JWT RENEW] response status:",
-        res.status,
-        "for",
-        normalizedBaseUrl,
-      );
-
-      const hdr =
-        res.headers.get("www-authenticate") ??
-        res.headers.get("WWW-Authenticate") ??
-        res.headers.get("authorization") ??
-        res.headers.get("Authorization");
-
-      //console.log("[JWT RENEW] header token exists:", !!hdr);
-
-      const bodyText = await res.text();
-      const newJwt = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
-
-      //console.log("[JWT RENEW] extracted new jwt exists:", !!newJwt);
+    const { response: res, bearerToken: newJwt } = await loginWithBasic({
+     baseUrl: normalizedBaseUrl,
+     basic,});
 
       if (newJwt) {
         if (newJwt === jwt) {

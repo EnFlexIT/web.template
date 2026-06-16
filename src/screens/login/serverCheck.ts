@@ -112,8 +112,7 @@ export async function checkServerReachable(
   ) {
     return lastReachableResult;
   }
-
-  const urls = [`${base}/api/app/settings/get`];
+const urls = [`${base}/api/alive`,`${base}/api/app/settings/get`,];
 
   for (const url of urls) {
     try {

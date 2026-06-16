@@ -211,6 +211,27 @@ function buildApis(params: {
     },
   };
 }
+export async function fetchAppSettings(
+  baseUrl: string,
+  jwt?: string | null,
+): Promise<Response> {
+  const base = normalizeBaseUrl(baseUrl);
+
+  return fetch(`${base}/api/app/settings/get`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "include",
+    redirect: "manual",
+    headers: {
+      Accept: "application/json",
+      ...(jwt
+        ? {
+            Authorization: `Bearer ${jwt}`,
+          }
+        : {}),
+    },
+  });
+}
 
 async function detectServerAndMode(baseUrl: string): Promise<{
   isPointingToServer: boolean;
@@ -220,13 +241,8 @@ async function detectServerAndMode(baseUrl: string): Promise<{
   const base = normalizeBaseUrl(baseUrl);
 
   try {
-    const response = await fetch(`${base}/api/app/settings/get`, {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-      },
-    });
+      const response = await fetchAppSettings(base);
+
 
     const status = response.status;
     const contentType = response.headers.get("content-type") ?? "";
@@ -533,7 +549,50 @@ export const refreshServerStatus = createAsyncThunk(
     };
   },
 );
+export function extractBearerToken(value: unknown): string | null {
+  if (typeof value !== "string") return null;
 
+  const match = value.match(/Bearer\s+(.+)/i);
+  return match?.[1]?.trim() ?? null;
+}
+
+export async function loginWithBasic(params: {
+  baseUrl: string;
+  basic: string;
+  credentials?: RequestCredentials;
+}): Promise<{
+  response: Response;
+  bearerToken: string | null;
+  bodyText: string;
+}> {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
+
+  const response = await fetch(`${baseUrl}/api/user/login`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: params.credentials ?? "include",
+    headers: {
+      Authorization: `Basic ${params.basic}`,
+      Accept: "application/json",
+    },
+  });
+
+  const header =
+    response.headers.get("www-authenticate") ??
+    response.headers.get("WWW-Authenticate") ??
+    response.headers.get("authorization") ??
+    response.headers.get("Authorization");
+
+  const bodyText = await response.text();
+  const bearerToken =
+    extractBearerToken(header) ?? extractBearerToken(bodyText);
+
+  return {
+    response,
+    bearerToken,
+    bodyText,
+  };
+}
 export const login = createAsyncThunk(
   "api/login",
   async (payload: { jwt: string; baseUrl?: string }, thunkAPI) => {
@@ -557,7 +616,25 @@ export const login = createAsyncThunk(
     await thunkAPI.dispatch(initializeMenu());
   },
 );
+async function logoutFromServer(params: {
+  baseUrl: string;
+  jwt: string | null;
+}): Promise<void> {
+  const baseUrl = normalizeBaseUrl(params.baseUrl);
 
+  if (!baseUrl || !params.jwt) {
+    return;
+  }
+
+  await fetch(`${baseUrl}/api/user/logout`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${params.jwt}`,
+      Accept: "application/json",
+    },
+    credentials: "include",
+  });
+}
 export const logoutAsync = createAsyncThunk(
   "api/logoutAsync",
   async (_, thunkAPI) => {
@@ -573,15 +650,11 @@ export const logoutAsync = createAsyncThunk(
     thunkAPI.dispatch(setIsLoggingOut(true));
 
     try {
-      if (currentIp && jwt && !isOidc) {
+     if (currentIp && jwt && !isOidc) {
         try {
-          await fetch(`${currentIp}/api/user/logout`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-              Accept: "application/json",
-            },
-            credentials: "include",
+          await logoutFromServer({
+            baseUrl: currentIp,
+            jwt,
           });
         } catch (error) {
           console.warn("[LOGOUT] server logout failed", error);

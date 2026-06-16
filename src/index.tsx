@@ -153,7 +153,7 @@ function RootStack() {
 
     const intervalId = setInterval(() => {
       void runCheck();
-    }, 20000);
+    }, 40000);
 
     const onFocus = () => {
       void runCheck();
@@ -178,7 +178,7 @@ function RootStack() {
 
     const intervalId = setInterval(() => {
       dispatch(refreshServerStatus());
-    }, 15000);
+    }, 125000);
 
     return () => clearInterval(intervalId);
   }, [dispatch, isLoading]);

@@ -169,39 +169,41 @@ export function Footer() {
     }
   }, [servers, t]);
 
-  useEffect(() => {
-    let active = true;
+useEffect(() => {
+  let active = true;
 
-    const safeRefresh = async () => {
-      if (!active) return;
-      await refreshServerStatuses();
-    };
+  const safeRefresh = async () => {
+    if (!active) return;
+    if (isLoginPage) return;
 
-    void safeRefresh();
+    await refreshServerStatuses();
+  };
 
-    const intervalId = setInterval(() => {
-      void safeRefresh();
-    }, 60000);
+  //void safeRefresh();
 
-    const onRefreshEvent = () => {
-      void safeRefresh();
-    };
+  const intervalId = setInterval(() => {
+    //void safeRefresh();
+  }, 120000);
+
+  const onRefreshEvent = () => {
+   // void safeRefresh();
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+    window.addEventListener("focus", onRefreshEvent);
+  }
+
+  return () => {
+    active = false;
+    clearInterval(intervalId);
 
     if (typeof window !== "undefined") {
-      window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-      window.addEventListener("focus", onRefreshEvent);
+      window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+      window.removeEventListener("focus", onRefreshEvent);
     }
-
-    return () => {
-      active = false;
-      clearInterval(intervalId);
-
-      if (typeof window !== "undefined") {
-        window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-        window.removeEventListener("focus", onRefreshEvent);
-      }
-    };
-  }, [refreshServerStatuses]);
+  };
+}, [refreshServerStatuses, isLoginPage]);
 
   async function handleServerChange(serverId: string) {
     dispatch(closeNotificationPopup());
