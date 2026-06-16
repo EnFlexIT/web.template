@@ -8,7 +8,12 @@ import {
   selectIsLoggedIn,
 } from "../../redux/slices/apiSlice";
 import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
+import { loadSessionTime } from "../../redux/slices/sessionTimeSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
+
+const SESSION_CHECK_INTERVAL_MS = 60_000;
+const LOGIN_GRACE_PERIOD_MS = 12_000;
+const RENEW_THRESHOLD_MS = 2 * 60 * 1000;
 
 function shouldLogoutFromRenewReason(reason?: string) {
   return reason === "expired" || reason === "401-no-token";
@@ -16,6 +21,13 @@ function shouldLogoutFromRenewReason(reason?: string) {
 
 function isOidcAuth(authenticationMethod?: string) {
   return authenticationMethod === "oidc" || authenticationMethod === "unknown";
+}
+
+function normalizeTimeToMs(value?: number | null): number | null {
+  if (typeof value !== "number") return null;
+
+  // Falls Backend Sekunden liefert, in Millisekunden umwandeln.
+  return value < 24 * 60 * 60 ? value * 1000 : value;
 }
 
 export function AppSessionGuard() {
@@ -52,36 +64,60 @@ export function AppSessionGuard() {
 
       const elapsed = Date.now() - loginStartedAtRef.current;
 
-      if (elapsed < 12_000) {
+      if (elapsed < LOGIN_GRACE_PERIOD_MS) {
         return;
       }
 
       if (isOffline) {
-        console.log("[AppSessionGuard] server offline, skip logout");
-        return;
-      }
-
-      if (isOidcAuth(authenticationMethod)) {
-        console.log("[AppSessionGuard] OIDC auth detected, skip JWT renew");
         return;
       }
 
       runningRef.current = true;
 
       try {
+        const sessionTime = await dispatch(
+          loadSessionTime({ silent: true }),
+        ).unwrap();
+
+        if (cancelled) return;
+
+        const remainingSessionMs = normalizeTimeToMs(sessionTime.remainingTime);
+
+        if (remainingSessionMs != null && remainingSessionMs <= 0) {
+          await dispatch(logoutAsync());
+          return;
+        }
+
+        if (isOidcAuth(authenticationMethod)) {
+          return;
+        }
+
+        const remainingTokenMs = normalizeTimeToMs(
+          sessionTime.remainingTokenTime,
+        );
+
+        if (remainingTokenMs == null) {
+          return;
+        }
+
+        if (remainingTokenMs > RENEW_THRESHOLD_MS) {
+          return;
+        }
+
         const renewResults = await dispatch(
-          null as any as ReturnType<typeof renewAllServerJwtsIfNeeded>
+          renewAllServerJwtsIfNeeded({
+            force: true,
+            cooldownMs: 60_000,
+          }),
         ).unwrap();
 
         if (cancelled) return;
 
         const activeResult = Array.isArray(renewResults)
-          ? renewResults.find((r) => r?.baseUrl === activeBaseUrl)
+          ? renewResults.find((result) => result?.baseUrl === activeBaseUrl)
           : undefined;
 
-        const activeReason = activeResult?.reason;
-
-        if (shouldLogoutFromRenewReason(activeReason)) {
+        if (shouldLogoutFromRenewReason(activeResult?.reason)) {
           await dispatch(logoutAsync());
         }
       } catch (error) {
@@ -95,7 +131,7 @@ export function AppSessionGuard() {
 
     intervalRef.current = setInterval(() => {
       void run();
-    }, 30_000);
+    }, SESSION_CHECK_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -105,13 +141,7 @@ export function AppSessionGuard() {
         intervalRef.current = null;
       }
     };
-  }, [
-    dispatch,
-    isLoggedIn,
-    activeBaseUrl,
-    authenticationMethod,
-    isOffline,
-  ]);
+  }, [dispatch, isLoggedIn, activeBaseUrl, authenticationMethod, isOffline]);
 
   return null;
 }

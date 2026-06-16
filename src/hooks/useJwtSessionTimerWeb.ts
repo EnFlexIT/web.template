@@ -13,26 +13,29 @@ type Options = {
   onHeartbeat?: () => void;
 };
 
+const HEARTBEAT_THROTTLE_MS = 3000;
+const RENEW_ACTIVITY_WINDOW_MS = 60_000;
+
 function isInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
 
-const selector = [
-  "button",
-  "a[href]",
-  "input",
-  "select",
-  "textarea",
-  "[role='button']",
-  "[role='tab']",
-  "[role='menuitem']",
-  "[role='option']",
-  "[role='switch']",
-  "[role='checkbox']",
-  "[role='radio']",
-  "[contenteditable='true']",
-  "[tabindex]:not([tabindex='-1'])",
-  "[id^='session-activity-']",
-].join(",");
+  const selector = [
+    "button",
+    "a[href]",
+    "input",
+    "select",
+    "textarea",
+    "[role='button']",
+    "[role='tab']",
+    "[role='menuitem']",
+    "[role='option']",
+    "[role='switch']",
+    "[role='checkbox']",
+    "[role='radio']",
+    "[contenteditable='true']",
+    "[tabindex]:not([tabindex='-1'])",
+    "[id^='session-activity-']",
+  ].join(",");
 
   const el = target.closest(selector);
   if (!el) return false;
@@ -70,18 +73,27 @@ export function useJwtSessionTimerWeb({
 }: Options) {
   const [secondsLeft, setSecondsLeft] = useState(() => {
     if (!jwt) return 0;
+
     const remainingMs = getJwtRemainingMs(jwt);
+
     return Math.max(0, Math.ceil(remainingMs / 1000));
   });
 
   const [warning, setWarning] = useState(() => {
     if (!jwt) return false;
+
     const remainingMs = getJwtRemainingMs(jwt);
-    return Number.isFinite(remainingMs) && remainingMs > 0 && remainingMs <= warnMs;
+
+    return (
+      Number.isFinite(remainingMs) &&
+      remainingMs > 0 &&
+      remainingMs <= warnMs
+    );
   });
 
   const lastLogoutAtRef = useRef<number>(0);
   const lastHeartbeatAtRef = useRef<number>(0);
+  const renewRunningRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -90,7 +102,9 @@ export function useJwtSessionTimerWeb({
 
     const safeLogout = () => {
       const now = Date.now();
+
       if (now - lastLogoutAtRef.current < 1000) return;
+
       lastLogoutAtRef.current = now;
       onLogout();
     };
@@ -117,44 +131,57 @@ export function useJwtSessionTimerWeb({
 
     const triggerHeartbeat = () => {
       if (!jwt) return;
+      if (renewRunningRef.current) return;
 
       const remainingMs = getJwtRemainingMs(jwt);
-      if (!Number.isFinite(remainingMs) || remainingMs <= 0) return;
 
-      // lokales Throttling gegen zu viele Dispatches bei vielen Klicks
-      const now = Date.now();
-      if (now - lastHeartbeatAtRef.current < 3000) {
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
         return;
       }
+
+      const now = Date.now();
+
+      if (now - lastHeartbeatAtRef.current < HEARTBEAT_THROTTLE_MS) {
+        return;
+      }
+
       lastHeartbeatAtRef.current = now;
 
-      //console.log("[SESSION TIMER] heartbeat triggered");
-
-      // Bestehendes Verhalten beibehalten
       onHeartbeat?.();
 
-      // Neues Verhalten:
-      // automatisch alle Server-JWTs prüfen/verlängern
-      store.dispatch(
-        renewAllServerJwtsIfNeeded({
-          force: true,
-          cooldownMs: 10_000,
-        }) as any,
-      );
+      if (remainingMs > RENEW_ACTIVITY_WINDOW_MS) {
+        return;
+      }
+
+      renewRunningRef.current = true;
+
+      store
+        .dispatch(
+          renewAllServerJwtsIfNeeded({
+            force: true,
+            cooldownMs: 10_000,
+          }) as any,
+        )
+        .finally(() => {
+          renewRunningRef.current = false;
+        });
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isEffectiveKey(e)) return;
+
       triggerHeartbeat();
     };
 
     const onClick = (e: MouseEvent) => {
       if (!isInteractiveTarget(e.target)) return;
+
       triggerHeartbeat();
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       if (!isInteractiveTarget(e.target)) return;
+
       triggerHeartbeat();
     };
 
@@ -170,9 +197,13 @@ export function useJwtSessionTimerWeb({
     const tick = window.setInterval(tickOnce, 1000);
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown, { capture: true } as any);
+      window.removeEventListener("keydown", onKeyDown, {
+        capture: true,
+      } as any);
       window.removeEventListener("click", onClick, { capture: true } as any);
-      window.removeEventListener("touchend", onTouchEnd, { capture: true } as any);
+      window.removeEventListener("touchend", onTouchEnd, {
+        capture: true,
+      } as any);
       window.clearInterval(tick);
     };
   }, [enabled, jwt, warnMs, onLogout, onHeartbeat]);
