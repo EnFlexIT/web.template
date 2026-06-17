@@ -18,9 +18,14 @@ import {
   setIsLogoutDialogOpen,
   type AuthMethod,
 } from "../../redux/slices/apiSlice";
+
 import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {checkServerAuthenticated,checkServerReachable,} from "../login/serverCheck";
+import { setServerStatus } from "../../redux/slices/serverStatusSlice";
+import {
+  checkServerAuthenticated,
+  checkServerReachable,
+} from "../login/serverCheck";
 import { dispatchServerStatusRefresh } from "../../util/serverStatusRefresh";
 
 type Props = {
@@ -37,7 +42,6 @@ type LogoutServerItem = {
   authenticationMethod: AuthMethod;
 };
 
-
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
   const currentIp = useAppSelector(selectIp);
@@ -51,6 +55,18 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   const servers = serversState?.servers ?? [];
   const currentNormalizedIp = normalizeBaseUrl(currentIp);
+
+  function markServerLoggedOut(serverId: string) {
+    dispatch(
+      setServerStatus({
+        serverId,
+        status: {
+          tone: "yellow",
+          subtitle: t("erreichbarNichtEinloggt"),
+        },
+      }),
+    );
+  }
 
   useEffect(() => {
     setLogoutFlowActive(visible);
@@ -85,7 +101,6 @@ export function LogoutDialog({ visible, onClose }: Props) {
             const jwt = await getJwtForServer(server.baseUrl);
             const info = await checkServerAuthenticated(server.baseUrl, jwt);
 
-            // JWT lokal vorhanden, aber serverseitig nicht mehr gültig
             if (jwt && !info.authenticated) {
               await setJwtForServer(server.baseUrl, null);
             }
@@ -133,10 +148,11 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   const hasMultipleLoggedInServers = loggedInServers.length > 1;
 
-  const serversToRender = useMemo<LogoutServerItem[]>(() => {
-    if (!hasMultipleLoggedInServers) return [];
-    return loggedInServers;
-  }, [hasMultipleLoggedInServers, loggedInServers]);
+const serversToRender = useMemo<LogoutServerItem[]>(() => {
+  if (!hasMultipleLoggedInServers) return [];
+
+  return loggedInServers;
+}, [hasMultipleLoggedInServers, loggedInServers]);
 
   const allSelected =
     serversToRender.length > 0 &&
@@ -146,6 +162,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   function handleClose() {
     if (loading) return;
+
     setLogoutFlowActive(false);
     dispatch(setIsLogoutDialogOpen(false));
     onClose();
@@ -180,10 +197,16 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
     try {
       if (!hasMultipleLoggedInServers) {
+        const currentServer =
+          loggedInServers.find((server) => server.isCurrent) ??
+          servers.find(
+            (server) => normalizeBaseUrl(server.baseUrl) === currentNormalizedIp,
+          );
+
         await dispatch(logoutAsync()).unwrap();
 
-        if (typeof window !== "undefined") {
-dispatchServerStatusRefresh();        }
+        markServerLoggedOut(currentServer?.id ?? "local");
+        dispatchServerStatusRefresh();
 
         handleClose();
         return;
@@ -197,26 +220,26 @@ dispatchServerStatusRefresh();        }
         return;
       }
 
-      const selectedCurrentServer = selectedServers.find((server) => server.isCurrent);
-      const selectedOtherServers = selectedServers.filter((server) => !server.isCurrent);
+      const selectedCurrentServer = selectedServers.find(
+        (server) => server.isCurrent,
+      );
+      const selectedOtherServers = selectedServers.filter(
+        (server) => !server.isCurrent,
+      );
 
-      // Für andere Server: lokalen Token löschen.
-      // Das reicht für JWT und für OIDC-Bearer im lokalen Storage.
       for (const server of selectedOtherServers) {
         await setJwtForServer(server.baseUrl, null);
+        markServerLoggedOut(server.id);
       }
 
       if (selectedCurrentServer) {
-        // Aktueller Server: lokales Token + laufende Session sauber beenden
         await dispatch(logoutAsync()).unwrap();
+        markServerLoggedOut(selectedCurrentServer.id);
       } else {
         dispatch(setIsLogoutDialogOpen(false));
       }
 
-      if (typeof window !== "undefined") {
-        dispatchServerStatusRefresh();
-      }
-
+      dispatchServerStatusRefresh();
       handleClose();
     } finally {
       setLoading(false);
@@ -301,7 +324,9 @@ dispatchServerStatusRefresh();        }
                           </ThemedText>
 
                           <ThemedText style={styles.serverAuth}>
-                            {server.authenticationMethod === "oidc" ? "OIDC" : "JWT"}
+                            {server.authenticationMethod === "oidc"
+                              ? "OIDC"
+                              : "JWT"}
                           </ThemedText>
                         </View>
                       </Pressable>
@@ -320,6 +345,7 @@ dispatchServerStatusRefresh();        }
               size="sm"
               disabled={loading}
             />
+
             <ActionButton
               label={logoutLabel}
               variant="secondary"

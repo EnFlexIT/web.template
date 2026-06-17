@@ -93,6 +93,7 @@ export function Footer() {
   const [pendingServerAuthMethod, setPendingServerAuthMethod] =
     useState<AuthMethod>("unknown");
    const serverOptionMeta = useAppSelector(selectServerStatuses);
+   console.log("[FOOTER]", serverOptionMeta);
 
 
   const isLoginPage =

@@ -193,11 +193,14 @@ export function LoginScreen() {
 /******************************************************************************************************************************************** */
 // Function to mark the selected server as logged in by updating its status in the Redux store, used after a successful login to provide visual feedback in the UI
 const markSelectedServerLoggedIn = () => {
-  if (!selectedServerId || selectedServerId === "local") return;
+  const serverId =
+    selectedServer?.id && selectedServer.id !== "local"
+      ? selectedServer.id
+      : selectedServerId || "local";
 
   dispatch(
     setServerStatus({
-      serverId: selectedServerId,
+      serverId,
       status: {
         tone: "green",
         subtitle: t("einloggt"),
@@ -228,9 +231,9 @@ useEffect(() => {
         }),
       );
        markSelectedServerLoggedIn();
-
+console.log("[LOGIN] set green");
       dispatchServerStatusRefresh();
-
+      console.log("[LOGIN] set green");
       setLoginRequestStatus("successful");
     setLoginFeedback(null);
   };
@@ -289,7 +292,7 @@ function isSameOriginAsSelectedServer(): boolean {
         }),
       );
     markSelectedServerLoggedIn();
-
+console.log("[LOGIN] set green");
       dispatchServerStatusRefresh();
 
       if (shouldPromptPasswordChange) {
@@ -373,7 +376,7 @@ function isSameOriginAsSelectedServer(): boolean {
        markSelectedServerLoggedIn();
         dispatchServerStatusRefresh();
       
-
+console.log("[LOGIN] set green");
         loginWindowRef.current?.close();
       window.focus();
 
