@@ -199,6 +199,7 @@ export function parseServerSettings(
 export async function checkServerAuthenticated(
   baseUrl: string,
   jwt: string | null,
+  options?: { force?: boolean },
 ): Promise<ServerAuthInfo> {
   const base = normalizeBaseUrl(baseUrl);
 
@@ -213,10 +214,13 @@ export async function checkServerAuthenticated(
     return fallbackResult;
   }
 
+  const force = options?.force === true;
+
   const cacheKey = getAuthCacheKey(base, jwt);
   const now = Date.now();
 
   if (
+    !force &&
     lastAuthKey === cacheKey &&
     lastAuthResult &&
     now - lastAuthAt < AUTH_CACHE_MS

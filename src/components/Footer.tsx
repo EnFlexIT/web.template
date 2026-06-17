@@ -22,8 +22,18 @@ import {
   selectIsLoggedIn,
   type AuthMethod,
 } from "../redux/slices/apiSlice";
+import {
+  selectServerStatuses,
+  setServerStatus,
+  setServerStatuses,
+} from "../redux/slices/serverStatusSlice";
+import {
+  dispatchServerStatusRefresh,
+  SERVER_STATUS_REFRESH_EVENT,
+} from "../util/serverStatusRefresh";
 
 import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
+
 import {
   selectSelectedServer,
   selectServers,
@@ -36,11 +46,9 @@ import {
   toggleNotificationPopup,
 } from "../redux/slices/notificationSlice";
 
-import { getAppEnvironment } from "../util/appEnvironment";
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
 
 const Feather = withUnistyles(Feather_);
-const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
 function toBase64(str: string) {
   return typeof btoa !== "undefined"
@@ -50,8 +58,9 @@ function toBase64(str: string) {
 
 function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const m = value.match(/Bearer\s+(.+)/i);
-  return m?.[1]?.trim() ?? null;
+  const match = value.match(/Bearer\s+(.+)/i);
+
+  return match?.[1]?.trim() ?? null;
 }
 
 type ServerTone = "green" | "yellow" | "red";
@@ -71,7 +80,6 @@ export function Footer() {
   const serversState = useAppSelector(selectServers);
   const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
 
-  const env = getAppEnvironment();
   const servers = serversState?.servers ?? [];
 
   const refreshServerStatusesRunningRef = useRef(false);
@@ -84,10 +92,8 @@ export function Footer() {
   const [pendingServerLabel, setPendingServerLabel] = useState("");
   const [pendingServerAuthMethod, setPendingServerAuthMethod] =
     useState<AuthMethod>("unknown");
+   const serverOptionMeta = useAppSelector(selectServerStatuses);
 
-  const [serverOptionMeta, setServerOptionMeta] = useState<
-    Record<string, ServerOptionMeta>
-  >({});
 
   const isLoginPage =
     typeof window !== "undefined" &&
@@ -106,6 +112,23 @@ export function Footer() {
     return Object.fromEntries(entries) as Record<string, string>;
   }, [servers]);
 
+const markServerLoggedIn = useCallback(
+  (serverId: string | null | undefined) => {
+    if (!serverId) return;
+
+    dispatch(
+      setServerStatus({
+        serverId,
+        status: {
+          tone: "green",
+          subtitle: t("einloggt"),
+        },
+      }),
+    );
+  },
+  [dispatch, t],
+);
+
   const refreshServerStatuses = useCallback(async () => {
     if (refreshServerStatusesRunningRef.current) return;
 
@@ -113,7 +136,7 @@ export function Footer() {
 
     try {
       if (!servers.length) {
-        setServerOptionMeta({});
+        dispatch(setServerStatuses({}));
         return;
       }
 
@@ -163,47 +186,47 @@ export function Footer() {
         }),
       );
 
-      setServerOptionMeta(Object.fromEntries(entries));
+      dispatch(setServerStatuses(Object.fromEntries(entries)));
     } finally {
       refreshServerStatusesRunningRef.current = false;
     }
-  }, [servers, t]);
+ }, [servers, t, dispatch]);
 
-useEffect(() => {
-  let active = true;
+  useEffect(() => {
+    let active = true;
 
-  const safeRefresh = async () => {
-    if (!active) return;
-    if (isLoginPage) return;
+    const safeRefresh = async () => {
+      if (!active) return;
+      if (isLoginPage) return;
 
-    await refreshServerStatuses();
-  };
+      await refreshServerStatuses();
+    };
 
-  //void safeRefresh();
+    void safeRefresh();
 
-  const intervalId = setInterval(() => {
-    //void safeRefresh();
-  }, 120000);
+    const intervalId = setInterval(() => {
+      void safeRefresh();
+    }, 60_000);
 
-  const onRefreshEvent = () => {
-   // void safeRefresh();
-  };
-
-  if (typeof window !== "undefined") {
-    window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-    window.addEventListener("focus", onRefreshEvent);
-  }
-
-  return () => {
-    active = false;
-    clearInterval(intervalId);
+    const onRefreshEvent = () => {
+      void safeRefresh();
+    };
 
     if (typeof window !== "undefined") {
-      window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-      window.removeEventListener("focus", onRefreshEvent);
+      window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+      window.addEventListener("focus", onRefreshEvent);
     }
-  };
-}, [refreshServerStatuses, isLoginPage]);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
+        window.removeEventListener("focus", onRefreshEvent);
+      }
+    };
+  }, [refreshServerStatuses, isLoginPage]);
 
   async function handleServerChange(serverId: string) {
     dispatch(closeNotificationPopup());
@@ -213,13 +236,16 @@ useEffect(() => {
     const meta = serverOptionMeta[serverId];
     if (meta?.tone === "red") return;
 
-    const server = servers.find((s) => s.id === serverId);
+    const server = servers.find((item) => item.id === serverId);
     if (!server) return;
     if (server.id === selectedServer?.id) return;
 
     const newUrl = normalizeBaseUrl(server.baseUrl);
     const existingJwt = await getJwtForServer(newUrl);
-    const info = await checkServerAuthenticated(newUrl, existingJwt);
+
+    const info = await checkServerAuthenticated(newUrl, existingJwt, {
+      force: true,
+    });
 
     if (info.authenticated) {
       dispatch(selectServer(server.id));
@@ -235,9 +261,8 @@ useEffect(() => {
         }),
       );
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-      }
+      markServerLoggedIn(server.id);
+      dispatchServerStatusRefresh();
 
       return;
     }
@@ -253,9 +278,7 @@ useEffect(() => {
           }),
         );
 
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-        }
+        dispatchServerStatusRefresh();
 
         return;
       }
@@ -266,6 +289,7 @@ useEffect(() => {
       setPendingServerAuthMethod("jwt");
       setLoginError(null);
       setLoginModalVisible(true);
+
       return;
     }
 
@@ -279,9 +303,11 @@ useEffect(() => {
       }),
     );
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+    if (info.oidcBearer) {
+      markServerLoggedIn(server.id);
     }
+
+    dispatchServerStatusRefresh();
   }
 
   async function handleServerLoginSubmit(params: {
@@ -292,6 +318,7 @@ useEffect(() => {
 
     setLoginLoading(true);
     setLoginError(null);
+    
 
     try {
       if (pendingServerAuthMethod !== "jwt") {
@@ -312,14 +339,15 @@ useEffect(() => {
         },
       });
 
-      const hdr =
+      const header =
         res.headers.get("www-authenticate") ??
         res.headers.get("WWW-Authenticate") ??
         res.headers.get("authorization") ??
         res.headers.get("Authorization");
 
       const bodyText = await res.text();
-      const bearerToken = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
+      const bearerToken =
+        extractBearerToken(header) ?? extractBearerToken(bodyText);
 
       if (!bearerToken) {
         throw new Error("Anmeldung fehlgeschlagen.");
@@ -337,6 +365,8 @@ useEffect(() => {
         }),
       );
 
+      markServerLoggedIn(pendingServerId);
+
       if (shouldPromptPasswordChange) {
         dispatch(openInitialPasswordChangeDialog());
       }
@@ -348,9 +378,7 @@ useEffect(() => {
       setPendingServerAuthMethod("unknown");
       setLoginError(null);
 
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-      }
+      dispatchServerStatusRefresh();
     } catch (err: any) {
       setLoginError(err?.message ?? "Anmeldung fehlgeschlagen.");
     } finally {
@@ -360,6 +388,7 @@ useEffect(() => {
 
   function handleNotificationButtonPress() {
     if (loginLoading || !showNotificationButton) return;
+
     dispatch(toggleNotificationPopup());
   }
 
@@ -425,6 +454,7 @@ useEffect(() => {
         authMethod={pendingServerAuthMethod}
         onClose={() => {
           if (loginLoading) return;
+
           setLoginModalVisible(false);
           setLoginError(null);
           setPendingServerId(null);

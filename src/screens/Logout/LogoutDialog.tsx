@@ -21,7 +21,7 @@ import {
 import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
 import {checkServerAuthenticated,checkServerReachable,} from "../login/serverCheck";
-
+import { dispatchServerStatusRefresh } from "../../util/serverStatusRefresh";
 
 type Props = {
   visible: boolean;
@@ -37,7 +37,6 @@ type LogoutServerItem = {
   authenticationMethod: AuthMethod;
 };
 
-const SERVER_STATUS_REFRESH_EVENT = "server-status-refresh";
 
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
@@ -184,8 +183,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
         await dispatch(logoutAsync()).unwrap();
 
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
-        }
+dispatchServerStatusRefresh();        }
 
         handleClose();
         return;
@@ -216,7 +214,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
       }
 
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event(SERVER_STATUS_REFRESH_EVENT));
+        dispatchServerStatusRefresh();
       }
 
       handleClose();

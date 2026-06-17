@@ -24,6 +24,8 @@ import { H4 } from "../../components/stylistic/H4";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
+import { dispatchServerStatusRefresh } from "../../util/serverStatusRefresh";
+import { setServerStatus } from "../../redux/slices/serverStatusSlice";
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Helper function to convert a string to Base64, compatible with both browser and Node.js environments
 
@@ -187,8 +189,22 @@ export function LoginScreen() {
   const isExpoWeb =isWeb && typeof window !== "undefined" &&window.location.origin.includes("localhost:8081");
   const autoOidcDoneRef = useRef(false);
 
-/******************************************************************************************************************************************** */
 
+/******************************************************************************************************************************************** */
+// Function to mark the selected server as logged in by updating its status in the Redux store, used after a successful login to provide visual feedback in the UI
+const markSelectedServerLoggedIn = () => {
+  if (!selectedServerId || selectedServerId === "local") return;
+
+  dispatch(
+    setServerStatus({
+      serverId: selectedServerId,
+      status: {
+        tone: "green",
+        subtitle: t("einloggt"),
+      },
+    }),
+  );
+};
 // Effect to automatically attempt OIDC login on component mount if OIDC is the selected authentication method, and to prevent multiple attempts using a ref flag
 useEffect(() => {
   if (authenticationMethod !== "oidc") return;
@@ -204,15 +220,18 @@ useEffect(() => {
       return;
     }
 
-    await dispatch(
-      switchServer({
-        url: selectedBaseUrl,
-        providedJwt: bearer,
-        initializeMenu: !isExpoWeb,
-      }),
-    );
+      await dispatch(
+        switchServer({
+          url: selectedBaseUrl,
+          providedJwt: bearer,
+          initializeMenu: !isExpoWeb,
+        }),
+      );
+       markSelectedServerLoggedIn();
 
-    setLoginRequestStatus("successful");
+      dispatchServerStatusRefresh();
+
+      setLoginRequestStatus("successful");
     setLoginFeedback(null);
   };
 
@@ -262,13 +281,16 @@ function isSameOriginAsSelectedServer(): boolean {
       extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
 
     if (response.status === 200 && bearerToken) {
-      await dispatch(
+        await dispatch(
         switchServer({
           url: selectedBaseUrl,
           providedJwt: bearerToken,
           initializeMenu: true,
         }),
       );
+    markSelectedServerLoggedIn();
+
+      dispatchServerStatusRefresh();
 
       if (shouldPromptPasswordChange) {
         dispatch(openInitialPasswordChangeDialog());
@@ -288,6 +310,7 @@ function isSameOriginAsSelectedServer(): boolean {
     setLoginRequestStatus("failed");
     setLoginFeedback(t("login_failed"));
   }
+  
 
   async function loginWithOidc(): Promise<void> {
   if (oidcLoginInProgress) return;
@@ -340,15 +363,18 @@ function isSameOriginAsSelectedServer(): boolean {
           typeof window !== "undefined" &&
           window.location.origin.includes("localhost:8081");
 
-        await dispatch(
+              await dispatch(
           switchServer({
             url: selectedBaseUrl,
             providedJwt: bearer,
             initializeMenu: !isExpoWeb,
           }),
         );
+       markSelectedServerLoggedIn();
+        dispatchServerStatusRefresh();
+      
 
-      loginWindowRef.current?.close();
+        loginWindowRef.current?.close();
       window.focus();
 
       setLoginRequestStatus("successful");
