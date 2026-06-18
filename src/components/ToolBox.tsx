@@ -4,12 +4,22 @@ import AntDesign_ from "@expo/vector-icons/AntDesign";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { logoutAsync, selectJwt } from "../redux/slices/apiSlice";
+
+import {
+  logoutAsync,
+  selectAuthenticationMethod,
+  selectJwt,
+} from "../redux/slices/apiSlice";
+
 import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
+
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
+import { useOidcSessionTimerWeb } from "../hooks/useOidcSessionTimerWeb";
+
 import { Text } from "./stylistic/Text";
 import { ActionButton } from "./ui-elements/ActionButton";
 import { LogoutDialog } from "../screens/Logout/LogoutDialog";
@@ -22,9 +32,13 @@ type ToolBoxProps = {
   isBaseMode?: boolean;
 };
 
+type OpenPopup = "session" | "update" | null;
+
 function formatMMSS(totalSeconds: number) {
-  const mm = Math.floor(totalSeconds / 60);
-  const ss = totalSeconds % 60;
+  const safeSeconds = Math.max(0, totalSeconds);
+  const mm = Math.floor(safeSeconds / 60);
+  const ss = safeSeconds % 60;
+
   return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
 }
 
@@ -55,21 +69,18 @@ function ColorSwitcher() {
   );
 }
 
-type OpenPopup = "session" | "update" | null;
-
 export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const dispatch = useAppDispatch();
+
   const jwt = useAppSelector(selectJwt);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
+  const updateState = useAppSelector((state) => state.update);
 
   const isWeb = Platform.OS === "web";
-
-  const showLogout =
+const isOidc = authenticationMethod === "oidc" || authenticationMethod === "unknown";  const showLogout =
     isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
 
-
-
-const updateState = useAppSelector((state) => state.update);
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
 
@@ -83,22 +94,35 @@ const updateState = useAppSelector((state) => state.update);
       dispatch(logoutAsync());
       return;
     }
+
     if (isBaseMode === true && baseModeLoggedIn === true) {
       dispatch(logoutBaseMode());
     }
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
-  const { secondsLeft, warning } = useJwtSessionTimerWeb({
-    enabled: isWeb && showLogout,
+  const jwtTimer = useJwtSessionTimerWeb({
+    enabled: isWeb && showLogout && !isOidc,
     jwt,
     warnMs: 30_000,
     onLogout: onAutoLogout,
     onHeartbeat: undefined,
   });
 
+    const oidcTimer = useOidcSessionTimerWeb({
+      enabled: isWeb && showLogout && isOidc,
+      warnMs: 30_000,
+      onLogout: onAutoLogout,
+    });
+
+  const secondsLeft = isOidc ? oidcTimer.secondsLeft : jwtTimer.secondsLeft;
+  const warning = isOidc ? oidcTimer.warning : jwtTimer.warning;
+
   useEffect(() => {
     if (!isWeb) return;
-    if (updateState.frontend.isAvailable) setOpenPopup("update");
+
+    if (updateState.frontend.isAvailable) {
+      setOpenPopup("update");
+    }
   }, [updateState.frontend.isAvailable, isWeb]);
 
   useEffect(() => {
@@ -124,9 +148,10 @@ const updateState = useAppSelector((state) => state.update);
       const target = ev.target as Node | null;
       if (!target) return;
 
-      // @ts-expect-error
+      // @ts-expect-error react-native-web ref supports contains on web
       const inSession = sessionWrapRef.current?.contains?.(target) ?? false;
-      // @ts-expect-error
+
+      // @ts-expect-error react-native-web ref supports contains on web
       const inUpdate = updateWrapRef.current?.contains?.(target) ?? false;
 
       if (!inSession && !inUpdate) {
@@ -136,16 +161,21 @@ const updateState = useAppSelector((state) => state.update);
 
     document.addEventListener("mousedown", handler, true);
     document.addEventListener("touchstart", handler, true);
+
     return () => {
       document.removeEventListener("mousedown", handler, true);
       document.removeEventListener("touchstart", handler, true);
     };
   }, [isWeb]);
 
-  const stayLoggedIn = useCallback(() => {
-    suppressSessionPopupUntilRef.current = Date.now() + 10_000;
-    setOpenPopup(null);
-  }, []);
+ const stayLoggedIn = useCallback(() => {
+  suppressSessionPopupUntilRef.current = Date.now() + 10_000;
+  setOpenPopup(null);
+
+  if (isOidc) {
+    void oidcTimer.refreshSession();
+  }
+}, [isOidc, oidcTimer]);
 
   const manualLogout = useCallback(() => {
     setOpenPopup(null);
@@ -153,7 +183,7 @@ const updateState = useAppSelector((state) => state.update);
   }, []);
 
   const toggleSessionPopup = useCallback(() => {
-    setOpenPopup((v) => (v === "session" ? null : "session"));
+    setOpenPopup((value) => (value === "session" ? null : "session"));
   }, []);
 
   const updateTitle = useMemo(() => {
@@ -164,6 +194,7 @@ const updateState = useAppSelector((state) => state.update);
     if (updateState.frontend.isAvailable) {
       return "Eine neue Version ist verfügbar. Bitte speichere deine Arbeit und lade dann neu.";
     }
+
     return "Keine Updates verfügbar. Du bist auf dem aktuellen Stand.";
   }, [updateState.frontend.isAvailable]);
 
@@ -186,7 +217,12 @@ const updateState = useAppSelector((state) => state.update);
               />
             </Pressable>
 
-            <Text style={[styles.timerText, warning ? styles.warningText : undefined]}>
+            <Text
+              style={[
+                styles.timerText,
+                warning ? styles.warningText : undefined,
+              ]}
+            >
               {formatMMSS(secondsLeft)}
             </Text>
 
@@ -196,7 +232,9 @@ const updateState = useAppSelector((state) => state.update);
 
                 <Text style={styles.popupBody}>
                   Sie werden in{" "}
-                  <Text style={styles.popupCountdown}>{formatMMSS(secondsLeft)}</Text>{" "}
+                  <Text style={styles.popupCountdown}>
+                    {formatMMSS(secondsLeft)}
+                  </Text>{" "}
                   automatisch abgemeldet.
                 </Text>
 
@@ -236,26 +274,32 @@ const styles = StyleSheet.create((theme) => ({
     gap: 20,
     alignItems: "center",
   },
+
   color: {
     color: theme.colors.text,
   },
+
   timerWrap: {
     position: "relative",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+
   timerText: {
     fontSize: 14,
     opacity: 0.85,
   },
+
   warningIcon: {
     opacity: 1,
   },
+
   warningText: {
     opacity: 1,
     fontWeight: "700",
   },
+
   popup: {
     position: "absolute",
     right: 0,
@@ -272,16 +316,19 @@ const styles = StyleSheet.create((theme) => ({
     elevation: 8,
     zIndex: 999,
   },
+
   popupTitle: {
     fontSize: 15,
     fontWeight: "700",
     marginBottom: 6,
   },
+
   popupBody: {
     fontSize: 13,
     opacity: 0.85,
     marginBottom: 10,
   },
+
   popupCountdown: {
     fontWeight: "800",
   },

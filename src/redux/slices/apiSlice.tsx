@@ -211,6 +211,15 @@ function buildApis(params: {
     },
   };
 }
+function isRedirectStatus(status?: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
 export async function fetchAppSettings(
   baseUrl: string,
   jwt?: string | null,
@@ -256,6 +265,14 @@ async function detectServerAndMode(baseUrl: string): Promise<{
         isPointingToServer: true,
         authenticationMethod: "jwt",
         isBaseMode: false,
+      };
+    }
+
+      if (isRedirectStatus(status) || response.type === "opaqueredirect") {
+      return {
+        isPointingToServer: true,
+        authenticationMethod: "oidc",
+        isBaseMode: true,
       };
     }
 

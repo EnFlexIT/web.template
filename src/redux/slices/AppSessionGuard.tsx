@@ -26,7 +26,6 @@ function isOidcAuth(authenticationMethod?: string) {
 function normalizeTimeToMs(value?: number | null): number | null {
   if (typeof value !== "number") return null;
 
-  // Falls Backend Sekunden liefert, in Millisekunden umwandeln.
   return value < 24 * 60 * 60 ? value * 1000 : value;
 }
 
@@ -72,6 +71,14 @@ export function AppSessionGuard() {
         return;
       }
 
+      // Wichtig:
+      // OIDC wird NICHT mehr automatisch über AppSessionGuard geprüft,
+      // damit /api/user/sessionTime nicht jede Minute die Session verlängert.
+      // OIDC läuft jetzt über useOidcSessionTimerWeb in der ToolBox.
+      if (isOidcAuth(authenticationMethod)) {
+        return;
+      }
+
       runningRef.current = true;
 
       try {
@@ -83,12 +90,8 @@ export function AppSessionGuard() {
 
         const remainingSessionMs = normalizeTimeToMs(sessionTime.remainingTime);
 
-        if (remainingSessionMs != null && remainingSessionMs <= 0) {
+        if (remainingSessionMs == null || remainingSessionMs <= 0) {
           await dispatch(logoutAsync());
-          return;
-        }
-
-        if (isOidcAuth(authenticationMethod)) {
           return;
         }
 
