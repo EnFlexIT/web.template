@@ -229,87 +229,86 @@ const markServerLoggedIn = useCallback(
     };
   }, [refreshServerStatuses, isLoginPage]);
 
-  async function handleServerChange(serverId: string) {
-    dispatch(closeNotificationPopup());
+ async function handleServerChange(serverId: string) {
+  dispatch(closeNotificationPopup());
 
-    if (isSwitchingServer || loginLoading) return;
+  if (isSwitchingServer || loginLoading) return;
 
-    const meta = serverOptionMeta[serverId];
-    if (meta?.tone === "red") return;
+  const meta = serverOptionMeta[serverId];
+  if (meta?.tone === "red") return;
 
-    const server = servers.find((item) => item.id === serverId);
-    if (!server) return;
-    if (server.id === selectedServer?.id) return;
+  const server = servers.find((s) => s.id === serverId);
+  if (!server) return;
+  if (server.id === selectedServer?.id) return;
 
-    const newUrl = normalizeBaseUrl(server.baseUrl);
-    const existingJwt = await getJwtForServer(newUrl);
+  const newUrl = normalizeBaseUrl(server.baseUrl);
+  const existingJwt = await getJwtForServer(newUrl);
 
-    const info = await checkServerAuthenticated(newUrl, existingJwt, {
-      force: true,
-    });
+  const info = await checkServerAuthenticated(newUrl, existingJwt, {
+    force: true,
+  });
 
-    if (info.authenticated) {
-      dispatch(selectServer(server.id));
-
-      await dispatch(
-        switchServer({
-          url: newUrl,
-          providedJwt:
-            info.authenticationMethod === "oidc"
-              ? info.oidcBearer ?? undefined
-              : undefined,
-          initializeMenu: true,
-        }),
-      );
-
-      markServerLoggedIn(server.id);
-      dispatchServerStatusRefresh();
-
-      return;
-    }
-
-    if (info.authenticationMethod === "jwt") {
-      if (isLoginPage) {
-        dispatch(selectServer(server.id));
-
-        await dispatch(
-          switchServer({
-            url: newUrl,
-            initializeMenu: false,
-          }),
-        );
-
-        dispatchServerStatusRefresh();
-
-        return;
-      }
-
-      setPendingServerId(server.id);
-      setPendingServerUrl(newUrl);
-      setPendingServerLabel(server.name?.trim() || server.baseUrl);
-      setPendingServerAuthMethod("jwt");
-      setLoginError(null);
-      setLoginModalVisible(true);
-
-      return;
-    }
-
+  if (info.authenticated) {
     dispatch(selectServer(server.id));
 
     await dispatch(
       switchServer({
         url: newUrl,
-        providedJwt: info.oidcBearer ?? undefined,
-        initializeMenu: !!info.oidcBearer,
+        providedJwt:
+          info.authenticationMethod === "jwt"
+            ? existingJwt ?? undefined
+            : undefined,
+        initializeMenu: true,
       }),
     );
 
-    if (info.oidcBearer) {
-      markServerLoggedIn(server.id);
+    if (typeof window !== "undefined") {
+      dispatchServerStatusRefresh();
     }
 
+    return;
+  }
+
+  if (info.authenticationMethod === "jwt") {
+    if (isLoginPage) {
+      dispatch(selectServer(server.id));
+
+      await dispatch(
+        switchServer({
+          url: newUrl,
+          initializeMenu: false,
+        }),
+      );
+
+      if (typeof window !== "undefined") {
+        dispatchServerStatusRefresh();
+      }
+
+      return;
+    }
+
+    setPendingServerId(server.id);
+    setPendingServerUrl(newUrl);
+    setPendingServerLabel(server.name?.trim() || server.baseUrl);
+    setPendingServerAuthMethod("jwt");
+    setLoginError(null);
+    setLoginModalVisible(true);
+    return;
+  }
+
+  dispatch(selectServer(server.id));
+
+  await dispatch(
+    switchServer({
+      url: newUrl,
+      initializeMenu: false,
+    }),
+  );
+
+  if (typeof window !== "undefined") {
     dispatchServerStatusRefresh();
   }
+}
 
   async function handleServerLoginSubmit(params: {
     username: string;

@@ -57,22 +57,23 @@ export function normalizeBaseUrl(url: string): string {
 }
 // Helper function to build the OIDC start URL by normalizing the base URL and appending the necessary path, used when initiating OIDC login
 function buildServerOidcStartUrl(baseUrl: string): string {
-  return `${normalizeBaseUrl(baseUrl)}`;
+  return `${normalizeBaseUrl(baseUrl)}/login`;
 }
 // Helper function to create a delay, used for polling the server for the OIDC bearer token after initiating login in a popup
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 // Helper function to fetch the OIDC bearer token from the server by calling the settings endpoint, used for both initial check on component mount and for polling after initiating OIDC login in a popup
-async function fetchOidcBearerFromServer(
+async function fetchOidcAuthenticatedFromServer(
   baseUrl: string,
-): Promise<string | null> {
+): Promise<boolean> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-// Some servers might return a 400 with a specific message if there are duplicate sessions, so we check for that case explicitly to provide better feedback to the user
+
   const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
     method: "GET",
     cache: "no-store",
     credentials: "include",
+    redirect: "manual",
     headers: {
       Accept: "application/json",
     },
@@ -85,14 +86,26 @@ async function fetchOidcBearerFromServer(
       throw new Error("duplicate_sessions");
     }
 
-    return null;
+    return false;
+  }
+
+  if (
+    response.status === 301 ||
+    response.status === 302 ||
+    response.status === 303 ||
+    response.status === 307 ||
+    response.status === 308 ||
+    response.type === "opaqueredirect"
+  ) {
+    return false;
   }
 
   if (!response.ok) {
-    return null;
+    return false;
   }
-// Try to extract bearer token from headers first (some servers might put it there), then fall back to body if not found in headers
+
   const data = await response.json();
+
   const entries = Array.isArray(data?.propertyEntries)
     ? data.propertyEntries
     : [];
@@ -106,37 +119,22 @@ async function fetchOidcBearerFromServer(
       ? authenticatedRaw
       : String(authenticatedRaw).toLowerCase() === "true";
 
-  if (!authenticated) {
-    return null;
-  }
+  console.log("[OIDC LOGIN] authenticated:", authenticated);
 
-const accessToken =
-  entries.find(
-    (entry: any) => entry?.key === "_oidc.access_token",
-  )?.value ??
-  entries.find(
-    (entry: any) => entry?.key === "_oidc.bearer",
-  )?.value;
-
-console.log("[OIDC LOGIN] authenticated:", authenticated);
-console.log("[OIDC LOGIN] access token found:", !!accessToken);
-
-return typeof accessToken === "string" && accessToken.length > 0
-  ? accessToken
-  : null;
+  return authenticated;
 }
 // Helper function that repeatedly tries to fetch the OIDC bearer token from the server with a delay between attempts, used for polling after initiating OIDC login in a popup
-async function waitForOidcBearer(
+async function waitForOidcAuthenticated(
   baseUrl: string,
   retries = 90,
   delayMs = 1000,
-): Promise<string | null> {
+): Promise<boolean> {
   for (let i = 0; i < retries; i += 1) {
     try {
-      const bearer = await fetchOidcBearerFromServer(baseUrl);
+      const authenticated = await fetchOidcAuthenticatedFromServer(baseUrl);
 
-      if (bearer) {
-        return bearer;
+      if (authenticated) {
+        return true;
       }
     } catch (error) {
       if (error instanceof Error && error.message === "duplicate_sessions") {
@@ -147,7 +145,7 @@ async function waitForOidcBearer(
     await sleep(delayMs);
   }
 
-  return null;
+  return false;
 }
 //******************************************************************************************************************************** */
 export function LoginScreen() {
@@ -216,25 +214,24 @@ useEffect(() => {
   autoOidcDoneRef.current = true;
 
   const run = async () => {
-    const bearer = await fetchOidcBearerFromServer(selectedBaseUrl);
+    const authenticated = await fetchOidcAuthenticatedFromServer(selectedBaseUrl);
 
-    if (!bearer) {
+    if (!authenticated) {
       autoOidcDoneRef.current = false;
       return;
     }
 
-      await dispatch(
-        switchServer({
-          url: selectedBaseUrl,
-          providedJwt: bearer,
-          initializeMenu: !isExpoWeb,
-        }),
-      );
-       markSelectedServerLoggedIn();
-console.log("[LOGIN] set green");
-      dispatchServerStatusRefresh();
-      console.log("[LOGIN] set green");
-      setLoginRequestStatus("successful");
+    await dispatch(
+      switchServer({
+        url: selectedBaseUrl,
+        initializeMenu: !isExpoWeb,
+      }),
+    );
+
+    markSelectedServerLoggedIn();
+    dispatchServerStatusRefresh();
+
+    setLoginRequestStatus("successful");
     setLoginFeedback(null);
   };
 
@@ -354,29 +351,34 @@ console.log("[LOGIN] set green");
         return;
       }
 
-      const bearer = await waitForOidcBearer(selectedBaseUrl, 90, 1000);
+            const authenticated = await waitForOidcAuthenticated(
+          selectedBaseUrl,
+          90,
+          1000,
+        );
 
-      if (!bearer) {
-        setLoginRequestStatus("failed");
-        setLoginFeedback("Login wurde nicht abgeschlossen.");
-        return;
-      }
+        if (!authenticated) {
+          setLoginRequestStatus("failed");
+          setLoginFeedback("Login wurde nicht abgeschlossen.");
+          return;
+        }
+
+
         const isExpoWeb =
           Platform.OS === "web" &&
           typeof window !== "undefined" &&
           window.location.origin.includes("localhost:8081");
 
-              await dispatch(
-          switchServer({
-            url: selectedBaseUrl,
-            providedJwt: bearer,
-            initializeMenu: !isExpoWeb,
-          }),
+          await dispatch(
+            switchServer({
+              url: selectedBaseUrl,
+              initializeMenu: !isExpoWeb,
+            }),
         );
        markSelectedServerLoggedIn();
         dispatchServerStatusRefresh();
       
-console.log("[LOGIN] set green");
+        console.log("[LOGIN] set green");
         loginWindowRef.current?.close();
       window.focus();
 
