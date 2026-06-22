@@ -29,6 +29,16 @@ const initialState: SessionTimeState = {
   error: null,
 };
 
+function isRedirectStatus(status?: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
+
 export const loadSessionTime = createAsyncThunk<
   SessionTimes,
   { silent?: boolean } | undefined,
@@ -47,6 +57,11 @@ export const loadSessionTime = createAsyncThunk<
     method: "GET",
     cache: "no-store",
     credentials: "include",
+
+    // Wichtig:
+    // Sonst folgt der Browser dem OIDC-Redirect zu Keycloak.
+    redirect: "manual",
+
     headers: {
       Accept: "application/json",
       ...(api.authenticationMethod === "jwt" && api.jwt
@@ -56,6 +71,13 @@ export const loadSessionTime = createAsyncThunk<
         : {}),
     },
   });
+
+  // Wichtig:
+  // 303/302 bedeutet bei OIDC: Server will zu Keycloak weiterleiten.
+  // Das darf nicht automatisch als normaler Response weiterlaufen.
+  if (isRedirectStatus(res.status) || res.type === "opaqueredirect") {
+    throw new Error("OIDC_REDIRECT");
+  }
 
   if (!res.ok) {
     throw new Error(`SessionTime konnte nicht geladen werden: ${res.status}`);
@@ -96,7 +118,8 @@ const sessionTimeSlice = createSlice({
     builder.addCase(loadSessionTime.rejected, (state, action) => {
       state.loading = false;
       state.lastCheckedAt = Date.now();
-      state.error = action.error?.message ?? "SessionTime konnte nicht geladen werden.";
+      state.error =
+        action.error?.message ?? "SessionTime konnte nicht geladen werden.";
     });
   },
 });

@@ -4,10 +4,6 @@ import { Platform } from "react-native";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
 import {
-  fetchAppSettings,
-  selectIp,
-} from "../redux/slices/apiSlice";
-import {
   loadSessionTime,
   selectSessionTime,
 } from "../redux/slices/sessionTimeSlice";
@@ -18,14 +14,21 @@ type Options = {
   onLogout: () => void;
 };
 
-const AUTO_REFRESH_WINDOW_MS = 60_000;
-const AUTO_REFRESH_COOLDOWN_MS = 10_000;
-
 function getRemainingMs(params: {
   expirationTime?: number | null;
   remainingTime?: number | null;
+  lastCheckedAt?: number | null;
   now: number;
 }): number | null {
+  if (
+    typeof params.remainingTime === "number" &&
+    Number.isFinite(params.remainingTime) &&
+    typeof params.lastCheckedAt === "number" &&
+    Number.isFinite(params.lastCheckedAt)
+  ) {
+    return params.remainingTime - (params.now - params.lastCheckedAt);
+  }
+
   if (
     typeof params.expirationTime === "number" &&
     Number.isFinite(params.expirationTime)
@@ -33,43 +36,7 @@ function getRemainingMs(params: {
     return params.expirationTime - params.now;
   }
 
-  if (
-    typeof params.remainingTime === "number" &&
-    Number.isFinite(params.remainingTime)
-  ) {
-    return params.remainingTime;
-  }
-
   return null;
-}
-
-function getEffectiveOidcRemainingMs(params: {
-  sessionExpirationTime?: number | null;
-  sessionRemainingTime?: number | null;
-  tokenExpirationTime?: number | null;
-  tokenRemainingTime?: number | null;
-  now: number;
-}): number | null {
-  const sessionRemainingMs = getRemainingMs({
-    expirationTime: params.sessionExpirationTime,
-    remainingTime: params.sessionRemainingTime,
-    now: params.now,
-  });
-
-  const tokenRemainingMs = getRemainingMs({
-    expirationTime: params.tokenExpirationTime,
-    remainingTime: params.tokenRemainingTime,
-    now: params.now,
-  });
-
-  const validValues = [sessionRemainingMs, tokenRemainingMs].filter(
-    (value): value is number =>
-      typeof value === "number" && Number.isFinite(value),
-  );
-
-  if (validValues.length === 0) return null;
-
-  return Math.min(...validValues);
 }
 
 export function useOidcSessionTimerWeb({
@@ -78,72 +45,74 @@ export function useOidcSessionTimerWeb({
   onLogout,
 }: Options) {
   const dispatch = useAppDispatch();
-
-  const baseUrl = useAppSelector(selectIp);
   const sessionTime = useAppSelector(selectSessionTime);
 
   const [now, setNow] = useState(Date.now());
 
   const lastLogoutAtRef = useRef<number>(0);
-  const lastRefreshAtRef = useRef<number>(0);
-  const refreshRunningRef = useRef<boolean>(false);
 
-  const remainingMs = useMemo(() => {
+  const sessionRemainingMs = useMemo(() => {
     if (!sessionTime.lastCheckedAt) return null;
 
-    return getEffectiveOidcRemainingMs({
-      sessionExpirationTime: sessionTime.expirationTime,
-      sessionRemainingTime: sessionTime.remainingTime,
-      tokenExpirationTime: sessionTime.tokenExpirationTime,
-      tokenRemainingTime: sessionTime.remainingTokenTime,
+    return getRemainingMs({
+      expirationTime: sessionTime.expirationTime,
+      remainingTime: sessionTime.remainingTime,
+      lastCheckedAt: sessionTime.lastCheckedAt,
       now,
     });
   }, [
     sessionTime.lastCheckedAt,
     sessionTime.expirationTime,
     sessionTime.remainingTime,
+    now,
+  ]);
+
+  const tokenRemainingMs = useMemo(() => {
+    if (!sessionTime.lastCheckedAt) return null;
+
+    return getRemainingMs({
+      expirationTime: sessionTime.tokenExpirationTime,
+      remainingTime: sessionTime.remainingTokenTime,
+      lastCheckedAt: sessionTime.lastCheckedAt,
+      now,
+    });
+  }, [
+    sessionTime.lastCheckedAt,
     sessionTime.tokenExpirationTime,
     sessionTime.remainingTokenTime,
     now,
   ]);
 
   const secondsLeft =
-    remainingMs == null ? 0 : Math.max(0, Math.ceil(remainingMs / 1000));
+    sessionRemainingMs == null
+      ? 0
+      : Math.max(0, Math.ceil(sessionRemainingMs / 1000));
 
   const warning =
-    remainingMs != null && remainingMs > 0 && remainingMs <= warnMs;
+    sessionRemainingMs != null &&
+    sessionRemainingMs > 0 &&
+    sessionRemainingMs <= warnMs;
 
-const refreshSession = useCallback(async () => {
-  if (!enabled) return;
-  if (!baseUrl) return;
-  if (refreshRunningRef.current) return;
+  const refreshSession = useCallback(async () => {
+    if (!enabled) return;
+    if (Platform.OS !== "web") return;
 
-  refreshRunningRef.current = true;
-
-  try {
-    const settingsResponse = await fetchAppSettings(baseUrl, null);
-
-    if (
-      settingsResponse.status === 301 ||
-      settingsResponse.status === 302 ||
-      settingsResponse.status === 303 ||
-      settingsResponse.status === 307 ||
-      settingsResponse.status === 308 ||
-      settingsResponse.type === "opaqueredirect"
-    ) {
-      onLogout();
-      return;
+    try {
+      await dispatch(loadSessionTime({ silent: true })).unwrap();
+    } catch {
+      // sessionTime darf keine automatische Logout-Entscheidung auslösen.
+      // Logout passiert ausschließlich über sessionRemainingMs.
     }
+  }, [dispatch, enabled]);
 
-    if (!settingsResponse.ok) {
-      return;
-    }
+  useEffect(() => {
+    if (!enabled) return;
+    if (Platform.OS !== "web") return;
 
-    await dispatch(loadSessionTime({ silent: true })).unwrap();
-  } finally {
-    refreshRunningRef.current = false;
-  }
-}, [baseUrl, dispatch, enabled, onLogout]);
+    // Beim Start nur sessionTime lesen.
+    // Wichtig: kein settings/get, damit die Session nicht künstlich verlängert wird.
+    void refreshSession();
+  }, [enabled, refreshSession]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -163,30 +132,9 @@ const refreshSession = useCallback(async () => {
     if (!enabled) return;
     if (Platform.OS !== "web") return;
 
-    void refreshSession();
-  }, [enabled, refreshSession]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    if (remainingMs == null) return;
-    if (remainingMs <= 0) return;
-    if (remainingMs > AUTO_REFRESH_WINDOW_MS) return;
-
-    const nowValue = Date.now();
-
-    if (nowValue - lastRefreshAtRef.current < AUTO_REFRESH_COOLDOWN_MS) {
-      return;
-    }
-
-    lastRefreshAtRef.current = nowValue;
-
-    void refreshSession();
-  }, [enabled, remainingMs, refreshSession]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    if (remainingMs == null) return;
-    if (remainingMs > 0) return;
+    // Logout nur über die echte Session-Zeit.
+    if (sessionRemainingMs == null) return;
+    if (sessionRemainingMs > 0) return;
 
     const nowValue = Date.now();
 
@@ -194,12 +142,20 @@ const refreshSession = useCallback(async () => {
 
     lastLogoutAtRef.current = nowValue;
     onLogout();
-  }, [enabled, remainingMs, onLogout]);
+  }, [enabled, sessionRemainingMs, onLogout]);
 
   return {
     secondsLeft,
     warning,
-    remainingMs,
+
+    // Haupttimer / Logout-Entscheidung
+    remainingMs: sessionRemainingMs,
+    sessionRemainingMs,
+
+    // Nur Anzeige / Diagnose
+    tokenRemainingMs,
+
+    // Manuelles Neuladen der Zeiten, ohne settings/get
     refreshSession,
   };
 }

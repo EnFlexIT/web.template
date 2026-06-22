@@ -243,6 +243,27 @@ export async function fetchAppSettings(
     },
   });
 }
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ensureOidcSessionFresh(baseUrl: string): Promise<void> {
+  const base = normalizeBaseUrl(baseUrl);
+
+  for (let i = 0; i < 4; i += 1) {
+    const response = await fetchAppSettings(base, null);
+
+    if (isRedirectStatus(response.status) || response.type === "opaqueredirect") {
+      return;
+    }
+
+    if (!response.ok) {
+      return;
+    }
+
+    await sleep(700);
+  }
+}
 
 async function detectServerAndMode(baseUrl: string): Promise<{
   isPointingToServer: boolean;
@@ -457,6 +478,9 @@ export const initializeApi = createAsyncThunk(
           authenticated,
         });
 
+        if (authenticationMethod === "oidc") {
+  await ensureOidcSessionFresh(ip);
+}
     await AsyncStorage.setItem(ipKey, ip);
 
     if (jwt) {
@@ -769,17 +793,17 @@ export const switchServer = createAsyncThunk(
 
       thunkAPI.dispatch(clearMenu());
 
- thunkAPI.dispatch(
-  setConnectionLocal({
-    ip: newUrl,
-    jwt: nextJwt,
-    isPointingToServer,
-    authenticationMethod,
-    isBaseMode,
-    authenticated,
-  }),
-);
-      const nextLoggedIn = computeLoggedIn({
+    thunkAPI.dispatch(
+      setConnectionLocal({
+        ip: newUrl,
+        jwt: nextJwt,
+        isPointingToServer,
+        authenticationMethod,
+        isBaseMode,
+        authenticated,
+      }),
+    );
+          const nextLoggedIn = computeLoggedIn({
         authenticationMethod,
         jwt: nextJwt,
         authenticated,
