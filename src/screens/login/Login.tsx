@@ -181,6 +181,7 @@ export function LoginScreen() {
   const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive? "system": themeInfo.theme;
   const isWeb = Platform.OS === "web";
   const showJwtLogin = authenticationMethod === "jwt";
+  const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
   const basic = toBase64(`${username}:${password}`);
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
@@ -502,7 +503,7 @@ console.log("[LOGIN] set green");
             </>
           )}
 
-          {!showJwtLogin && (
+          {showOidcLogin  && (
             <View style={localStyles.oidcLoading}>
               <ActionButton
                 label={oidcLoginInProgress ? t("loading") : t("login")}

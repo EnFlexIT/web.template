@@ -185,7 +185,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const warning = isOidc ? oidcTimer.warning : jwtTimer.warning;
 
   const effectiveTimeText = formatMMSS(secondsLeft);
-  const sessionTimeText = formatMsToMMSS(sessionRemainingMs);
+  const sessionTimeText = formatMsToMMSS(sessionRemainingMs); // T
   const tokenTimeText = formatMsToMMSS(tokenRemainingMs);
 
   useEffect(() => {

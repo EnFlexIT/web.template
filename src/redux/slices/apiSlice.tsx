@@ -264,6 +264,29 @@ async function ensureOidcSessionFresh(baseUrl: string): Promise<void> {
     await sleep(700);
   }
 }
+function normalizeAuthenticationMethod(value: unknown): AuthMethod {
+  if (typeof value !== "string") return "unknown";
+
+  const normalized = value.trim().toLowerCase();
+
+  if (
+    normalized === "oidc" ||
+    normalized === "openid" ||
+    normalized === "oidcsecurityhandler"
+  ) {
+    return "oidc";
+  }
+
+  if (
+    normalized === "jwt" ||
+    normalized === "jwtsingleusesecurityhandler" ||
+    normalized === "jwtsingleusersecurityhandler"
+  ) {
+    return "jwt";
+  }
+
+  return "unknown";
+}
 
 async function detectServerAndMode(baseUrl: string): Promise<{
   isPointingToServer: boolean;
@@ -274,15 +297,10 @@ async function detectServerAndMode(baseUrl: string): Promise<{
   const base = normalizeBaseUrl(baseUrl);
 
   try {
-      const response = await fetchAppSettings(base);
-
+    const response = await fetchAppSettings(base);
 
     const status = response.status;
     const contentType = response.headers.get("content-type") ?? "";
-
-   // console.log("[DETECT SERVER] baseUrl:", base);
-   // console.log("[DETECT SERVER] status:", status);
-   // console.log("[DETECT SERVER] content-type:", contentType);
 
     if (status === 401 || status === 403) {
       return {
@@ -293,7 +311,7 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       };
     }
 
-      if (isRedirectStatus(status) || response.type === "opaqueredirect") {
+    if (isRedirectStatus(status) || response.type === "opaqueredirect") {
       return {
         isPointingToServer: true,
         authenticationMethod: "oidc",
@@ -311,24 +329,26 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       };
     }
 
-   if (!contentType.includes("application/json")) {
-        return {
-          isPointingToServer: true,
-          authenticationMethod: "oidc",
-          isBaseMode: true,
-          authenticated: false,
-        };
-      }
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return {
+        isPointingToServer: true,
+        authenticationMethod: "oidc",
+        isBaseMode: true,
+        authenticated: false,
+      };
+    }
 
     const data = await response.json();
-
-    //console.log("[DETECT SERVER] data:", data);
 
     const entries = Array.isArray((data as any)?.propertyEntries)
       ? (data as any).propertyEntries
       : [];
 
-    const authCfg = entries.find(
+    const authenticationMethodRaw = entries.find(
+      (entry: any) => entry?.key === "_AuthenticationMethod",
+    )?.value;
+
+    const authCfgRaw = entries.find(
       (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
     )?.value;
 
@@ -344,35 +364,41 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       (entry: any) => entry?.key === "_session.pathParameter",
     );
 
-  const hasOidcBearer = entries.some(
-  (entry: any) =>
-    entry?.key === "_oidc.bearer" ||
-    entry?.key === "_oidc.access_token",
-);
+    const hasOidcParameter = entries.some((entry: any) => {
+      const key = String(entry?.key ?? "").toLowerCase();
+      return key.startsWith("_oidc.");
+    });
+
+    const hasOidcBearer = entries.some(
+      (entry: any) =>
+        entry?.key === "_oidc.bearer" ||
+        entry?.key === "_oidc.access_token",
+    );
 
     const authenticated =
       typeof authenticatedRaw === "boolean"
         ? authenticatedRaw
         : String(authenticatedRaw).toLowerCase() === "true";
 
-    let authenticationMethod: AuthMethod = "unknown";
-const hasAuthenticatedFlag = authenticatedRaw !== undefined;
+    let authenticationMethod: AuthMethod =
+      normalizeAuthenticationMethod(authenticationMethodRaw);
 
-if (authCfg === "OIDCSecurityHandler") {
-  authenticationMethod = "oidc";
-} else if (authCfg === "JwtSingleUserSecurityHandler") {
-  authenticationMethod = "jwt";
-} else if (hasSessionId || hasSessionPathParameter) {
-  authenticationMethod = "oidc";
-} else if (hasAuthenticatedFlag) {
-  // Wichtig:
-  // Wenn der Server /api/app/settings/get mit _Authenticated antwortet,
-  // aber keinen JWT-401 liefert, behandeln wir das als OIDC/BaseMode.
-  // OIDC liefert jetzt bewusst keinen Token mehr ans Frontend.
-  authenticationMethod = "oidc";
-} else {
-  authenticationMethod = "unknown";
-}
+    if (authenticationMethod === "unknown") {
+      authenticationMethod = normalizeAuthenticationMethod(authCfgRaw);
+    }
+
+    if (
+      authenticationMethod === "unknown" &&
+      (hasSessionId ||
+        hasSessionPathParameter ||
+        hasOidcParameter ||
+        hasOidcBearer)
+    ) {
+      authenticationMethod = "oidc";
+    }
+
+    console.log("[DETECT SERVER] _AuthenticationMethod:", authenticationMethodRaw);
+    console.log("[DETECT SERVER] authenticationMethod:", authenticationMethod);
 
     return {
       isPointingToServer: true,
@@ -381,8 +407,6 @@ if (authCfg === "OIDCSecurityHandler") {
       authenticated,
     };
   } catch (error) {
-    //console.error("[DETECT SERVER] failed:", error);
-
     return {
       isPointingToServer: false,
       authenticationMethod: "unknown",
