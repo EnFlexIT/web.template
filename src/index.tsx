@@ -6,14 +6,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
-import { selectAuthenticationMethod } from "./redux/slices/apiSlice";
-import { checkAlive } from "./redux/slices/connectivitySlice";
+
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
 import {
   initializeApi,
-  refreshServerStatus,
   selectIsLoggedIn,
 } from "./redux/slices/apiSlice";
 import { ServerSwitchOverlay } from "./screens/ServerSwitchOverlay";
@@ -39,12 +37,10 @@ import {
   setActiveMenuId,
   isDynamicMenuItem,
 } from "./redux/slices/menuSlice";
-import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
-import { PostLoginUpdateWatcher } from "./redux/slices/PostLoginUpdateWatcher";
 
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
@@ -73,11 +69,13 @@ function getNumericIdFromPath(pathname: string): number | null {
 function RootStack() {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
+
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+
   const isWide = useIsWide();
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
+
   const didBootRef = useRef(false);
   const didHandleUrlRef = useRef(false);
 
@@ -135,55 +133,6 @@ function RootStack() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isLoading || !isLoggedIn) return;
-
-    let active = true;
-
-    const runCheck = async () => {
-      if (!active) return;
-
-      try {
-        await dispatch(checkAlive({ silent: true })).unwrap();
-      } catch {
-        // absichtlich leer
-      }
-    };
-
-    void runCheck();
-
-    const intervalId = setInterval(() => {
-      void runCheck();
-    }, 40000);
-
-    const onFocus = () => {
-      void runCheck();
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("focus", onFocus);
-    }
-
-    return () => {
-      active = false;
-      clearInterval(intervalId);
-
-      if (typeof window !== "undefined") {
-        window.removeEventListener("focus", onFocus);
-      }
-    };
-  }, [dispatch, isLoading]);
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const intervalId = setInterval(() => {
-      dispatch(refreshServerStatus());
-    }, 125000);
-
-    return () => clearInterval(intervalId);
-  }, [dispatch, isLoading]);
-
-  useEffect(() => {
     if (didHandleUrlRef.current) return;
     if (!rawMenu || rawMenu.length === 0) return;
 
@@ -228,8 +177,9 @@ function RootStack() {
       pathname === "/base-login" ||
       pathname === "/"
     ) {
-      const fallbackId =
-        rawMenu.find((m) => m.menuID && isMenuEnabled(m.menuID))?.menuID;
+      const fallbackId = rawMenu.find(
+        (m) => m.menuID && isMenuEnabled(m.menuID),
+      )?.menuID;
 
       const targetId =
         activeMenuId && isMenuEnabled(activeMenuId)
@@ -316,18 +266,9 @@ function RootStack() {
         screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
-           <OfflineOverlay />
+            <OfflineOverlay />
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
-            {authenticationMethod !== "oidc" && <UpdateNotificationWatcher />}
-           <PostLoginUpdateWatcher
-                  enabled={
-                    !isLoading &&
-                    isLoggedIn &&
-                    rawMenu.length > 0 &&
-                    authenticationMethod !== "oidc"
-                  }
-                />
             <NotificationPopup />
             {children}
           </View>

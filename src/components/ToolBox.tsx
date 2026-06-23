@@ -283,7 +283,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
                   warning ? styles.warningText : undefined,
                 ]}
               >
-                {effectiveTimeText}
+                {sessionTimeText}
               </Text>
 
               {isdev ? (

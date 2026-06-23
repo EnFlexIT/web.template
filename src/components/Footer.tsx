@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
@@ -22,15 +22,11 @@ import {
   selectIsLoggedIn,
   type AuthMethod,
 } from "../redux/slices/apiSlice";
+
 import {
   selectServerStatuses,
   setServerStatus,
-  setServerStatuses,
 } from "../redux/slices/serverStatusSlice";
-import {
-  dispatchServerStatusRefresh,
-  SERVER_STATUS_REFRESH_EVENT,
-} from "../util/serverStatusRefresh";
 
 import { openInitialPasswordChangeDialog } from "../redux/slices/passwordChangePromptSlice";
 
@@ -58,17 +54,11 @@ function toBase64(str: string) {
 
 function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
+
   const match = value.match(/Bearer\s+(.+)/i);
 
   return match?.[1]?.trim() ?? null;
 }
-
-type ServerTone = "green" | "yellow" | "red";
-
-type ServerOptionMeta = {
-  tone: ServerTone;
-  subtitle: string;
-};
 
 export function Footer() {
   const dispatch = useAppDispatch();
@@ -78,11 +68,10 @@ export function Footer() {
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
+  const serverOptionMeta = useAppSelector(selectServerStatuses);
   const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
 
   const servers = serversState?.servers ?? [];
-
-  const refreshServerStatusesRunningRef = useRef(false);
 
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -92,9 +81,6 @@ export function Footer() {
   const [pendingServerLabel, setPendingServerLabel] = useState("");
   const [pendingServerAuthMethod, setPendingServerAuthMethod] =
     useState<AuthMethod>("unknown");
-   const serverOptionMeta = useAppSelector(selectServerStatuses);
-   console.log("[FOOTER]", serverOptionMeta);
-
 
   const isLoginPage =
     typeof window !== "undefined" &&
@@ -113,202 +99,102 @@ export function Footer() {
     return Object.fromEntries(entries) as Record<string, string>;
   }, [servers]);
 
-const markServerLoggedIn = useCallback(
-  (serverId: string | null | undefined) => {
-    if (!serverId) return;
+  const markServerLoggedIn = useCallback(
+    (serverId: string | null | undefined) => {
+      if (!serverId) return;
 
-    dispatch(
-      setServerStatus({
-        serverId,
-        status: {
-          tone: "green",
-          subtitle: t("einloggt"),
-        },
-      }),
-    );
-  },
-  [dispatch, t],
-);
-
-  const refreshServerStatuses = useCallback(async () => {
-    if (refreshServerStatusesRunningRef.current) return;
-
-    refreshServerStatusesRunningRef.current = true;
-
-    try {
-      if (!servers.length) {
-        dispatch(setServerStatuses({}));
-        return;
-      }
-
-      const entries = await Promise.all(
-        servers.map(async (server) => {
-          const jwt = await getJwtForServer(server.baseUrl);
-
-          try {
-            const info = await checkServerAuthenticated(server.baseUrl, jwt);
-
-            if (info.authenticated) {
-              return [
-                server.id,
-                {
-                  tone: "green" as const,
-                  subtitle: t("einloggt"),
-                },
-              ] as const;
-            }
-
-            if (info.sessionInvalid) {
-              return [
-                server.id,
-                {
-                  tone: "yellow" as const,
-                  subtitle: t("Session ungültig / neu anmelden"),
-                },
-              ] as const;
-            }
-
-            return [
-              server.id,
-              {
-                tone: "yellow" as const,
-                subtitle: t("erreichbarNichtEinloggt"),
-              },
-            ] as const;
-          } catch {
-            return [
-              server.id,
-              {
-                tone: "red" as const,
-                subtitle: t("nichtErreichbar"),
-              },
-            ] as const;
-          }
+      dispatch(
+        setServerStatus({
+          serverId,
+          status: {
+            tone: "green",
+            subtitle: t("einloggt"),
+          },
         }),
       );
-
-      dispatch(setServerStatuses(Object.fromEntries(entries)));
-    } finally {
-      refreshServerStatusesRunningRef.current = false;
-    }
- }, [servers, t, dispatch]);
+    },
+    [dispatch, t],
+  );
 
   useEffect(() => {
-    let active = true;
+    if (!isLoggedIn) return;
+    if (!selectedServer?.id) return;
 
-    const safeRefresh = async () => {
-      if (!active) return;
-      if (isLoginPage) return;
+    markServerLoggedIn(selectedServer.id);
+  }, [isLoggedIn, selectedServer?.id, markServerLoggedIn]);
 
-      await refreshServerStatuses();
-    };
+  async function handleServerChange(serverId: string) {
+    dispatch(closeNotificationPopup());
 
-    void safeRefresh();
+    if (isSwitchingServer || loginLoading) return;
 
-    const intervalId = setInterval(() => {
-      void safeRefresh();
-    }, 60_000);
+    const meta = serverOptionMeta[serverId];
+    if (meta?.tone === "red") return;
 
-    const onRefreshEvent = () => {
-      void safeRefresh();
-    };
+    const server = servers.find((s) => s.id === serverId);
+    if (!server) return;
+    if (server.id === selectedServer?.id) return;
 
-    if (typeof window !== "undefined") {
-      window.addEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-      window.addEventListener("focus", onRefreshEvent);
-    }
+    const newUrl = normalizeBaseUrl(server.baseUrl);
+    const existingJwt = await getJwtForServer(newUrl);
 
-    return () => {
-      active = false;
-      clearInterval(intervalId);
+    // Wichtig:
+    // Diese Prüfung passiert nur bei echtem Serverwechsel.
+    // Kein automatischer Footer-Refresh, kein Intervall, kein Focus-Check.
+    const info = await checkServerAuthenticated(newUrl, existingJwt, {
+      force: true,
+    });
 
-      if (typeof window !== "undefined") {
-        window.removeEventListener(SERVER_STATUS_REFRESH_EVENT, onRefreshEvent);
-        window.removeEventListener("focus", onRefreshEvent);
-      }
-    };
-  }, [refreshServerStatuses, isLoginPage]);
-
- async function handleServerChange(serverId: string) {
-  dispatch(closeNotificationPopup());
-
-  if (isSwitchingServer || loginLoading) return;
-
-  const meta = serverOptionMeta[serverId];
-  if (meta?.tone === "red") return;
-
-  const server = servers.find((s) => s.id === serverId);
-  if (!server) return;
-  if (server.id === selectedServer?.id) return;
-
-  const newUrl = normalizeBaseUrl(server.baseUrl);
-  const existingJwt = await getJwtForServer(newUrl);
-
-  const info = await checkServerAuthenticated(newUrl, existingJwt, {
-    force: true,
-  });
-
-  if (info.authenticated) {
-    dispatch(selectServer(server.id));
-
-    await dispatch(
-      switchServer({
-        url: newUrl,
-        providedJwt:
-          info.authenticationMethod === "jwt"
-            ? existingJwt ?? undefined
-            : undefined,
-        initializeMenu: true,
-      }),
-    );
-
-    if (typeof window !== "undefined") {
-      dispatchServerStatusRefresh();
-    }
-
-    return;
-  }
-
-  if (info.authenticationMethod === "jwt") {
-    if (isLoginPage) {
+    if (info.authenticated) {
       dispatch(selectServer(server.id));
 
       await dispatch(
         switchServer({
           url: newUrl,
-          initializeMenu: false,
+          providedJwt:
+            info.authenticationMethod === "jwt"
+              ? existingJwt ?? undefined
+              : undefined,
+          initializeMenu: true,
         }),
       );
 
-      if (typeof window !== "undefined") {
-        dispatchServerStatusRefresh();
-      }
-
+      markServerLoggedIn(server.id);
       return;
     }
 
-    setPendingServerId(server.id);
-    setPendingServerUrl(newUrl);
-    setPendingServerLabel(server.name?.trim() || server.baseUrl);
-    setPendingServerAuthMethod("jwt");
-    setLoginError(null);
-    setLoginModalVisible(true);
-    return;
+    if (info.authenticationMethod === "jwt") {
+      if (isLoginPage) {
+        dispatch(selectServer(server.id));
+
+        await dispatch(
+          switchServer({
+            url: newUrl,
+            initializeMenu: false,
+          }),
+        );
+
+        return;
+      }
+
+      setPendingServerId(server.id);
+      setPendingServerUrl(newUrl);
+      setPendingServerLabel(server.name?.trim() || server.baseUrl);
+      setPendingServerAuthMethod("jwt");
+      setLoginError(null);
+      setLoginModalVisible(true);
+      return;
+    }
+
+    dispatch(selectServer(server.id));
+
+    await dispatch(
+      switchServer({
+        url: newUrl,
+        initializeMenu: false,
+      }),
+    );
   }
-
-  dispatch(selectServer(server.id));
-
-  await dispatch(
-    switchServer({
-      url: newUrl,
-      initializeMenu: false,
-    }),
-  );
-
-  if (typeof window !== "undefined") {
-    dispatchServerStatusRefresh();
-  }
-}
 
   async function handleServerLoginSubmit(params: {
     username: string;
@@ -318,7 +204,6 @@ const markServerLoggedIn = useCallback(
 
     setLoginLoading(true);
     setLoginError(null);
-    
 
     try {
       if (pendingServerAuthMethod !== "jwt") {
@@ -377,8 +262,6 @@ const markServerLoggedIn = useCallback(
       setPendingServerLabel("");
       setPendingServerAuthMethod("unknown");
       setLoginError(null);
-
-      dispatchServerStatusRefresh();
     } catch (err: any) {
       setLoginError(err?.message ?? "Anmeldung fehlgeschlagen.");
     } finally {

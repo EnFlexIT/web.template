@@ -1,14 +1,27 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+
 import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
-import { getApplicationMode, type ApplicationMode,} from "../../util/applicationMode";
+import {
+  getApplicationMode,
+  type ApplicationMode,
+} from "../../util/applicationMode";
 import { RootState } from "../store";
 import { setReady } from "./readySlice";
-import { AdminsApi,Configuration as RestApiConfiguration,  DoActionApi,InfoApi,UserApi,} from "../../api/implementation/AWB-RestAPI";
-import {Configuration as DynamicContentApiConfiguration,DefaultApi,} from "../../api/implementation/Dynamic-Content-Api";
+import {
+  AdminsApi,
+  Configuration as RestApiConfiguration,
+  DoActionApi,
+  InfoApi,
+  UserApi,
+} from "../../api/implementation/AWB-RestAPI";
+import {
+  Configuration as DynamicContentApiConfiguration,
+  DefaultApi,
+} from "../../api/implementation/Dynamic-Content-Api";
 import { clearMenu, initializeMenu } from "./menuSlice";
-//********************************************************************************** */
+
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
 export const jwtByServerKey = "jwtByServer" as const;
@@ -18,6 +31,7 @@ export type AuthMethod = "jwt" | "oidc" | "unknown";
 type JwtByServer = Record<string, string>;
 
 const defaultAuthenticationMethod: AuthMethod = "unknown";
+const defaultJwt: string | null = null;
 
 function getRuntimeDefaultIp() {
   if (typeof window !== "undefined") {
@@ -40,27 +54,8 @@ function getRuntimeDefaultIp() {
 
 const fallbackDefaultIp: string = getRuntimeDefaultIp();
 
-const defaultJwt: string | null = null;
-
 export function normalizeBaseUrl(url: string): string {
   return (url ?? "").trim().replace(/\/+$/, "");
-}
-
-function debugJwtStorage(label: string, map: Record<string, string>): void {
-  console.log("===== JWT STORAGE DEBUG =====");
-  console.log("Context:", label);
-
-  const keys = Object.keys(map);
-
-  if (keys.length === 0) {
-    console.log("jwtByServer EMPTY");
-  } else {
-    keys.forEach((key) => {
-      console.log("server:", key, "token exists:", !!map[key]);
-    });
-  }
-
-  console.log("=============================");
 }
 
 export async function loadJwtByServer(): Promise<JwtByServer> {
@@ -213,6 +208,7 @@ function buildApis(params: {
     },
   };
 }
+
 function isRedirectStatus(status?: number): boolean {
   return (
     status === 301 ||
@@ -222,6 +218,7 @@ function isRedirectStatus(status?: number): boolean {
     status === 308
   );
 }
+
 export async function fetchAppSettings(
   baseUrl: string,
   jwt?: string | null,
@@ -243,27 +240,21 @@ export async function fetchAppSettings(
     },
   });
 }
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
-async function ensureOidcSessionFresh(baseUrl: string): Promise<void> {
+async function fetchAlive(baseUrl: string): Promise<Response> {
   const base = normalizeBaseUrl(baseUrl);
 
-  for (let i = 0; i < 4; i += 1) {
-    const response = await fetchAppSettings(base, null);
-
-    if (isRedirectStatus(response.status) || response.type === "opaqueredirect") {
-      return;
-    }
-
-    if (!response.ok) {
-      return;
-    }
-
-    await sleep(700);
-  }
+  return fetch(`${base}/api/alive`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "include",
+    redirect: "manual",
+    headers: {
+      Accept: "application/json",
+    },
+  });
 }
+
 function normalizeAuthenticationMethod(value: unknown): AuthMethod {
   if (typeof value !== "string") return "unknown";
 
@@ -397,7 +388,10 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       authenticationMethod = "oidc";
     }
 
-    console.log("[DETECT SERVER] _AuthenticationMethod:", authenticationMethodRaw);
+    console.log(
+      "[DETECT SERVER] _AuthenticationMethod:",
+      authenticationMethodRaw,
+    );
     console.log("[DETECT SERVER] authenticationMethod:", authenticationMethod);
 
     return {
@@ -406,7 +400,7 @@ async function detectServerAndMode(baseUrl: string): Promise<{
       isBaseMode: authenticated === false,
       authenticated,
     };
-  } catch (error) {
+  } catch {
     return {
       isPointingToServer: false,
       authenticationMethod: "unknown",
@@ -427,7 +421,6 @@ function isJwtStillValid(jwt: string | null): boolean {
     return false;
   }
 }
-
 
 function computeLoggedIn(params: {
   authenticationMethod: AuthMethod;
@@ -488,36 +481,44 @@ export const initializeApi = createAsyncThunk(
 
     const jwt = (jwtByServer[ip] ?? defaultJwt) as string | null;
 
-  const {isPointingToServer,authenticationMethod, isBaseMode,authenticated, } = await detectServerAndMode(ip);
+    const {
+      isPointingToServer,
+      authenticationMethod,
+      isBaseMode,
+      authenticated,
+    } = await detectServerAndMode(ip);
+
+    const nextJwt = authenticationMethod === "oidc" ? null : jwt;
 
     const apis = buildApis({
       baseUrl: ip,
-      jwt,
+      jwt: nextJwt,
       authenticationMethod,
     });
 
-   const isLoggedIn = computeLoggedIn({
-          authenticationMethod,
-          jwt,
-          authenticated,
-        });
+    const isLoggedIn = computeLoggedIn({
+      authenticationMethod,
+      jwt: nextJwt,
+      authenticated,
+    });
 
-        if (authenticationMethod === "oidc") {
-  await ensureOidcSessionFresh(ip);
-}
     await AsyncStorage.setItem(ipKey, ip);
 
-    if (jwt) {
-      await AsyncStorage.setItem(jwtKey, jwt);
+    if (nextJwt) {
+      await AsyncStorage.setItem(jwtKey, nextJwt);
     } else {
       await AsyncStorage.removeItem(jwtKey);
+    }
+
+    if (authenticationMethod === "oidc") {
+      await setJwtForServer(ip, null);
     }
 
     return {
       ...apis,
       authenticationMethod,
       ip,
-      jwt,
+      jwt: nextJwt,
       isLoggedIn,
       isPointingToServer,
       isBaseMode,
@@ -532,7 +533,7 @@ export const setIpAsync = createAsyncThunk(
   "api/setIpAsync",
   async (rawIp: string, thunkAPI) => {
     const ip = normalizeBaseUrl(rawIp);
-    const jwt = await getJwtForServer(ip);
+    let jwt = await getJwtForServer(ip);
 
     const {
       isPointingToServer,
@@ -540,6 +541,11 @@ export const setIpAsync = createAsyncThunk(
       isBaseMode,
       authenticated,
     } = await detectServerAndMode(ip);
+
+    if (authenticationMethod === "oidc") {
+      jwt = null;
+      await setJwtForServer(ip, null);
+    }
 
     await AsyncStorage.setItem(ipKey, ip);
 
@@ -568,26 +574,7 @@ export const setIpAsync = createAsyncThunk(
     };
   },
 );
-async function removeJwtForServer(ip: string) {
-  const normalizedIp = (ip ?? "")
-    .trim()
-    .toLowerCase();
 
-  const raw = await AsyncStorage.getItem(jwtByServerKey);
-
-  if (!raw) {
-    return;
-  }
-
-  const parsed = JSON.parse(raw) as Record<string, string>;
-
-  delete parsed[normalizedIp];
-
-  await AsyncStorage.setItem(
-    jwtByServerKey,
-    JSON.stringify(parsed),
-  );
-}
 export const refreshServerStatus = createAsyncThunk(
   "api/refreshServerStatus",
   async (_, thunkAPI) => {
@@ -596,43 +583,40 @@ export const refreshServerStatus = createAsyncThunk(
     if (state.api.isSwitchingServer) {
       return {
         isPointingToServer: state.api.isPointingToServer,
-        authenticationMethod: state.api.authenticationMethod,
-        isBaseMode: state.api.isBaseMode,
         skipped: true,
       };
     }
 
-    const ip = state.api.ip;
-    const storedJwt = await getJwtForServer(ip);
+    const ip = normalizeBaseUrl(state.api.ip);
 
-    const {
-      isPointingToServer,
-      authenticationMethod,
-      isBaseMode,
-      authenticated,
-    } = await detectServerAndMode(ip);
+    if (!ip) {
+      return {
+        isPointingToServer: false,
+        skipped: false,
+      };
+    }
 
-    const jwt = authenticationMethod === "jwt" ? storedJwt : null;
+    try {
+      const response = await fetchAlive(ip);
 
-    thunkAPI.dispatch(
-      setConnectionLocal({
-        ip,
-        jwt,
-        isPointingToServer,
-        authenticationMethod,
-        isBaseMode,
-        authenticated,
-      }),
-    );
-
-    return {
-      isPointingToServer,
-      authenticationMethod,
-      isBaseMode,
-      skipped: false,
-    };
+      return {
+        isPointingToServer:
+          response.ok ||
+          response.status === 401 ||
+          response.status === 403 ||
+          isRedirectStatus(response.status) ||
+          response.type === "opaqueredirect",
+        skipped: false,
+      };
+    } catch {
+      return {
+        isPointingToServer: false,
+        skipped: false,
+      };
+    }
   },
 );
+
 export function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
 
@@ -677,6 +661,7 @@ export async function loginWithBasic(params: {
     bodyText,
   };
 }
+
 export const login = createAsyncThunk(
   "api/login",
   async (payload: { jwt: string; baseUrl?: string }, thunkAPI) => {
@@ -695,13 +680,13 @@ export const login = createAsyncThunk(
         authenticationMethod: state.api.authenticationMethod,
         isBaseMode: false,
         authenticated: true,
-        
       }),
     );
 
     await thunkAPI.dispatch(initializeMenu());
   },
 );
+
 async function logoutFromServer(params: {
   baseUrl: string;
   jwt: string | null;
@@ -721,6 +706,7 @@ async function logoutFromServer(params: {
     credentials: "include",
   });
 }
+
 export const logoutAsync = createAsyncThunk(
   "api/logoutAsync",
   async (_, thunkAPI) => {
@@ -736,7 +722,7 @@ export const logoutAsync = createAsyncThunk(
     thunkAPI.dispatch(setIsLoggingOut(true));
 
     try {
-     if (currentIp && jwt && !isOidc) {
+      if (currentIp && jwt && !isOidc) {
         try {
           await logoutFromServer({
             baseUrl: currentIp,
@@ -774,9 +760,9 @@ type SwitchServerArg =
     };
 
 export const switchServer = createAsyncThunk(
-      "api/switchServer",
-      async (arg: SwitchServerArg, thunkAPI) => {
-        thunkAPI.dispatch(setReady(false));
+  "api/switchServer",
+  async (arg: SwitchServerArg, thunkAPI) => {
+    thunkAPI.dispatch(setReady(false));
 
     try {
       const rawUrl = typeof arg === "string" ? arg : arg.url;
@@ -796,16 +782,17 @@ export const switchServer = createAsyncThunk(
         nextJwt = await getJwtForServer(newUrl);
       }
 
-        const {
+      const {
         isPointingToServer,
         authenticationMethod,
         isBaseMode,
         authenticated,
       } = await detectServerAndMode(newUrl);
-     if (authenticationMethod === "oidc") {
-  nextJwt = null;
-  await setJwtForServer(newUrl, null);
-}
+
+      if (authenticationMethod === "oidc") {
+        nextJwt = null;
+        await setJwtForServer(newUrl, null);
+      }
 
       await AsyncStorage.setItem(ipKey, newUrl);
 
@@ -817,17 +804,18 @@ export const switchServer = createAsyncThunk(
 
       thunkAPI.dispatch(clearMenu());
 
-    thunkAPI.dispatch(
-      setConnectionLocal({
-        ip: newUrl,
-        jwt: nextJwt,
-        isPointingToServer,
-        authenticationMethod,
-        isBaseMode,
-        authenticated,
-      }),
-    );
-          const nextLoggedIn = computeLoggedIn({
+      thunkAPI.dispatch(
+        setConnectionLocal({
+          ip: newUrl,
+          jwt: nextJwt,
+          isPointingToServer,
+          authenticationMethod,
+          isBaseMode,
+          authenticated,
+        }),
+      );
+
+      const nextLoggedIn = computeLoggedIn({
         authenticationMethod,
         jwt: nextJwt,
         authenticated,
@@ -867,17 +855,17 @@ export const apiSlice = createSlice({
   name: "api",
   initialState,
   reducers: {
-  setConnectionLocal: (
-    state,
-    action: PayloadAction<{
-      ip: string;
-      jwt: string | null;
-      isPointingToServer: boolean;
-      authenticationMethod: AuthMethod;
-      isBaseMode: boolean;
-      authenticated: boolean;
-    }>,
-) => {
+    setConnectionLocal: (
+      state,
+      action: PayloadAction<{
+        ip: string;
+        jwt: string | null;
+        isPointingToServer: boolean;
+        authenticationMethod: AuthMethod;
+        isBaseMode: boolean;
+        authenticated: boolean;
+      }>,
+    ) => {
       state.ip = action.payload.ip;
       state.isPointingToServer = action.payload.isPointingToServer;
       state.authenticationMethod = action.payload.authenticationMethod;
@@ -972,6 +960,10 @@ export const apiSlice = createSlice({
 
     builder.addCase(switchServer.rejected, (state) => {
       state.isSwitchingServer = false;
+    });
+
+    builder.addCase(refreshServerStatus.fulfilled, (state, action) => {
+      state.isPointingToServer = action.payload.isPointingToServer;
     });
   },
 });

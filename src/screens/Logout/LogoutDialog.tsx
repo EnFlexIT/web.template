@@ -12,6 +12,8 @@ import { useAppSelector } from "../../hooks/useAppSelector";
 import {
   logoutAsync,
   selectIp,
+  selectIsLoggedIn,
+  selectAuthenticationMethod,
   setJwtForServer,
   normalizeBaseUrl,
   getJwtForServer,
@@ -22,11 +24,6 @@ import {
 import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
 import { setServerStatus } from "../../redux/slices/serverStatusSlice";
-import {
-  checkServerAuthenticated,
-  checkServerReachable,
-} from "../login/serverCheck";
-import { dispatchServerStatusRefresh } from "../../util/serverStatusRefresh";
 
 type Props = {
   visible: boolean;
@@ -45,6 +42,8 @@ type LogoutServerItem = {
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
   const currentIp = useAppSelector(selectIp);
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const serversState = useAppSelector(selectServers);
   const { t } = useTranslation(["Login"]);
 
@@ -56,7 +55,9 @@ export function LogoutDialog({ visible, onClose }: Props) {
   const servers = serversState?.servers ?? [];
   const currentNormalizedIp = normalizeBaseUrl(currentIp);
 
-  function markServerLoggedOut(serverId: string) {
+  function markServerLoggedOut(serverId: string | null | undefined) {
+    if (!serverId) return;
+
     dispatch(
       setServerStatus({
         serverId,
@@ -87,56 +88,70 @@ export function LogoutDialog({ visible, onClose }: Props) {
     }
 
     let mounted = true;
+
     setServersLoaded(false);
 
     (async () => {
-      const entries = await Promise.all(
-        servers.map(async (server) => {
+      const currentServer = servers.find(
+        (server) => normalizeBaseUrl(server.baseUrl) === currentNormalizedIp,
+      );
+
+      const result: LogoutServerItem[] = [];
+
+      if (isLoggedIn && currentNormalizedIp) {
+        result.push({
+          id: currentServer?.id ?? "local",
+          name: currentServer?.name?.trim() || currentServer?.baseUrl || currentIp,
+          baseUrl: currentServer?.baseUrl ?? currentIp,
+          normalizedBaseUrl: currentNormalizedIp,
+          isCurrent: true,
+          authenticationMethod,
+        });
+      }
+
+      const otherServers = await Promise.all(
+        servers.map(async (server): Promise<LogoutServerItem | null> => {
           const normalized = normalizeBaseUrl(server.baseUrl);
 
-          try {
-            const reachable = await checkServerReachable(server.baseUrl);
-            if (!reachable.ok) return null;
-
-            const jwt = await getJwtForServer(server.baseUrl);
-            const info = await checkServerAuthenticated(server.baseUrl, jwt);
-
-            if (jwt && !info.authenticated) {
-              await setJwtForServer(server.baseUrl, null);
-            }
-
-            if (!info.authenticated) {
-              return null;
-            }
-
-            return {
-              id: server.id,
-              name: server.name?.trim() || server.baseUrl,
-              baseUrl: server.baseUrl,
-              normalizedBaseUrl: normalized,
-              isCurrent: normalized === currentNormalizedIp,
-              authenticationMethod: info.authenticationMethod,
-            } satisfies LogoutServerItem;
-          } catch {
+          if (normalized === currentNormalizedIp) {
             return null;
           }
+
+          const jwt = await getJwtForServer(server.baseUrl);
+
+          if (!jwt) {
+            return null;
+          }
+
+          return {
+            id: server.id,
+            name: server.name?.trim() || server.baseUrl,
+            baseUrl: server.baseUrl,
+            normalizedBaseUrl: normalized,
+            isCurrent: false,
+            authenticationMethod: "jwt",
+          };
         }),
       );
 
-      const allLoggedInServers = entries
-        .filter((server): server is LogoutServerItem => server !== null)
-        .sort((a, b) => {
-          if (a.isCurrent) return -1;
-          if (b.isCurrent) return 1;
-          return a.name.localeCompare(b.name);
-        });
+      result.push(
+        ...otherServers.filter(
+          (server): server is LogoutServerItem => server !== null,
+        ),
+      );
+
+      result.sort((a, b) => {
+        if (a.isCurrent) return -1;
+        if (b.isCurrent) return 1;
+        return a.name.localeCompare(b.name);
+      });
 
       if (!mounted) return;
 
-      setLoggedInServers(allLoggedInServers);
+      setLoggedInServers(result);
 
-      const currentServer = allLoggedInServers.find((server) => server.isCurrent);
-      setSelectedServerIds(currentServer ? [currentServer.id] : []);
+      const currentItem = result.find((server) => server.isCurrent);
+      setSelectedServerIds(currentItem ? [currentItem.id] : []);
 
       setServersLoaded(true);
     })();
@@ -144,15 +159,22 @@ export function LogoutDialog({ visible, onClose }: Props) {
     return () => {
       mounted = false;
     };
-  }, [visible, servers, currentNormalizedIp]);
+  }, [
+    visible,
+    servers,
+    currentIp,
+    currentNormalizedIp,
+    isLoggedIn,
+    authenticationMethod,
+  ]);
 
   const hasMultipleLoggedInServers = loggedInServers.length > 1;
 
-const serversToRender = useMemo<LogoutServerItem[]>(() => {
-  if (!hasMultipleLoggedInServers) return [];
+  const serversToRender = useMemo<LogoutServerItem[]>(() => {
+    if (!hasMultipleLoggedInServers) return [];
 
-  return loggedInServers;
-}, [hasMultipleLoggedInServers, loggedInServers]);
+    return loggedInServers;
+  }, [hasMultipleLoggedInServers, loggedInServers]);
 
   const allSelected =
     serversToRender.length > 0 &&
@@ -206,7 +228,6 @@ const serversToRender = useMemo<LogoutServerItem[]>(() => {
         await dispatch(logoutAsync()).unwrap();
 
         markServerLoggedOut(currentServer?.id ?? "local");
-        dispatchServerStatusRefresh();
 
         handleClose();
         return;
@@ -239,7 +260,6 @@ const serversToRender = useMemo<LogoutServerItem[]>(() => {
         dispatch(setIsLogoutDialogOpen(false));
       }
 
-      dispatchServerStatusRefresh();
       handleClose();
     } finally {
       setLoading(false);

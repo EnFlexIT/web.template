@@ -33,11 +33,9 @@ function isRedirectStatus(status?: number): boolean {
 function isReachableStatus(status?: number): boolean {
   if (status == null) return false;
 
-  // Wichtig:
-  // 303 ist bei OIDC kein normaler "OK"-Zustand,
-  // sondern ein Redirect zum Login.
-  if (isRedirectStatus(status)) return false;
-
+  // Für /api/alive gilt:
+  // Auch 401/403/303 zeigen, dass der Server technisch erreichbar ist.
+  // Auth wird separat geprüft.
   return status >= 200 && status < 500;
 }
 
@@ -131,28 +129,22 @@ export async function checkServerReachable(
     return lastReachableResult;
   }
 
-  const urls = [`${base}/api/alive`, `${base}/api/app/settings/get`];
+  try {
+    const res = await fetchReachable(
+      `${base}/api/alive`,
+      jwt,
+      authenticationMethod,
+    );
 
-  for (const url of urls) {
-    try {
-      const res = await fetchReachable(url, jwt, authenticationMethod);
-
-      // OIDC Redirect bedeutet:
-      // Server ist technisch erreichbar, aber Auth ist nicht gültig.
-      // Wichtig: Das darf nicht als normaler Auth-Erfolg behandelt werden.
-      if (isRedirectStatus(res.status) || res.type === "opaqueredirect") {
-        return setReachableCache(cacheKey, {
-          ok: true,
-         
-        });
-      }
-
-      if (isReachableStatus(res.status)) {
-        return setReachableCache(cacheKey, { ok: true });
-      }
-    } catch {
-      // Der nächste Fallback-Endpunkt wird geprüft.
+    if (
+      isReachableStatus(res.status) ||
+      isRedirectStatus(res.status) ||
+      res.type === "opaqueredirect"
+    ) {
+      return setReachableCache(cacheKey, { ok: true });
     }
+  } catch {
+    // Wird unten als nicht erreichbar zurückgegeben.
   }
 
   return setReachableCache(cacheKey, {
@@ -197,6 +189,11 @@ export function parseServerSettings(
     (entry: any) => entry?.key === "_session.pathParameter",
   );
 
+  const hasOidcParameter = entries.some((entry: any) => {
+    const key = String(entry?.key ?? "").toLowerCase();
+    return key.startsWith("_oidc.");
+  });
+
   const authenticated =
     typeof authenticatedRaw === "boolean"
       ? authenticatedRaw
@@ -208,7 +205,13 @@ export function parseServerSettings(
     authenticationMethod = "oidc";
   } else if (authCfg === "JwtSingleUserSecurityHandler") {
     authenticationMethod = "jwt";
-  } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
+  } else if (
+    authenticatedRaw !== undefined ||
+    oidcBearer ||
+    hasSessionId ||
+    hasSessionPathParameter ||
+    hasOidcParameter
+  ) {
     authenticationMethod = "oidc";
   } else if (jwt) {
     authenticationMethod = "jwt";
@@ -272,10 +275,6 @@ export async function checkServerAuthenticated(
       headers,
     });
 
-    // Wichtig:
-    // 303 / opaqueredirect bedeutet OIDC-Login-Redirect.
-    // Das ist KEIN technischer Fehler, aber auch kein eingeloggter Zustand.
-    // Hier kein Logout auslösen, nur Auth-Status zurückgeben.
     if (isRedirectStatus(res.status) || res.type === "opaqueredirect") {
       return setAuthCache(cacheKey, {
         authenticated: false,
