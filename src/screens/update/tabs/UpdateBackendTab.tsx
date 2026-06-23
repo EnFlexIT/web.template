@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
@@ -38,8 +38,6 @@ import {
   SelectableList,
 } from "../../../components/ui-elements/SelectableList";
 import { H3 } from "../../../components/stylistic/H3";
-import { ThemedView } from "../../../components/themed/ThemedView";
-import { useUnistyles } from "react-native-unistyles";
 
 const API_PREFIX = "/api";
 const MAX_FEATURES_DRAWN = 5;
@@ -109,17 +107,44 @@ function parseVersionObject(version: any): ApiVersion {
   };
 }
 
-async function fetchJsonNoCache(params: { url: string; jwt: string | null }) {
+function isRedirectStatus(status?: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
+
+async function fetchJsonNoCache(params: {
+  url: string;
+  jwt: string | null;
+  authenticationMethod: string;
+}) {
   try {
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+
+    if (params.authenticationMethod === "jwt" && params.jwt) {
+      headers.Authorization = `Bearer ${params.jwt}`;
+    }
+
     const res = await fetch(params.url, {
       method: "GET",
-      cache: "no-store" as any,
-      headers: params.jwt
-        ? {
-            Authorization: `Bearer ${params.jwt}`,
-          }
-        : undefined,
+      cache: "no-store",
+      credentials: "include",
+      redirect: "manual",
+      headers,
     });
+
+    if (isRedirectStatus(res.status) || res.type === "opaqueredirect") {
+      return {
+        __status: res.status || 303,
+        __redirect: true,
+      };
+    }
 
     if (!res.ok) {
       return { __status: res.status };
@@ -220,7 +245,6 @@ export function UpdateBackendTab() {
   const ip = api.ip;
   const jwt = api.jwt;
 
-  const featureIntervalRef = useRef<any>(null);
   const reconnectTimerRef = useRef<any>(null);
 
   const [features, setFeatures] = useState<ParsedComponent[]>([]);
@@ -300,6 +324,7 @@ export function UpdateBackendTab() {
         const dataFeatures = await fetchJsonNoCache({
           url: urlFeatures,
           jwt,
+          authenticationMethod,
         });
 
         if (dataFeatures === null) {
@@ -314,12 +339,14 @@ export function UpdateBackendTab() {
           const st = Number((dataFeatures as any).__status);
 
           setListStatus(
-            st === 401
-              ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
-              : t("serverWeb.statusTexts.httpError", {
-                  status: st,
-                  defaultValue: `HTTP ${st}`,
-                }),
+            (dataFeatures as any).__redirect
+              ? t("serverWeb.statusTexts.unauthorized", "OIDC redirect")
+              : st === 401
+                ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
+                : t("serverWeb.statusTexts.httpError", {
+                    status: st,
+                    defaultValue: `HTTP ${st}`,
+                  }),
           );
 
           resetLists();
@@ -358,6 +385,7 @@ export function UpdateBackendTab() {
         const dataBundles = await fetchJsonNoCache({
           url: urlBundles,
           jwt,
+          authenticationMethod,
         });
 
         if (dataBundles === null) {
@@ -373,12 +401,14 @@ export function UpdateBackendTab() {
           const st = Number((dataBundles as any).__status);
 
           setListStatus(
-            st === 401
-              ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
-              : t("serverWeb.statusTexts.httpError", {
-                  status: st,
-                  defaultValue: `HTTP ${st}`,
-                }),
+            (dataBundles as any).__redirect
+              ? t("serverWeb.statusTexts.unauthorized", "OIDC redirect")
+              : st === 401
+                ? t("serverWeb.statusTexts.unauthorized", "401 (Unauthorized)")
+                : t("serverWeb.statusTexts.httpError", {
+                    status: st,
+                    defaultValue: `HTTP ${st}`,
+                  }),
           );
 
           setBundles([]);
@@ -408,7 +438,14 @@ export function UpdateBackendTab() {
         setIsChecking(false);
       }
     },
-    [ip, jwt, selectedFeatureId, t, resetLists],
+    [
+      ip,
+      jwt,
+      authenticationMethod,
+      selectedFeatureId,
+      t,
+      resetLists,
+    ],
   );
 
   const checkBackendNow = useCallback(async () => {
@@ -424,10 +461,12 @@ export function UpdateBackendTab() {
           force: true,
         }),
       ).unwrap();
+
+      await loadFeaturesAndBundles();
     } finally {
       setIsChecking(false);
     }
-  }, [dispatch, ip, isChecking]);
+  }, [dispatch, ip, isChecking, loadFeaturesAndBundles]);
 
   const installBackendUpdate = useCallback(async () => {
     if (!ip || isChecking) return;
@@ -565,31 +604,15 @@ export function UpdateBackendTab() {
   ]);
 
   useEffect(() => {
-    loadFeaturesAndBundles();
+    void loadFeaturesAndBundles();
 
-    dispatch(
+    void dispatch(
       loadUpdateSettingsIfNeeded({
         force: false,
         maxAgeMs: 30 * 60 * 1000,
       }),
     );
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (featureIntervalRef.current) {
-      clearInterval(featureIntervalRef.current);
-    }
-
-    featureIntervalRef.current = setInterval(() => {
-      loadFeaturesAndBundles();
-    }, 5 * 60 * 1000);
-
-    return () => {
-      if (featureIntervalRef.current) {
-        clearInterval(featureIntervalRef.current);
-      }
-    };
-  }, [loadFeaturesAndBundles]);
+  }, [dispatch, loadFeaturesAndBundles]);
 
   useEffect(() => {
     return () => {
@@ -647,7 +670,7 @@ export function UpdateBackendTab() {
       <View style={{ backgroundColor: theme.colors.card, padding: 12, gap: 14 }}>
         <H3>{t("backend.title", "Backend")}</H3>
 
-        <View style={s.infoTable} >
+        <View style={s.infoTable}>
           <InfoRow
             label={t("backend.fields.status", "Status")}
             value={backendStatus}
@@ -706,7 +729,7 @@ export function UpdateBackendTab() {
             onChange={(id) => {
               setSelectedFeatureId(id);
               setSelectedBundleId("");
-              loadFeaturesAndBundles({ featureId: id });
+              void loadFeaturesAndBundles({ featureId: id });
             }}
             maxHeight={140}
             minVisibleRows={5}
@@ -738,14 +761,9 @@ export function UpdateBackendTab() {
 }
 
 const s = StyleSheet.create({
-  container: {
-    gap: 14,
-  },
-
   infoTable: {
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.12)",
-    
     overflow: "hidden",
   },
 

@@ -164,7 +164,10 @@ function makeRestConf(params: {
   return {
     isJsonMime,
     basePath: `${baseUrl}/api`,
-    baseOptions: headers ? { headers } : undefined,
+    baseOptions: {
+      withCredentials: true,
+      ...(headers ? { headers } : {}),
+    },
   };
 }
 
@@ -184,7 +187,10 @@ function makeDynamicConf(params: {
   return {
     isJsonMime,
     basePath: `${baseUrl}/dc`,
-    baseOptions: headers ? { headers } : undefined,
+    baseOptions: {
+      withCredentials: true,
+      ...(headers ? { headers } : {}),
+    },
   };
 }
 

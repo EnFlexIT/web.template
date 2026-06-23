@@ -1,8 +1,14 @@
-import axios, { type AxiosError, type AxiosInstance } from "axios";
+import axios, {
+  type AxiosError,
+  type AxiosInstance,
+  type InternalAxiosRequestConfig,
+} from "axios";
+
 import { store } from "../store";
 import { logoutLocal, selectAuthenticationMethod } from "./apiSlice";
 import { clearMenu } from "./menuSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
+
 let installed = false;
 let inFlightLogout = false;
 
@@ -49,7 +55,7 @@ function doLocalLogoutOnly(reason: "401" | "renew-401") {
   inFlightLogout = true;
 
   store.dispatch(logoutLocal());
-store.dispatch(clearMenu());
+  store.dispatch(clearMenu());
 
   setTimeout(() => {
     inFlightLogout = false;
@@ -59,6 +65,15 @@ store.dispatch(clearMenu());
 }
 
 function attach(instance: AxiosInstance) {
+  instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    // Wichtig für OIDC:
+    // Axios muss die AWB_SESSIONID-Cookie mitsenden.
+    // JWT funktioniert über Authorization, OIDC über Cookie.
+    config.withCredentials = true;
+
+    return config;
+  });
+
   instance.interceptors.response.use(
     (res) => res,
     (err: AxiosError) => {
@@ -71,46 +86,33 @@ function attach(instance: AxiosInstance) {
       const authMethod = getAuthMethod();
       const isOidc = authMethod === "oidc" || authMethod === "unknown";
 
-      /*
-       * Network Error:
-       * Kein Logout, kein Redirect, kein Popup.
-       */
+      // Network Error:
+      // Kein Logout, kein Redirect, kein Popup.
       if (isNetworkError(err)) {
         return Promise.reject(err);
       }
 
-      /*
-       * Soft Endpoints:
-       * Diese Checks dürfen niemals Logout auslösen.
-       */
+      // Soft Endpoints:
+      // Diese Checks dürfen niemals Logout auslösen.
       if (isSoftEndpoint(url)) {
         return Promise.reject(err);
       }
 
-      /*
-       * OIDC:
-       * Aktuell gibt es noch keinen echten OIDC-Logout.
-      
-       * Sonst fliegt die App direkt nach erfolgreichem Login wieder raus.
-       */
+      // OIDC:
+      // 401 darf aktuell keinen lokalen Logout auslösen.
+      // Sonst fliegt die App nach erfolgreichem Login wieder raus.
       if (status === 401 && isOidc) {
         console.log("[AUTH INTERCEPTOR] Ignore OIDC 401:", url);
         return Promise.reject(err);
       }
 
-      /*
-       * JWT Renew/Login:
-       * Nur bei Basic/JWT darf 401 lokalen Logout machen.
-       */
+      // JWT Renew/Login:
       if (status === 401 && isRenewLoginEndpoint(url)) {
         doLocalLogoutOnly("renew-401");
         return Promise.reject(err);
       }
 
-      /*
-       * JWT allgemein:
-       * Nur Nicht-OIDC darf bei 401 lokalen Logout machen.
-       */
+      // JWT allgemein:
       if (status === 401 && !isOidc) {
         doLocalLogoutOnly("401");
         return Promise.reject(err);
