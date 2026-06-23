@@ -41,6 +41,7 @@ import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./components/Footer";
+import { checkAlive } from "./redux/slices/connectivitySlice";
 
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
@@ -195,7 +196,44 @@ function RootStack() {
       dispatch(setActiveMenuId(targetId));
     }
   }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
+useEffect(() => {
+  if (isLoading) return;
 
+  let active = true;
+
+  const runCheck = async () => {
+    if (!active) return;
+
+    try {
+      await dispatch(checkAlive({ silent: true })).unwrap();
+    } catch {
+      // absichtlich leer: OfflineOverlay liest den Redux-State
+    }
+  };
+
+  void runCheck();
+
+  const intervalId = setInterval(() => {
+    void runCheck();
+  }, 40000);
+
+  const onFocus = () => {
+    void runCheck();
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", onFocus);
+  }
+
+  return () => {
+    active = false;
+    clearInterval(intervalId);
+
+    if (typeof window !== "undefined") {
+      window.removeEventListener("focus", onFocus);
+    }
+  };
+}, [dispatch, isLoading]);
   const navigationMenu =
     menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 

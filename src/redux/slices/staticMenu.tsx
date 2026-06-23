@@ -12,7 +12,7 @@ import { NotificationsScreen } from "../../screens/Notification/NotificationsScr
 import type { AuthMethod } from "../../redux/slices/apiSlice";
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
-
+import { AppSettingsFileUploadScreen } from "../../screens/settings/AppSettingsFileUploadScreen";
 // Logic
 import { isMenuEnabled } from "./featureFlags";
 import { withAutoTabs } from "../../components/config/tabAuto";
@@ -100,6 +100,12 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
       menuID: 3011,
       parentID: 3003,
       Screen: DevHomeScreen,
+    },
+    {
+      caption: "settingsFileUpload",
+      menuID: 3024,
+      parentID: 3021,
+      Screen: AppSettingsFileUploadScreen,
     },
   ];
 

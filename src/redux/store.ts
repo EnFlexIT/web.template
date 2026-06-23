@@ -17,6 +17,8 @@ import dataAnalysisSlice from "./slices/dataAnalysisSlice";
 import updateReducer from "./slices/updateSlice";
 import sessionTimeReducer from "./slices/sessionTimeSlice";
 import seversStatusReducer from "./slices/serverStatusSlice";
+import appSettingsFileUploadReducer from "./slices/appSettingsFileUploadSlice";
+
 export const store = configureStore({
   reducer: {
     language: languageReducer,
@@ -37,6 +39,7 @@ export const store = configureStore({
     update: updateReducer,
     sessionTime: sessionTimeReducer,
     serverStatus: seversStatusReducer,
+    appSettingsFileUpload: appSettingsFileUploadReducer,
   },
 });
 

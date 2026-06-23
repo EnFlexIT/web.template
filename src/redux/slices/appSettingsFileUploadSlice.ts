@@ -1,6 +1,7 @@
 // redux/slices/appSettingsFileUploadSlice.ts
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import type { AuthMethod } from "./apiSlice";
 
 type MessageType = "INFO" | "WARNING" | "ERROR";
 
@@ -25,6 +26,7 @@ const initialState: UploadState = {
 type UploadArgs = {
   baseUrl: string;
   jwt?: string | null;
+  authenticationMethod: AuthMethod;
   file: {
     uri?: string;
     name: string;
@@ -34,13 +36,26 @@ type UploadArgs = {
   performative: string;
 };
 
+function isRedirectStatus(status?: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
+
 export const uploadAppSettingsFile = createAsyncThunk<
   UploadMessage,
   UploadArgs,
   { rejectValue: string }
 >(
   "appSettingsFileUpload/upload",
-  async ({ baseUrl, jwt, file, performative }, { rejectWithValue }) => {
+  async (
+    { baseUrl, jwt, authenticationMethod, file, performative },
+    { rejectWithValue },
+  ) => {
     if (!performative?.trim()) {
       return rejectWithValue("Performative fehlt.");
     }
@@ -57,29 +72,53 @@ export const uploadAppSettingsFile = createAsyncThunk<
       } as any);
     }
 
+    const headers: Record<string, string> = {
+      xPerformative: performative,
+    };
+
+    if (authenticationMethod === "jwt" && jwt) {
+      headers.Authorization = `Bearer ${jwt}`;
+    }
+
     try {
       const response = await fetch(`${baseUrl}/api/app/settings/file/upload`, {
         method: "POST",
-        headers: {
-          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-          xPerformative: performative,
-        },
+        credentials: "include",
+        redirect: "manual",
+        headers,
         body: formData,
       });
 
-      const data = await response.json();
+      if (isRedirectStatus(response.status) || response.type === "opaqueredirect") {
+        return rejectWithValue("OIDC-Session ist nicht authentifiziert.");
+      }
+
+      let data: UploadMessage | null = null;
+
+      try {
+        data = (await response.json()) as UploadMessage;
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
         return rejectWithValue(data?.message || "Upload fehlgeschlagen.");
       }
 
       if (data?.messageType === "ERROR") {
-        return rejectWithValue(data?.message || "Upload wurde vom Server abgelehnt.");
+        return rejectWithValue(
+          data?.message || "Upload wurde vom Server abgelehnt.",
+        );
       }
 
-      return data;
+      return data ?? {
+        messageType: "INFO",
+        message: "Upload erfolgreich.",
+      };
     } catch (error: any) {
-      return rejectWithValue(error?.message || "Upload konnte nicht ausgeführt werden.");
+      return rejectWithValue(
+        error?.message || "Upload konnte nicht ausgeführt werden.",
+      );
     }
   },
 );
@@ -88,15 +127,15 @@ const appSettingsFileUploadSlice = createSlice({
   name: "appSettingsFileUpload",
   initialState,
   reducers: {
-    resetUploadState: state => {
+    resetUploadState: (state) => {
       state.loading = false;
       state.error = null;
       state.result = null;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
-      .addCase(uploadAppSettingsFile.pending, state => {
+      .addCase(uploadAppSettingsFile.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.result = null;
@@ -113,4 +152,5 @@ const appSettingsFileUploadSlice = createSlice({
 });
 
 export const { resetUploadState } = appSettingsFileUploadSlice.actions;
+
 export default appSettingsFileUploadSlice.reducer;
