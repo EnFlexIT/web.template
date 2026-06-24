@@ -103,29 +103,20 @@ function ColorSwitcher() {
 
 export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const dispatch = useAppDispatch();
-
+  const isdev = true; // typeof window !== "undefined" && window.location.origin.includes("localhost:8081");
   const jwt = useAppSelector(selectJwt);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const sessionTime = useAppSelector(selectSessionTime);
-
   const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
   const updateState = useAppSelector((state) => state.update);
-
   const isWeb = Platform.OS === "web";
-  const isOidc =
-    authenticationMethod === "oidc" || authenticationMethod === "unknown";
-      const isdev = false; // typeof window !== "undefined" && window.location.origin.includes("localhost:8081");
-
-  const showLogout =
-    isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
-
+  const isOidc =authenticationMethod === "oidc" || authenticationMethod === "unknown";
+  const showLogout = isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const [now, setNow] = useState(Date.now());
-
   const sessionWrapRef = useRef<View>(null);
   const updateWrapRef = useRef<View>(null);
-
   const suppressSessionPopupUntilRef = useRef<number>(0);
 
   useEffect(() => {
@@ -288,7 +279,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
               {isdev ? (
                 <Text style={styles.debugTimerText}>
-                  RT: {effectiveTimeText} | S: {sessionTimeText} | T:{" "}
+                 S: {sessionTimeText} | T:{" "}
                   {tokenTimeText}
                 </Text>
               ) : null}

@@ -696,21 +696,33 @@ export const login = createAsyncThunk(
 async function logoutFromServer(params: {
   baseUrl: string;
   jwt: string | null;
+  authenticationMethod: AuthMethod;
 }): Promise<void> {
   const baseUrl = normalizeBaseUrl(params.baseUrl);
 
-  if (!baseUrl || !params.jwt) {
+  if (!baseUrl) {
     return;
   }
 
-  await fetch(`${baseUrl}/api/user/logout`, {
+  const isJwt = params.authenticationMethod === "jwt";
+
+  const response = await fetch(`${baseUrl}/api/user/logout`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${params.jwt}`,
-      Accept: "application/json",
-    },
+    cache: "no-store",
     credentials: "include",
+    headers: {
+      Accept: "application/json",
+      ...(isJwt && params.jwt
+        ? {
+            Authorization: `Bearer ${params.jwt}`,
+          }
+        : {}),
+    },
   });
+
+  if (!response.ok && response.status !== 401 && response.status !== 403) {
+    throw new Error(`Server-Logout fehlgeschlagen: ${response.status}`);
+  }
 }
 
 export const logoutAsync = createAsyncThunk(
@@ -722,20 +734,21 @@ export const logoutAsync = createAsyncThunk(
     const jwt = state.api.jwt;
     const authenticationMethod = state.api.authenticationMethod;
 
-    const isOidc =
-      authenticationMethod === "oidc" || authenticationMethod === "unknown";
-
     thunkAPI.dispatch(setIsLoggingOut(true));
 
     try {
-      if (currentIp && jwt && !isOidc) {
+      // Wichtig:
+      // Server-Logout vor dem lokalen Logout ausführen,
+      // solange OIDC-Cookie bzw. JWT noch vorhanden sind.
+      if (currentIp) {
         try {
           await logoutFromServer({
             baseUrl: currentIp,
             jwt,
+            authenticationMethod,
           });
         } catch (error) {
-          console.warn("[LOGOUT] server logout failed", error);
+          console.warn("[LOGOUT] Server-Logout fehlgeschlagen", error);
         }
       }
 
