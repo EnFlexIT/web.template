@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// src/hooks/useOidcSessionTimerWeb.ts
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Platform } from "react-native";
 
 import { useAppDispatch } from "./useAppDispatch";
@@ -14,6 +22,8 @@ type Options = {
   onLogout: () => void;
 };
 
+const SESSION_TIME_SYNC_INTERVAL_MS = 15_000;
+
 function getRemainingMs(params: {
   expirationTime?: number | null;
   remainingTime?: number | null;
@@ -26,14 +36,17 @@ function getRemainingMs(params: {
     typeof params.lastCheckedAt === "number" &&
     Number.isFinite(params.lastCheckedAt)
   ) {
-    return params.remainingTime - (params.now - params.lastCheckedAt);
+    return Math.max(
+      0,
+      params.remainingTime - (params.now - params.lastCheckedAt),
+    );
   }
 
   if (
     typeof params.expirationTime === "number" &&
     Number.isFinite(params.expirationTime)
   ) {
-    return params.expirationTime - params.now;
+    return Math.max(0, params.expirationTime - params.now);
   }
 
   return null;
@@ -49,10 +62,12 @@ export function useOidcSessionTimerWeb({
 
   const [now, setNow] = useState(Date.now());
 
-  const lastLogoutAtRef = useRef<number>(0);
+  const lastLogoutAtRef = useRef(0);
 
   const sessionRemainingMs = useMemo(() => {
-    if (!sessionTime.lastCheckedAt) return null;
+    if (!sessionTime.lastCheckedAt) {
+      return null;
+    }
 
     return getRemainingMs({
       expirationTime: sessionTime.expirationTime,
@@ -68,7 +83,9 @@ export function useOidcSessionTimerWeb({
   ]);
 
   const tokenRemainingMs = useMemo(() => {
-    if (!sessionTime.lastCheckedAt) return null;
+    if (!sessionTime.lastCheckedAt) {
+      return null;
+    }
 
     return getRemainingMs({
       expirationTime: sessionTime.tokenExpirationTime,
@@ -98,22 +115,17 @@ export function useOidcSessionTimerWeb({
     if (Platform.OS !== "web") return;
 
     try {
-      await dispatch(loadSessionTime({ silent: true })).unwrap();
+      await dispatch(
+        loadSessionTime({ silent: true }),
+      ).unwrap();
     } catch {
-      // sessionTime darf keine automatische Logout-Entscheidung auslösen.
-      // Logout passiert ausschließlich über sessionRemainingMs.
+      // 303 oder Netzwerkfehler dürfen hier keinen Logout auslösen.
     }
   }, [dispatch, enabled]);
 
-  useEffect(() => {
-    if (!enabled) return;
-    if (Platform.OS !== "web") return;
-
-    // Beim Start nur sessionTime lesen.
-    // Wichtig: kein settings/get, damit die Session nicht künstlich verlängert wird.
-    void refreshSession();
-  }, [enabled, refreshSession]);
-
+  /*
+   * Lokale Anzeige jede Sekunde aktualisieren.
+   */
   useEffect(() => {
     if (!enabled) return;
     if (Platform.OS !== "web") return;
@@ -128,19 +140,63 @@ export function useOidcSessionTimerWeb({
     };
   }, [enabled]);
 
+  /*
+   * Serverzeiten regelmäßig synchronisieren.
+   *
+   * /api/user/sessionTime verlängert die UserSession nicht.
+   * Wenn ein normaler Benutzer-Request die Session serverseitig verlängert,
+   * wird die aktualisierte Zeit spätestens nach 15 Sekunden übernommen.
+   */
   useEffect(() => {
     if (!enabled) return;
     if (Platform.OS !== "web") return;
+    if (typeof window === "undefined") return;
 
-    // Logout nur über die echte Session-Zeit.
+    let active = true;
+    let requestRunning = false;
+
+    const syncSessionTime = async () => {
+      if (!active || requestRunning) return;
+
+      requestRunning = true;
+
+      try {
+        await refreshSession();
+      } finally {
+        requestRunning = false;
+      }
+    };
+
+    void syncSessionTime();
+
+    const intervalId = window.setInterval(() => {
+      void syncSessionTime();
+    }, SESSION_TIME_SYNC_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [enabled, refreshSession]);
+
+  /*
+   * Automatischer Logout ausschließlich über die UserSession-Zeit.
+   *
+   * remainingTokenTime und HTTP 303 lösen keinen Frontend-Logout aus.
+   */
+  useEffect(() => {
+    if (!enabled) return;
+    if (Platform.OS !== "web") return;
     if (sessionRemainingMs == null) return;
     if (sessionRemainingMs > 0) return;
 
-    const nowValue = Date.now();
+    const currentTime = Date.now();
 
-    if (nowValue - lastLogoutAtRef.current < 1000) return;
+    if (currentTime - lastLogoutAtRef.current < 1000) {
+      return;
+    }
 
-    lastLogoutAtRef.current = nowValue;
+    lastLogoutAtRef.current = currentTime;
     onLogout();
   }, [enabled, sessionRemainingMs, onLogout]);
 
@@ -148,14 +204,13 @@ export function useOidcSessionTimerWeb({
     secondsLeft,
     warning,
 
-    // Haupttimer / Logout-Entscheidung
     remainingMs: sessionRemainingMs,
     sessionRemainingMs,
 
-    // Nur Anzeige / Diagnose
+    // Tokenzeit dient nur der Anzeige und später dem Refresh.
     tokenRemainingMs,
 
-    // Manuelles Neuladen der Zeiten, ohne settings/get
+    // Manuelles Neuladen ohne settings/get.
     refreshSession,
   };
 }
