@@ -734,12 +734,51 @@ export const logoutAsync = createAsyncThunk(
     const jwt = state.api.jwt;
     const authenticationMethod = state.api.authenticationMethod;
 
+    const isWeb = typeof window !== "undefined";
+
+    /*
+     * OIDC-Erkennung:
+     * - oidc ist eindeutig OIDC
+     * - unknown ohne JWT behandeln wir ebenfalls wie OIDC,
+     *   weil OIDC über Cookie läuft und kein Frontend-JWT hat.
+     */
+    const isOidcLogout =
+      authenticationMethod === "oidc" ||
+      (authenticationMethod === "unknown" && !jwt);
+
     thunkAPI.dispatch(setIsLoggingOut(true));
 
+    /*
+     * WICHTIG für OIDC:
+     *
+     * Bei OIDC darf der Logout nicht per fetch abgeschlossen werden,
+     * weil fetch zwar den Request ausführt, aber den Browser nicht sichtbar
+     * zur Keycloak-/EnFlexIT-Seite weiterleitet.
+     *
+     * Deshalb hier echte Browser-Navigation.
+     *
+     * Außerdem KEIN logoutLocal(), KEIN clearMenu(), KEIN lokaler Login-Screen.
+     */
+    if (isWeb && isOidcLogout && currentIp) {
+      const logoutUrl = `${currentIp}/api/user/logout`;
+
+      window.location.assign(logoutUrl);
+
+      /*
+       * Die Seite navigiert jetzt weg.
+       * Wir halten den Thunk absichtlich offen, damit kein finally mehr
+       * den lokalen Zustand zurücksetzt und kurz der lokale Login erscheint.
+       */
+      await new Promise<void>(() => {});
+      return;
+    }
+
     try {
-      // Wichtig:
-      // Server-Logout vor dem lokalen Logout ausführen,
-      // solange OIDC-Cookie bzw. JWT noch vorhanden sind.
+      /*
+       * JWT oder Nicht-Web:
+       * Server-Logout vor lokalem Logout ausführen,
+       * solange JWT/Cookie noch vorhanden ist.
+       */
       if (currentIp) {
         try {
           await logoutFromServer({
@@ -870,153 +909,153 @@ const initialState: ApiState = {
   isLogoutDialogOpen: false,
 };
 
-export const apiSlice = createSlice({
-  name: "api",
-  initialState,
-  reducers: {
-    setConnectionLocal: (
-      state,
-      action: PayloadAction<{
-        ip: string;
-        jwt: string | null;
-        isPointingToServer: boolean;
-        authenticationMethod: AuthMethod;
-        isBaseMode: boolean;
-        authenticated: boolean;
-      }>,
-    ) => {
-      state.ip = action.payload.ip;
-      state.isPointingToServer = action.payload.isPointingToServer;
-      state.authenticationMethod = action.payload.authenticationMethod;
-      state.isBaseMode = action.payload.isBaseMode;
-      state.jwt = action.payload.jwt;
+  export const apiSlice = createSlice({
+    name: "api",
+    initialState,
+    reducers: {
+      setConnectionLocal: (
+        state,
+        action: PayloadAction<{
+          ip: string;
+          jwt: string | null;
+          isPointingToServer: boolean;
+          authenticationMethod: AuthMethod;
+          isBaseMode: boolean;
+          authenticated: boolean;
+        }>,
+      ) => {
+        state.ip = action.payload.ip;
+        state.isPointingToServer = action.payload.isPointingToServer;
+        state.authenticationMethod = action.payload.authenticationMethod;
+        state.isBaseMode = action.payload.isBaseMode;
+        state.jwt = action.payload.jwt;
 
-      const apis = buildApis({
-        baseUrl: action.payload.ip,
-        jwt: action.payload.jwt,
-        authenticationMethod: action.payload.authenticationMethod,
+        const apis = buildApis({
+          baseUrl: action.payload.ip,
+          jwt: action.payload.jwt,
+          authenticationMethod: action.payload.authenticationMethod,
+        });
+
+        state.awb_rest_api = apis.awb_rest_api;
+        state.dynamic_content_api = apis.dynamic_content_api;
+        state.isLoggedIn = computeLoggedIn({
+          authenticationMethod: action.payload.authenticationMethod,
+          jwt: action.payload.jwt,
+          authenticated: action.payload.authenticated,
+        });
+      },
+
+      setJwtLocal: (state, action: PayloadAction<string | null>) => {
+        if (state.jwt === action.payload) return;
+
+        state.jwt = action.payload;
+
+        const apis = buildApis({
+          baseUrl: state.ip,
+          jwt: action.payload,
+          authenticationMethod: state.authenticationMethod,
+        });
+
+        state.awb_rest_api = apis.awb_rest_api;
+        state.dynamic_content_api = apis.dynamic_content_api;
+
+        state.isLoggedIn = computeLoggedIn({
+          authenticationMethod: state.authenticationMethod,
+          jwt: action.payload,
+          authenticated: state.isBaseMode === false,
+        });
+      },
+
+      logoutLocal: (state) => {
+        state.isLoggedIn = false;
+        state.jwt = null;
+
+        const apis = buildApis({
+          baseUrl: state.ip,
+          jwt: null,
+          authenticationMethod: state.authenticationMethod,
+        });
+
+        state.awb_rest_api = apis.awb_rest_api;
+        state.dynamic_content_api = apis.dynamic_content_api;
+      },
+
+      setIsLoggingOut: (state, action: PayloadAction<boolean>) => {
+        state.isLoggingOut = action.payload;
+      },
+
+      setIsLogoutDialogOpen: (state, action: PayloadAction<boolean>) => {
+        state.isLogoutDialogOpen = action.payload;
+      },
+    },
+    extraReducers: (builder) => {
+      builder.addCase(initializeApi.fulfilled, (state, action) => {
+        state.authenticationMethod = action.payload.authenticationMethod;
+        state.awb_rest_api = action.payload.awb_rest_api;
+        state.dynamic_content_api = action.payload.dynamic_content_api;
+
+        state.ip = action.payload.ip;
+        state.jwt = action.payload.jwt;
+
+        state.isLoggedIn = action.payload.isLoggedIn;
+        state.isPointingToServer = action.payload.isPointingToServer;
+        state.isBaseMode = action.payload.isBaseMode;
+        state.isSwitchingServer = false;
       });
 
-      state.awb_rest_api = apis.awb_rest_api;
-      state.dynamic_content_api = apis.dynamic_content_api;
-      state.isLoggedIn = computeLoggedIn({
-        authenticationMethod: action.payload.authenticationMethod,
-        jwt: action.payload.jwt,
-        authenticated: action.payload.authenticated,
-      });
-    },
-
-    setJwtLocal: (state, action: PayloadAction<string | null>) => {
-      if (state.jwt === action.payload) return;
-
-      state.jwt = action.payload;
-
-      const apis = buildApis({
-        baseUrl: state.ip,
-        jwt: action.payload,
-        authenticationMethod: state.authenticationMethod,
+      builder.addCase(login.fulfilled, (state) => {
+        state.isLoggedIn = true;
+        state.isBaseMode = false;
       });
 
-      state.awb_rest_api = apis.awb_rest_api;
-      state.dynamic_content_api = apis.dynamic_content_api;
-
-      state.isLoggedIn = computeLoggedIn({
-        authenticationMethod: state.authenticationMethod,
-        jwt: action.payload,
-        authenticated: state.isBaseMode === false,
-      });
-    },
-
-    logoutLocal: (state) => {
-      state.isLoggedIn = false;
-      state.jwt = null;
-
-      const apis = buildApis({
-        baseUrl: state.ip,
-        jwt: null,
-        authenticationMethod: state.authenticationMethod,
+      builder.addCase(switchServer.pending, (state) => {
+        state.isSwitchingServer = true;
       });
 
-      state.awb_rest_api = apis.awb_rest_api;
-      state.dynamic_content_api = apis.dynamic_content_api;
+      builder.addCase(switchServer.fulfilled, (state) => {
+        state.isSwitchingServer = false;
+      });
+
+      builder.addCase(switchServer.rejected, (state) => {
+        state.isSwitchingServer = false;
+      });
+
+      builder.addCase(refreshServerStatus.fulfilled, (state, action) => {
+        state.isPointingToServer = action.payload.isPointingToServer;
+      });
     },
+  });
 
-    setIsLoggingOut: (state, action: PayloadAction<boolean>) => {
-      state.isLoggingOut = action.payload;
-    },
+  export const {
+    setConnectionLocal,
+    setJwtLocal,
+    logoutLocal,
+    setIsLoggingOut,
+    setIsLogoutDialogOpen,
+  } = apiSlice.actions;
 
-    setIsLogoutDialogOpen: (state, action: PayloadAction<boolean>) => {
-      state.isLogoutDialogOpen = action.payload;
-    },
-  },
-  extraReducers: (builder) => {
-    builder.addCase(initializeApi.fulfilled, (state, action) => {
-      state.authenticationMethod = action.payload.authenticationMethod;
-      state.awb_rest_api = action.payload.awb_rest_api;
-      state.dynamic_content_api = action.payload.dynamic_content_api;
+  export const selectApi = (state: RootState) => state.api;
+  export const selectJwt = (state: RootState) => state.api.jwt;
+  export const selectIp = (state: RootState) => state.api.ip;
+  export const selectAuthenticationMethod = (state: RootState) =>
+    state.api.authenticationMethod;
 
-      state.ip = action.payload.ip;
-      state.jwt = action.payload.jwt;
+  export const selectIsLoggedIn = (state: RootState) => state.api.isLoggedIn;
+  export const selectIsPointingToServer = (state: RootState) =>
+    state.api.isPointingToServer;
+  export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
+  export const selectIsSwitchingServer = (state: RootState) =>
+    state.api.isSwitchingServer;
+  export const selectIsLoggingOut = (state: RootState) => state.api.isLoggingOut;
+  export const selectIsLogoutDialogOpen = (state: RootState) =>
+    state.api.isLogoutDialogOpen;
 
-      state.isLoggedIn = action.payload.isLoggedIn;
-      state.isPointingToServer = action.payload.isPointingToServer;
-      state.isBaseMode = action.payload.isBaseMode;
-      state.isSwitchingServer = false;
-    });
+  export const selectIsBaseModule = (state: RootState) =>
+    state.api.isPointingToServer && state.api.isBaseMode;
 
-    builder.addCase(login.fulfilled, (state) => {
-      state.isLoggedIn = true;
-      state.isBaseMode = false;
-    });
-
-    builder.addCase(switchServer.pending, (state) => {
-      state.isSwitchingServer = true;
-    });
-
-    builder.addCase(switchServer.fulfilled, (state) => {
-      state.isSwitchingServer = false;
-    });
-
-    builder.addCase(switchServer.rejected, (state) => {
-      state.isSwitchingServer = false;
-    });
-
-    builder.addCase(refreshServerStatus.fulfilled, (state, action) => {
-      state.isPointingToServer = action.payload.isPointingToServer;
-    });
-  },
-});
-
-export const {
-  setConnectionLocal,
-  setJwtLocal,
-  logoutLocal,
-  setIsLoggingOut,
-  setIsLogoutDialogOpen,
-} = apiSlice.actions;
-
-export const selectApi = (state: RootState) => state.api;
-export const selectJwt = (state: RootState) => state.api.jwt;
-export const selectIp = (state: RootState) => state.api.ip;
-export const selectAuthenticationMethod = (state: RootState) =>
-  state.api.authenticationMethod;
-
-export const selectIsLoggedIn = (state: RootState) => state.api.isLoggedIn;
-export const selectIsPointingToServer = (state: RootState) =>
-  state.api.isPointingToServer;
-export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
-export const selectIsSwitchingServer = (state: RootState) =>
-  state.api.isSwitchingServer;
-export const selectIsLoggingOut = (state: RootState) => state.api.isLoggingOut;
-export const selectIsLogoutDialogOpen = (state: RootState) =>
-  state.api.isLogoutDialogOpen;
-
-export const selectIsBaseModule = (state: RootState) =>
-  state.api.isPointingToServer && state.api.isBaseMode;
-
-export const selectIsCustomerModule = (state: RootState) =>
-  state.api.isPointingToServer &&
-  state.api.isLoggedIn &&
-  !state.api.isBaseMode;
+  export const selectIsCustomerModule = (state: RootState) =>
+    state.api.isPointingToServer &&
+    state.api.isLoggedIn &&
+    !state.api.isBaseMode;
 
 export default apiSlice.reducer;
