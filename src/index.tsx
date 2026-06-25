@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
-
+import { useSessionActivityWeb } from "./hooks/useSessionActivityWeb";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
@@ -73,8 +73,8 @@ function RootStack() {
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const [isLoading, setIsLoading] = useState(true);
-
-  const isWide = useIsWide();
+  useSessionActivityWeb({ enabled: !isLoading && isLoggedIn, });
+    const isWide = useIsWide();
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
   const didBootRef = useRef(false);
@@ -198,6 +198,7 @@ function RootStack() {
   }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
 useEffect(() => {
   if (isLoading) return;
+  if (!isLoggedIn) return;
 
   let active = true;
 
@@ -233,7 +234,7 @@ useEffect(() => {
       window.removeEventListener("focus", onFocus);
     }
   };
-}, [dispatch, isLoading]);
+}, [dispatch, isLoading, isLoggedIn]);
   const navigationMenu =
     menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 

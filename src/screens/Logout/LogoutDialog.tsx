@@ -1,3 +1,5 @@
+// src/screens/Logout/LogoutDialog.tsx
+
 import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, Modal, Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -41,10 +43,12 @@ type LogoutServerItem = {
 
 export function LogoutDialog({ visible, onClose }: Props) {
   const dispatch = useAppDispatch();
+
   const currentIp = useAppSelector(selectIp);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const serversState = useAppSelector(selectServers);
+
   const { t } = useTranslation(["Login"]);
 
   const [loading, setLoading] = useState(false);
@@ -191,6 +195,8 @@ export function LogoutDialog({ visible, onClose }: Props) {
   }
 
   function toggleSelectAll() {
+    if (loading) return;
+
     setLogoutFlowActive(true);
 
     if (allSelected) {
@@ -202,6 +208,8 @@ export function LogoutDialog({ visible, onClose }: Props) {
   }
 
   function toggleServer(serverId: string) {
+    if (loading) return;
+
     setLogoutFlowActive(true);
 
     setSelectedServerIds((prev) =>
@@ -215,6 +223,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
     if (loading) return;
 
     setLogoutFlowActive(true);
+    dispatch(setIsLogoutDialogOpen(true));
     setLoading(true);
 
     try {
@@ -274,8 +283,16 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={styles.backdrop} onPress={handleClose}>
-        <Pressable style={styles.card} onPress={() => {}}>
+      <Pressable
+        nativeID="no-session-extend-logout-backdrop"
+        style={styles.backdrop}
+        onPress={handleClose}
+      >
+        <Pressable
+          nativeID="no-session-extend-logout-dialog"
+          style={styles.card}
+          onPress={() => {}}
+        >
           <ThemedText style={styles.title}>{t("Abmelden")}</ThemedText>
 
           <ThemedText style={styles.body}>
@@ -287,7 +304,11 @@ export function LogoutDialog({ visible, onClose }: Props) {
           {hasMultipleLoggedInServers ? (
             <View style={styles.section}>
               <Card style={styles.listCard} padding="sm">
-                <Pressable style={styles.selectAllRow} onPress={toggleSelectAll}>
+                <Pressable
+                  nativeID="no-session-extend-logout-select-all"
+                  style={styles.selectAllRow}
+                  onPress={toggleSelectAll}
+                >
                   <View
                     style={[
                       styles.checkbox,
@@ -320,6 +341,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
                     return (
                       <Pressable
+                        nativeID={`no-session-extend-logout-server-${server.id}`}
                         style={styles.row}
                         onPress={() => toggleServer(server.id)}
                       >
@@ -357,7 +379,10 @@ export function LogoutDialog({ visible, onClose }: Props) {
             </View>
           ) : null}
 
-          <View style={styles.actions}>
+          <View
+            nativeID="no-session-extend-logout-actions"
+            style={styles.actions}
+          >
             <ActionButton
               label={t("Abbrechen")}
               variant="secondary"

@@ -1,5 +1,12 @@
 // src/components/ToolBox.tsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
@@ -20,7 +27,10 @@ import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
 import { useOidcSessionTimerWeb } from "../hooks/useOidcSessionTimerWeb";
 
-import { selectSessionTime } from "../redux/slices/sessionTimeSlice";
+import {
+  extendSessionTime,
+  selectSessionTime,
+} from "../redux/slices/sessionTimeSlice";
 
 import { Text } from "./stylistic/Text";
 import { ActionButton } from "./ui-elements/ActionButton";
@@ -55,20 +65,33 @@ function formatMsToMMSS(value?: number | null) {
 function getRemainingMs(params: {
   expirationTime?: number | null;
   remainingTime?: number | null;
+  lastCheckedAt?: number | null;
   now: number;
 }) {
   if (
     typeof params.expirationTime === "number" &&
     Number.isFinite(params.expirationTime)
   ) {
-    return params.expirationTime - params.now;
+    return Math.max(0, params.expirationTime - params.now);
+  }
+
+  if (
+    typeof params.remainingTime === "number" &&
+    Number.isFinite(params.remainingTime) &&
+    typeof params.lastCheckedAt === "number" &&
+    Number.isFinite(params.lastCheckedAt)
+  ) {
+    return Math.max(
+      0,
+      params.remainingTime - (params.now - params.lastCheckedAt),
+    );
   }
 
   if (
     typeof params.remainingTime === "number" &&
     Number.isFinite(params.remainingTime)
   ) {
-    return params.remainingTime;
+    return Math.max(0, params.remainingTime);
   }
 
   return null;
@@ -103,18 +126,27 @@ function ColorSwitcher() {
 
 export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const dispatch = useAppDispatch();
-  const isdev = true; // typeof window !== "undefined" && window.location.origin.includes("localhost:8081");
+
+  const isdev = true;
   const jwt = useAppSelector(selectJwt);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const sessionTime = useAppSelector(selectSessionTime);
   const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
   const updateState = useAppSelector((state) => state.update);
+
   const isWeb = Platform.OS === "web";
-  const isOidc =authenticationMethod === "oidc" || authenticationMethod === "unknown";
-  const showLogout = isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
+
+  const isOidc =
+    authenticationMethod === "oidc" ||
+    authenticationMethod === "unknown";
+
+  const showLogout =
+    isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
+
   const [openPopup, setOpenPopup] = useState<OpenPopup>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const [now, setNow] = useState(Date.now());
+
   const sessionWrapRef = useRef<View>(null);
   const updateWrapRef = useRef<View>(null);
   const suppressSessionPopupUntilRef = useRef<number>(0);
@@ -160,23 +192,35 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     return getRemainingMs({
       expirationTime: sessionTime.expirationTime,
       remainingTime: sessionTime.remainingTime,
+      lastCheckedAt: sessionTime.lastCheckedAt,
       now,
     });
-  }, [sessionTime.expirationTime, sessionTime.remainingTime, now]);
+  }, [
+    sessionTime.expirationTime,
+    sessionTime.remainingTime,
+    sessionTime.lastCheckedAt,
+    now,
+  ]);
 
   const tokenRemainingMs = useMemo(() => {
     return getRemainingMs({
       expirationTime: sessionTime.tokenExpirationTime,
       remainingTime: sessionTime.remainingTokenTime,
+      lastCheckedAt: sessionTime.lastCheckedAt,
       now,
     });
-  }, [sessionTime.tokenExpirationTime, sessionTime.remainingTokenTime, now]);
+  }, [
+    sessionTime.tokenExpirationTime,
+    sessionTime.remainingTokenTime,
+    sessionTime.lastCheckedAt,
+    now,
+  ]);
 
   const secondsLeft = isOidc ? oidcTimer.secondsLeft : jwtTimer.secondsLeft;
   const warning = isOidc ? oidcTimer.warning : jwtTimer.warning;
 
   const effectiveTimeText = formatMMSS(secondsLeft);
-  const sessionTimeText = formatMsToMMSS(sessionRemainingMs); // T
+  const sessionTimeText = formatMsToMMSS(sessionRemainingMs);
   const tokenTimeText = formatMsToMMSS(tokenRemainingMs);
 
   useEffect(() => {
@@ -230,14 +274,20 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     };
   }, [isWeb]);
 
-  const stayLoggedIn = useCallback(() => {
+  const stayLoggedIn = useCallback(async () => {
     suppressSessionPopupUntilRef.current = Date.now() + 10_000;
     setOpenPopup(null);
 
-    if (isOidc) {
-      void oidcTimer.refreshSession();
+    if (!isOidc) {
+      return;
     }
-  }, [isOidc, oidcTimer]);
+
+    try {
+      await dispatch(extendSessionTime()).unwrap();
+    } catch (error) {
+      console.log("[SESSION] extend from stayLoggedIn failed:", error);
+    }
+  }, [dispatch, isOidc]);
 
   const manualLogout = useCallback(() => {
     setOpenPopup(null);
@@ -279,8 +329,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
               {isdev ? (
                 <Text style={styles.debugTimerText}>
-                 S: {sessionTimeText} | T:{" "}
-                  {tokenTimeText}
+                  S: {sessionTimeText} | T: {tokenTimeText}
                 </Text>
               ) : null}
             </View>
@@ -311,11 +360,13 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
                   </View>
                 ) : null}
 
-                <ActionButton
-                  variant="secondary"
-                  onPress={stayLoggedIn}
-                  label="Weitermachen"
-                />
+                <View nativeID="no-session-extend-stay-logged-in">
+                  <ActionButton
+                    variant="secondary"
+                    onPress={stayLoggedIn}
+                    label="Weitermachen"
+                  />
+                </View>
               </View>
             ) : null}
           </View>
@@ -325,7 +376,8 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
           <Pressable
             onPress={manualLogout}
             accessibilityRole="button"
-            nativeID="session-activity-logout"
+            accessibilityLabel="logout"
+            nativeID="no-session-extend-logout"
           >
             <AntDesign name="logout" size={24} style={[styles.color]} />
           </Pressable>
@@ -430,7 +482,3 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.85,
   },
 }));
-
-//E = effektive Logout-Zeit  E = Math.min(remainingTime, remainingTokenTime)
-//S = Session remainingTime
-//T = Token
