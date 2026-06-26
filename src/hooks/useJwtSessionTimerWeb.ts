@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
 import { getJwtRemainingMs } from "../util/jwtTime";
-import { renewAllServerJwtsIfNeeded } from "../redux/slices/jwtRenewSlice";
+import { renewJwtIfNeeded } from "../redux/slices/jwtRenewSlice";
 import { useAppDispatch } from "./useAppDispatch";
 
 type Options = {
@@ -15,12 +15,11 @@ type Options = {
   onHeartbeat?: () => void;
 };
 
-/*
- * Wichtig:
- * JWT soll bei echter Aktivität den Login/Renew aufrufen,
- * aber nicht bei jedem schnellen Klick mehrfach.
- */
 const JWT_RENEW_ACTIVITY_COOLDOWN_MS = 30_000;
+
+let globalRenewRunning = false;
+let globalLastRenewAt = 0;
+let globalLogoutTriggered = false;
 
 function isSessionActivityExcluded(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
@@ -140,16 +139,19 @@ export function useJwtSessionTimerWeb({
     );
   });
 
-  const lastLogoutAtRef = useRef<number>(0);
-  const lastRenewAtRef = useRef<number>(0);
-  const renewRunningRef = useRef<boolean>(false);
+  const lastJwtRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (jwt && jwt !== lastJwtRef.current) {
+      lastJwtRef.current = jwt;
+      globalLogoutTriggered = false;
+    }
+  }, [jwt]);
 
   const safeLogout = useCallback(() => {
-    const now = Date.now();
+    if (globalLogoutTriggered) return;
 
-    if (now - lastLogoutAtRef.current < 1000) return;
-
-    lastLogoutAtRef.current = now;
+    globalLogoutTriggered = true;
     onLogout();
   }, [onLogout]);
 
@@ -159,7 +161,7 @@ export function useJwtSessionTimerWeb({
       if (Platform.OS !== "web") return;
       if (typeof window === "undefined") return;
       if (!jwt) return;
-      if (renewRunningRef.current) return;
+      if (globalRenewRunning) return;
 
       const remainingMs = getJwtRemainingMs(jwt);
 
@@ -169,24 +171,26 @@ export function useJwtSessionTimerWeb({
 
       const now = Date.now();
 
-      if (now - lastRenewAtRef.current < JWT_RENEW_ACTIVITY_COOLDOWN_MS) {
+      if (now - globalLastRenewAt < JWT_RENEW_ACTIVITY_COOLDOWN_MS) {
         return;
       }
 
-      lastRenewAtRef.current = now;
-      renewRunningRef.current = true;
+      globalLastRenewAt = now;
+      globalRenewRunning = true;
 
       try {
-        console.log("[JWT TIMER] renew via login endpoint");
+        console.log("[JWT TIMER] renew active JWT via /api/user/login");
 
         await dispatch(
-          renewAllServerJwtsIfNeeded({
+          renewJwtIfNeeded({
             force,
             cooldownMs: 0,
           }) as any,
-        );
+        ).unwrap?.();
+      } catch (error) {
+        console.warn("[JWT TIMER] renew failed:", error);
       } finally {
-        renewRunningRef.current = false;
+        globalRenewRunning = false;
       }
     },
     [dispatch, enabled, jwt],
@@ -218,13 +222,15 @@ export function useJwtSessionTimerWeb({
         return;
       }
 
+      globalLogoutTriggered = false;
+
       setSecondsLeft(Math.ceil(remainingMs / 1000));
       setWarning(remainingMs <= warnMs);
     };
 
     const triggerHeartbeat = () => {
       if (!jwt) return;
-      if (renewRunningRef.current) return;
+      if (globalRenewRunning) return;
 
       const remainingMs = getJwtRemainingMs(jwt);
 
@@ -235,8 +241,10 @@ export function useJwtSessionTimerWeb({
       onHeartbeat?.();
 
       /*
-       * Wichtig:
-       * JWT-Aktivität ruft wieder den Login/Renew-Weg auf.
+       * JWT benutzt bewusst den Login/Renew-Weg:
+       * GET /api/user/login
+       * Authorization: Basic ...
+       *
        * Kein /sessionTime und kein /sessionTime/extend.
        */
       void renewNow(true);
