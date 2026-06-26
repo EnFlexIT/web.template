@@ -1,6 +1,11 @@
+// src/redux/slices/jwtRenewSlice.ts
+
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Buffer } from "buffer";
+
 import type { RootState } from "../store";
+
 import {
   setJwtLocal,
   logoutAsync,
@@ -9,28 +14,27 @@ import {
   normalizeBaseUrl,
   loginWithBasic,
 } from "./apiSlice";
+
 import { isLogoutFlowActive } from "./logoutFlowGuard";
- import { Buffer } from "buffer";
+
 const JWT_KEY = "jwt";
+
 const lastRenewAttemptByServer: Record<string, number> = {};
 
-function extractBearerToken(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const m = value.match(/Bearer\s+(.+)/i);
-  return m?.[1]?.trim() ?? null;
-}
-
-function toBase64(str: string) {
+function toBase64(value: string): string {
   return typeof btoa !== "undefined"
-    ? btoa(str)
-    : Buffer.from(str).toString("base64");
+    ? btoa(value)
+    : Buffer.from(value).toString("base64");
 }
 
 function getPropertyValue(
   data: any,
   key: string,
 ): string | boolean | number | null | undefined {
-  const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
+  const entries = Array.isArray(data?.propertyEntries)
+    ? data.propertyEntries
+    : [];
+
   return entries.find((entry: any) => entry?.key === key)?.value;
 }
 
@@ -40,25 +44,31 @@ async function fetchServerAuthenticated(
 ): Promise<boolean | null> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 
+  if (!normalizedBaseUrl) {
+    return null;
+  }
+
   try {
-    const res = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
+    const response = await fetch(`${normalizedBaseUrl}/api/app/settings/get`, {
       method: "GET",
-      headers: jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-            Accept: "application/json",
-          }
-        : {
-            Accept: "application/json",
-          },
+      cache: "no-store",
       credentials: "include",
+      redirect: "manual",
+      headers: {
+        Accept: "application/json",
+        ...(jwt
+          ? {
+              Authorization: `Bearer ${jwt}`,
+            }
+          : {}),
+      },
     });
 
-    if (!res.ok) {
+    if (!response.ok) {
       return null;
     }
 
-    const data = await res.json();
+    const data = await response.json();
     const authenticatedRaw = getPropertyValue(data, "_Authenticated");
 
     return (
@@ -75,31 +85,56 @@ async function clearServerJwt(
   baseUrl: string,
   isActiveServer: boolean,
   thunkAPI: any,
-) {
+): Promise<void> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  if (!normalizedBaseUrl) {
+    return;
+  }
 
   await setJwtForServer(normalizedBaseUrl, null);
 
   if (isActiveServer) {
     await AsyncStorage.removeItem(JWT_KEY);
+
+    /*
+     * Wichtig:
+     * Nur JWT-Logout.
+     * Bei OIDC wird dieser Slice nicht verwendet.
+     */
     await thunkAPI.dispatch(logoutAsync());
   }
 }
 
 export const renewJwtForSpecificServer = createAsyncThunk<
-  { renewed: boolean; reason: string; baseUrl: string; newJwt?: string | null },
-  { baseUrl: string; cooldownMs?: number; force?: boolean },
-  { state: RootState }
+  {
+    renewed: boolean;
+    reason: string;
+    baseUrl: string;
+    newJwt?: string | null;
+  },
+  {
+    baseUrl: string;
+    cooldownMs?: number;
+    force?: boolean;
+  },
+  {
+    state: RootState;
+  }
 >(
   "api/renewJwtForSpecificServer",
-  async (
-    { baseUrl, cooldownMs = 10_000, force = true },
-    thunkAPI,
-  ) => {
+  async ({ baseUrl, cooldownMs = 10_000, force = true }, thunkAPI) => {
+    const state = thunkAPI.getState();
+
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const activeBaseUrl = normalizeBaseUrl(state.api.ip);
+
+    const isActiveServer =
+      Boolean(normalizedBaseUrl) &&
+      Boolean(activeBaseUrl) &&
+      normalizedBaseUrl === activeBaseUrl;
 
     if (isLogoutFlowActive()) {
-      //console.log("[JWT RENEW] skipped because logout flow guard is active");
       return {
         renewed: false,
         reason: "logout-flow-active",
@@ -107,16 +142,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       };
     }
 
-    const state = thunkAPI.getState();
-    const isActiveServer = state.api.ip === normalizedBaseUrl;
-
-    //console.log("[JWT RENEW] --------------------------------------");
-    //console.log("[JWT RENEW] checking server:", normalizedBaseUrl);
-    //console.log("[JWT RENEW] active redux server:", state.api.ip);
-    //console.log("[JWT RENEW] force:", force);
-
     if (state.api.isLoggingOut || state.api.isLogoutDialogOpen) {
-      //console.log("[JWT RENEW] skipped because logout flow is active");
       return {
         renewed: false,
         reason: "logout-flow-active",
@@ -125,7 +151,6 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     }
 
     if (state.api.isSwitchingServer) {
-      //console.log("[JWT RENEW] skipped because switching server");
       return {
         renewed: false,
         reason: "switching-server",
@@ -134,7 +159,6 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     }
 
     if (!normalizedBaseUrl) {
-      //console.log("[JWT RENEW] skipped because baseUrl empty");
       return {
         renewed: false,
         reason: "no-baseurl",
@@ -142,12 +166,21 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       };
     }
 
+    /*
+     * Wichtig:
+     * Der aktive OIDC-Server darf hier nicht über JWT erneuert werden.
+     */
+    if (isActiveServer && state.api.authenticationMethod === "oidc") {
+      return {
+        renewed: false,
+        reason: "active-server-is-oidc",
+        baseUrl: normalizedBaseUrl,
+      };
+    }
+
     const jwt = await getJwtForServer(normalizedBaseUrl);
 
-    //console.log("[JWT RENEW] jwt exists:", !!jwt);
-
     if (!jwt) {
-      //console.log("[JWT RENEW] no jwt stored for server:", normalizedBaseUrl);
       return {
         renewed: false,
         reason: "no-jwt-for-server",
@@ -155,8 +188,11 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       };
     }
 
+    /*
+     * Falls der aktive Redux-JWT nicht mit Storage übereinstimmt,
+     * zuerst synchronisieren.
+     */
     if (isActiveServer && state.api.jwt !== jwt) {
-      //console.log("[JWT RENEW] syncing redux jwt from storage for active server");
       thunkAPI.dispatch(setJwtLocal(jwt));
     }
 
@@ -164,7 +200,6 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     const lastAttempt = lastRenewAttemptByServer[normalizedBaseUrl] ?? 0;
 
     if (cooldownMs > 0 && now - lastAttempt < cooldownMs) {
-      //console.log("[JWT RENEW] skipped because cooldown active");
       return {
         renewed: false,
         reason: "cooldown",
@@ -174,19 +209,31 @@ export const renewJwtForSpecificServer = createAsyncThunk<
 
     lastRenewAttemptByServer[normalizedBaseUrl] = now;
 
+    /*
+     * JWT-Renew läuft bewusst über /api/user/login.
+     *
+     * Backend-Definition:
+     * GET /api/user/login
+     * Authorization: Basic ...
+     *
+     * Altes Verhalten:
+     * Username leer, altes JWT als Basic-Password.
+     */
     const basic = toBase64(`:${jwt}`);
-    const renewUrl = `${normalizedBaseUrl}/api/user/login`;
-
-    //console.log("[JWT RENEW] sending request to:", renewUrl);
 
     try {
-    const { response: res, bearerToken: newJwt } = await loginWithBasic({
-     baseUrl: normalizedBaseUrl,
-     basic,});
+      console.log("[JWT RENEW] calling login endpoint:", {
+        baseUrl: normalizedBaseUrl,
+        force,
+      });
+
+      const { response, bearerToken: newJwt } = await loginWithBasic({
+        baseUrl: normalizedBaseUrl,
+        basic,
+      });
 
       if (newJwt) {
         if (newJwt === jwt) {
-          //console.log("[JWT RENEW] same token returned for:", normalizedBaseUrl);
           return {
             renewed: false,
             reason: "same-token",
@@ -196,15 +243,12 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         }
 
         await setJwtForServer(normalizedBaseUrl, newJwt);
-        //console.log("[JWT RENEW] stored new token for:", normalizedBaseUrl);
 
         if (isActiveServer) {
           thunkAPI.dispatch(setJwtLocal(newJwt));
           await AsyncStorage.setItem(JWT_KEY, newJwt);
-          console.log(
-            "[JWT RENEW] updated active redux jwt for:",
-            normalizedBaseUrl,
-          );
+
+          console.log("[JWT RENEW] active JWT updated:", normalizedBaseUrl);
         }
 
         return {
@@ -215,13 +259,13 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         };
       }
 
-      if (res.status === 401) {
-        //console.log("[JWT RENEW] 401 without token for:", normalizedBaseUrl);
-
-        const authenticated = await fetchServerAuthenticated(normalizedBaseUrl, jwt);
+      if (response.status === 401) {
+        const authenticated = await fetchServerAuthenticated(
+          normalizedBaseUrl,
+          jwt,
+        );
 
         if (authenticated === false) {
-          //console.log("[JWT RENEW] auth check says unauthenticated, clearing jwt");
           await clearServerJwt(normalizedBaseUrl, isActiveServer, thunkAPI);
 
           return {
@@ -238,10 +282,12 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         };
       }
 
-      const authenticated = await fetchServerAuthenticated(normalizedBaseUrl, jwt);
+      const authenticated = await fetchServerAuthenticated(
+        normalizedBaseUrl,
+        jwt,
+      );
 
       if (authenticated === false) {
-        //console.log("[JWT RENEW] no token and auth false, clearing jwt");
         await clearServerJwt(normalizedBaseUrl, isActiveServer, thunkAPI);
 
         return {
@@ -251,7 +297,12 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         };
       }
 
-      console.log("[JWT RENEW] no token found in response for:", normalizedBaseUrl);
+      console.log(
+        "[JWT RENEW] login endpoint returned no token:",
+        normalizedBaseUrl,
+        response.status,
+      );
+
       return {
         renewed: false,
         reason: "no-token-in-response",
@@ -259,6 +310,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
       };
     } catch (error) {
       console.warn("[JWT RENEW] failed for", normalizedBaseUrl, error);
+
       return {
         renewed: false,
         reason: "error",
@@ -269,35 +321,44 @@ export const renewJwtForSpecificServer = createAsyncThunk<
 );
 
 export const renewAllServerJwtsIfNeeded = createAsyncThunk<
-  Array<{ renewed: boolean; reason: string; baseUrl: string; newJwt?: string | null }>,
-  { cooldownMs?: number; force?: boolean } | undefined,
-  { state: RootState }
+  Array<{
+    renewed: boolean;
+    reason: string;
+    baseUrl: string;
+    newJwt?: string | null;
+  }>,
+  {
+    cooldownMs?: number;
+    force?: boolean;
+  } | undefined,
+  {
+    state: RootState;
+  }
 >(
   "api/renewAllServerJwtsIfNeeded",
-  async (
-    { cooldownMs = 10_000, force = true } = {},
-    thunkAPI,
-  ) => {
+  async ({ cooldownMs = 10_000, force = true } = {}, thunkAPI) => {
     if (isLogoutFlowActive()) {
-      //console.log("[JWT RENEW ALL] skipped because logout flow guard is active");
       return [];
     }
 
     const state = thunkAPI.getState();
+
+    const activeBaseUrl = normalizeBaseUrl(state.api.ip);
     const servers = state.servers.servers ?? [];
 
-    //console.log("[JWT RENEW ALL] ==================================");
-    //console.log("[JWT RENEW ALL] redux servers:", servers);
-
+    /*
+     * Wichtig:
+     * Der aktive Server muss auch dann geprüft werden,
+     * wenn er nicht in der Serverliste steht.
+     */
     const uniqueBaseUrls = Array.from(
       new Set(
-        servers
-          .map((server) => normalizeBaseUrl(server.baseUrl))
-          .filter(Boolean),
+        [
+          activeBaseUrl,
+          ...servers.map((server) => normalizeBaseUrl(server.baseUrl)),
+        ].filter(Boolean),
       ),
     );
-
-    //console.log("[JWT RENEW ALL] unique baseUrls:", uniqueBaseUrls);
 
     const results = await Promise.all(
       uniqueBaseUrls.map((currentBaseUrl) =>
@@ -313,36 +374,61 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
       ),
     );
 
-    //console.log("[JWT RENEW ALL] results:", results);
-    //console.log("[JWT RENEW ALL] ==================================");
-
     return results;
   },
 );
 
 export const renewJwtIfNeeded = createAsyncThunk<
-  { renewed: boolean; reason: string },
-  { cooldownMs?: number; force?: boolean } | undefined,
-  { state: RootState }
+  {
+    renewed: boolean;
+    reason: string;
+  },
+  {
+    cooldownMs?: number;
+    force?: boolean;
+  } | undefined,
+  {
+    state: RootState;
+  }
 >(
   "api/renewJwtIfNeeded",
-  async (
-    { cooldownMs = 10_000, force = true } = {},
-    thunkAPI,
-  ) => {
+  async ({ cooldownMs = 10_000, force = true } = {}, thunkAPI) => {
     if (isLogoutFlowActive()) {
-      return { renewed: false, reason: "logout-flow-active" };
+      return {
+        renewed: false,
+        reason: "logout-flow-active",
+      };
     }
 
     const state = thunkAPI.getState();
-    const activeBaseUrl = state.api.ip;
+    const activeBaseUrl = normalizeBaseUrl(state.api.ip);
 
     if (state.api.isLoggingOut || state.api.isLogoutDialogOpen) {
-      return { renewed: false, reason: "logout-flow-active" };
+      return {
+        renewed: false,
+        reason: "logout-flow-active",
+      };
     }
 
     if (!activeBaseUrl) {
-      return { renewed: false, reason: "no-baseurl" };
+      return {
+        renewed: false,
+        reason: "no-baseurl",
+      };
+    }
+
+    if (state.api.authenticationMethod === "oidc") {
+      return {
+        renewed: false,
+        reason: "active-server-is-oidc",
+      };
+    }
+
+    if (!state.api.jwt) {
+      return {
+        renewed: false,
+        reason: "no-active-jwt",
+      };
     }
 
     const result = await thunkAPI

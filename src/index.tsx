@@ -1,4 +1,5 @@
 // src/index.tsx
+
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
@@ -6,30 +7,38 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
+
 import { useSessionActivityWeb } from "./hooks/useSessionActivityWeb";
+
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
 import { DataPermissionsDialog } from "./components/DataPermissionsDialog";
+
 import {
   initializeApi,
   selectIsLoggedIn,
+  selectAuthenticationMethod,
 } from "./redux/slices/apiSlice";
+
 import { ServerSwitchOverlay } from "./screens/ServerSwitchOverlay";
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
 import { useIsWide } from "./hooks/useIsWide";
 import { OfflineOverlay } from "./screens/OfflineOverlay";
 import { store } from "./redux/store";
+
 import { initializeLanguage } from "./redux/slices/languageSlice";
 import { initializeTheme } from "./redux/slices/themeSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations } from "./redux/slices/organizationsSlice";
+
 import { NotificationPopup } from "./components/NotificationPopup";
 import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import { NotAvailableScreen } from "./screens/NotAvailableScreen";
 import { InitialPasswordChangeDialog } from "./screens/login/InitialPasswordChangeDialog";
+
 import {
   hasId,
   initializeMenu,
@@ -37,6 +46,7 @@ import {
   setActiveMenuId,
   isDynamicMenuItem,
 } from "./redux/slices/menuSlice";
+
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
@@ -50,9 +60,17 @@ const Drawer = createDrawerNavigator();
 
 function normalizePath(p: string) {
   if (!p) return "/";
+
   let out = p.trim();
-  if (!out.startsWith("/")) out = "/" + out;
-  if (out.length > 1) out = out.replace(/\/+$/g, "");
+
+  if (!out.startsWith("/")) {
+    out = "/" + out;
+  }
+
+  if (out.length > 1) {
+    out = out.replace(/\/+$/g, "");
+  }
+
   return out;
 }
 
@@ -64,6 +82,7 @@ function getNumericIdFromPath(pathname: string): number | null {
     .split("/")[0];
 
   const n = Number(seg);
+
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
@@ -72,9 +91,22 @@ function RootStack() {
   const { theme } = useUnistyles();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+
   const [isLoading, setIsLoading] = useState(true);
-  useSessionActivityWeb({ enabled: !isLoading && isLoggedIn, });
-    const isWide = useIsWide();
+
+  /*
+   * Wichtig:
+   * Der Activity-Hook ruft /api/user/sessionTime/extend auf.
+   * Das darf nur bei OIDC laufen.
+   *
+   * JWT/Base nutzt weiterhin den alten JWT-Renew-Weg.
+   */
+  useSessionActivityWeb({
+    enabled: !isLoading && isLoggedIn && authenticationMethod === "oidc",
+  });
+
+  const isWide = useIsWide();
   const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
 
   const didBootRef = useRef(false);
@@ -92,6 +124,7 @@ function RootStack() {
       if (!m.menuID) continue;
 
       const p = pathById[m.menuID];
+
       if (p) {
         out[String(m.menuID)] = p;
       }
@@ -102,6 +135,7 @@ function RootStack() {
 
   useEffect(() => {
     if (didBootRef.current) return;
+
     didBootRef.current = true;
 
     let alive = true;
@@ -190,51 +224,57 @@ function RootStack() {
       if (!targetId) return;
 
       const targetPath = pathById[targetId];
+
       if (!targetPath) return;
 
       window.history.replaceState(null, "", targetPath);
       dispatch(setActiveMenuId(targetId));
     }
   }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
-useEffect(() => {
-  if (isLoading) return;
-  if (!isLoggedIn) return;
 
-  let active = true;
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isLoggedIn) return;
 
-  const runCheck = async () => {
-    if (!active) return;
+    let active = true;
 
-    try {
-      await dispatch(checkAlive({ silent: true })).unwrap();
-    } catch {
-      // absichtlich leer: OfflineOverlay liest den Redux-State
-    }
-  };
+    const runCheck = async () => {
+      if (!active) return;
 
-  void runCheck();
+      try {
+        await dispatch(checkAlive({ silent: true })).unwrap();
+      } catch {
+        /*
+         * Absichtlich leer:
+         * OfflineOverlay liest den Redux-State.
+         */
+      }
+    };
 
-  const intervalId = setInterval(() => {
     void runCheck();
-  }, 40000);
 
-  const onFocus = () => {
-    void runCheck();
-  };
+    const intervalId = setInterval(() => {
+      void runCheck();
+    }, 40_000);
 
-  if (typeof window !== "undefined") {
-    window.addEventListener("focus", onFocus);
-  }
-
-  return () => {
-    active = false;
-    clearInterval(intervalId);
+    const onFocus = () => {
+      void runCheck();
+    };
 
     if (typeof window !== "undefined") {
-      window.removeEventListener("focus", onFocus);
+      window.addEventListener("focus", onFocus);
     }
-  };
-}, [dispatch, isLoading, isLoggedIn]);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", onFocus);
+      }
+    };
+  }, [dispatch, isLoading, isLoggedIn]);
+
   const navigationMenu =
     menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
 

@@ -1,9 +1,11 @@
 // src/hooks/useJwtSessionTimerWeb.ts
-import { useEffect, useRef, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
+
 import { getJwtRemainingMs } from "../util/jwtTime";
-import { store } from "../redux/store";
 import { renewAllServerJwtsIfNeeded } from "../redux/slices/jwtRenewSlice";
+import { useAppDispatch } from "./useAppDispatch";
 
 type Options = {
   enabled: boolean;
@@ -13,8 +15,29 @@ type Options = {
   onHeartbeat?: () => void;
 };
 
-const HEARTBEAT_THROTTLE_MS = 3000;
-const RENEW_ACTIVITY_WINDOW_MS = 60_000;
+/*
+ * Wichtig:
+ * JWT soll bei echter Aktivität den Login/Renew aufrufen,
+ * aber nicht bei jedem schnellen Klick mehrfach.
+ */
+const JWT_RENEW_ACTIVITY_COOLDOWN_MS = 30_000;
+
+function isSessionActivityExcluded(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+
+  return Boolean(
+    target.closest(
+      [
+        "[data-no-session-extend='true']",
+        "[id^='no-session-extend-']",
+        "[aria-label='logout']",
+        "[aria-label='Logout']",
+        "[aria-label='abmelden']",
+        "[aria-label='Abmelden']",
+      ].join(","),
+    ),
+  );
+}
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
@@ -35,18 +58,42 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
     "[contenteditable='true']",
     "[tabindex]:not([tabindex='-1'])",
     "[id^='session-activity-']",
+    "[data-session-activity='true']",
   ].join(",");
 
-  const el = target.closest(selector);
-  if (!el) return false;
+  const element = target.closest(selector);
 
-  if ((el as HTMLButtonElement).disabled) return false;
-  if (el.getAttribute("aria-disabled") === "true") return false;
+  if (!element) return false;
+
+  if ((element as HTMLButtonElement).disabled) return false;
+
+  if (element.getAttribute("aria-disabled") === "true") {
+    return false;
+  }
 
   return true;
 }
 
-function isEffectiveKey(e: KeyboardEvent): boolean {
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+
+  return Boolean(
+    target.closest(
+      [
+        "input",
+        "textarea",
+        "select",
+        "[contenteditable='true']",
+      ].join(","),
+    ),
+  );
+}
+
+function isEffectiveKey(event: KeyboardEvent): boolean {
+  if (isEditableTarget(event.target)) {
+    return true;
+  }
+
   return [
     "Tab",
     "Enter",
@@ -61,7 +108,7 @@ function isEffectiveKey(e: KeyboardEvent): boolean {
     "End",
     "PageUp",
     "PageDown",
-  ].includes(e.key);
+  ].includes(event.key);
 }
 
 export function useJwtSessionTimerWeb({
@@ -71,6 +118,8 @@ export function useJwtSessionTimerWeb({
   onLogout,
   onHeartbeat,
 }: Options) {
+  const dispatch = useAppDispatch();
+
   const [secondsLeft, setSecondsLeft] = useState(() => {
     if (!jwt) return 0;
 
@@ -92,22 +141,66 @@ export function useJwtSessionTimerWeb({
   });
 
   const lastLogoutAtRef = useRef<number>(0);
-  const lastHeartbeatAtRef = useRef<number>(0);
+  const lastRenewAtRef = useRef<number>(0);
   const renewRunningRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    if (!enabled) return;
-    if (Platform.OS !== "web") return;
-    if (typeof window === "undefined") return;
+  const safeLogout = useCallback(() => {
+    const now = Date.now();
 
-    const safeLogout = () => {
+    if (now - lastLogoutAtRef.current < 1000) return;
+
+    lastLogoutAtRef.current = now;
+    onLogout();
+  }, [onLogout]);
+
+  const renewNow = useCallback(
+    async (force = true) => {
+      if (!enabled) return;
+      if (Platform.OS !== "web") return;
+      if (typeof window === "undefined") return;
+      if (!jwt) return;
+      if (renewRunningRef.current) return;
+
+      const remainingMs = getJwtRemainingMs(jwt);
+
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
+        return;
+      }
+
       const now = Date.now();
 
-      if (now - lastLogoutAtRef.current < 1000) return;
+      if (now - lastRenewAtRef.current < JWT_RENEW_ACTIVITY_COOLDOWN_MS) {
+        return;
+      }
 
-      lastLogoutAtRef.current = now;
-      onLogout();
-    };
+      lastRenewAtRef.current = now;
+      renewRunningRef.current = true;
+
+      try {
+        console.log("[JWT TIMER] renew via login endpoint");
+
+        await dispatch(
+          renewAllServerJwtsIfNeeded({
+            force,
+            cooldownMs: 0,
+          }) as any,
+        );
+      } finally {
+        renewRunningRef.current = false;
+      }
+    },
+    [dispatch, enabled, jwt],
+  );
+
+  useEffect(() => {
+    if (!enabled) {
+      setSecondsLeft(0);
+      setWarning(false);
+      return;
+    }
+
+    if (Platform.OS !== "web") return;
+    if (typeof window === "undefined") return;
 
     const tickOnce = () => {
       if (!jwt) {
@@ -139,54 +232,39 @@ export function useJwtSessionTimerWeb({
         return;
       }
 
-      const now = Date.now();
-
-      if (now - lastHeartbeatAtRef.current < HEARTBEAT_THROTTLE_MS) {
-        return;
-      }
-
-      lastHeartbeatAtRef.current = now;
-
       onHeartbeat?.();
 
-      if (remainingMs > RENEW_ACTIVITY_WINDOW_MS) {
-        return;
-      }
-
-      renewRunningRef.current = true;
-
-      store
-        .dispatch(
-          renewAllServerJwtsIfNeeded({
-            force: true,
-            cooldownMs: 10_000,
-          }) as any,
-        )
-        .finally(() => {
-          renewRunningRef.current = false;
-        });
+      /*
+       * Wichtig:
+       * JWT-Aktivität ruft wieder den Login/Renew-Weg auf.
+       * Kein /sessionTime und kein /sessionTime/extend.
+       */
+      void renewNow(true);
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!isEffectiveKey(e)) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isSessionActivityExcluded(event.target)) return;
+      if (!isEffectiveKey(event)) return;
 
       triggerHeartbeat();
     };
 
-    const onClick = (e: MouseEvent) => {
-      if (!isInteractiveTarget(e.target)) return;
+    const onClick = (event: MouseEvent) => {
+      if (isSessionActivityExcluded(event.target)) return;
+      if (!isInteractiveTarget(event.target)) return;
 
       triggerHeartbeat();
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!isInteractiveTarget(e.target)) return;
+    const onTouchEnd = (event: TouchEvent) => {
+      if (isSessionActivityExcluded(event.target)) return;
+      if (!isInteractiveTarget(event.target)) return;
 
       triggerHeartbeat();
     };
 
-    window.addEventListener("keydown", onKeyDown, { capture: true });
-    window.addEventListener("click", onClick, { capture: true });
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("click", onClick, true);
     window.addEventListener("touchend", onTouchEnd, {
       capture: true,
       passive: true,
@@ -194,19 +272,19 @@ export function useJwtSessionTimerWeb({
 
     tickOnce();
 
-    const tick = window.setInterval(tickOnce, 1000);
+    const intervalId = window.setInterval(tickOnce, 1000);
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown, {
-        capture: true,
-      } as any);
-      window.removeEventListener("click", onClick, { capture: true } as any);
-      window.removeEventListener("touchend", onTouchEnd, {
-        capture: true,
-      } as any);
-      window.clearInterval(tick);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("touchend", onTouchEnd, true);
+      window.clearInterval(intervalId);
     };
-  }, [enabled, jwt, warnMs, onLogout, onHeartbeat]);
+  }, [enabled, jwt, warnMs, safeLogout, onHeartbeat, renewNow]);
 
-  return { secondsLeft, warning };
+  return {
+    secondsLeft,
+    warning,
+    renewNow,
+  };
 }

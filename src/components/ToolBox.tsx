@@ -127,7 +127,8 @@ function ColorSwitcher() {
 export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const dispatch = useAppDispatch();
 
-  const isdev = true;
+  const isdev = false; // __DEV__ || process.env.NODE_ENV === "development";
+
   const jwt = useAppSelector(selectJwt);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const sessionTime = useAppSelector(selectSessionTime);
@@ -136,9 +137,22 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
 
   const isWeb = Platform.OS === "web";
 
-  const isOidc =
-    authenticationMethod === "oidc" ||
-    authenticationMethod === "unknown";
+  /*
+   * Wichtig:
+   * OIDC nur dann, wenn authenticationMethod wirklich "oidc" ist.
+   * "unknown" darf hier nicht automatisch wie OIDC behandelt werden,
+   * sonst arbeitet JWT/Base wie OIDC.
+   */
+  const isOidc = isLoggedIn && authenticationMethod === "oidc";
+
+  /*
+   * JWT:
+   * Wenn ein JWT vorhanden ist und es nicht OIDC ist,
+   * arbeitet der Timer über JWT-exp.
+   */
+  const isJwt = Boolean(jwt) && !isOidc;
+
+  const hasSessionTimer = isOidc || isJwt;
 
   const showLogout =
     isLoggedIn || (isBaseMode === true && baseModeLoggedIn === true);
@@ -151,6 +165,11 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const updateWrapRef = useRef<View>(null);
   const suppressSessionPopupUntilRef = useRef<number>(0);
 
+  /*
+   * Dieser 1-Sekunden-Tick ist nur für OIDC nötig,
+   * weil S/T aus Redux + lastCheckedAt live runtergerechnet werden.
+   * JWT bringt secondsLeft schon direkt aus useJwtSessionTimerWeb.
+   */
   useEffect(() => {
     if (!isWeb || !showLogout || !isOidc) return;
 
@@ -175,7 +194,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   }, [dispatch, isLoggedIn, isBaseMode, baseModeLoggedIn]);
 
   const jwtTimer = useJwtSessionTimerWeb({
-    enabled: isWeb && showLogout && !isOidc,
+    enabled: isWeb && showLogout && isJwt,
     jwt,
     warnMs: 30_000,
     onLogout: onAutoLogout,
@@ -223,6 +242,22 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const sessionTimeText = formatMsToMMSS(sessionRemainingMs);
   const tokenTimeText = formatMsToMMSS(tokenRemainingMs);
 
+  /*
+   * Hauptanzeige:
+   * OIDC zeigt die Backend-Session-Zeit.
+   * JWT zeigt die JWT-Restzeit.
+   */
+  const mainTimerText = isOidc ? sessionTimeText : effectiveTimeText;
+
+  /*
+   * Debug:
+   * OIDC zeigt S/T.
+   * JWT zeigt nur JWT.
+   */
+  const debugTimerText = isOidc
+    ? `S: ${sessionTimeText} | T: ${tokenTimeText}`
+    : `JWT: ${effectiveTimeText}`;
+
   useEffect(() => {
     if (!isWeb) return;
 
@@ -232,7 +267,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   }, [updateState.frontend.isAvailable, isWeb]);
 
   useEffect(() => {
-    if (!isWeb || !showLogout) return;
+    if (!isWeb || !showLogout || !hasSessionTimer) return;
 
     const nowValue = Date.now();
     const suppressed = nowValue < suppressSessionPopupUntilRef.current;
@@ -244,8 +279,9 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     if (!warning && openPopup === "session") {
       setOpenPopup(null);
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [warning, isWeb, showLogout]);
+  }, [warning, isWeb, showLogout, hasSessionTimer]);
 
   useEffect(() => {
     if (!isWeb) return;
@@ -278,16 +314,19 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
     suppressSessionPopupUntilRef.current = Date.now() + 10_000;
     setOpenPopup(null);
 
-    if (!isOidc) {
-      return;
-    }
-
     try {
-      await dispatch(extendSessionTime()).unwrap();
+      if (isOidc) {
+        await dispatch(extendSessionTime()).unwrap();
+        return;
+      }
+
+      if (isJwt) {
+        await jwtTimer.renewNow(true);
+      }
     } catch (error) {
-      console.log("[SESSION] extend from stayLoggedIn failed:", error);
+      console.log("[SESSION] stayLoggedIn failed:", error);
     }
-  }, [dispatch, isOidc]);
+  }, [dispatch, isOidc, isJwt, jwtTimer]);
 
   const manualLogout = useCallback(() => {
     setOpenPopup(null);
@@ -303,7 +342,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
       <View style={[styles.toolBoxContainer]}>
         <ColorSwitcher />
 
-        {isWeb && showLogout ? (
+        {isWeb && showLogout && hasSessionTimer ? (
           <View style={styles.timerWrap} ref={sessionWrapRef}>
             <Pressable
               onPress={toggleSessionPopup}
@@ -324,12 +363,12 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
                   warning ? styles.warningText : undefined,
                 ]}
               >
-                {sessionTimeText}
+                {mainTimerText}
               </Text>
 
               {isdev ? (
                 <Text style={styles.debugTimerText}>
-                  S: {sessionTimeText} | T: {tokenTimeText}
+                  {debugTimerText}
                 </Text>
               ) : null}
             </View>
@@ -351,12 +390,21 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
                     <Text style={styles.popupDebugLine}>
                       Effektiv: {effectiveTimeText}
                     </Text>
-                    <Text style={styles.popupDebugLine}>
-                      Session: {sessionTimeText}
-                    </Text>
-                    <Text style={styles.popupDebugLine}>
-                      Token: {tokenTimeText}
-                    </Text>
+
+                    {isOidc ? (
+                      <>
+                        <Text style={styles.popupDebugLine}>
+                          Session: {sessionTimeText}
+                        </Text>
+                        <Text style={styles.popupDebugLine}>
+                          Token: {tokenTimeText}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.popupDebugLine}>
+                        JWT: {effectiveTimeText}
+                      </Text>
+                    )}
                   </View>
                 ) : null}
 
