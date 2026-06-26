@@ -6,7 +6,7 @@ export const menuFeatureFlags: Record<number, boolean> = {
   3013: true,// Menüpunkt "Personal Settings" - enthält die Tabs "Appearance", "Privacy Settings" und "Change Password"
   3014: true,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
   3010: true ,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3024: false // Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
+  3024: true // Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
 };
 
 export function isMenuEnabled(

@@ -1,14 +1,13 @@
-// redux/slices/appSettingsFileUploadSlice.ts
-
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
 import type { AuthMethod } from "./apiSlice";
 
 type MessageType = "INFO" | "WARNING" | "ERROR";
 
-type UploadMessage = {
+export type UploadMessage = {
   dateTime?: string;
-  message?: string;
   messageType?: MessageType;
+  message?: string;
 };
 
 type UploadState = {
@@ -27,16 +26,30 @@ type UploadArgs = {
   baseUrl: string;
   jwt?: string | null;
   authenticationMethod: AuthMethod;
+  performative: string;
   file: {
     uri?: string;
     name: string;
     type?: string;
-    file?: File;
+    file?: any;
   };
-  performative: string;
 };
 
-function isRedirectStatus(status?: number): boolean {
+function normalizeBaseUrl(url: string): string {
+  return (url ?? "").trim().replace(/\/+$/, "");
+}
+
+function parseJsonSafely(text: string): any {
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function isRedirectStatus(status: number): boolean {
   return (
     status === 301 ||
     status === 302 ||
@@ -53,11 +66,22 @@ export const uploadAppSettingsFile = createAsyncThunk<
 >(
   "appSettingsFileUpload/upload",
   async (
-    { baseUrl, jwt, authenticationMethod, file, performative },
+    { baseUrl, jwt, authenticationMethod, performative, file },
     { rejectWithValue },
   ) => {
-    if (!performative?.trim()) {
-      return rejectWithValue("Performative fehlt.");
+    const base = normalizeBaseUrl(baseUrl);
+    const selectedPerformative = performative.trim();
+
+    if (!base) {
+      return rejectWithValue("Server-URL fehlt.");
+    }
+
+    if (!selectedPerformative) {
+      return rejectWithValue("Konfiguration/Performative fehlt.");
+    }
+
+    if (!file?.file && !file?.uri) {
+      return rejectWithValue("Datei fehlt.");
     }
 
     const formData = new FormData();
@@ -65,15 +89,19 @@ export const uploadAppSettingsFile = createAsyncThunk<
     if (file.file) {
       formData.append("file", file.file, file.name);
     } else {
-      formData.append("file", {
-        uri: file.uri,
-        name: file.name,
-        type: file.type || "application/octet-stream",
-      } as any);
+      formData.append(
+        "file",
+        {
+          uri: file.uri,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+        } as any,
+      );
     }
 
     const headers: Record<string, string> = {
-      xPerformative: performative,
+      Accept: "application/json",
+      "X-Performative": selectedPerformative,
     };
 
     if (authenticationMethod === "jwt" && jwt) {
@@ -81,28 +109,34 @@ export const uploadAppSettingsFile = createAsyncThunk<
     }
 
     try {
-      const response = await fetch(`${baseUrl}/api/app/settings/file/upload`, {
+      const response = await fetch(`${base}/api/app/settings/upload`, {
         method: "POST",
+        cache: "no-store",
         credentials: "include",
         redirect: "manual",
         headers,
         body: formData,
       });
 
-      if (isRedirectStatus(response.status) || response.type === "opaqueredirect") {
-        return rejectWithValue("OIDC-Session ist nicht authentifiziert.");
+      if (
+        isRedirectStatus(response.status) ||
+        (response as any).type === "opaqueredirect"
+      ) {
+        return rejectWithValue(
+          "Session ist abgelaufen oder Login erforderlich.",
+        );
       }
 
-      let data: UploadMessage | null = null;
-
-      try {
-        data = (await response.json()) as UploadMessage;
-      } catch {
-        data = null;
-      }
+      const bodyText = await response.text();
+      const data = parseJsonSafely(bodyText);
 
       if (!response.ok) {
-        return rejectWithValue(data?.message || "Upload fehlgeschlagen.");
+        return rejectWithValue(
+          data?.message ||
+            data?.messageText ||
+            bodyText ||
+            `Upload fehlgeschlagen. Status: ${response.status}`,
+        );
       }
 
       if (data?.messageType === "ERROR") {
@@ -111,9 +145,10 @@ export const uploadAppSettingsFile = createAsyncThunk<
         );
       }
 
-      return data ?? {
-        messageType: "INFO",
-        message: "Upload erfolgreich.",
+      return {
+        dateTime: data?.dateTime,
+        messageType: data?.messageType,
+        message: data?.message || "Upload erfolgreich.",
       };
     } catch (error: any) {
       return rejectWithValue(
@@ -142,11 +177,14 @@ const appSettingsFileUploadSlice = createSlice({
       })
       .addCase(uploadAppSettingsFile.fulfilled, (state, action) => {
         state.loading = false;
+        state.error = null;
         state.result = action.payload;
       })
       .addCase(uploadAppSettingsFile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Unbekannter Upload-Fehler.";
+        state.error =
+          action.payload || "Unbekannter Fehler beim Datei-Upload.";
+        state.result = null;
       });
   },
 });

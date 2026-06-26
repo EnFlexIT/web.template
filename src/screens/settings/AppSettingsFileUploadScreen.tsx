@@ -1,48 +1,302 @@
-import React, { useMemo, useState } from "react";
-import { TextInput, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Platform, Pressable, View } from "react-native";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import Feather_ from "@expo/vector-icons/Feather";
 
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H3 } from "../../components/stylistic/H3";
+
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { selectApi } from "../../redux/slices/apiSlice";
+
+import { normalizeBaseUrl, selectApi } from "../../redux/slices/apiSlice";
+
 import {
   resetUploadState,
   uploadAppSettingsFile,
 } from "../../redux/slices/appSettingsFileUploadSlice";
 
+const FILE_CONFIGURATION_PERFORMATIVE = "FILECONFIGURATION";
+
+const fallbackConfigurationTypeOptions: Record<string, string> = {
+  JettyConfiguration: "Web-Server / JettyConfiguration",
+};
+
+function getConfigurationTypeLabel(value: string): string {
+  const normalized = value.trim();
+
+  if (normalized === "JettyConfiguration") {
+    return "Web-Server / JettyConfiguration";
+  }
+
+  if (normalized.toLowerCase().includes("awb")) {
+    return "AWB.ini";
+  }
+
+  return normalized;
+}
+
+function getFilenameFromContentDisposition(
+  contentDisposition: string | null,
+  fallbackName: string,
+): string {
+  if (!contentDisposition) return fallbackName;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].replace(/"/g, ""));
+    } catch {
+      return utf8Match[1].replace(/"/g, "");
+    }
+  }
+
+  const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+
+  if (filenameMatch?.[1]) {
+    return filenameMatch[1];
+  }
+
+  return fallbackName;
+}
+
+function isRedirectStatus(status: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
+
 export function AppSettingsFileUploadScreen() {
+  const Feather = withUnistyles(Feather_);
+
   const dispatch = useAppDispatch();
   const api = useAppSelector(selectApi);
   const uploadState = useAppSelector((state) => state.appSettingsFileUpload);
 
-  const [performative, setPerformative] = useState("");
+  const fileInputRef = useRef<any>(null);
+
+  const [performative, setPerformative] = useState("JettyConfiguration");
+
+  const [configurationTypeOptions, setConfigurationTypeOptions] =
+    useState<Record<string, string>>(fallbackConfigurationTypeOptions);
+
+  const [configurationTypesLoading, setConfigurationTypesLoading] =
+    useState(false);
+
+  const [configurationTypesError, setConfigurationTypesError] =
+    useState<string | null>(null);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const canUpload = useMemo(() => {
-    return Boolean(api.ip && performative.trim() && selectedFile && !uploadState.loading);
+    return Boolean(
+      api.ip &&
+        performative.trim() &&
+        selectedFile &&
+        !uploadState.loading,
+    );
   }, [api.ip, performative, selectedFile, uploadState.loading]);
 
-  function pickFile() {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConfigurationTypes() {
+      if (!api.ip) return;
+
+      setConfigurationTypesLoading(true);
+      setConfigurationTypesError(null);
+
+      try {
+        const headers: Record<string, string> = {
+          Accept: "application/json",
+          "X-Performative": FILE_CONFIGURATION_PERFORMATIVE,
+        };
+
+        if (api.authenticationMethod === "jwt" && api.jwt) {
+          headers.Authorization = `Bearer ${api.jwt}`;
+        }
+
+        const response = await fetch(
+          `${normalizeBaseUrl(api.ip)}/api/app/settings/get`,
+          {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+            redirect: "manual",
+            headers,
+          },
+        );
+
+        if (
+          isRedirectStatus(response.status) ||
+          (response as any).type === "opaqueredirect"
+        ) {
+          throw new Error("Session ist nicht mehr gültig oder Login erforderlich.");
+        }
+
+        if (!response.ok) {
+          throw new Error(`Status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const entries = Array.isArray(data?.propertyEntries)
+          ? data.propertyEntries
+          : [];
+
+        const configurationTypes: string[] = entries
+          .filter((entry: any) =>
+            String(entry?.key ?? "")
+              .toLowerCase()
+              .startsWith("configurationtype"),
+          )
+          .flatMap((entry: any): string[] => {
+            const value = String(entry?.value ?? "").trim();
+
+            const valueOptions: string[] = Array.isArray(entry?.valueOptions)
+              ? entry.valueOptions
+                  .map((option: unknown) => String(option ?? "").trim())
+                  .filter((option: string) => Boolean(option))
+              : [];
+
+            return [value, ...valueOptions].filter((item: string) =>
+              Boolean(item),
+            );
+          });
+
+        const uniqueTypes: string[] = Array.from(
+          new Set<string>(configurationTypes),
+        );
+
+        if (uniqueTypes.length === 0) {
+          throw new Error("Keine Konfigurationstypen gefunden.");
+        }
+
+        const options: Record<string, string> = Object.fromEntries(
+          uniqueTypes.map((value): [string, string] => [
+            value,
+            getConfigurationTypeLabel(value),
+          ]),
+        );
+
+        if (cancelled) return;
+
+        setConfigurationTypeOptions(options);
+
+        setPerformative((current: string): string => {
+          if (current && options[current]) {
+            return current;
+          }
+
+          return uniqueTypes[0] || "JettyConfiguration";
+        });
+
+        console.log("[FILE CONFIG] configuration types:", uniqueTypes);
+      } catch (error) {
+        console.warn("[FILE CONFIG] could not load configuration types", error);
+
+        if (!cancelled) {
+          setConfigurationTypesError(
+            "Konfigurationstypen konnten nicht geladen werden. Fallback wird verwendet.",
+          );
+
+          setConfigurationTypeOptions(fallbackConfigurationTypeOptions);
+
+          setPerformative((current: string): string => {
+            return current || "JettyConfiguration";
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setConfigurationTypesLoading(false);
+        }
+      }
+    }
+
+    void loadConfigurationTypes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [api.ip, api.jwt, api.authenticationMethod]);
+
+  function resetMessages() {
+    setDownloadError(null);
+    dispatch(resetUploadState());
+  }
+
+  function setFile(file: File | null) {
+    setSelectedFile(file);
+    resetMessages();
+  }
+
+  function openFileDialog() {
+    if (Platform.OS !== "web") return;
     if (typeof document === "undefined") return;
 
-    const input = document.createElement("input");
-    input.type = "file";
+    if (!fileInputRef.current) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.style.display = "none";
 
-    input.onchange = () => {
-      const file = input.files?.[0] ?? null;
-      setSelectedFile(file);
-      dispatch(resetUploadState());
-    };
+      input.onchange = () => {
+        const file = input.files?.[0] ?? null;
+        setFile(file);
+      };
 
-    input.click();
+      document.body.appendChild(input);
+      fileInputRef.current = input;
+    }
+
+    fileInputRef.current.value = "";
+    fileInputRef.current.click();
+  }
+
+  function handleDrop(event: any) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setIsDragActive(false);
+
+    const file = event.dataTransfer?.files?.[0] ?? null;
+
+    if (file) {
+      setFile(file);
+    }
+  }
+
+  function handleDragOver(event: any) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isDragActive) {
+      setIsDragActive(true);
+    }
+  }
+
+  function handleDragLeave(event: any) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setIsDragActive(false);
   }
 
   async function uploadFile() {
     if (!selectedFile) return;
+
+    setDownloadError(null);
 
     await dispatch(
       uploadAppSettingsFile({
@@ -59,47 +313,212 @@ export function AppSettingsFileUploadScreen() {
     );
   }
 
+  async function downloadCurrentConfiguration() {
+    const selectedPerformative = performative.trim();
+
+    if (!api.ip || !selectedPerformative) {
+      setDownloadError("Konfiguration/Performative fehlt.");
+      return;
+    }
+
+    if (Platform.OS !== "web") {
+      setDownloadError("Download ist aktuell nur für Web umgesetzt.");
+      return;
+    }
+
+    setDownloadLoading(true);
+    setDownloadError(null);
+    dispatch(resetUploadState());
+
+    try {
+      const headers: Record<string, string> = {
+        Accept: "application/octet-stream",
+        "X-Performative": selectedPerformative,
+      };
+
+      if (api.authenticationMethod === "jwt" && api.jwt) {
+        headers.Authorization = `Bearer ${api.jwt}`;
+      }
+
+      const response = await fetch(
+        `${normalizeBaseUrl(api.ip)}/api/app/settings/download`,
+        {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+          redirect: "manual",
+          headers,
+        },
+      );
+
+      if (
+        isRedirectStatus(response.status) ||
+        (response as any).type === "opaqueredirect"
+      ) {
+        throw new Error("Session ist abgelaufen oder Login erforderlich.");
+      }
+
+      const contentType = response.headers.get("content-type") ?? "";
+
+      if (!response.ok) {
+        const text = await response.text();
+
+        throw new Error(
+          text || `Download fehlgeschlagen. Status: ${response.status}`,
+        );
+      }
+
+      if (contentType.toLowerCase().includes("application/json")) {
+        const data = await response.json();
+
+        throw new Error(
+          data?.message || "Download konnte nicht ausgeführt werden.",
+        );
+      }
+
+      const blob = await response.blob();
+
+      const contentDisposition = response.headers.get("content-disposition");
+
+      const fallbackFilename = `${selectedPerformative}.config`;
+
+      const filename = getFilenameFromContentDisposition(
+        contentDisposition,
+        fallbackFilename,
+      );
+
+      const objectUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error: any) {
+      console.warn("[FILE CONFIG] download failed", error);
+
+      setDownloadError(
+        error?.message || "Download konnte nicht ausgeführt werden.",
+      );
+    } finally {
+      setDownloadLoading(false);
+    }
+  }
+
+  const dropZoneWebProps =
+    Platform.OS === "web"
+      ? {
+          onDrop: handleDrop,
+          onDragOver: handleDragOver,
+          onDragLeave: handleDragLeave,
+        }
+      : {};
+
   return (
     <View style={s.container}>
       <Card>
         <View style={s.content}>
-          <H3>Settings File Upload</H3>
-
-          <ThemedText style={s.description}>
-            Upload einer App-Settings-Datei mit Performative.
-          </ThemedText>
+          <H3>Datei-Konfiguration</H3>
 
           <View style={s.field}>
-            <ThemedText style={s.label}>Performative</ThemedText>
+            <ThemedText style={s.label}>Konfiguration</ThemedText>
 
-            <TextInput
-              value={performative}
-              onChangeText={(value) => {
-                setPerformative(value);
-                dispatch(resetUploadState());
-              }}
-              placeholder="z. B. UPDATE_STRATEGY"
-              placeholderTextColor="#777"
-              style={s.input}
-              autoCapitalize="characters"
-            />
+            {configurationTypesLoading ? (
+              <ThemedText style={s.mutedText}>
+                Konfigurationstypen werden geladen...
+              </ThemedText>
+            ) : (
+              <Dropdown<string>
+                value={performative}
+                options={configurationTypeOptions}
+                onChange={(value) => {
+                  setPerformative(value);
+                  resetMessages();
+                }}
+                size="sm"
+              />
+            )}
+
+            {configurationTypesError ? (
+              <ThemedText style={s.warning}>
+                {configurationTypesError}
+              </ThemedText>
+            ) : null}
           </View>
 
-          <View style={s.field}>
-            <ThemedText style={s.label}>Datei</ThemedText>
+          <View style={s.downloadRow}>
+            <ThemedText style={s.normalText}>
+              Download der aktuellen Konfiguration
+            </ThemedText>
 
-            <View style={s.fileRow}>
+            <View style={s.buttonBox}>
               <ActionButton
-                label="Datei auswählen"
+                label={downloadLoading ? "Lädt..." : "Download"}
                 variant="secondary"
                 size="sm"
-                onPress={pickFile}
-                disabled={uploadState.loading}
+                onPress={downloadCurrentConfiguration}
+                disabled={downloadLoading || !performative.trim()}
               />
+            </View>
+          </View>
 
-              <ThemedText style={s.fileName}>
-                {selectedFile?.name || "Keine Datei ausgewählt"}
-              </ThemedText>
+          {downloadError ? (
+            <ThemedText style={s.error}>{downloadError}</ThemedText>
+          ) : null}
+
+          <View style={s.field}>
+            <ThemedText style={s.normalText}>Upload neue Datei:</ThemedText>
+
+            <Pressable
+              onPress={openFileDialog}
+              style={[
+                s.dropZone,
+                isDragActive && s.dropZoneActive,
+                selectedFile && s.dropZoneSelected,
+              ]}
+              {...(dropZoneWebProps as any)}
+            >
+              <View style={s.dropZoneCenter}>
+                <Feather
+                  name="upload-cloud"
+                  size={42}
+                  color={s.iconColor.color}
+                />
+
+                <ThemedText style={s.dropZoneText}>
+                  {isDragActive
+                    ? "Datei hier loslassen"
+                    : "Drag & Drop File here"}
+                </ThemedText>
+
+                <ThemedText style={s.dropZoneSubText}>
+                  oder klicken, um eine Datei auszuwählen
+                </ThemedText>
+              </View>
+            </Pressable>
+
+            <View style={s.fileFooter}>
+              <View style={s.fileNameBox}>
+                <ThemedText style={s.fileNameLabel}>Dateiname:</ThemedText>
+
+                <ThemedText style={s.fileName} numberOfLines={1}>
+                  {selectedFile?.name || "Keine Datei ausgewählt"}
+                </ThemedText>
+              </View>
+
+              <View style={s.buttonBox}>
+                <ActionButton
+                  label={uploadState.loading ? "Upload läuft..." : "Upload"}
+                  variant="primary"
+                  size="sm"
+                  onPress={uploadFile}
+                  disabled={!canUpload}
+                />
+              </View>
             </View>
           </View>
 
@@ -108,43 +527,35 @@ export function AppSettingsFileUploadScreen() {
           ) : null}
 
           {uploadState.result ? (
-            <ThemedText style={s.success}>
+            <ThemedText
+              style={[
+                s.message,
+                uploadState.result.messageType === "WARNING"
+                  ? s.warning
+                  : s.success,
+              ]}
+            >
               {uploadState.result.message || "Upload erfolgreich."}
             </ThemedText>
           ) : null}
-
-          <View style={s.actions}>
-            <ActionButton
-              label={uploadState.loading ? "Upload läuft..." : "Upload starten"}
-              variant="primary"
-              size="sm"
-              onPress={uploadFile}
-              disabled={!canUpload}
-            />
-          </View>
         </View>
       </Card>
     </View>
   );
 }
 
-const s = StyleSheet.create({
+const s = StyleSheet.create((theme) => ({
   container: {
     padding: 24,
-    maxWidth: 900,
+    maxWidth: 980,
   },
 
   content: {
-    gap: 14,
-  },
-
-  description: {
-    fontSize: 13,
-    opacity: 0.75,
+    gap: 18,
   },
 
   field: {
-    gap: 6,
+    gap: 8,
   },
 
   label: {
@@ -152,29 +563,102 @@ const s = StyleSheet.create({
     fontWeight: "700",
   },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    color: "#fff",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    fontSize: 14,
+  normalText: {
+    fontSize: 15,
   },
 
-  fileRow: {
+  mutedText: {
+    fontSize: 13,
+    opacity: 0.7,
+  },
+
+  downloadRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    gap: 16,
     flexWrap: "wrap",
   },
 
-  fileName: {
+  buttonBox: {
+    width: 112,
+  },
+
+  dropZone: {
+    minHeight: 190,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "rgba(140,140,140,0.45)",
+    backgroundColor: "rgba(140,140,140,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+
+  dropZoneCenter: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  dropZoneActive: {
+    borderColor: "rgba(120,220,140,0.9)",
+    backgroundColor: "rgba(120,220,140,0.14)",
+  },
+
+  dropZoneSelected: {
+    borderColor: "rgba(140,140,140,0.75)",
+  },
+
+  iconColor: {
+    color: theme.colors.text,
+  },
+
+  dropZoneText: {
+    fontSize: 24,
+    opacity: 0.72,
+    textAlign: "center",
+  },
+
+  dropZoneSubText: {
     fontSize: 13,
+    opacity: 0.55,
+    textAlign: "center",
+  },
+
+  fileFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    flexWrap: "wrap",
+  },
+
+  fileNameBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    minWidth: 240,
+  },
+
+  fileNameLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  fileName: {
+    fontSize: 14,
     opacity: 0.8,
+    flex: 1,
   },
 
   error: {
     color: "#ff7676",
+    fontSize: 13,
+  },
+
+  message: {
     fontSize: 13,
   },
 
@@ -183,9 +667,8 @@ const s = StyleSheet.create({
     fontSize: 13,
   },
 
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginTop: 4,
+  warning: {
+    color: "#f5c542",
+    fontSize: 13,
   },
-});
+}));
