@@ -51,6 +51,10 @@
    "options": {
         "title": "Programmstart",
         "description": "App-Optionen, Datenschutz und Verbindungsverwaltung."
+      },
+      "settingsFileUpload": {
+        "title": "Einstellungen hochladen",
+        "description": "Lade eine JSON-Datei mit deinen Einstellungen hoch."
       }
   }
 }

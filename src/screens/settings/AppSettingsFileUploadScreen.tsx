@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
+import { useTranslation } from "react-i18next";
 
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
@@ -20,24 +21,7 @@ import {
 } from "../../redux/slices/appSettingsFileUploadSlice";
 
 const FILE_CONFIGURATION_PERFORMATIVE = "FILECONFIGURATION";
-
-const fallbackConfigurationTypeOptions: Record<string, string> = {
-  JettyConfiguration: "Web-Server / JettyConfiguration",
-};
-
-function getConfigurationTypeLabel(value: string): string {
-  const normalized = value.trim();
-
-  if (normalized === "JettyConfiguration") {
-    return "Web-Server / JettyConfiguration";
-  }
-
-  if (normalized.toLowerCase().includes("awb")) {
-    return "AWB.ini";
-  }
-
-  return normalized;
-}
+const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
 
 function getFilenameFromContentDisposition(
   contentDisposition: string | null,
@@ -76,6 +60,7 @@ function isRedirectStatus(status: number): boolean {
 
 export function AppSettingsFileUploadScreen() {
   const Feather = withUnistyles(Feather_);
+  const { t } = useTranslation(["FileConfiguration"]);
 
   const dispatch = useAppDispatch();
   const api = useAppSelector(selectApi);
@@ -83,7 +68,14 @@ export function AppSettingsFileUploadScreen() {
 
   const fileInputRef = useRef<any>(null);
 
-  const [performative, setPerformative] = useState("JettyConfiguration");
+  const fallbackConfigurationTypeOptions = useMemo<Record<string, string>>(
+    () => ({
+      [FALLBACK_CONFIGURATION_TYPE]: t("configurationTypeJettyConfiguration"),
+    }),
+    [t],
+  );
+
+  const [performative, setPerformative] = useState(FALLBACK_CONFIGURATION_TYPE);
 
   const [configurationTypeOptions, setConfigurationTypeOptions] =
     useState<Record<string, string>>(fallbackConfigurationTypeOptions);
@@ -109,6 +101,19 @@ export function AppSettingsFileUploadScreen() {
     );
   }, [api.ip, performative, selectedFile, uploadState.loading]);
 
+function getConfigurationTypeLabel(value: string): string {
+  const normalized = value.trim();
+
+  if (normalized === FALLBACK_CONFIGURATION_TYPE) {
+    return t("configurationTypeJettyConfiguration");
+  }
+
+  if (normalized.toLowerCase().includes("awb")) {
+    return t("configurationTypeAwbIni");
+  }
+
+  return normalized;
+}
   useEffect(() => {
     let cancelled = false;
 
@@ -143,7 +148,7 @@ export function AppSettingsFileUploadScreen() {
           isRedirectStatus(response.status) ||
           (response as any).type === "opaqueredirect"
         ) {
-          throw new Error("Session ist nicht mehr gültig oder Login erforderlich.");
+          throw new Error(t("messageSessionInvalidOrLoginRequired"));
         }
 
         if (!response.ok) {
@@ -181,7 +186,7 @@ export function AppSettingsFileUploadScreen() {
         );
 
         if (uniqueTypes.length === 0) {
-          throw new Error("Keine Konfigurationstypen gefunden.");
+          throw new Error(t("messageNoConfigurationTypesFound"));
         }
 
         const options: Record<string, string> = Object.fromEntries(
@@ -200,7 +205,7 @@ export function AppSettingsFileUploadScreen() {
             return current;
           }
 
-          return uniqueTypes[0] || "JettyConfiguration";
+          return uniqueTypes[0] || FALLBACK_CONFIGURATION_TYPE;
         });
 
         console.log("[FILE CONFIG] configuration types:", uniqueTypes);
@@ -209,13 +214,13 @@ export function AppSettingsFileUploadScreen() {
 
         if (!cancelled) {
           setConfigurationTypesError(
-            "Konfigurationstypen konnten nicht geladen werden. Fallback wird verwendet.",
+            t("messageConfigurationTypesCouldNotBeLoaded"),
           );
 
           setConfigurationTypeOptions(fallbackConfigurationTypeOptions);
 
           setPerformative((current: string): string => {
-            return current || "JettyConfiguration";
+            return current || FALLBACK_CONFIGURATION_TYPE;
           });
         }
       } finally {
@@ -230,7 +235,13 @@ export function AppSettingsFileUploadScreen() {
     return () => {
       cancelled = true;
     };
-  }, [api.ip, api.jwt, api.authenticationMethod]);
+  }, [
+    api.ip,
+    api.jwt,
+    api.authenticationMethod,
+    t,
+    fallbackConfigurationTypeOptions,
+  ]);
 
   function resetMessages() {
     setDownloadError(null);
@@ -317,12 +328,12 @@ export function AppSettingsFileUploadScreen() {
     const selectedPerformative = performative.trim();
 
     if (!api.ip || !selectedPerformative) {
-      setDownloadError("Konfiguration/Performative fehlt.");
+      setDownloadError(t("messageConfigurationPerformativeMissing"));
       return;
     }
 
     if (Platform.OS !== "web") {
-      setDownloadError("Download ist aktuell nur für Web umgesetzt.");
+      setDownloadError(t("messageDownloadOnlyAvailableForWeb"));
       return;
     }
 
@@ -355,7 +366,7 @@ export function AppSettingsFileUploadScreen() {
         isRedirectStatus(response.status) ||
         (response as any).type === "opaqueredirect"
       ) {
-        throw new Error("Session ist abgelaufen oder Login erforderlich.");
+        throw new Error(t("messageSessionExpiredOrLoginRequired"));
       }
 
       const contentType = response.headers.get("content-type") ?? "";
@@ -364,7 +375,10 @@ export function AppSettingsFileUploadScreen() {
         const text = await response.text();
 
         throw new Error(
-          text || `Download fehlgeschlagen. Status: ${response.status}`,
+          text ||
+            t("messageDownloadFailedWithStatus", {
+              status: response.status,
+            }),
         );
       }
 
@@ -372,7 +386,7 @@ export function AppSettingsFileUploadScreen() {
         const data = await response.json();
 
         throw new Error(
-          data?.message || "Download konnte nicht ausgeführt werden.",
+          data?.message || t("messageDownloadCouldNotBeExecuted"),
         );
       }
 
@@ -402,7 +416,7 @@ export function AppSettingsFileUploadScreen() {
       console.warn("[FILE CONFIG] download failed", error);
 
       setDownloadError(
-        error?.message || "Download konnte nicht ausgeführt werden.",
+        error?.message || t("messageDownloadCouldNotBeExecuted"),
       );
     } finally {
       setDownloadLoading(false);
@@ -422,14 +436,16 @@ export function AppSettingsFileUploadScreen() {
     <View style={s.container}>
       <Card>
         <View style={s.content}>
-          <H3>Datei-Konfiguration</H3>
+          <H3>{t("titleFileConfiguration")}</H3>
 
           <View style={s.field}>
-            <ThemedText style={s.label}>Konfiguration</ThemedText>
+            <ThemedText style={s.label}>
+              {t("labelConfiguration")}
+            </ThemedText>
 
             {configurationTypesLoading ? (
               <ThemedText style={s.mutedText}>
-                Konfigurationstypen werden geladen...
+                {t("messageConfigurationTypesLoading")}
               </ThemedText>
             ) : (
               <Dropdown<string>
@@ -452,12 +468,16 @@ export function AppSettingsFileUploadScreen() {
 
           <View style={s.downloadRow}>
             <ThemedText style={s.normalText}>
-              Download der aktuellen Konfiguration
+              {t("labelDownloadCurrentConfiguration")}
             </ThemedText>
 
             <View style={s.buttonBox}>
               <ActionButton
-                label={downloadLoading ? "Lädt..." : "Download"}
+                label={
+                  downloadLoading
+                    ? t("buttonDownloadLoading")
+                    : t("buttonDownload")
+                }
                 variant="secondary"
                 size="sm"
                 onPress={downloadCurrentConfiguration}
@@ -471,7 +491,9 @@ export function AppSettingsFileUploadScreen() {
           ) : null}
 
           <View style={s.field}>
-            <ThemedText style={s.normalText}>Upload neue Datei:</ThemedText>
+            <ThemedText style={s.normalText}>
+              {t("labelUploadNewFile")}
+            </ThemedText>
 
             <Pressable
               onPress={openFileDialog}
@@ -491,28 +513,34 @@ export function AppSettingsFileUploadScreen() {
 
                 <ThemedText style={s.dropZoneText}>
                   {isDragActive
-                    ? "Datei hier loslassen"
-                    : "Drag & Drop File here"}
+                    ? t("dropZoneDropFileHere")
+                    : t("dropZoneDragAndDropFileHere")}
                 </ThemedText>
 
                 <ThemedText style={s.dropZoneSubText}>
-                  oder klicken, um eine Datei auszuwählen
+                  {t("dropZoneClickToSelectFile")}
                 </ThemedText>
               </View>
             </Pressable>
 
             <View style={s.fileFooter}>
               <View style={s.fileNameBox}>
-                <ThemedText style={s.fileNameLabel}>Dateiname:</ThemedText>
+                <ThemedText style={s.fileNameLabel}>
+                  {t("labelFileName")}
+                </ThemedText>
 
                 <ThemedText style={s.fileName} numberOfLines={1}>
-                  {selectedFile?.name || "Keine Datei ausgewählt"}
+                  {selectedFile?.name || t("messageNoFileSelected")}
                 </ThemedText>
               </View>
 
               <View style={s.buttonBox}>
                 <ActionButton
-                  label={uploadState.loading ? "Upload läuft..." : "Upload"}
+                  label={
+                    uploadState.loading
+                      ? t("buttonUploadLoading")
+                      : t("buttonUpload")
+                  }
                   variant="primary"
                   size="sm"
                   onPress={uploadFile}
@@ -535,7 +563,7 @@ export function AppSettingsFileUploadScreen() {
                   : s.success,
               ]}
             >
-              {uploadState.result.message || "Upload erfolgreich."}
+              {uploadState.result.message || t("messageUploadSuccessful")}
             </ThemedText>
           ) : null}
         </View>

@@ -18,5 +18,6 @@
   "appInfo":"Update",
   "notifications":"Benachrichtigungen",
   "personalSettings":"Benutzereinstellung",
-  "options":"Programmstart"
+  "options":"Programmstart",
+  "settingsFileUpload":"Konfiguration"
 }

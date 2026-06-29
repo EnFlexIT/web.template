@@ -19,5 +19,6 @@
   "SystemSettings": "System Settings",
   "Appearance": "Appearance",
   "personalSettings": "Personal Settings",
-  "options": "Options"
+  "options": "Options",
+  "settingsFileUpload": "configuration"
 }

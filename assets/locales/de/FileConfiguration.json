@@ -1,0 +1,32 @@
+{
+  "titleFileConfiguration": "Datei-Konfiguration",
+
+  "labelConfiguration": "Konfiguration",
+  "labelDownloadCurrentConfiguration": "Download der aktuellen Konfiguration",
+  "labelUploadNewFile": "Upload neue Datei:",
+  "labelFileName": "Dateiname:",
+
+  "buttonDownload": "Download",
+  "buttonDownloadLoading": "Lädt...",
+  "buttonUpload": "Upload",
+  "buttonUploadLoading": "Upload läuft...",
+
+  "messageConfigurationTypesLoading": "Konfigurationstypen werden geladen...",
+  "messageConfigurationTypesCouldNotBeLoaded": "Konfigurationstypen konnten nicht geladen werden. Fallback wird verwendet.",
+  "messageNoConfigurationTypesFound": "Keine Konfigurationstypen gefunden.",
+  "messageSessionInvalidOrLoginRequired": "Session ist nicht mehr gültig oder Login erforderlich.",
+  "messageSessionExpiredOrLoginRequired": "Session ist abgelaufen oder Login erforderlich.",
+  "messageConfigurationPerformativeMissing": "Konfiguration/Performative fehlt.",
+  "messageDownloadOnlyAvailableForWeb": "Download ist aktuell nur für Web umgesetzt.",
+  "messageDownloadFailedWithStatus": "Download fehlgeschlagen. Status: {{status}}",
+  "messageDownloadCouldNotBeExecuted": "Download konnte nicht ausgeführt werden.",
+  "messageNoFileSelected": "Keine Datei ausgewählt",
+  "messageUploadSuccessful": "Upload erfolgreich.",
+
+  "dropZoneDropFileHere": "Datei hier loslassen",
+  "dropZoneDragAndDropFileHere": "Datei hier ablegen",
+  "dropZoneClickToSelectFile": "oder klicken, um eine Datei auszuwählen",
+
+  "configurationTypeJettyConfiguration": "Web-Server / JettyConfiguration",
+  "configurationTypeAwbIni": "AWB.ini"
+}

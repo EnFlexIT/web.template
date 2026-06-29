@@ -1,0 +1,32 @@
+{
+  "titleFileConfiguration": "File configuration",
+
+  "labelConfiguration": "Configuration",
+  "labelDownloadCurrentConfiguration": "Download current configuration",
+  "labelUploadNewFile": "Upload new file:",
+  "labelFileName": "File name:",
+
+  "buttonDownload": "Download",
+  "buttonDownloadLoading": "Loading...",
+  "buttonUpload": "Upload",
+  "buttonUploadLoading": "Upload running...",
+
+  "messageConfigurationTypesLoading": "Loading configuration types...",
+  "messageConfigurationTypesCouldNotBeLoaded": "Configuration types could not be loaded. Fallback is used.",
+  "messageNoConfigurationTypesFound": "No configuration types found.",
+  "messageSessionInvalidOrLoginRequired": "Session is no longer valid or login is required.",
+  "messageSessionExpiredOrLoginRequired": "Session has expired or login is required.",
+  "messageConfigurationPerformativeMissing": "Configuration/performative is missing.",
+  "messageDownloadOnlyAvailableForWeb": "Download is currently only implemented for web.",
+  "messageDownloadFailedWithStatus": "Download failed. Status: {{status}}",
+  "messageDownloadCouldNotBeExecuted": "Download could not be executed.",
+  "messageNoFileSelected": "No file selected",
+  "messageUploadSuccessful": "Upload successful.",
+
+  "dropZoneDropFileHere": "Drop file here",
+  "dropZoneDragAndDropFileHere": "Drag & drop file here",
+  "dropZoneClickToSelectFile": "or click to select a file",
+
+  "configurationTypeJettyConfiguration": "Web server / JettyConfiguration",
+  "configurationTypeAwbIni": "AWB.ini"
+}
