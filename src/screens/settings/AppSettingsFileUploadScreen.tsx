@@ -4,24 +4,39 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 
+import { useFileDropWeb } from "../../hooks/useFileDropWeb";
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H3 } from "../../components/stylistic/H3";
-
+import { BackendUpdateProgressDialog } from "../../screens/update/Dialog/BackendUpdateProgressDialog";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-import { normalizeBaseUrl, selectApi } from "../../redux/slices/apiSlice";
+import {
+  logoutAsync,
+  normalizeBaseUrl,
+  selectApi,
+  setIpAsync,
+} from "../../redux/slices/apiSlice";
 
 import {
   resetUploadState,
   uploadAppSettingsFile,
 } from "../../redux/slices/appSettingsFileUploadSlice";
 
+const Feather = withUnistyles(Feather_);
+
 const FILE_CONFIGURATION_PERFORMATIVE = "FILECONFIGURATION";
 const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
+
+type ConfigDialogPhase =
+  | "installing"
+  | "success"
+  | "restarting"
+  | "reconnecting"
+  | "logout";
 
 function getFilenameFromContentDisposition(
   contentDisposition: string | null,
@@ -58,15 +73,104 @@ function isRedirectStatus(status: number): boolean {
   );
 }
 
-export function AppSettingsFileUploadScreen() {
-  const Feather = withUnistyles(Feather_);
-  const { t } = useTranslation(["FileConfiguration"]);
+function getDirectChildText(element: Element, childName: string): string | null {
+  const child = Array.from(element.children).find(
+    (item) => item.localName === childName,
+  );
 
+  return child?.textContent?.trim() || null;
+}
+
+function getJettySetting(xml: Document, settingKey: string): string | null {
+  const entries = Array.from(xml.getElementsByTagName("entry"));
+
+  for (const entry of entries) {
+    const key = getDirectChildText(entry, "key");
+
+    if (key !== settingKey) continue;
+
+    const valueWrapper = Array.from(entry.children).find(
+      (child) => child.localName === "value",
+    );
+
+    if (!valueWrapper) return null;
+
+    const valueNodes = Array.from(valueWrapper.getElementsByTagName("value"));
+    const leafValue = valueNodes[valueNodes.length - 1];
+
+    return leafValue?.textContent?.trim() || valueWrapper.textContent?.trim() || null;
+  }
+
+  return null;
+}
+
+async function readNextBaseUrlFromJettyConfiguration(params: {
+  file: File;
+  currentBaseUrl: string;
+  performative: string;
+}): Promise<string | null> {
+  if (Platform.OS !== "web") return null;
+  if (typeof DOMParser === "undefined") return null;
+
+  const fileName = params.file.name.toLowerCase();
+  const isJettyConfiguration =
+    params.performative === FALLBACK_CONFIGURATION_TYPE ||
+    fileName.endsWith(".xml");
+
+  if (!isJettyConfiguration) return null;
+
+  try {
+    const text = await params.file.text();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "application/xml");
+
+    const parserError = xml.getElementsByTagName("parsererror")[0];
+
+    if (parserError) return null;
+
+    const httpEnabled =
+      getJettySetting(xml, "http.enabled")?.toLowerCase() === "true";
+    const httpsEnabled =
+      getJettySetting(xml, "https.enabled")?.toLowerCase() === "true";
+
+    const httpPort = getJettySetting(xml, "http.port");
+    const httpsPort = getJettySetting(xml, "https.port");
+
+    const currentUrl = new URL(params.currentBaseUrl);
+
+    const protocol = httpsEnabled ? "https:" : "http:";
+    const port = httpsEnabled ? httpsPort : httpEnabled ? httpPort : null;
+
+    if (!port) return null;
+
+    const nextBaseUrl = `${protocol}//${currentUrl.hostname}:${port}`;
+    const currentBaseUrl = normalizeBaseUrl(params.currentBaseUrl);
+
+    if (normalizeBaseUrl(nextBaseUrl) === currentBaseUrl) {
+      return null;
+    }
+
+    return nextBaseUrl;
+  } catch (error) {
+    console.warn("[FILE CONFIG] could not detect next server port", error);
+    return null;
+  }
+}
+
+export function AppSettingsFileUploadScreen() {
+  const { t } = useTranslation(["FileConfiguration"]);
   const dispatch = useAppDispatch();
+
   const api = useAppSelector(selectApi);
   const uploadState = useAppSelector((state) => state.appSettingsFileUpload);
 
-  const fileInputRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [configDialogVisible, setConfigDialogVisible] = useState(false);
+  const [configDialogPhase, setConfigDialogPhase] =
+    useState<ConfigDialogPhase>("installing");
+  const [configDialogText, setConfigDialogText] = useState<string | undefined>();
 
   const fallbackConfigurationTypeOptions = useMemo<Record<string, string>>(
     () => ({
@@ -76,21 +180,36 @@ export function AppSettingsFileUploadScreen() {
   );
 
   const [performative, setPerformative] = useState(FALLBACK_CONFIGURATION_TYPE);
-
   const [configurationTypeOptions, setConfigurationTypeOptions] =
     useState<Record<string, string>>(fallbackConfigurationTypeOptions);
 
   const [configurationTypesLoading, setConfigurationTypesLoading] =
     useState(false);
 
-  const [configurationTypesError, setConfigurationTypesError] =
-    useState<string | null>(null);
-
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
+  const [nextBaseUrlAfterUpload, setNextBaseUrlAfterUpload] =
+    useState<string | null>(null);
 
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  function resetMessages() {
+    setDownloadError(null);
+    dispatch(resetUploadState());
+  }
+
+  function setFile(file: File | null) {
+    setSelectedFile(file);
+    resetMessages();
+  }
+
+  const { dropRef, dragging } = useFileDropWeb({
+    enabled: Platform.OS === "web",
+    onFiles: (files) => {
+      const file = files[0] ?? null;
+      setFile(file);
+    },
+  });
 
   const canUpload = useMemo(() => {
     return Boolean(
@@ -101,19 +220,46 @@ export function AppSettingsFileUploadScreen() {
     );
   }, [api.ip, performative, selectedFile, uploadState.loading]);
 
-function getConfigurationTypeLabel(value: string): string {
-  const normalized = value.trim();
+  function getConfigurationTypeLabel(value: string): string {
+    const normalized = value.trim();
 
-  if (normalized === FALLBACK_CONFIGURATION_TYPE) {
-    return t("configurationTypeJettyConfiguration");
+    if (normalized === FALLBACK_CONFIGURATION_TYPE) {
+      return t("configurationTypeJettyConfiguration");
+    }
+
+    if (normalized.toLowerCase().includes("awb")) {
+      return t("configurationTypeAwbIni");
+    }
+
+    return normalized;
   }
 
-  if (normalized.toLowerCase().includes("awb")) {
-    return t("configurationTypeAwbIni");
-  }
+  useEffect(() => {
+    let cancelled = false;
 
-  return normalized;
-}
+    async function detectNextBaseUrl() {
+      setNextBaseUrlAfterUpload(null);
+
+      if (!selectedFile || !api.ip) return;
+
+      const nextBaseUrl = await readNextBaseUrlFromJettyConfiguration({
+        file: selectedFile,
+        currentBaseUrl: normalizeBaseUrl(api.ip),
+        performative,
+      });
+
+      if (!cancelled) {
+        setNextBaseUrlAfterUpload(nextBaseUrl);
+      }
+    }
+
+    void detectNextBaseUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFile, api.ip, performative]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -121,7 +267,6 @@ function getConfigurationTypeLabel(value: string): string {
       if (!api.ip) return;
 
       setConfigurationTypesLoading(true);
-      setConfigurationTypesError(null);
 
       try {
         const headers: Record<string, string> = {
@@ -173,17 +318,13 @@ function getConfigurationTypeLabel(value: string): string {
             const valueOptions: string[] = Array.isArray(entry?.valueOptions)
               ? entry.valueOptions
                   .map((option: unknown) => String(option ?? "").trim())
-                  .filter((option: string) => Boolean(option))
+                  .filter(Boolean)
               : [];
 
-            return [value, ...valueOptions].filter((item: string) =>
-              Boolean(item),
-            );
+            return [value, ...valueOptions].filter(Boolean);
           });
 
-        const uniqueTypes: string[] = Array.from(
-          new Set<string>(configurationTypes),
-        );
+        const uniqueTypes = Array.from(new Set(configurationTypes));
 
         if (uniqueTypes.length === 0) {
           throw new Error(t("messageNoConfigurationTypesFound"));
@@ -200,28 +341,19 @@ function getConfigurationTypeLabel(value: string): string {
 
         setConfigurationTypeOptions(options);
 
-        setPerformative((current: string): string => {
+        setPerformative((current) => {
           if (current && options[current]) {
             return current;
           }
 
           return uniqueTypes[0] || FALLBACK_CONFIGURATION_TYPE;
         });
-
-        console.log("[FILE CONFIG] configuration types:", uniqueTypes);
       } catch (error) {
         console.warn("[FILE CONFIG] could not load configuration types", error);
 
         if (!cancelled) {
-          setConfigurationTypesError(
-            t("messageConfigurationTypesCouldNotBeLoaded"),
-          );
-
           setConfigurationTypeOptions(fallbackConfigurationTypeOptions);
-
-          setPerformative((current: string): string => {
-            return current || FALLBACK_CONFIGURATION_TYPE;
-          });
+          setPerformative((current) => current || FALLBACK_CONFIGURATION_TYPE);
         }
       } finally {
         if (!cancelled) {
@@ -242,16 +374,6 @@ function getConfigurationTypeLabel(value: string): string {
     t,
     fallbackConfigurationTypeOptions,
   ]);
-
-  function resetMessages() {
-    setDownloadError(null);
-    dispatch(resetUploadState());
-  }
-
-  function setFile(file: File | null) {
-    setSelectedFile(file);
-    resetMessages();
-  }
 
   function openFileDialog() {
     if (Platform.OS !== "web") return;
@@ -275,53 +397,82 @@ function getConfigurationTypeLabel(value: string): string {
     fileInputRef.current.click();
   }
 
-  function handleDrop(event: any) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    setIsDragActive(false);
-
-    const file = event.dataTransfer?.files?.[0] ?? null;
-
-    if (file) {
-      setFile(file);
-    }
-  }
-
-  function handleDragOver(event: any) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!isDragActive) {
-      setIsDragActive(true);
-    }
-  }
-
-  function handleDragLeave(event: any) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    setIsDragActive(false);
-  }
-
   async function uploadFile() {
     if (!selectedFile) return;
 
     setDownloadError(null);
+    dispatch(resetUploadState());
 
-    await dispatch(
-      uploadAppSettingsFile({
-        baseUrl: api.ip,
-        jwt: api.jwt,
-        authenticationMethod: api.authenticationMethod,
-        performative: performative.trim(),
-        file: {
-          name: selectedFile.name,
-          type: selectedFile.type,
-          file: selectedFile,
-        },
-      }),
+    setConfigDialogVisible(true);
+    setConfigDialogPhase("installing");
+    setConfigDialogText(
+      t(
+        "messageConfigurationUploadInstalling",
+        "Konfiguration wird hochgeladen und angewendet...",
+      ),
     );
+
+    try {
+      const result = await dispatch(
+        uploadAppSettingsFile({
+          baseUrl: api.ip,
+          jwt: api.jwt,
+          authenticationMethod: api.authenticationMethod,
+          performative: performative.trim(),
+          file: {
+            name: selectedFile.name,
+            type: selectedFile.type,
+            file: selectedFile,
+          },
+        }),
+      ).unwrap();
+
+      setConfigDialogPhase("success");
+      setConfigDialogText(
+        nextBaseUrlAfterUpload
+          ? t(
+              "messageConfigurationUploadSuccessWithNewPort",
+              "Die Konfiguration wurde erfolgreich angewendet. Der Server startet voraussichtlich unter {{url}} neu.",
+              { url: nextBaseUrlAfterUpload },
+            )
+          : result?.message ||
+              t(
+                "messageConfigurationUploadSuccess",
+                "Die Konfiguration wurde erfolgreich angewendet.",
+              ),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+
+      setConfigDialogPhase("logout");
+      setConfigDialogText(
+        t(
+          "messageConfigurationUploadLogout",
+          "Die Anmeldung wird zurückgesetzt. Bitte melde dich danach erneut an.",
+        ),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 900));
+
+      await dispatch(logoutAsync());
+
+      if (nextBaseUrlAfterUpload) {
+        await dispatch(setIpAsync(nextBaseUrlAfterUpload));
+      }
+
+      setConfigDialogVisible(false);
+    } catch (error: any) {
+      setConfigDialogVisible(false);
+
+      setDownloadError(
+        error?.message ||
+          String(error ?? "") ||
+          t(
+            "messageConfigurationUploadFailed",
+            "Konfiguration konnte nicht hochgeladen werden.",
+          ),
+      );
+    }
   }
 
   async function downloadCurrentConfiguration() {
@@ -391,9 +542,7 @@ function getConfigurationTypeLabel(value: string): string {
       }
 
       const blob = await response.blob();
-
       const contentDisposition = response.headers.get("content-disposition");
-
       const fallbackFilename = `${selectedPerformative}.config`;
 
       const filename = getFilenameFromContentDisposition(
@@ -423,15 +572,6 @@ function getConfigurationTypeLabel(value: string): string {
     }
   }
 
-  const dropZoneWebProps =
-    Platform.OS === "web"
-      ? {
-          onDrop: handleDrop,
-          onDragOver: handleDragOver,
-          onDragLeave: handleDragLeave,
-        }
-      : {};
-
   return (
     <View style={s.container}>
       <Card>
@@ -458,12 +598,6 @@ function getConfigurationTypeLabel(value: string): string {
                 size="sm"
               />
             )}
-
-            {configurationTypesError ? (
-              <ThemedText style={s.warning}>
-                {configurationTypesError}
-              </ThemedText>
-            ) : null}
           </View>
 
           <View style={s.downloadRow}>
@@ -495,33 +629,44 @@ function getConfigurationTypeLabel(value: string): string {
               {t("labelUploadNewFile")}
             </ThemedText>
 
-            <Pressable
-              onPress={openFileDialog}
-              style={[
-                s.dropZone,
-                isDragActive && s.dropZoneActive,
-                selectedFile && s.dropZoneSelected,
-              ]}
-              {...(dropZoneWebProps as any)}
-            >
-              <View style={s.dropZoneCenter}>
-                <Feather
-                  name="upload-cloud"
-                  size={42}
-                  color={s.iconColor.color}
-                />
+            <View ref={dropRef as any}>
+              <Pressable
+                onPress={openFileDialog}
+                style={[
+                  s.dropZone,
+                  dragging && s.dropZoneActive,
+                  selectedFile && s.dropZoneSelected,
+                ]}
+              >
+                <View style={s.dropZoneCenter}>
+                  <Feather
+                    name="upload-cloud"
+                    size={42}
+                    color={s.iconColor.color}
+                  />
 
-                <ThemedText style={s.dropZoneText}>
-                  {isDragActive
-                    ? t("dropZoneDropFileHere")
-                    : t("dropZoneDragAndDropFileHere")}
-                </ThemedText>
+                  <ThemedText style={s.dropZoneText}>
+                    {dragging
+                      ? t("dropZoneDropFileHere")
+                      : t("dropZoneDragAndDropFileHere")}
+                  </ThemedText>
 
-                <ThemedText style={s.dropZoneSubText}>
-                  {t("dropZoneClickToSelectFile")}
-                </ThemedText>
-              </View>
-            </Pressable>
+                  <ThemedText style={s.dropZoneSubText}>
+                    {t("dropZoneClickToSelectFile")}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </View>
+
+            {nextBaseUrlAfterUpload ? (
+              <ThemedText style={s.info}>
+                {t(
+                  "messageDetectedNextServerUrl",
+                  "Die Datei ändert voraussichtlich die Server-Adresse auf {{url}}.",
+                  { url: nextBaseUrlAfterUpload },
+                )}
+              </ThemedText>
+            ) : null}
 
             <View style={s.fileFooter}>
               <View style={s.fileNameBox}>
@@ -567,6 +712,12 @@ function getConfigurationTypeLabel(value: string): string {
             </ThemedText>
           ) : null}
         </View>
+
+        <BackendUpdateProgressDialog
+          visible={configDialogVisible}
+          phase={configDialogPhase}
+          statusText={configDialogText}
+        />
       </Card>
     </View>
   );
@@ -679,6 +830,11 @@ const s = StyleSheet.create((theme) => ({
     fontSize: 14,
     opacity: 0.8,
     flex: 1,
+  },
+
+  info: {
+    color: "#2f80ed",
+    fontSize: 13,
   },
 
   error: {

@@ -8,6 +8,7 @@ import { ThemedText } from "../../../components/themed/ThemedText";
 
 type BackendUpdatePhase =
   | "installing"
+  | "success"
   | "restarting"
   | "reconnecting"
   | "logout";
@@ -27,18 +28,22 @@ export function BackendUpdateProgressDialog({
 
   const phaseConfig = {
     installing: {
-      icon: "download-cloud" as const,
+      icon: "upload-cloud" as const,
       title: t(
         "backend.updateDialog.installing",
-        "Backend-Update wird installiert",
+        "Konfiguration wird hochgeladen",
+      ),
+    },
+    success: {
+      icon: "check-circle" as const,
+      title: t(
+        "backend.updateDialog.success",
+        "Konfiguration erfolgreich hochgeladen",
       ),
     },
     restarting: {
       icon: "refresh-cw" as const,
-      title: t(
-        "backend.updateDialog.restarting",
-        "Server wird neu gestartet",
-      ),
+      title: t("backend.updateDialog.restarting", "Server wird neu gestartet"),
     },
     reconnecting: {
       icon: "wifi" as const,
@@ -49,21 +54,20 @@ export function BackendUpdateProgressDialog({
     },
     logout: {
       icon: "log-out" as const,
-      title: t(
-        "backend.updateDialog.logout",
-        "Anmeldung wird zurückgesetzt",
-      ),
+      title: t("backend.updateDialog.logout", "Anmeldung wird zurückgesetzt"),
     },
   };
 
   const current = phaseConfig[phase];
+  const isSuccess = phase === "success";
+  const iconColor = isSuccess ? "#22c55e" : "#2f80ed";
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={s.overlay}>
         <View style={s.dialog}>
-          <View style={s.iconContainer}>
-            <Feather name={current.icon} size={34} color="#2f80ed" />
+          <View style={[s.iconContainer, isSuccess && s.successIconContainer]}>
+            <Feather name={current.icon} size={34} color={iconColor} />
           </View>
 
           <ThemedText style={s.title}>{current.title}</ThemedText>
@@ -76,7 +80,7 @@ export function BackendUpdateProgressDialog({
               )}
           </ThemedText>
 
-          <ActivityIndicator size="large" />
+          {!isSuccess ? <ActivityIndicator size="large" /> : null}
         </View>
       </View>
     </Modal>
@@ -106,6 +110,10 @@ const s = StyleSheet.create((theme) => ({
     padding: 12,
     borderRadius: 999,
     backgroundColor: "rgba(47,128,237,0.08)",
+  },
+
+  successIconContainer: {
+    backgroundColor: "rgba(34,197,94,0.12)",
   },
 
   title: {

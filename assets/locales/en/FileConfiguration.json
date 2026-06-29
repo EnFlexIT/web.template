@@ -22,11 +22,15 @@
   "messageDownloadCouldNotBeExecuted": "Download could not be executed.",
   "messageNoFileSelected": "No file selected",
   "messageUploadSuccessful": "Upload successful.",
-
   "dropZoneDropFileHere": "Drop file here",
   "dropZoneDragAndDropFileHere": "Drag & drop file here",
   "dropZoneClickToSelectFile": "or click to select a file",
-
   "configurationTypeJettyConfiguration": "Web server / JettyConfiguration",
-  "configurationTypeAwbIni": "AWB.ini"
+  "configurationTypeAwbIni": "AWB.ini",
+  "messageDetectedNextServerUrl": "The file will probably change the server address to {{url}}.",
+  "messageConfigurationUploadInstalling": "Configuration is being uploaded and applied...",
+  "messageConfigurationUploadSuccess": "The configuration was applied successfully.",
+  "messageConfigurationUploadSuccessWithNewPort": "The configuration was applied successfully. The server is expected to restart at {{url}}.",
+  "messageConfigurationUploadLogout": "The login will be reset. Please log in again afterwards.",
+  "messageConfigurationUploadFailed": "Configuration could not be uploaded."
 }

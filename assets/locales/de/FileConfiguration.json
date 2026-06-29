@@ -1,16 +1,13 @@
 {
   "titleFileConfiguration": "Datei-Konfiguration",
-
   "labelConfiguration": "Konfiguration",
   "labelDownloadCurrentConfiguration": "Download der aktuellen Konfiguration",
   "labelUploadNewFile": "Upload neue Datei:",
   "labelFileName": "Dateiname:",
-
   "buttonDownload": "Download",
   "buttonDownloadLoading": "Lädt...",
   "buttonUpload": "Upload",
   "buttonUploadLoading": "Upload läuft...",
-
   "messageConfigurationTypesLoading": "Konfigurationstypen werden geladen...",
   "messageConfigurationTypesCouldNotBeLoaded": "Konfigurationstypen konnten nicht geladen werden. Fallback wird verwendet.",
   "messageNoConfigurationTypesFound": "Keine Konfigurationstypen gefunden.",
@@ -22,11 +19,15 @@
   "messageDownloadCouldNotBeExecuted": "Download konnte nicht ausgeführt werden.",
   "messageNoFileSelected": "Keine Datei ausgewählt",
   "messageUploadSuccessful": "Upload erfolgreich.",
-
+ "messageDetectedNextServerUrl": "Die Datei ändert voraussichtlich die Server-Adresse auf {{url}}.",
+  "messageConfigurationUploadInstalling": "Konfiguration wird hochgeladen und angewendet...",
+  "messageConfigurationUploadSuccess": "Die Konfiguration wurde erfolgreich angewendet.",
+  "messageConfigurationUploadSuccessWithNewPort": "Die Konfiguration wurde erfolgreich angewendet. Der Server startet voraussichtlich unter {{url}} neu.",
+  "messageConfigurationUploadLogout": "Die Anmeldung wird zurückgesetzt. Bitte melde dich danach erneut an.",
+  "messageConfigurationUploadFailed": "Konfiguration konnte nicht hochgeladen werden.",
   "dropZoneDropFileHere": "Datei hier loslassen",
   "dropZoneDragAndDropFileHere": "Datei hier ablegen",
   "dropZoneClickToSelectFile": "oder klicken, um eine Datei auszuwählen",
-
   "configurationTypeJettyConfiguration": "Web-Server / JettyConfiguration",
   "configurationTypeAwbIni": "AWB.ini"
 }
