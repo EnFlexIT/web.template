@@ -1,5 +1,5 @@
 {
-  "titleFileConfiguration": "File configuration",
+  "titleFileConfiguration": "File Configuration",
 
   "labelConfiguration": "Configuration",
   "labelDownloadCurrentConfiguration": "Download current configuration",
@@ -32,5 +32,11 @@
   "messageConfigurationUploadSuccess": "The configuration was applied successfully.",
   "messageConfigurationUploadSuccessWithNewPort": "The configuration was applied successfully. The server is expected to restart at {{url}}.",
   "messageConfigurationUploadLogout": "The login will be reset. Please log in again afterwards.",
-  "messageConfigurationUploadFailed": "Configuration could not be uploaded."
+  "messageConfigurationUploadFailed": "Configuration could not be uploaded.",
+  "labelFilePath": "File path:",
+  "messagePortChangeDialogTitle": "Change server address?",
+  "messagePortChangeDialogDescription": "The selected configuration changes the server address from {{currentUrl}} to {{nextUrl}}. Do you want to switch automatically to the new address after the upload?",
+  "buttonKeepCurrentServer": "Keep current address",
+  "buttonSwitchToDetectedServer": "Switch to new address"
+
 }

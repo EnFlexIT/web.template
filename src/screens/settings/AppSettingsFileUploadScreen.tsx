@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
@@ -11,6 +11,7 @@ import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H3 } from "../../components/stylistic/H3";
 import { BackendUpdateProgressDialog } from "../../screens/update/Dialog/BackendUpdateProgressDialog";
+import { ConfirmDialog } from "../../components/ui-elements/ConfirmDialog";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
@@ -20,6 +21,12 @@ import {
   selectApi,
   setIpAsync,
 } from "../../redux/slices/apiSlice";
+
+import {
+  selectServer as selectServerAction,
+  selectServers,
+  updateServer,
+} from "../../redux/slices/serverSlice";
 
 import {
   resetUploadState,
@@ -33,7 +40,6 @@ const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
 
 type ConfigDialogPhase =
   | "installing"
-  | "success"
   | "restarting"
   | "reconnecting"
   | "logout";
@@ -104,6 +110,62 @@ function getJettySetting(xml: Document, settingKey: string): string | null {
   return null;
 }
 
+function setJettySetting(
+  xml: Document,
+  settingKey: string,
+  nextValue: string,
+): boolean {
+  const entries = Array.from(xml.getElementsByTagName("entry"));
+
+  for (const entry of entries) {
+    const key = getDirectChildText(entry, "key");
+
+    if (key !== settingKey) continue;
+
+    const valueWrapper = Array.from(entry.children).find(
+      (child) => child.localName === "value",
+    );
+
+    if (!valueWrapper) return false;
+
+    const valueNodes = Array.from(valueWrapper.getElementsByTagName("value"));
+    const leafValue = valueNodes[valueNodes.length - 1];
+
+    if (!leafValue) return false;
+
+    leafValue.textContent = nextValue;
+    return true;
+  }
+
+  return false;
+}
+
+function getDisplayFilePath(file: File, inputValue?: string | null): string {
+  const fileWithExtraFields = file as File & {
+    path?: string;
+    webkitRelativePath?: string;
+  };
+
+  return (
+    fileWithExtraFields.path ||
+    fileWithExtraFields.webkitRelativePath ||
+    inputValue ||
+    file.name
+  );
+}
+
+function shouldHandleAsJettyConfiguration(params: {
+  file: File;
+  performative: string;
+}): boolean {
+  const fileName = params.file.name.toLowerCase();
+
+  return (
+    params.performative === FALLBACK_CONFIGURATION_TYPE ||
+    fileName.endsWith(".xml")
+  );
+}
+
 async function readNextBaseUrlFromJettyConfiguration(params: {
   file: File;
   currentBaseUrl: string;
@@ -111,20 +173,13 @@ async function readNextBaseUrlFromJettyConfiguration(params: {
 }): Promise<string | null> {
   if (Platform.OS !== "web") return null;
   if (typeof DOMParser === "undefined") return null;
-
-  const fileName = params.file.name.toLowerCase();
-  const isJettyConfiguration =
-    params.performative === FALLBACK_CONFIGURATION_TYPE ||
-    fileName.endsWith(".xml");
-
-  if (!isJettyConfiguration) return null;
+  if (!shouldHandleAsJettyConfiguration(params)) return null;
 
   try {
     const text = await params.file.text();
 
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, "application/xml");
-
     const parserError = xml.getElementsByTagName("parsererror")[0];
 
     if (parserError) return null;
@@ -138,7 +193,6 @@ async function readNextBaseUrlFromJettyConfiguration(params: {
     const httpsPort = getJettySetting(xml, "https.port");
 
     const currentUrl = new URL(params.currentBaseUrl);
-
     const protocol = httpsEnabled ? "https:" : "http:";
     const port = httpsEnabled ? httpsPort : httpEnabled ? httpPort : null;
 
@@ -158,14 +212,69 @@ async function readNextBaseUrlFromJettyConfiguration(params: {
   }
 }
 
+async function rewriteJettyConfigurationToCurrentBaseUrl(params: {
+  file: File;
+  currentBaseUrl: string;
+  performative: string;
+}): Promise<File> {
+  if (Platform.OS !== "web") return params.file;
+  if (typeof DOMParser === "undefined") return params.file;
+  if (typeof XMLSerializer === "undefined") return params.file;
+  if (!shouldHandleAsJettyConfiguration(params)) return params.file;
+
+  try {
+    const currentUrl = new URL(normalizeBaseUrl(params.currentBaseUrl));
+    const currentPort =
+      currentUrl.port || (currentUrl.protocol === "https:" ? "443" : "80");
+
+    const text = await params.file.text();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, "application/xml");
+    const parserError = xml.getElementsByTagName("parsererror")[0];
+
+    if (parserError) return params.file;
+
+    if (currentUrl.protocol === "https:") {
+      setJettySetting(xml, "https.enabled", "true");
+      setJettySetting(xml, "https.port", currentPort);
+    } else {
+      setJettySetting(xml, "http.enabled", "true");
+      setJettySetting(xml, "http.port", currentPort);
+      setJettySetting(xml, "http.to.https", "false");
+    }
+
+    const serializedXml = new XMLSerializer().serializeToString(xml);
+
+    return new File([serializedXml], params.file.name, {
+      type: params.file.type || "application/xml",
+      lastModified: Date.now(),
+    });
+  } catch (error) {
+    console.warn("[FILE CONFIG] could not rewrite server port", error);
+    return params.file;
+  }
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function AppSettingsFileUploadScreen() {
   const { t } = useTranslation(["FileConfiguration"]);
   const dispatch = useAppDispatch();
 
   const api = useAppSelector(selectApi);
   const uploadState = useAppSelector((state) => state.appSettingsFileUpload);
+  const serversState = useAppSelector(selectServers);
+
+  const servers = serversState?.servers ?? [];
+  const selectedServerId = serversState?.selectedServerId ?? "local";
+  const selectedServer = servers.find((server) => server.id === selectedServerId);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [portDialogVisible, setPortDialogVisible] = useState(false);
 
   const [configDialogVisible, setConfigDialogVisible] = useState(false);
   const [configDialogPhase, setConfigDialogPhase] =
@@ -174,9 +283,9 @@ export function AppSettingsFileUploadScreen() {
 
   const fallbackConfigurationTypeOptions = useMemo<Record<string, string>>(
     () => ({
-      [FALLBACK_CONFIGURATION_TYPE]: t("configurationTypeJettyConfiguration"),
+      [FALLBACK_CONFIGURATION_TYPE]: FALLBACK_CONFIGURATION_TYPE,
     }),
-    [t],
+    [],
   );
 
   const [performative, setPerformative] = useState(FALLBACK_CONFIGURATION_TYPE);
@@ -187,29 +296,13 @@ export function AppSettingsFileUploadScreen() {
     useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+
   const [nextBaseUrlAfterUpload, setNextBaseUrlAfterUpload] =
     useState<string | null>(null);
 
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-
-  function resetMessages() {
-    setDownloadError(null);
-    dispatch(resetUploadState());
-  }
-
-  function setFile(file: File | null) {
-    setSelectedFile(file);
-    resetMessages();
-  }
-
-  const { dropRef, dragging } = useFileDropWeb({
-    enabled: Platform.OS === "web",
-    onFiles: (files) => {
-      const file = files[0] ?? null;
-      setFile(file);
-    },
-  });
 
   const canUpload = useMemo(() => {
     return Boolean(
@@ -220,19 +313,42 @@ export function AppSettingsFileUploadScreen() {
     );
   }, [api.ip, performative, selectedFile, uploadState.loading]);
 
-  function getConfigurationTypeLabel(value: string): string {
-    const normalized = value.trim();
+  const getConfigurationTypeLabel = useCallback((value: string): string => {
+    return value.trim();
+  }, []);
 
-    if (normalized === FALLBACK_CONFIGURATION_TYPE) {
-      return t("configurationTypeJettyConfiguration");
-    }
-
-    if (normalized.toLowerCase().includes("awb")) {
-      return t("configurationTypeAwbIni");
-    }
-
-    return normalized;
+  function resetMessages() {
+    setDownloadError(null);
+    dispatch(resetUploadState());
   }
+
+  function setFile(file: File | null, inputValue?: string | null) {
+    setSelectedFile(file);
+    setSelectedFilePath(file ? getDisplayFilePath(file, inputValue) : null);
+    resetMessages();
+  }
+
+  function syncSelectedServerBaseUrl(baseUrl: string) {
+    if (!selectedServer || selectedServer.id === "local") return;
+
+    dispatch(
+      updateServer({
+        id: selectedServer.id,
+        name: selectedServer.name,
+        baseUrl,
+      }),
+    );
+
+    dispatch(selectServerAction(selectedServer.id));
+  }
+
+  const { dropRef, dragging } = useFileDropWeb({
+    enabled: Platform.OS === "web",
+    onFiles: (files) => {
+      const file = files[0] ?? null;
+      setFile(file);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -242,9 +358,11 @@ export function AppSettingsFileUploadScreen() {
 
       if (!selectedFile || !api.ip) return;
 
+      const currentBaseUrl = normalizeBaseUrl(api.ip);
+
       const nextBaseUrl = await readNextBaseUrlFromJettyConfiguration({
         file: selectedFile,
-        currentBaseUrl: normalizeBaseUrl(api.ip),
+        currentBaseUrl,
         performative,
       });
 
@@ -373,6 +491,7 @@ export function AppSettingsFileUploadScreen() {
     api.authenticationMethod,
     t,
     fallbackConfigurationTypeOptions,
+    getConfigurationTypeLabel,
   ]);
 
   function openFileDialog() {
@@ -386,7 +505,7 @@ export function AppSettingsFileUploadScreen() {
 
       input.onchange = () => {
         const file = input.files?.[0] ?? null;
-        setFile(file);
+        setFile(file, input.value);
       };
 
       document.body.appendChild(input);
@@ -400,6 +519,20 @@ export function AppSettingsFileUploadScreen() {
   async function uploadFile() {
     if (!selectedFile) return;
 
+    if (nextBaseUrlAfterUpload) {
+      setPortDialogVisible(true);
+      return;
+    }
+
+    await uploadFileConfirmed(false);
+  }
+
+  async function uploadFileConfirmed(shouldSwitchToDetectedUrl: boolean) {
+    if (!selectedFile) return;
+
+    const currentBaseUrlBeforeUpload = normalizeBaseUrl(api.ip);
+
+    setPortDialogVisible(false);
     setDownloadError(null);
     dispatch(resetUploadState());
 
@@ -413,6 +546,20 @@ export function AppSettingsFileUploadScreen() {
     );
 
     try {
+      const fileToUpload =
+        shouldSwitchToDetectedUrl || !nextBaseUrlAfterUpload
+          ? selectedFile
+          : await rewriteJettyConfigurationToCurrentBaseUrl({
+              file: selectedFile,
+              currentBaseUrl: currentBaseUrlBeforeUpload,
+              performative: performative.trim(),
+            });
+
+      const targetBaseUrl =
+        shouldSwitchToDetectedUrl && nextBaseUrlAfterUpload
+          ? normalizeBaseUrl(nextBaseUrlAfterUpload)
+          : currentBaseUrlBeforeUpload;
+
       const result = await dispatch(
         uploadAppSettingsFile({
           baseUrl: api.ip,
@@ -420,16 +567,16 @@ export function AppSettingsFileUploadScreen() {
           authenticationMethod: api.authenticationMethod,
           performative: performative.trim(),
           file: {
-            name: selectedFile.name,
-            type: selectedFile.type,
-            file: selectedFile,
+            name: fileToUpload.name,
+            type: fileToUpload.type,
+            file: fileToUpload,
           },
         }),
       ).unwrap();
 
-      setConfigDialogPhase("success");
+      setConfigDialogPhase("restarting");
       setConfigDialogText(
-        nextBaseUrlAfterUpload
+        shouldSwitchToDetectedUrl && nextBaseUrlAfterUpload
           ? t(
               "messageConfigurationUploadSuccessWithNewPort",
               "Die Konfiguration wurde erfolgreich angewendet. Der Server startet voraussichtlich unter {{url}} neu.",
@@ -437,12 +584,12 @@ export function AppSettingsFileUploadScreen() {
             )
           : result?.message ||
               t(
-                "messageConfigurationUploadSuccess",
-                "Die Konfiguration wurde erfolgreich angewendet.",
+                "messageConfigurationUploadSuccessKeepCurrentPort",
+                "Die Konfiguration wurde erfolgreich angewendet. Die aktuelle Server-Adresse wird beibehalten.",
               ),
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+      await wait(1400);
 
       setConfigDialogPhase("logout");
       setConfigDialogText(
@@ -452,13 +599,14 @@ export function AppSettingsFileUploadScreen() {
         ),
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      await wait(900);
 
+      syncSelectedServerBaseUrl(targetBaseUrl);
+      await dispatch(setIpAsync(targetBaseUrl));
       await dispatch(logoutAsync());
 
-      if (nextBaseUrlAfterUpload) {
-        await dispatch(setIpAsync(nextBaseUrlAfterUpload));
-      }
+      syncSelectedServerBaseUrl(targetBaseUrl);
+      await dispatch(setIpAsync(targetBaseUrl));
 
       setConfigDialogVisible(false);
     } catch (error: any) {
@@ -671,11 +819,11 @@ export function AppSettingsFileUploadScreen() {
             <View style={s.fileFooter}>
               <View style={s.fileNameBox}>
                 <ThemedText style={s.fileNameLabel}>
-                  {t("labelFileName")}
+                  {t("labelFilePath", "Dateipfad:")}
                 </ThemedText>
 
                 <ThemedText style={s.fileName} numberOfLines={1}>
-                  {selectedFile?.name || t("messageNoFileSelected")}
+                  {selectedFilePath || t("messageNoFileSelected")}
                 </ThemedText>
               </View>
 
@@ -717,6 +865,41 @@ export function AppSettingsFileUploadScreen() {
           visible={configDialogVisible}
           phase={configDialogPhase}
           statusText={configDialogText}
+        />
+
+        <ConfirmDialog
+          visible={portDialogVisible}
+          variant="warning"
+          icon="alert-triangle"
+          title={t(
+            "messagePortChangeDialogTitle",
+            "Server-Adresse ändern?",
+          )}
+          description={t(
+            "messagePortChangeDialogDescription",
+            "Die ausgewählte Konfiguration ändert die Server-Adresse von {{currentUrl}} auf {{nextUrl}}. Möchtest du die neue Adresse verwenden oder die Datei vor dem Upload auf die aktuelle Adresse umschreiben?",
+            {
+              currentUrl: normalizeBaseUrl(api.ip),
+              nextUrl: nextBaseUrlAfterUpload,
+            },
+          )}
+          cancelLabel={t(
+            "buttonKeepCurrentServer",
+            "Aktuelle Adresse behalten",
+          )}
+          confirmLabel={t(
+            "buttonSwitchToDetectedServer",
+            "Neue Adresse verwenden",
+          )}
+          onCancel={() => {
+            void uploadFileConfirmed(false);
+          }}
+          onConfirm={() => {
+            void uploadFileConfirmed(true);
+          }}
+          onClose={() => {
+            setPortDialogVisible(false);
+          }}
         />
       </Card>
     </View>
@@ -760,7 +943,7 @@ const s = StyleSheet.create((theme) => ({
   },
 
   buttonBox: {
-    width: 112,
+    width: 150,
   },
 
   dropZone: {

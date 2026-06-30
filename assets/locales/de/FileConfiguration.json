@@ -29,5 +29,10 @@
   "dropZoneDragAndDropFileHere": "Datei hier ablegen",
   "dropZoneClickToSelectFile": "oder klicken, um eine Datei auszuwählen",
   "configurationTypeJettyConfiguration": "Web-Server / JettyConfiguration",
-  "configurationTypeAwbIni": "AWB.ini"
+  "configurationTypeAwbIni": "AWB.ini",
+   "labelFilePath": "Dateipfad:",
+  "messagePortChangeDialogTitle": "Server-Adresse ändern?",
+  "messagePortChangeDialogDescription": "Die ausgewählte Konfiguration ändert die Server-Adresse von {{currentUrl}} auf {{nextUrl}}. Möchtest du nach dem Upload automatisch zur neuen Adresse wechseln?",
+  "buttonKeepCurrentServer": "Aktuelle Adresse behalten",
+  "buttonSwitchToDetectedServer": "Zur neuen Adresse wechseln"
 }

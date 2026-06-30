@@ -32,16 +32,12 @@ export function OfflineOverlay() {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
   const { t } = useTranslation(["NotAvailable"]);
-
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
-
   const { isOffline, checking } = useAppSelector(selectConnectivity);
-
   const serversState = useAppSelector(selectServers);
   const selectedServer = useAppSelector(selectSelectedServer);
   const selectedBaseUrl = useAppSelector(selectIp);
-
   const [serverModalVisible, setServerModalVisible] = useState(false);
 
   /*
