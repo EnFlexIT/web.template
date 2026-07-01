@@ -1,23 +1,19 @@
 import { useEffect, useRef } from "react";
+
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
+
 import {
   logoutAsync,
   selectAuthenticationMethod,
-  selectIp,
   selectIsLoggedIn,
 } from "../../redux/slices/apiSlice";
-import { renewAllServerJwtsIfNeeded } from "../../redux/slices/jwtRenewSlice";
+
 import { loadSessionTime } from "../../redux/slices/sessionTimeSlice";
 import { isLogoutFlowActive } from "./logoutFlowGuard";
 
 const SESSION_CHECK_INTERVAL_MS = 60_000;
 const LOGIN_GRACE_PERIOD_MS = 12_000;
-const RENEW_THRESHOLD_MS = 2 * 60 * 1000;
-
-function shouldLogoutFromRenewReason(reason?: string) {
-  return reason === "expired" || reason === "401-no-token";
-}
 
 function isOidcAuth(authenticationMethod?: string) {
   return authenticationMethod === "oidc" || authenticationMethod === "unknown";
@@ -29,11 +25,22 @@ function normalizeTimeToMs(value?: number | null): number | null {
   return value < 24 * 60 * 60 ? value * 1000 : value;
 }
 
+function shouldLogoutFromError(error: unknown): boolean {
+  const message = String(
+    error instanceof Error ? error.message : error ?? "",
+  );
+
+  return (
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("expired")
+  );
+}
+
 export function AppSessionGuard() {
   const dispatch = useAppDispatch();
 
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const activeBaseUrl = useAppSelector(selectIp);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const isOffline = useAppSelector((state) => state.connectivity.isOffline);
 
@@ -71,10 +78,19 @@ export function AppSessionGuard() {
         return;
       }
 
-      // Wichtig:
-      // OIDC wird NICHT mehr automatisch über AppSessionGuard geprüft,
-      // damit /api/user/sessionTime nicht jede Minute die Session verlängert.
-      // OIDC läuft jetzt über useOidcSessionTimerWeb in der ToolBox.
+      /*
+       * Wichtig:
+       * OIDC wird NICHT über AppSessionGuard geprüft.
+       *
+       * OIDC:
+       * - Timer läuft über useOidcSessionTimerWeb
+       * - Verlängerung läuft über useSessionActivityWeb
+       *
+       * JWT:
+       * - AppSessionGuard liest nur passiv sessionTime
+       * - kein automatischer Renew
+       * - kein /api/user/login
+       */
       if (isOidcAuth(authenticationMethod)) {
         return;
       }
@@ -92,39 +108,19 @@ export function AppSessionGuard() {
 
         if (remainingSessionMs == null || remainingSessionMs <= 0) {
           await dispatch(logoutAsync());
-          return;
-        }
-
-        const remainingTokenMs = normalizeTimeToMs(
-          sessionTime.remainingTokenTime,
-        );
-
-        if (remainingTokenMs == null) {
-          return;
-        }
-
-        if (remainingTokenMs > RENEW_THRESHOLD_MS) {
-          return;
-        }
-
-        const renewResults = await dispatch(
-          renewAllServerJwtsIfNeeded({
-            force: true,
-            cooldownMs: 60_000,
-          }),
-        ).unwrap();
-
-        if (cancelled) return;
-
-        const activeResult = Array.isArray(renewResults)
-          ? renewResults.find((result) => result?.baseUrl === activeBaseUrl)
-          : undefined;
-
-        if (shouldLogoutFromRenewReason(activeResult?.reason)) {
-          await dispatch(logoutAsync());
         }
       } catch (error) {
         console.log("[AppSessionGuard] failed:", error);
+
+        /*
+         * Bei JWT bedeutet 401/403 meistens:
+         * Token/Session ist nicht mehr gültig.
+         *
+         * Kein Logout bei Netzwerkfehlern.
+         */
+        if (!cancelled && shouldLogoutFromError(error)) {
+          await dispatch(logoutAsync());
+        }
       } finally {
         runningRef.current = false;
       }
@@ -144,7 +140,7 @@ export function AppSessionGuard() {
         intervalRef.current = null;
       }
     };
-  }, [dispatch, isLoggedIn, activeBaseUrl, authenticationMethod, isOffline]);
+  }, [dispatch, isLoggedIn, authenticationMethod, isOffline]);
 
   return null;
 }

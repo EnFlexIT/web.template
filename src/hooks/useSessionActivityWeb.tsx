@@ -1,14 +1,15 @@
-// src/hooks/useSessionActivityWeb.ts
-
 import { useCallback, useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
+
 import {
   extendSessionTime,
   selectSessionTime,
 } from "../redux/slices/sessionTimeSlice";
+
+import { selectInitialPasswordChangeDialogOpen } from "../redux/slices/passwordChangePromptSlice";
 
 type Options = {
   enabled: boolean;
@@ -159,22 +160,24 @@ function isSessionExpired(params: {
     return params.expirationTime <= now;
   }
 
-  return false;
+  /*
+   * Wenn wir noch keine Session-Zeit kennen,
+   * verlängern wir vorsichtshalber nicht.
+   */
+  return true;
 }
 
 export function useSessionActivityWeb({ enabled }: Options) {
   const dispatch = useAppDispatch();
 
-  const isOffline = useAppSelector(
-    (state) => state.connectivity.isOffline,
-  );
-
-  const isLoggingOut = useAppSelector(
-    (state) => state.api.isLoggingOut,
-  );
-
+  const isOffline = useAppSelector((state) => state.connectivity.isOffline);
+  const isLoggingOut = useAppSelector((state) => state.api.isLoggingOut);
   const isLogoutDialogOpen = useAppSelector(
     (state) => state.api.isLogoutDialogOpen,
+  );
+
+  const isInitialPasswordChangeDialogOpen = useAppSelector(
+    selectInitialPasswordChangeDialogOpen,
   );
 
   const sessionTime = useAppSelector(selectSessionTime);
@@ -190,6 +193,7 @@ export function useSessionActivityWeb({ enabled }: Options) {
     if (isOffline) return false;
     if (isLoggingOut) return false;
     if (isLogoutDialogOpen) return false;
+    if (isInitialPasswordChangeDialogOpen) return false;
     if (sessionTime.extending) return false;
 
     if (
@@ -218,6 +222,7 @@ export function useSessionActivityWeb({ enabled }: Options) {
     isOffline,
     isLoggingOut,
     isLogoutDialogOpen,
+    isInitialPasswordChangeDialogOpen,
     sessionTime.extending,
     sessionTime.expirationTime,
     sessionTime.remainingTime,

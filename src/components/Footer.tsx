@@ -87,9 +87,12 @@ export function Footer() {
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
 
-  const showNotificationButton =
-    !isLoginPage && (isLoggedIn || unreadNotificationCount > 0);
-
+   const showNotificationButton = !isLoginPage && isLoggedIn;
+    useEffect(() => {
+      if (!isLoggedIn) {
+        dispatch(closeNotificationPopup());
+      }
+    }, [isLoggedIn, dispatch]);
   const serverOptions = useMemo(() => {
     const entries = servers.map((server) => [
       server.id,
