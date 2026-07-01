@@ -35,7 +35,7 @@ import {
 
 const Feather = withUnistyles(Feather_);
 
-const FILE_CONFIGURATION_PERFORMATIVE = "FILECONFIGURATION";
+const FILE_CONFIGURATION_PERFORMATIVE = "FILE.CONFIGURATION";
 const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
 
 type ConfigDialogPhase =
@@ -77,6 +77,27 @@ function isRedirectStatus(status: number): boolean {
     status === 307 ||
     status === 308
   );
+}
+
+function isExpoWebRuntime(): boolean {
+  return (
+    Platform.OS === "web" &&
+    typeof window !== "undefined" &&
+    window.location.origin.includes("localhost:8081")
+  );
+}
+
+function redirectReleaseBrowserToServer(baseUrl: string) {
+  if (Platform.OS !== "web") return;
+  if (typeof window === "undefined") return;
+  if (isExpoWebRuntime()) return;
+
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const currentOrigin = window.location.origin;
+
+  if (normalizedBaseUrl === currentOrigin) return;
+
+  window.location.replace(`${normalizedBaseUrl}/login`);
 }
 
 function getDirectChildText(element: Element, childName: string): string | null {
@@ -601,14 +622,13 @@ export function AppSettingsFileUploadScreen() {
 
       await wait(900);
 
-      syncSelectedServerBaseUrl(targetBaseUrl);
-      await dispatch(setIpAsync(targetBaseUrl));
       await dispatch(logoutAsync());
 
       syncSelectedServerBaseUrl(targetBaseUrl);
       await dispatch(setIpAsync(targetBaseUrl));
 
       setConfigDialogVisible(false);
+      redirectReleaseBrowserToServer(targetBaseUrl);
     } catch (error: any) {
       setConfigDialogVisible(false);
 
