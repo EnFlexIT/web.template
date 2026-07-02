@@ -187,9 +187,56 @@ export function LoginScreen() {
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
   const isExpoWeb =isWeb && typeof window !== "undefined" &&window.location.origin.includes("localhost:8081");
   const autoOidcDoneRef = useRef(false);
+  const autoOidcRedirectRef = useRef(false);
 
 
 /******************************************************************************************************************************************** */
+// Effect to automatically redirect to the OIDC login URL on component mount if OIDC is the selected authentication method, and to prevent multiple redirects using a ref flag
+useEffect(() => {
+  if (authenticationMethod !== "oidc") return;
+  if (!isWeb) return;
+  if (typeof window === "undefined") return;
+  if (oidcLoginInProgress) return;
+  if (autoOidcRedirectRef.current) return;
+
+  /*
+   * Nur im echten Serverbetrieb.
+   * Expo Web localhost:8081 nutzt weiterhin Popup.
+   */
+  if (isExpoWeb) return;
+
+  /*
+   * Nur auf der echten Login-Route automatisch weiterleiten.
+   * Dadurch vermeiden wir Seiteneffekte auf anderen Routen.
+   */
+  if (window.location.pathname !== "/login") return;
+
+  let sameOrigin = false;
+
+  try {
+    sameOrigin =
+      new URL(normalizeBaseUrl(selectedBaseUrl)).origin ===
+      window.location.origin;
+  } catch {
+    sameOrigin = false;
+  }
+
+  if (!sameOrigin) return;
+
+  const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+
+  if (!oidcStartUrl) return;
+
+  autoOidcRedirectRef.current = true;
+
+  window.location.replace(oidcStartUrl);
+}, [
+  authenticationMethod,
+  isWeb,
+  isExpoWeb,
+  oidcLoginInProgress,
+  selectedBaseUrl,
+]);
 // Function to mark the selected server as logged in by updating its status in the Redux store, used after a successful login to provide visual feedback in the UI
 const markSelectedServerLoggedIn = () => {
   const serverId =
