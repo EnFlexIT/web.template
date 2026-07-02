@@ -168,56 +168,39 @@ export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
-
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const ip = useAppSelector(selectIp);
   const language = useAppSelector(selectLanguage);
   const themeInfo = useAppSelector(selectThemeInfo);
   const serversState = useAppSelector(selectServers);
-
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
-
   const loginWindowRef = useRef<Window | null>(null);
   const autoOidcDoneRef = useRef(false);
-
   const [highlight] = useState(false);
   styles.useVariants({ highlight });
-
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
-  const [loginRequestStatus, setLoginRequestStatus] = useState<
-    "loading" | "successful" | "failed"
-  >("loading");
+  const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed">("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
-
   const isWeb = Platform.OS === "web";
-  const isExpoWeb =
-    isWeb &&
-    typeof window !== "undefined" &&
-    window.location.origin.includes("localhost:8081");
-
+  const isExpoWeb = isWeb &&  typeof window !== "undefined" && window.location.origin.includes("localhost:8081");
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
-
-  const shouldPromptPasswordChange =
-    username.trim().toLowerCase() === "admin" && password === "admin";
-
+  const shouldPromptPasswordChange =username.trim().toLowerCase() === "admin" && password === "admin";
   const basic = toBase64(`${username}:${password}`);
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
-
   const mutedTextStyle = {
     color: theme.colors.text,
     opacity: 0.75,
   };
-
   const languageOptions = {
     de: "Deutsch",
     en: "English",
