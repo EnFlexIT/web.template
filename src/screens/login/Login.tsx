@@ -1,10 +1,18 @@
-//import
+// src/screens/login/Login.tsx
+
 import React, { useEffect, useRef, useState } from "react";
-import {Platform, Pressable, ScrollView, StyleSheet as NativeStyleSheet,View,} from "react-native";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet as NativeStyleSheet,
+  View,
+} from "react-native";
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
+
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -15,7 +23,11 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectServers } from "../../redux/slices/serverSlice";
-import {selectAuthenticationMethod,selectIp,switchServer,} from "../../redux/slices/apiSlice";
+import {
+  selectAuthenticationMethod,
+  selectIp,
+  switchServer,
+} from "../../redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
 import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
@@ -26,22 +38,22 @@ import { Card } from "../../components/ui-elements/Card";
 import { TextInput } from "../../components/ui-elements/TextInput";
 import { dispatchServerStatusRefresh } from "../../util/serverStatusRefresh";
 import { setServerStatus } from "../../redux/slices/serverStatusSlice";
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// Helper function to convert a string to Base64, compatible with both browser and Node.js environments
+
+const Feather = withUnistyles(Feather_);
 
 function toBase64(str: string): string {
   return typeof btoa !== "undefined"
     ? btoa(str)
     : Buffer.from(str).toString("base64");
 }
-// Helper function to extract a Bearer token from a string, used to handle different server responses that might include the token in headers or body in various formats
+
 function extractBearerToken(value: unknown): string | null {
   if (typeof value !== "string") return null;
 
   const match = value.match(/Bearer\s+(.+)/i);
   return match?.[1]?.trim() ?? null;
 }
-// Helper function to normalize the base URL by removing any trailing slashes and any "/login" suffix, used to ensure consistent URL formatting when making API calls and initiating OIDC login
+
 export function normalizeBaseUrl(url: string): string {
   const clean = (url ?? "").trim();
 
@@ -55,15 +67,26 @@ export function normalizeBaseUrl(url: string): string {
     return clean.replace(/\/login\/?$/, "").replace(/\/+$/, "");
   }
 }
-// Helper function to build the OIDC start URL by normalizing the base URL and appending the necessary path, used when initiating OIDC login
+
 function buildServerOidcStartUrl(baseUrl: string): string {
   return `${normalizeBaseUrl(baseUrl)}/login`;
 }
-// Helper function to create a delay, used for polling the server for the OIDC bearer token after initiating login in a popup
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-// Helper function to fetch the OIDC bearer token from the server by calling the settings endpoint, used for both initial check on component mount and for polling after initiating OIDC login in a popup
+
+function isRedirectResponse(response: Response): boolean {
+  return (
+    response.status === 301 ||
+    response.status === 302 ||
+    response.status === 303 ||
+    response.status === 307 ||
+    response.status === 308 ||
+    response.type === "opaqueredirect"
+  );
+}
+
 async function fetchOidcAuthenticatedFromServer(
   baseUrl: string,
 ): Promise<boolean> {
@@ -89,14 +112,7 @@ async function fetchOidcAuthenticatedFromServer(
     return false;
   }
 
-  if (
-    response.status === 301 ||
-    response.status === 302 ||
-    response.status === 303 ||
-    response.status === 307 ||
-    response.status === 308 ||
-    response.type === "opaqueredirect"
-  ) {
+  if (isRedirectResponse(response)) {
     return false;
   }
 
@@ -123,7 +139,7 @@ async function fetchOidcAuthenticatedFromServer(
 
   return authenticated;
 }
-// Helper function that repeatedly tries to fetch the OIDC bearer token from the server with a delay between attempts, used for polling after initiating OIDC login in a popup
+
 async function waitForOidcAuthenticated(
   baseUrl: string,
   retries = 90,
@@ -147,157 +163,164 @@ async function waitForOidcAuthenticated(
 
   return false;
 }
-//******************************************************************************************************************************** */
+
 export function LoginScreen() {
-  // Redux state and dispatch and other hooks used in the component   
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
-  const Feather = withUnistyles(Feather_);
   const { theme } = useUnistyles();
+
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const ip = useAppSelector(selectIp);
   const language = useAppSelector(selectLanguage);
   const themeInfo = useAppSelector(selectThemeInfo);
   const serversState = useAppSelector(selectServers);
+
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
+
   const loginWindowRef = useRef<Window | null>(null);
+  const autoOidcDoneRef = useRef(false);
+
   const [highlight] = useState(false);
-   styles.useVariants({ highlight });
+  styles.useVariants({ highlight });
+
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const shouldPromptPasswordChange = username.trim().toLowerCase() === "admin" && password === "admin";
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
-  const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed" >("loading");
+  const [loginRequestStatus, setLoginRequestStatus] = useState<
+    "loading" | "successful" | "failed"
+  >("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
-  const mutedTextStyle = { color: theme.colors.text, opacity: 0.75 };
-  const languageOptions = {de: "Deutsch", en: "English",} as const;
-  const themeOptions = { system: t("system"),light: t("light"), dark: t("dark"),} as const;
-  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive? "system": themeInfo.theme;
+
   const isWeb = Platform.OS === "web";
+  const isExpoWeb =
+    isWeb &&
+    typeof window !== "undefined" &&
+    window.location.origin.includes("localhost:8081");
+
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
+
+  const shouldPromptPasswordChange =
+    username.trim().toLowerCase() === "admin" && password === "admin";
+
   const basic = toBase64(`${username}:${password}`);
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
-  const isExpoWeb =isWeb && typeof window !== "undefined" &&window.location.origin.includes("localhost:8081");
-  const autoOidcDoneRef = useRef(false);
-  const autoOidcRedirectRef = useRef(false);
 
-
-/******************************************************************************************************************************************** */
-// Effect to automatically redirect to the OIDC login URL on component mount if OIDC is the selected authentication method, and to prevent multiple redirects using a ref flag
-useEffect(() => {
-  if (authenticationMethod !== "oidc") return;
-  if (!isWeb) return;
-  if (typeof window === "undefined") return;
-  if (oidcLoginInProgress) return;
-  if (autoOidcRedirectRef.current) return;
-
-  /*
-   * Nur im echten Serverbetrieb.
-   * Expo Web localhost:8081 nutzt weiterhin Popup.
-   */
-  if (isExpoWeb) return;
-
-  /*
-   * Nur auf der echten Login-Route automatisch weiterleiten.
-   * Dadurch vermeiden wir Seiteneffekte auf anderen Routen.
-   */
-  if (window.location.pathname !== "/login") return;
-
-  let sameOrigin = false;
-
-  try {
-    sameOrigin =
-      new URL(normalizeBaseUrl(selectedBaseUrl)).origin ===
-      window.location.origin;
-  } catch {
-    sameOrigin = false;
-  }
-
-  if (!sameOrigin) return;
-
-  const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
-
-  if (!oidcStartUrl) return;
-
-  autoOidcRedirectRef.current = true;
-
-  window.location.replace(oidcStartUrl);
-}, [
-  authenticationMethod,
-  isWeb,
-  isExpoWeb,
-  oidcLoginInProgress,
-  selectedBaseUrl,
-]);
-// Function to mark the selected server as logged in by updating its status in the Redux store, used after a successful login to provide visual feedback in the UI
-const markSelectedServerLoggedIn = () => {
-  const serverId =
-    selectedServer?.id && selectedServer.id !== "local"
-      ? selectedServer.id
-      : selectedServerId || "local";
-
-  dispatch(
-    setServerStatus({
-      serverId,
-      status: {
-        tone: "green",
-        subtitle: t("einloggt"),
-      },
-    }),
-  );
-};
-// Effect to automatically attempt OIDC login on component mount if OIDC is the selected authentication method, and to prevent multiple attempts using a ref flag
-useEffect(() => {
-  if (authenticationMethod !== "oidc") return;
-  if (autoOidcDoneRef.current) return;
-
-  autoOidcDoneRef.current = true;
-
-  const run = async () => {
-    const authenticated = await fetchOidcAuthenticatedFromServer(selectedBaseUrl);
-
-    if (!authenticated) {
-      autoOidcDoneRef.current = false;
-      return;
-    }
-
-    await dispatch(
-      switchServer({
-        url: selectedBaseUrl,
-        initializeMenu: !isExpoWeb,
-      }),
-    );
-
-    markSelectedServerLoggedIn();
-    dispatchServerStatusRefresh();
-
-    setLoginRequestStatus("successful");
-    setLoginFeedback(null);
+  const mutedTextStyle = {
+    color: theme.colors.text,
+    opacity: 0.75,
   };
 
-  void run();
-}, [authenticationMethod, selectedBaseUrl, dispatch, isExpoWeb]);
+  const languageOptions = {
+    de: "Deutsch",
+    en: "English",
+  } as const;
 
+  const themeOptions = {
+    system: t("system"),
+    light: t("light"),
+    dark: t("dark"),
+  } as const;
 
-// Helper function to check if the selected server's origin matches the web app's origin, used to determine if OIDC login can be performed in a popup or needs to fallback to redirect
-function isSameOriginAsSelectedServer(): boolean {
-  if (!isWeb || typeof window === "undefined") return false;
+  const currentThemeValue: keyof typeof themeOptions = themeInfo.adaptive
+    ? "system"
+    : themeInfo.theme;
 
-  try {
-    return new URL(normalizeBaseUrl(selectedBaseUrl)).origin === window.location.origin;
-  } catch {
-    return false;
+  function markSelectedServerLoggedIn() {
+    const serverId =
+      selectedServer?.id && selectedServer.id !== "local"
+        ? selectedServer.id
+        : selectedServerId || "local";
+
+    dispatch(
+      setServerStatus({
+        serverId,
+        status: {
+          tone: "green",
+          subtitle: t("einloggt"),
+        },
+      }),
+    );
   }
-}
-  // Cleanup function to close the login window if it's still open when the component unmounts
+
+  function isSameOriginAsSelectedServer(): boolean {
+    if (!isWeb || typeof window === "undefined") return false;
+
+    try {
+      return (
+        new URL(normalizeBaseUrl(selectedBaseUrl)).origin ===
+        window.location.origin
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /*
+   * Wichtig:
+   * Kein automatischer Redirect zu /login.
+   *
+   * Der automatische Redirect hat bei Jetty/OIDC invalid-state/no-state
+   * verursacht. Der OIDC-Flow wird deshalb nur explizit über den Button
+   * gestartet.
+   */
+  useEffect(() => {
+    if (authenticationMethod !== "oidc") return;
+    if (autoOidcDoneRef.current) return;
+
+    autoOidcDoneRef.current = true;
+
+    const run = async () => {
+      try {
+        const authenticated =
+          await fetchOidcAuthenticatedFromServer(selectedBaseUrl);
+
+        if (!authenticated) {
+          autoOidcDoneRef.current = false;
+          return;
+        }
+
+        await dispatch(
+          switchServer({
+            url: selectedBaseUrl,
+            initializeMenu: !isExpoWeb,
+          }),
+        );
+
+        markSelectedServerLoggedIn();
+        dispatchServerStatusRefresh();
+
+        setLoginRequestStatus("successful");
+        setLoginFeedback(null);
+      } catch (error) {
+        console.log("[OIDC LOGIN] initial auth check failed:", error);
+        autoOidcDoneRef.current = false;
+      }
+    };
+
+    void run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticationMethod, selectedBaseUrl, dispatch, isExpoWeb]);
+
+  useEffect(() => {
+    setOidcLoginInProgress(false);
+    loginWindowRef.current = null;
+  }, [selectedBaseUrl]);
+
+  useEffect(() => {
+    return () => {
+      loginWindowRef.current?.close();
+      loginWindowRef.current = null;
+    };
+  }, []);
+
   async function loginWithJwt(): Promise<void> {
     if (!username.trim() || !password.trim()) {
       setLoginRequestStatus("failed");
@@ -305,18 +328,16 @@ function isSameOriginAsSelectedServer(): boolean {
       return;
     }
 
+    const response = await fetch(loginUrl, {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        Accept: "application/json",
+      },
+    });
 
-   // Close any open login window before starting a new login attempt
-      const response = await fetch(loginUrl, {
-        method: "GET",
-        cache: "no-store",
-        credentials: "include",
-        headers: {
-          Authorization: `Basic ${basic}`,
-          Accept: "application/json",
-        },
-      });
-  // Try to extract bearer token from headers or body, depending on server implementation
     const wwwAuthenticate =
       response.headers.get("www-authenticate") ??
       response.headers.get("WWW-Authenticate") ??
@@ -329,15 +350,15 @@ function isSameOriginAsSelectedServer(): boolean {
       extractBearerToken(wwwAuthenticate) ?? extractBearerToken(bodyText);
 
     if (response.status === 200 && bearerToken) {
-        await dispatch(
+      await dispatch(
         switchServer({
           url: selectedBaseUrl,
           providedJwt: bearerToken,
           initializeMenu: true,
         }),
       );
-    markSelectedServerLoggedIn();
-console.log("[LOGIN] set green");
+
+      markSelectedServerLoggedIn();
       dispatchServerStatusRefresh();
 
       if (shouldPromptPasswordChange) {
@@ -358,35 +379,45 @@ console.log("[LOGIN] set green");
     setLoginRequestStatus("failed");
     setLoginFeedback(t("login_failed"));
   }
-  
 
   async function loginWithOidc(): Promise<void> {
-  if (oidcLoginInProgress) return;
+    if (oidcLoginInProgress) return;
 
-  setLoginRequestIssued(true);
-  setLoginRequestStatus("loading");
-  setLoginFeedback(null);
-  setOidcLoginInProgress(true);
+    setLoginRequestIssued(true);
+    setLoginRequestStatus("loading");
+    setLoginFeedback(null);
+    setOidcLoginInProgress(true);
 
-  const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
+    const oidcStartUrl = buildServerOidcStartUrl(selectedBaseUrl);
 
-  try {
-    if (!oidcStartUrl) {
-      setLoginRequestStatus("failed");
-      setLoginFeedback("OIDC-Start-URL fehlt.");
-      return;
-    }
-
-    if (isWeb) {
-      const sameOrigin = isSameOriginAsSelectedServer();
-
-      // Server normal auf 8080 geöffnet -> KEIN Popup
-      if (sameOrigin) {
-        window.location.href = oidcStartUrl;
+    try {
+      if (!oidcStartUrl) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback("OIDC-Start-URL fehlt.");
         return;
       }
 
-      // Expo 8081 -> Server 8080 -> Popup nötig
+      if (!isWeb || typeof window === "undefined") {
+        setLoginRequestStatus("failed");
+        setLoginFeedback("OIDC ist nur im Web verfügbar.");
+        return;
+      }
+
+      const sameOrigin = isSameOriginAsSelectedServer();
+
+      /*
+       * Server normal auf 8080 geöffnet:
+       * echte Browser-Navigation starten.
+       */
+      if (sameOrigin) {
+        window.location.assign(oidcStartUrl);
+        return;
+      }
+
+      /*
+       * Expo 8081 -> Server 8080:
+       * Popup-Flow verwenden.
+       */
       loginWindowRef.current = window.open(
         oidcStartUrl,
         "awb-oidc-login",
@@ -399,46 +430,39 @@ console.log("[LOGIN] set green");
         return;
       }
 
-            const authenticated = await waitForOidcAuthenticated(
-          selectedBaseUrl,
-          90,
-          1000,
-        );
+      const authenticated = await waitForOidcAuthenticated(
+        selectedBaseUrl,
+        90,
+        1000,
+      );
 
-        if (!authenticated) {
-          setLoginRequestStatus("failed");
-          setLoginFeedback("Login wurde nicht abgeschlossen.");
-          return;
-        }
+      if (!authenticated) {
+        setLoginRequestStatus("failed");
+        setLoginFeedback("Login wurde nicht abgeschlossen.");
+        return;
+      }
 
+      await dispatch(
+        switchServer({
+          url: selectedBaseUrl,
+          initializeMenu: !isExpoWeb,
+        }),
+      );
 
-        const isExpoWeb =
-          Platform.OS === "web" &&
-          typeof window !== "undefined" &&
-          window.location.origin.includes("localhost:8081");
+      markSelectedServerLoggedIn();
+      dispatchServerStatusRefresh();
 
-          await dispatch(
-            switchServer({
-              url: selectedBaseUrl,
-              initializeMenu: !isExpoWeb,
-            }),
-        );
-       markSelectedServerLoggedIn();
-        dispatchServerStatusRefresh();
-      
-        console.log("[LOGIN] set green");
-        loginWindowRef.current?.close();
+      loginWindowRef.current?.close();
+      loginWindowRef.current = null;
       window.focus();
 
       setLoginRequestStatus("successful");
       setLoginFeedback(null);
-      return;
+    } finally {
+      setOidcLoginInProgress(false);
     }
-  } finally {
-    setOidcLoginInProgress(false);
   }
-}
-// Main login function that handles both JWT and OIDC login flows based on the selected authentication method
+
   async function login(): Promise<void> {
     if (oidcLoginInProgress && authenticationMethod === "oidc") {
       return;
@@ -490,11 +514,6 @@ console.log("[LOGIN] set green");
       setLoginRequestStatus("failed");
     }
   }
- // Effect to clean up login window reference when selectedBaseUrl changes (e.g., user selects a different server)
-  useEffect(() => {
-    setOidcLoginInProgress(false);
-    loginWindowRef.current = null;
-  }, [selectedBaseUrl]);
 
   return (
     <View style={[styles.container]}>
@@ -550,7 +569,7 @@ console.log("[LOGIN] set green");
             </>
           )}
 
-          {showOidcLogin  && (
+          {showOidcLogin && (
             <View style={localStyles.oidcLoading}>
               <ActionButton
                 label={oidcLoginInProgress ? t("loading") : t("login")}
@@ -559,9 +578,8 @@ console.log("[LOGIN] set green");
                 onPress={() => {
                   void loginWithOidc();
                 }}
+                disabled={oidcLoginInProgress}
               />
-
-              {oidcLoginInProgress}
             </View>
           )}
 
@@ -704,15 +722,18 @@ const localStyles = NativeStyleSheet.create({
     gap: 6,
     padding: 5,
   },
+
   feedbackText: {
     color: "#dc2626",
     fontSize: 13,
     textAlign: "center",
   },
+
   infoText: {
     textAlign: "center",
     fontSize: 14,
   },
+
   oidcLoading: {
     gap: 8,
     alignItems: "center",
