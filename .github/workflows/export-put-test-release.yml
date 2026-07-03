@@ -2,15 +2,6 @@ name: Export Put Test Release
 
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "Build only oder Upload in Test-Ordner?"
-        required: true
-        default: "build-only"
-        type: choice
-        options:
-          - build-only
-          - upload-test
 
 jobs:
   install:
@@ -82,7 +73,6 @@ jobs:
           path: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}.zip
 
       - name: Put to test folder
-        if: ${{ github.event.inputs.mode == 'upload-test' }}
         env:
           url: ${{ secrets.FTP_UPLOAD_URL }}
           user: ${{ secrets.FTP_USER }}
