@@ -88,7 +88,6 @@ jobs:
           user: ${{ secrets.FTP_USER }}
           pwd: ${{ secrets.FTP_PSWD }}
           name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}
-          path: ${{ secrets.PROJECT_TEST_PATH }}
+          test_path: ${{ secrets.PROJECT_PATH }}/test
         run: |
-          test -n "$path" || (echo "PROJECT_TEST_PATH secret is missing" && exit 1)
-          printf "open $url\nuser $user $pwd\ncd $path\nput $name.zip\nexit" | ftp -n
+          printf "open $url\nuser $user $pwd\ncd $test_path\nput $name.zip\nexit" | ftp -n
