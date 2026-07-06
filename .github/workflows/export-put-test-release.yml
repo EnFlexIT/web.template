@@ -13,15 +13,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Show Git info
-        run: |
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          git rev-parse HEAD
-          git branch --show-current
-          ls -la
-          test -f package.json && echo "package.json found"
-          test -f package-lock.json && echo "package-lock.json found"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -30,22 +21,6 @@ jobs:
 
       - name: Update npm
         run: npm install -g npm@10
-
-      - name: Show versions
-        run: |
-          node -v
-          npm -v
-
-      - name: Debug package files
-        run: |
-          echo "---- package.json dependency search ----"
-          grep -n "@floating-ui/dom" package.json || true
-          echo "---- package-lock.json dependency search ----"
-          grep -n "@floating-ui/dom" package-lock.json || true
-          echo "---- lockfile version ----"
-          node -e "const lock=require('./package-lock.json'); console.log(lock.lockfileVersion)"
-          echo "---- package name/version ----"
-          node -e "const pkg=require('./package.json'); console.log(pkg.name, pkg.version)"
 
       - name: Validate lockfile with npm ci
         run: npm ci
@@ -61,10 +36,10 @@ jobs:
       - name: Export
         run: npx expo export -p web
 
-      - name: Package
+      - name: Package test release
         env:
-          name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
-        run: cd dist && zip -r ../$name.zip .
+          file_name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
+        run: cd dist && zip -r ../$file_name.zip .
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -77,7 +52,7 @@ jobs:
           url: ${{ secrets.FTP_UPLOAD_URL }}
           user: ${{ secrets.FTP_USER }}
           pwd: ${{ secrets.FTP_PSWD }}
-          name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
+          file_name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
           test_path: ${{ secrets.PROJECT_PATH }}/test
         run: |
-          printf "open $url\nuser $user $pwd\ncd $test_path\nput $name.zip\nexit" | ftp -n
+          printf "open $url\nuser $user $pwd\ncd $test_path\nput $file_name.zip\nexit" | ftp -n
