@@ -42,6 +42,11 @@ import {
   toggleNotificationPopup,
 } from "../redux/slices/notificationSlice";
 
+import {
+  selectIsTestRelease,
+  setWebAppReleaseType,
+} from "../redux/slices/appReleaseSlice";
+
 import { ServerLoginModal } from "../screens/login/ServerLoginModal";
 
 const Feather = withUnistyles(Feather_);
@@ -66,6 +71,8 @@ export function Footer() {
 
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const isTestRelease = useAppSelector(selectIsTestRelease);
+  const currentBackendUrl = useAppSelector((state) => state.api.ip);
   const selectedServer = useAppSelector(selectSelectedServer);
   const serversState = useAppSelector(selectServers);
   const serverOptionMeta = useAppSelector(selectServerStatuses);
@@ -87,12 +94,31 @@ export function Footer() {
     (window.location.pathname === "/login" ||
       window.location.pathname === "/base-login");
 
-   const showNotificationButton = !isLoginPage && isLoggedIn;
-    useEffect(() => {
-      if (!isLoggedIn) {
-        dispatch(closeNotificationPopup());
-      }
-    }, [isLoggedIn, dispatch]);
+  const showNotificationButton = !isLoginPage && isLoggedIn;
+
+  useEffect(() => {
+    async function loadReleaseType() {
+      if (!currentBackendUrl) return;
+
+      const baseUrl = normalizeBaseUrl(currentBackendUrl);
+      const jwt = await getJwtForServer(baseUrl);
+
+      const info = await checkServerAuthenticated(baseUrl, jwt, {
+        force: true,
+      });
+
+      dispatch(setWebAppReleaseType(info.webAppReleaseType));
+    }
+
+    void loadReleaseType();
+  }, [dispatch, currentBackendUrl]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      dispatch(closeNotificationPopup());
+    }
+  }, [isLoggedIn, dispatch]);
+
   const serverOptions = useMemo(() => {
     const entries = servers.map((server) => [
       server.id,
@@ -141,12 +167,11 @@ export function Footer() {
     const newUrl = normalizeBaseUrl(server.baseUrl);
     const existingJwt = await getJwtForServer(newUrl);
 
-    // Wichtig:
-    // Diese Prüfung passiert nur bei echtem Serverwechsel.
-    // Kein automatischer Footer-Refresh, kein Intervall, kein Focus-Check.
     const info = await checkServerAuthenticated(newUrl, existingJwt, {
       force: true,
     });
+
+    dispatch(setWebAppReleaseType(info.webAppReleaseType));
 
     if (info.authenticated) {
       dispatch(selectServer(server.id));
@@ -241,6 +266,12 @@ export function Footer() {
         throw new Error("Anmeldung fehlgeschlagen.");
       }
 
+      const info = await checkServerAuthenticated(pendingServerUrl, bearerToken, {
+        force: true,
+      });
+
+      dispatch(setWebAppReleaseType(info.webAppReleaseType));
+
       if (pendingServerId) {
         dispatch(selectServer(pendingServerId));
       }
@@ -280,8 +311,16 @@ export function Footer() {
 
   return (
     <>
+
       <View style={styles.footer}>
+           {isTestRelease ? (
+          <View style={styles.testReleaseBadge}>
+            <ThemedText style={styles.testReleaseBadgeText}>TEST</ThemedText>
+          </View>
+        ) : null}
         <ThemedText style={styles.separator}>|</ThemedText>
+
+     
 
         <View
           style={[
@@ -375,6 +414,20 @@ const styles = StyleSheet.create((theme) => ({
 
   separator: {
     opacity: 0.6,
+  },
+
+  testReleaseBadge: {
+    borderRadius: 4,
+    backgroundColor: "#f59e0b",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+
+  testReleaseBadgeText: {
+    color: "#ffffff",
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: "700",
   },
 
   serverDropdownWrap: {

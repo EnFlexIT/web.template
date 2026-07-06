@@ -1,5 +1,5 @@
 import type { AuthMethod } from "../../redux/slices/apiSlice";
-import { ServerCheckResult } from "./types";
+import type { ServerCheckResult } from "./types";
 
 const REACHABLE_CACHE_MS = 10_000;
 const AUTH_CACHE_MS = 10_000;
@@ -11,6 +11,19 @@ let lastReachableAt = 0;
 let lastAuthKey: string | null = null;
 let lastAuthResult: ServerAuthInfo | null = null;
 let lastAuthAt = 0;
+
+export type WebAppReleaseType =
+  | "PRODUCTION_RELEASE"
+  | "TEST_RELEASE"
+  | "UNKNOWN";
+
+export type ServerAuthInfo = {
+  authenticated: boolean;
+  authenticationMethod: AuthMethod;
+  oidcBearer: string | null;
+  sessionInvalid: boolean;
+  webAppReleaseType: WebAppReleaseType;
+};
 
 export function normalizeBaseUrl(url: string) {
   return (url ?? "").toString().trim().replace(/\/+$/, "");
@@ -33,9 +46,6 @@ function isRedirectStatus(status?: number): boolean {
 function isReachableStatus(status?: number): boolean {
   if (status == null) return false;
 
-  // Für /api/alive gilt:
-  // Auch 401/403/303 zeigen, dass der Server technisch erreichbar ist.
-  // Auth wird separat geprüft.
   return status >= 200 && status < 500;
 }
 
@@ -153,12 +163,11 @@ export async function checkServerReachable(
   });
 }
 
-export type ServerAuthInfo = {
-  authenticated: boolean;
-  authenticationMethod: AuthMethod;
-  oidcBearer: string | null;
-  sessionInvalid: boolean;
-};
+function normalizeWebAppReleaseType(value: unknown): WebAppReleaseType {
+  if (value === "TEST_RELEASE") return "TEST_RELEASE";
+  if (value === "PRODUCTION_RELEASE") return "PRODUCTION_RELEASE";
+  return "UNKNOWN";
+}
 
 export function parseServerSettings(
   data: any,
@@ -168,9 +177,23 @@ export function parseServerSettings(
     ? data.propertyEntries
     : [];
 
-  const authCfg = entries.find(
-    (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
+  const releaseTypeRaw = entries.find(
+    (entry: any) => entry?.key === "_WebAppReleaseType",
   )?.value;
+
+  const webAppReleaseType =
+  entries.find((entry: any) => entry?.key === "_WebAppReleaseType")?.value ??
+  "PRODUCTION_RELEASE";
+
+  console.log("APP SETTINGS RESPONSE:", data);
+  console.log("releaseTypeRaw:", releaseTypeRaw);
+  console.log("webAppReleaseType:", webAppReleaseType);
+
+  const authCfg =
+    entries.find(
+      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
+    )?.value ??
+    entries.find((entry: any) => entry?.key === "_AuthenticationMethod")?.value;
 
   const authenticatedRaw = entries.find(
     (entry: any) => entry?.key === "_Authenticated",
@@ -217,12 +240,13 @@ export function parseServerSettings(
     authenticationMethod = "jwt";
   }
 
-  return {
-    authenticated,
-    authenticationMethod,
-    oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
-    sessionInvalid: false,
-  };
+ return {
+  authenticated,
+  authenticationMethod,
+  oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
+  sessionInvalid: false,
+  webAppReleaseType,
+};
 }
 
 export async function checkServerAuthenticated(
@@ -237,6 +261,7 @@ export async function checkServerAuthenticated(
     authenticationMethod: "unknown",
     oidcBearer: null,
     sessionInvalid: false,
+    webAppReleaseType: "UNKNOWN",
   };
 
   if (!base) {
@@ -281,6 +306,7 @@ export async function checkServerAuthenticated(
         authenticationMethod: "oidc",
         oidcBearer: null,
         sessionInvalid: false,
+        webAppReleaseType: "UNKNOWN",
       });
     }
 
@@ -290,6 +316,7 @@ export async function checkServerAuthenticated(
         authenticationMethod: "unknown",
         oidcBearer: null,
         sessionInvalid: true,
+        webAppReleaseType: "UNKNOWN",
       });
     }
 
