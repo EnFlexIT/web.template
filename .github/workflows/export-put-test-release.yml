@@ -63,21 +63,21 @@ jobs:
 
       - name: Package
         env:
-          name: ${{ secrets.PROJECT_NAME }}_TEST_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}
+          name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
         run: cd dist && zip -r ../$name.zip .
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ secrets.PROJECT_NAME }}_TEST_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}
-          path: ${{ secrets.PROJECT_NAME }}_TEST_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}.zip
+          name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
+          path: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST.zip
 
       - name: Put to test folder
         env:
           url: ${{ secrets.FTP_UPLOAD_URL }}
           user: ${{ secrets.FTP_USER }}
           pwd: ${{ secrets.FTP_PSWD }}
-          name: ${{ secrets.PROJECT_NAME }}_TEST_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}
+          name: ${{ secrets.PROJECT_NAME }}_${{ steps.version-selector.outputs.version }}_${{ steps.time-selector.outputs.time }}-TEST
           test_path: ${{ secrets.PROJECT_PATH }}/test
         run: |
           printf "open $url\nuser $user $pwd\ncd $test_path\nput $name.zip\nexit" | ftp -n
