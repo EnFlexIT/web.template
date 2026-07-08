@@ -100,6 +100,22 @@ function redirectReleaseBrowserToServer(baseUrl: string) {
   window.location.replace(`${normalizedBaseUrl}/login`);
 }
 
+function getUploadResultMessageType(result: unknown): string {
+  return String((result as any)?.messageType ?? "")
+    .trim()
+    .toUpperCase();
+}
+
+function getUploadResultMessage(result: unknown): string | null {
+  const message = String((result as any)?.message ?? "").trim();
+  return message || null;
+}
+
+function isUploadRejectedByBackend(result: unknown): boolean {
+  const messageType = getUploadResultMessageType(result);
+  return messageType === "WARNING" || messageType === "ERROR";
+}
+
 function getDirectChildText(element: Element, childName: string): string | null {
   const child = Array.from(element.children).find(
     (item) => item.localName === childName,
@@ -125,7 +141,11 @@ function getJettySetting(xml: Document, settingKey: string): string | null {
     const valueNodes = Array.from(valueWrapper.getElementsByTagName("value"));
     const leafValue = valueNodes[valueNodes.length - 1];
 
-    return leafValue?.textContent?.trim() || valueWrapper.textContent?.trim() || null;
+    return (
+      leafValue?.textContent?.trim() ||
+      valueWrapper.textContent?.trim() ||
+      null
+    );
   }
 
   return null;
@@ -297,6 +317,12 @@ export function AppSettingsFileUploadScreen() {
 
   const [portDialogVisible, setPortDialogVisible] = useState(false);
 
+  const [uploadWarningDialogVisible, setUploadWarningDialogVisible] =
+    useState(false);
+  const [uploadWarningText, setUploadWarningText] = useState<string | null>(
+    null,
+  );
+
   const [configDialogVisible, setConfigDialogVisible] = useState(false);
   const [configDialogPhase, setConfigDialogPhase] =
     useState<ConfigDialogPhase>("installing");
@@ -325,14 +351,16 @@ export function AppSettingsFileUploadScreen() {
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
+  const uploadBusy = uploadState.loading || configDialogVisible;
+
   const canUpload = useMemo(() => {
     return Boolean(
       api.ip &&
         performative.trim() &&
         selectedFile &&
-        !uploadState.loading,
+        !uploadBusy,
     );
-  }, [api.ip, performative, selectedFile, uploadState.loading]);
+  }, [api.ip, performative, selectedFile, uploadBusy]);
 
   const getConfigurationTypeLabel = useCallback((value: string): string => {
     return value.trim();
@@ -340,6 +368,8 @@ export function AppSettingsFileUploadScreen() {
 
   function resetMessages() {
     setDownloadError(null);
+    setUploadWarningDialogVisible(false);
+    setUploadWarningText(null);
     dispatch(resetUploadState());
   }
 
@@ -479,20 +509,13 @@ export function AppSettingsFileUploadScreen() {
         if (cancelled) return;
 
         setConfigurationTypeOptions(options);
-
-        setPerformative((current) => {
-          if (current && options[current]) {
-            return current;
-          }
-
-          return uniqueTypes[0] || FALLBACK_CONFIGURATION_TYPE;
-        });
+        setPerformative(uniqueTypes[0] || FALLBACK_CONFIGURATION_TYPE);
       } catch (error) {
         console.warn("[FILE CONFIG] could not load configuration types", error);
 
         if (!cancelled) {
           setConfigurationTypeOptions(fallbackConfigurationTypeOptions);
-          setPerformative((current) => current || FALLBACK_CONFIGURATION_TYPE);
+          setPerformative(FALLBACK_CONFIGURATION_TYPE);
         }
       } finally {
         if (!cancelled) {
@@ -555,6 +578,8 @@ export function AppSettingsFileUploadScreen() {
 
     setPortDialogVisible(false);
     setDownloadError(null);
+    setUploadWarningDialogVisible(false);
+    setUploadWarningText(null);
     dispatch(resetUploadState());
 
     setConfigDialogVisible(true);
@@ -595,6 +620,22 @@ export function AppSettingsFileUploadScreen() {
         }),
       ).unwrap();
 
+      if (isUploadRejectedByBackend(result)) {
+        const backendMessage =
+          getUploadResultMessage(result) ||
+          t(
+            "messageConfigurationUploadInvalid",
+            "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+          );
+
+        setConfigDialogVisible(false);
+        setUploadWarningText(backendMessage);
+        setUploadWarningDialogVisible(true);
+        setDownloadError(backendMessage);
+
+        return;
+      }
+
       setConfigDialogPhase("restarting");
       setConfigDialogText(
         shouldSwitchToDetectedUrl && nextBaseUrlAfterUpload
@@ -603,7 +644,7 @@ export function AppSettingsFileUploadScreen() {
               "Die Konfiguration wurde erfolgreich angewendet. Der Server startet voraussichtlich unter {{url}} neu.",
               { url: nextBaseUrlAfterUpload },
             )
-          : result?.message ||
+          : getUploadResultMessage(result) ||
               t(
                 "messageConfigurationUploadSuccessKeepCurrentPort",
                 "Die Konfiguration wurde erfolgreich angewendet. Die aktuelle Server-Adresse wird beibehalten.",
@@ -658,6 +699,8 @@ export function AppSettingsFileUploadScreen() {
 
     setDownloadLoading(true);
     setDownloadError(null);
+    setUploadWarningDialogVisible(false);
+    setUploadWarningText(null);
     dispatch(resetUploadState());
 
     try {
@@ -854,7 +897,7 @@ export function AppSettingsFileUploadScreen() {
                       ? t("buttonUploadLoading")
                       : t("buttonUpload")
                   }
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   onPress={uploadFile}
                   disabled={!canUpload}
@@ -921,6 +964,29 @@ export function AppSettingsFileUploadScreen() {
             setPortDialogVisible(false);
           }}
         />
+<ConfirmDialog
+  visible={uploadWarningDialogVisible}
+  variant="warning"
+  icon="alert-triangle"
+  title={t(
+    "messageConfigurationUploadWarningTitle",
+    "Konfigurationsdatei ungültig",
+  )}
+  description={
+    uploadWarningText ||
+    t(
+      "messageConfigurationUploadInvalid",
+      "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+    )
+  }
+  confirmLabel={t("buttonClose", "Schließen")}
+  onConfirm={() => {
+    setUploadWarningDialogVisible(false);
+  }}
+  onClose={() => {
+    setUploadWarningDialogVisible(false);
+  }}
+/>
       </Card>
     </View>
   );

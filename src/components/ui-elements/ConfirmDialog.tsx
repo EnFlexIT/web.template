@@ -18,10 +18,12 @@ type Props = {
   description?: string;
   icon?: FeatherIconName;
   variant?: ConfirmDialogVariant;
-  confirmLabel: string;
-  cancelLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
+
+  confirmLabel?: string;
+  cancelLabel?: string;
+
+  onConfirm?: () => void;
+  onCancel?: () => void;
   onClose?: () => void;
 };
 
@@ -52,7 +54,14 @@ export function ConfirmDialog({
       return;
     }
 
-    onCancel();
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+
+    if (onConfirm) {
+      onConfirm();
+    }
   }
 
   return (
@@ -80,25 +89,31 @@ export function ConfirmDialog({
             ) : null}
           </View>
 
-          <View style={s.actions}>
-            <View style={s.actionButton}>
-              <ActionButton
-                label={cancelLabel}
-                variant="secondary"
-                size="sm"
-                onPress={onCancel}
-              />
-            </View>
+          {(cancelLabel || confirmLabel) ? (
+            <View style={s.actions}>
+              {cancelLabel ? (
+                <View style={s.actionButton}>
+                  <ActionButton
+                    label={cancelLabel}
+                    variant="secondary"
+                    size="sm"
+                    onPress={onCancel ?? closeDialog}
+                  />
+                </View>
+              ) : null}
 
-            <View style={s.actionButton}>
-              <ActionButton
-                label={confirmLabel}
-                variant="primary"
-                size="sm"
-                onPress={onConfirm}
-              />
+              {confirmLabel ? (
+                <View style={s.actionButton}>
+                  <ActionButton
+                    label={confirmLabel}
+                    variant="primary"
+                    size="sm"
+                    onPress={onConfirm ?? closeDialog}
+                  />
+                </View>
+              ) : null}
             </View>
-          </View>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -117,7 +132,7 @@ const s = StyleSheet.create((theme) => ({
   dialog: {
     width: "100%",
     maxWidth: 480,
-    
+    borderRadius: 12,
     padding: 24,
     gap: 18,
     alignItems: "center",
