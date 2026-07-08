@@ -6,7 +6,8 @@ export const menuFeatureFlags: Record<number, boolean> = {
   3013: true,// Menüpunkt "Personal Settings" - enthält die Tabs "Appearance", "Privacy Settings" und "Change Password"
   3014: true,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
   3010: true ,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3024: true // Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
+  3024: true, // Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
+  3006: true,// Menüpunkt "Personal Settings" - enthält die Tabs "Appearance", "Privacy Settings" und "Change Password"
 };
 
 export function isMenuEnabled(
@@ -15,6 +16,9 @@ export function isMenuEnabled(
 ): boolean {
   if (menuID === 3013 && authenticationMethod === "oidc") {
     return false;
+  }
+    if (menuID === 3006 && authenticationMethod === "oidc") {
+    return true;
   }
 
   return menuFeatureFlags[menuID] ?? true;

@@ -19,5 +19,7 @@
   "notifications":"Benachrichtigungen",
   "personalSettings":"Benutzereinstellung",
   "options":"Programmstart",
-  "settingsFileUpload":"Konfiguration"
+  "settingsFileUpload":"Konfiguration",
+  "UserProfile":"Benutzerprofil"
+
 }

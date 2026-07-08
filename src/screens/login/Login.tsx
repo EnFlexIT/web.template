@@ -13,6 +13,7 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
 
+import { loadUserProfile } from "../../redux/slices/userProfileSlice";
 import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { Logo } from "../../components/Logo";
@@ -168,39 +169,56 @@ export function LoginScreen() {
   const { t } = useTranslation(["Login"]);
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
+
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const ip = useAppSelector(selectIp);
   const language = useAppSelector(selectLanguage);
   const themeInfo = useAppSelector(selectThemeInfo);
   const serversState = useAppSelector(selectServers);
+
   const servers = serversState?.servers ?? [];
   const selectedServerId = serversState?.selectedServerId ?? "local";
   const selectedServer = servers.find((server) => server.id === selectedServerId);
   const selectedBaseUrl = selectedServer?.baseUrl ?? ip;
+
   const loginWindowRef = useRef<Window | null>(null);
   const autoOidcDoneRef = useRef(false);
+
   const [highlight] = useState(false);
   styles.useVariants({ highlight });
+
   const [folded, setFolded] = useState(true);
   const [orgModalOpen, setOrgModalOpen] = useState(false);
   const [oidcLoginInProgress, setOidcLoginInProgress] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginRequestIssued, setLoginRequestIssued] = useState(false);
-  const [loginRequestStatus, setLoginRequestStatus] = useState< "loading" | "successful" | "failed">("loading");
+  const [loginRequestStatus, setLoginRequestStatus] = useState<
+    "loading" | "successful" | "failed"
+  >("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
+
   const isWeb = Platform.OS === "web";
-  const isExpoWeb = isWeb &&  typeof window !== "undefined" && window.location.origin.includes("localhost:8081");
+  const isExpoWeb =
+    isWeb &&
+    typeof window !== "undefined" &&
+    window.location.origin.includes("localhost:8081");
+
   const showJwtLogin = authenticationMethod === "jwt";
   const showOidcLogin = authenticationMethod === "oidc";
   const showUnknownAuth = authenticationMethod === "unknown";
-  const shouldPromptPasswordChange =username.trim().toLowerCase() === "admin" && password === "admin";
+
+  const shouldPromptPasswordChange =
+    username.trim().toLowerCase() === "admin" && password === "admin";
+
   const basic = toBase64(`${username}:${password}`);
   const loginUrl = `${normalizeBaseUrl(selectedBaseUrl)}/api/user/login`;
+
   const mutedTextStyle = {
     color: theme.colors.text,
     opacity: 0.75,
   };
+
   const languageOptions = {
     de: "Deutsch",
     en: "English",
@@ -246,14 +264,6 @@ export function LoginScreen() {
     }
   }
 
-  /*
-   * Wichtig:
-   * Kein automatischer Redirect zu /login.
-   *
-   * Der automatische Redirect hat bei Jetty/OIDC invalid-state/no-state
-   * verursacht. Der OIDC-Flow wird deshalb nur explizit über den Button
-   * gestartet.
-   */
   useEffect(() => {
     if (authenticationMethod !== "oidc") return;
     if (autoOidcDoneRef.current) return;
@@ -276,6 +286,8 @@ export function LoginScreen() {
             initializeMenu: !isExpoWeb,
           }),
         );
+
+        await dispatch(loadUserProfile());
 
         markSelectedServerLoggedIn();
         dispatchServerStatusRefresh();
@@ -388,19 +400,11 @@ export function LoginScreen() {
 
       const sameOrigin = isSameOriginAsSelectedServer();
 
-      /*
-       * Server normal auf 8080 geöffnet:
-       * echte Browser-Navigation starten.
-       */
       if (sameOrigin) {
         window.location.assign(oidcStartUrl);
         return;
       }
 
-      /*
-       * Expo 8081 -> Server 8080:
-       * Popup-Flow verwenden.
-       */
       loginWindowRef.current = window.open(
         oidcStartUrl,
         "awb-oidc-login",
@@ -431,6 +435,8 @@ export function LoginScreen() {
           initializeMenu: !isExpoWeb,
         }),
       );
+
+      await dispatch(loadUserProfile());
 
       markSelectedServerLoggedIn();
       dispatchServerStatusRefresh();

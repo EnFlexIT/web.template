@@ -10,6 +10,7 @@ import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
 import type { AuthMethod } from "../../redux/slices/apiSlice";
+import {UserProfileScreen} from "../../screens/UserProfile/UserProfileScreen";
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "../../screens/settings/AppSettingsFileUploadScreen";
@@ -64,6 +65,12 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
       menuID: 3005,
       parentID: 3022,
       Screen: PrivacySettings,
+    },
+   {
+      caption: "UserProfile",
+      menuID: 3006,
+      parentID: 3022,
+      Screen: UserProfileScreen,
     },
     {
       caption: "changePassword",

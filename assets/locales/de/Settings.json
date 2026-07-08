@@ -55,6 +55,11 @@
       "settingsFileUpload": {
         "title": "Einstellungen hochladen",
         "description": "Lade eine JSON-Datei mit deinen Einstellungen hoch."
+      },
+      "UserProfile": {
+        "title": "Benutzerprofil",
+        "description": "Verwalte deine persönlichen Informationen und Einstellungen."
       }
+
   }
 }

@@ -50,6 +50,11 @@
       "options": {
         
         "description": "App options, privacy and connection management."
+      },
+      "UserProfile": {
+        "title": "User Profile",
+        "description": "Manage your personal information and settings."
       }
+      
 }
 }
