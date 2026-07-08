@@ -6,6 +6,7 @@ import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Conten
 import { internalSetLanguage } from "./languageSlice";
 import { getStaticMenu } from "../slices/staticMenu";
 import { isMenuEnabled } from "./featureFlags";
+import type { AuthMethod } from "./apiSlice";
 
 interface BaseMenuItem<P = {}> {
   menuID: number;
@@ -28,6 +29,7 @@ interface StaticMenuItem<P> extends BaseMenuItem<P> {
 export type MenuItem<P = {}> = DynamicMenuItem | StaticMenuItem<P>;
 
 export type MenuTree = MenuNode;
+
 interface MenuNode {
   val: MenuItem;
   children: MenuNode[];
@@ -39,10 +41,17 @@ export interface MenuState {
   activeMenuId: number;
 }
 
+type InitializeMenuResult = {
+  dynamicMenu: MenuItem[];
+  staticMenu: MenuItem[];
+  authenticationMethod?: AuthMethod;
+};
+
 function addNodeToTree(tree: MenuTree, node: MenuNode): MenuTree {
   if (tree.val.menuID === node.val.parentID) {
     return { val: tree.val, children: [...tree.children, node] };
   }
+
   return {
     val: tree.val,
     children: tree.children.map((child) => addNodeToTree(child, node)),
@@ -51,8 +60,10 @@ function addNodeToTree(tree: MenuTree, node: MenuNode): MenuTree {
 
 export function getDepthFromList(listOfNodes: MenuItem[], id: number): number {
   const r = listOfNodes.find(({ menuID }) => menuID === id);
+
   if (!r) return Number.POSITIVE_INFINITY;
   if (!r.parentID) return 0;
+
   return 1 + getDepthFromList(listOfNodes, r.parentID);
 }
 
@@ -76,12 +87,14 @@ export function rawListToTrees(xs: MenuItem[]): MenuTree[] {
  */
 export function getIdPath(xs: MenuItem[], xId: number): undefined | number[] {
   const node = xs.find(({ menuID }) => menuID === xId);
+
   if (!node) return undefined;
 
   if (node.parentID) {
     const rest = getIdPath(xs, node.parentID);
     return rest ? [...rest, xId] : undefined;
   }
+
   return [xId];
 }
 
@@ -100,30 +113,59 @@ export function hasId(tree: MenuTree, id: number): boolean {
   );
 }
 
-function getFirstUsableMenuId(items: MenuItem[]): number {
-  const first = items.find((m) => m.menuID && isMenuEnabled(m.menuID));
+function getFirstUsableMenuId(
+  items: MenuItem[],
+  authenticationMethod?: AuthMethod,
+): number {
+  const first = items.find(
+    (m) => m.menuID && isMenuEnabled(m.menuID, authenticationMethod),
+  );
+
   return first?.menuID ?? 3003;
 }
 
-const staticMenu = getStaticMenu();
+/**
+ * Initial wird noch ohne Auth-Methode gebaut.
+ * Nach Login wird initializeMenu() mit aktueller Auth-Methode neu aufgebaut.
+ */
+const initialStaticMenu = getStaticMenu();
 
 const initialState: MenuState = {
-  menu: rawListToTrees(staticMenu),
-  rawMenu: staticMenu,
-  activeMenuId: getFirstUsableMenuId(staticMenu),
+  menu: rawListToTrees(initialStaticMenu),
+  rawMenu: initialStaticMenu,
+  activeMenuId: getFirstUsableMenuId(initialStaticMenu),
 };
 
-export const initializeMenu = createAsyncThunk<MenuItem[]>(
+export const initializeMenu = createAsyncThunk<InitializeMenuResult>(
   "menu/initialize",
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
-    const lang = state.language.language;
 
-    if (!state.api.isPointingToServer) return [];
-    if (state.api.isLoggedIn !== true) return [];
+    const lang = state.language.language;
+    const authenticationMethod = state.api.authenticationMethod;
+
+    const staticMenu = getStaticMenu(authenticationMethod);
+
+    if (!state.api.isPointingToServer) {
+      return {
+        dynamicMenu: [],
+        staticMenu,
+        authenticationMethod,
+      };
+    }
+
+    if (state.api.isLoggedIn !== true) {
+      return {
+        dynamicMenu: [],
+        staticMenu,
+        authenticationMethod,
+      };
+    }
 
     try {
-      const response = await state.api.dynamic_content_api.defaultApi.menuGet(lang);
+      const response =
+        await state.api.dynamic_content_api.defaultApi.menuGet(lang);
+
       const raw = response?.data as any;
 
       const data: ApiMenuItem[] = Array.isArray(raw)
@@ -136,18 +178,35 @@ export const initializeMenu = createAsyncThunk<MenuItem[]>(
               ? raw.menu
               : [];
 
-      if (!Array.isArray(data) || data.length === 0) return [];
+      if (!Array.isArray(data) || data.length === 0) {
+        return {
+          dynamicMenu: [],
+          staticMenu,
+          authenticationMethod,
+        };
+      }
 
-      return data.map((node) => ({
+      const dynamicMenu: MenuItem[] = data.map((node) => ({
         menuID: node.menuID!,
         parentID: node.parentID,
         position: node.position,
         caption: node.caption,
         Screen: undefined,
       }));
+
+      return {
+        dynamicMenu,
+        staticMenu,
+        authenticationMethod,
+      };
     } catch (e) {
       console.warn("initializeMenu failed, fallback to static menu", e);
-      return [];
+
+      return {
+        dynamicMenu: [],
+        staticMenu,
+        authenticationMethod,
+      };
     }
   },
 );
@@ -159,7 +218,13 @@ export const updateMenu = createAsyncThunk(
     const id = state.menu.activeMenuId;
 
     await thunkAPI.dispatch(initializeMenu());
-    await thunkAPI.dispatch(setActiveMenuId(id));
+
+    const nextState = thunkAPI.getState() as RootState;
+    const stillValid = nextState.menu.rawMenu.some((m) => m.menuID === id);
+
+    if (stillValid) {
+      await thunkAPI.dispatch(setActiveMenuId(id));
+    }
   },
 );
 
@@ -171,29 +236,46 @@ export const menuSlice = createSlice({
       state.activeMenuId = action.payload;
     },
 
-    clearMenu: (state) => {
-      const staticMenu = getStaticMenu();
+    clearMenu: (
+      state,
+      action: PayloadAction<AuthMethod | undefined>,
+    ) => {
+      const authenticationMethod = action.payload;
+      const staticMenu = getStaticMenu(authenticationMethod);
 
       state.rawMenu = staticMenu;
       state.menu = rawListToTrees(staticMenu);
-      state.activeMenuId = getFirstUsableMenuId(staticMenu);
+      state.activeMenuId = getFirstUsableMenuId(
+        staticMenu,
+        authenticationMethod,
+      );
     },
   },
 
   extraReducers: (builder) => {
     builder.addCase(initializeMenu.fulfilled, (state, action) => {
-      const staticMenu = getStaticMenu();
+      const {
+        dynamicMenu,
+        staticMenu,
+        authenticationMethod,
+      } = action.payload;
 
-      const dynamic = Array.isArray(action.payload) ? action.payload : [];
-      const filteredDynamic = dynamic.filter((m) => isMenuEnabled(m.menuID));
+      const filteredDynamic = dynamicMenu.filter((m) =>
+        isMenuEnabled(m.menuID, authenticationMethod),
+      );
 
       state.rawMenu = [...filteredDynamic, ...staticMenu];
       state.menu = rawListToTrees(state.rawMenu);
 
-      const stillValid = state.rawMenu.some((m) => m.menuID === state.activeMenuId);
+      const stillValid = state.rawMenu.some(
+        (m) => m.menuID === state.activeMenuId,
+      );
 
       if (!stillValid) {
-        state.activeMenuId = getFirstUsableMenuId(state.rawMenu);
+        state.activeMenuId = getFirstUsableMenuId(
+          state.rawMenu,
+          authenticationMethod,
+        );
       }
     });
 
@@ -204,6 +286,7 @@ export const menuSlice = createSlice({
 });
 
 export const { setActiveMenuId, clearMenu } = menuSlice.actions;
+
 export const selectMenu = (state: RootState) => state.menu;
 
 export default menuSlice.reducer;

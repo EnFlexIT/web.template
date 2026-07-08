@@ -9,11 +9,13 @@ import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
+import { UserProfileScreen } from "../../screens/UserProfile/UserProfileScreen";
 import type { AuthMethod } from "../../redux/slices/apiSlice";
-import {UserProfileScreen} from "../../screens/UserProfile/UserProfileScreen";
+
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "../../screens/settings/AppSettingsFileUploadScreen";
+
 // Logic
 import { isMenuEnabled } from "./featureFlags";
 import { withAutoTabs } from "../../components/config/tabAuto";
@@ -27,9 +29,21 @@ export type StaticMenuItem = {
   Screen: ComponentClass<any> | FunctionComponent<any>;
 };
 
-export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuItem[] 
-{
-  
+export function getStaticMenu(
+  authenticationMethod?: AuthMethod,
+): StaticMenuItem[] {
+  const userProfileItems: StaticMenuItem[] =
+    authenticationMethod === "oidc"
+      ? [
+          {
+            caption: "UserProfile",
+            menuID: 3025,
+            parentID: 3022,
+            Screen: UserProfileScreen,
+          },
+        ]
+      : [];
+
   const items: StaticMenuItem[] = [
     {
       caption: "settings",
@@ -66,12 +80,9 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
       parentID: 3022,
       Screen: PrivacySettings,
     },
-   {
-      caption: "UserProfile",
-      menuID: 3006,
-      parentID: 3022,
-      Screen: UserProfileScreen,
-    },
+
+    ...userProfileItems,
+
     {
       caption: "changePassword",
       menuID: 3013,
@@ -116,6 +127,9 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
     },
   ];
 
-const enabled = items.filter((it) => isMenuEnabled(it.menuID, authenticationMethod));
+  const enabled = items.filter((it) =>
+    isMenuEnabled(it.menuID, authenticationMethod),
+  );
+
   return withAutoTabs(enabled);
 }

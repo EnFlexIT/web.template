@@ -1,24 +1,27 @@
 import type { AuthMethod } from "../slices/apiSlice";
 
 export const menuFeatureFlags: Record<number, boolean> = {
-  3011: false,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3012: true,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3013: true,// Menüpunkt "Personal Settings" - enthält die Tabs "Appearance", "Privacy Settings" und "Change Password"
-  3014: true,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3010: true ,// Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3024: true, // Menüpunkt "System Settings" - enthält die Tabs "General", "Factory Settings" und "Derby Network Server"
-  3006: true,// Menüpunkt "Personal Settings" - enthält die Tabs "Appearance", "Privacy Settings" und "Change Password"
+  3011: false,
+  3012: true,
+  3013: true,
+  3014: true,
+  3010: true,
+  3024: true,
+  3025: true, // User Profile
 };
 
 export function isMenuEnabled(
   menuID: number,
   authenticationMethod?: AuthMethod,
 ): boolean {
+  // Passwort ändern bei OIDC ausblenden
   if (menuID === 3013 && authenticationMethod === "oidc") {
     return false;
   }
-    if (menuID === 3006 && authenticationMethod === "oidc") {
-    return true;
+
+  // Benutzerprofil NUR bei OIDC anzeigen
+  if (menuID === 3025) {
+    return authenticationMethod === "oidc";
   }
 
   return menuFeatureFlags[menuID] ?? true;

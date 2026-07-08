@@ -75,7 +75,7 @@ export function UserProfileScreen() {
           <InfoState
             icon="lock"
             title="Kein Profil verfuegbar"
-            text="Ein User Profile wird aktuell nur fuer OpenID Connect angezeigt."
+            text="Ein User Profile wird aktuell nur für OpenID Connect angezeigt."
           />
         ) : error ? (
           <InfoState
