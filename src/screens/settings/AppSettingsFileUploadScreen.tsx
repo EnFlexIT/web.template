@@ -16,8 +16,8 @@ import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
 import {
-  logoutAsync,
   normalizeBaseUrl,
+  resetAuthAfterConfigurationChange,
   selectApi,
   setIpAsync,
 } from "../../redux/slices/apiSlice";
@@ -93,11 +93,14 @@ function redirectReleaseBrowserToServer(baseUrl: string) {
   if (isExpoWebRuntime()) return;
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const currentOrigin = window.location.origin;
+  const targetUrl = `${normalizedBaseUrl}/index.html`;
 
-  if (normalizedBaseUrl === currentOrigin) return;
+  if (window.location.href === targetUrl) {
+    window.location.reload();
+    return;
+  }
 
-  window.location.replace(`${normalizedBaseUrl}/login`);
+  window.location.replace(targetUrl);
 }
 
 function getUploadResultMessageType(result: unknown): string {
@@ -663,8 +666,11 @@ export function AppSettingsFileUploadScreen() {
 
       await wait(900);
 
-      await dispatch(logoutAsync());
-
+    await dispatch(
+      resetAuthAfterConfigurationChange({
+        baseUrl: targetBaseUrl,
+      }),
+    );
       syncSelectedServerBaseUrl(targetBaseUrl);
       await dispatch(setIpAsync(targetBaseUrl));
 

@@ -808,7 +808,61 @@ export const logoutAsync = createAsyncThunk(
     }
   },
 );
+export const resetAuthAfterConfigurationChange = createAsyncThunk(
+  "api/resetAuthAfterConfigurationChange",
+  async (payload: { baseUrl?: string } | undefined, thunkAPI) => {
+    const state = thunkAPI.getState() as RootState;
 
+    const currentIp = normalizeBaseUrl(state.api.ip);
+    const targetIp = normalizeBaseUrl(payload?.baseUrl ?? state.api.ip);
+
+    try {
+      /**
+       * Wichtig:
+       * Kein Server-Logout.
+       *
+       * Nach einem Konfigurationswechsel kann sich die Auth-Methode ändern
+       * z. B. JWT -> OIDC oder OIDC -> JWT.
+       * Ein Aufruf von /api/user/logout kann dann 401 oder OIDC-Fehler erzeugen.
+       */
+
+      await setJwtForServer(currentIp, null);
+
+      if (targetIp && targetIp !== currentIp) {
+        await setJwtForServer(targetIp, null);
+      }
+
+      await AsyncStorage.removeItem(jwtKey);
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(
+          `postLoginAutoReloadChecked::${currentIp}`,
+        );
+
+        if (targetIp && targetIp !== currentIp) {
+          window.sessionStorage.removeItem(
+            `postLoginAutoReloadChecked::${targetIp}`,
+          );
+        }
+      }
+
+      thunkAPI.dispatch(logoutLocal());
+      thunkAPI.dispatch(clearMenu());
+      thunkAPI.dispatch(setIsLogoutDialogOpen(false));
+      thunkAPI.dispatch(setIsLoggingOut(false));
+    } catch (error) {
+      console.warn(
+        "[CONFIG UPLOAD] Local auth reset after configuration change failed",
+        error,
+      );
+
+      thunkAPI.dispatch(logoutLocal());
+      thunkAPI.dispatch(clearMenu());
+      thunkAPI.dispatch(setIsLogoutDialogOpen(false));
+      thunkAPI.dispatch(setIsLoggingOut(false));
+    }
+  },
+);
 type SwitchServerArg =
   | string
   | {
