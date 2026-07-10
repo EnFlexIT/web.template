@@ -14,14 +14,23 @@ export function isMenuEnabled(
   menuID: number,
   authenticationMethod?: AuthMethod,
 ): boolean {
-  // Passwort ändern bei OIDC ausblenden
+  /**
+   * Passwort ändern bei OIDC ausblenden.
+   */
   if (menuID === 3013 && authenticationMethod === "oidc") {
     return false;
   }
 
-  // Benutzerprofil NUR bei OIDC anzeigen
+  /**
+   * Benutzerprofil:
+   *
+   * - Bei OIDC sichtbar.
+   * - Bei undefined ebenfalls erlauben, damit Routing/Screen-Resolver,
+   *   die getStaticMenu() ohne AuthMethod aufrufen, den Screen finden.
+   * - Bei JWT und unknown ausblenden.
+   */
   if (menuID === 3025) {
-    return authenticationMethod === "oidc";
+    return authenticationMethod === "oidc" || authenticationMethod === undefined;
   }
 
   return menuFeatureFlags[menuID] ?? true;

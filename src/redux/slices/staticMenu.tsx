@@ -32,18 +32,6 @@ export type StaticMenuItem = {
 export function getStaticMenu(
   authenticationMethod?: AuthMethod,
 ): StaticMenuItem[] {
-  const userProfileItems: StaticMenuItem[] =
-    authenticationMethod === "oidc"
-      ? [
-          {
-            caption: "UserProfile",
-            menuID: 3025,
-            parentID: 3022,
-            Screen: UserProfileScreen,
-          },
-        ]
-      : [];
-
   const items: StaticMenuItem[] = [
     {
       caption: "settings",
@@ -81,7 +69,24 @@ export function getStaticMenu(
       Screen: PrivacySettings,
     },
 
-    ...userProfileItems,
+    /**
+     * Wichtig:
+     * UserProfile wird IMMER registriert,
+     * damit Routing und Screen-Auflösung den Screen kennen.
+     *
+     * Sichtbarkeit wird NICHT hier entschieden,
+     * sondern sauber in featureFlags.ts:
+     *
+     * if (menuID === 3025) {
+     *   return authenticationMethod === "oidc";
+     * }
+     */
+    {
+      caption: "UserProfile",
+      menuID: 3025,
+      parentID: 3022,
+      Screen: UserProfileScreen,
+    },
 
     {
       caption: "changePassword",
@@ -127,8 +132,8 @@ export function getStaticMenu(
     },
   ];
 
-  const enabled = items.filter((it) =>
-    isMenuEnabled(it.menuID, authenticationMethod),
+  const enabled = items.filter((item) =>
+    isMenuEnabled(item.menuID, authenticationMethod),
   );
 
   return withAutoTabs(enabled);

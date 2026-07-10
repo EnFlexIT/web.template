@@ -970,29 +970,29 @@ export function AppSettingsFileUploadScreen() {
             setPortDialogVisible(false);
           }}
         />
-<ConfirmDialog
-  visible={uploadWarningDialogVisible}
-  variant="warning"
-  icon="alert-triangle"
-  title={t(
-    "messageConfigurationUploadWarningTitle",
-    "Konfigurationsdatei ungültig",
-  )}
-  description={
-    uploadWarningText ||
-    t(
-      "messageConfigurationUploadInvalid",
-      "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
-    )
-  }
-  confirmLabel={t("buttonClose", "Schließen")}
-  onConfirm={() => {
-    setUploadWarningDialogVisible(false);
-  }}
-  onClose={() => {
-    setUploadWarningDialogVisible(false);
-  }}
-/>
+      <ConfirmDialog
+        visible={uploadWarningDialogVisible}
+        variant="warning"
+        icon="alert-triangle"
+        title={t(
+          "messageConfigurationUploadWarningTitle",
+          "Konfigurationsdatei ungültig",
+        )}
+        description={
+          uploadWarningText ||
+          t(
+            "messageConfigurationUploadInvalid",
+            "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+          )
+        }
+        confirmLabel={t("buttonClose", "Schließen")}
+        onConfirm={() => {
+          setUploadWarningDialogVisible(false);
+        }}
+        onClose={() => {
+          setUploadWarningDialogVisible(false);
+        }}
+      />
       </Card>
     </View>
   );

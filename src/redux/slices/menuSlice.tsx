@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+
 import { RootState } from "../store";
 import { foldl } from "../../util/func";
 
@@ -49,7 +50,10 @@ type InitializeMenuResult = {
 
 function addNodeToTree(tree: MenuTree, node: MenuNode): MenuTree {
   if (tree.val.menuID === node.val.parentID) {
-    return { val: tree.val, children: [...tree.children, node] };
+    return {
+      val: tree.val,
+      children: [...tree.children, node],
+    };
   }
 
   return {
@@ -59,46 +63,58 @@ function addNodeToTree(tree: MenuTree, node: MenuNode): MenuTree {
 }
 
 export function getDepthFromList(listOfNodes: MenuItem[], id: number): number {
-  const r = listOfNodes.find(({ menuID }) => menuID === id);
+  const item = listOfNodes.find(({ menuID }) => menuID === id);
 
-  if (!r) return Number.POSITIVE_INFINITY;
-  if (!r.parentID) return 0;
+  if (!item) return Number.POSITIVE_INFINITY;
+  if (!item.parentID) return 0;
 
-  return 1 + getDepthFromList(listOfNodes, r.parentID);
+  return 1 + getDepthFromList(listOfNodes, item.parentID);
 }
 
-export function rawListToTrees(xs: MenuItem[]): MenuTree[] {
-  const sortedXs = xs.toSorted(
-    (a, b) => getDepthFromList(xs, a.menuID) - getDepthFromList(xs, b.menuID),
+export function rawListToTrees(items: MenuItem[]): MenuTree[] {
+  const sortedItems = items.toSorted(
+    (a, b) =>
+      getDepthFromList(items, a.menuID) -
+      getDepthFromList(items, b.menuID),
   );
 
   return foldl<MenuTree[], MenuItem>(
     (acc, curr) =>
       !curr.parentID
         ? [...acc, { val: curr, children: [] }]
-        : acc.map((node) => addNodeToTree(node, { children: [], val: curr })),
+        : acc.map((node) =>
+            addNodeToTree(node, {
+              children: [],
+              val: curr,
+            }),
+          ),
     [],
-    sortedXs,
+    sortedItems,
   );
 }
 
 /**
  * Pfad von Root -> id
  */
-export function getIdPath(xs: MenuItem[], xId: number): undefined | number[] {
-  const node = xs.find(({ menuID }) => menuID === xId);
+export function getIdPath(
+  items: MenuItem[],
+  menuId: number,
+): undefined | number[] {
+  const node = items.find(({ menuID }) => menuID === menuId);
 
   if (!node) return undefined;
 
   if (node.parentID) {
-    const rest = getIdPath(xs, node.parentID);
-    return rest ? [...rest, xId] : undefined;
+    const parentPath = getIdPath(items, node.parentID);
+    return parentPath ? [...parentPath, menuId] : undefined;
   }
 
-  return [xId];
+  return [menuId];
 }
 
-export function isDynamicMenuItem<P>(node: MenuItem<P>): node is DynamicMenuItem {
+export function isDynamicMenuItem<P>(
+  node: MenuItem<P>,
+): node is DynamicMenuItem {
   return node.Screen === undefined;
 }
 
@@ -118,10 +134,36 @@ function getFirstUsableMenuId(
   authenticationMethod?: AuthMethod,
 ): number {
   const first = items.find(
-    (m) => m.menuID && isMenuEnabled(m.menuID, authenticationMethod),
+    (item) =>
+      item.menuID &&
+      isMenuEnabled(item.menuID, authenticationMethod),
   );
 
   return first?.menuID ?? 3003;
+}
+
+/**
+ * Static + Dynamic Menu sauber zusammenführen.
+ *
+ * Wichtig:
+ * - Static Menu hat Vorrang.
+ * - Dynamische Menüpunkte mit gleicher menuID werden entfernt.
+ * - Sonst kann ein dynamischer Eintrag ohne Screen einen statischen Screen überschreiben.
+ */
+function mergeMenus(
+  staticMenu: MenuItem[],
+  dynamicMenu: MenuItem[],
+  authenticationMethod?: AuthMethod,
+): MenuItem[] {
+  const staticIds = new Set(staticMenu.map((item) => item.menuID));
+
+  const filteredDynamic = dynamicMenu.filter(
+    (item) =>
+      !staticIds.has(item.menuID) &&
+      isMenuEnabled(item.menuID, authenticationMethod),
+  );
+
+  return [...staticMenu, ...filteredDynamic];
 }
 
 /**
@@ -199,8 +241,8 @@ export const initializeMenu = createAsyncThunk<InitializeMenuResult>(
         staticMenu,
         authenticationMethod,
       };
-    } catch (e) {
-      console.warn("initializeMenu failed, fallback to static menu", e);
+    } catch (error) {
+      console.warn("initializeMenu failed, fallback to static menu", error);
 
       return {
         dynamicMenu: [],
@@ -215,15 +257,18 @@ export const updateMenu = createAsyncThunk(
   "menu/update",
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as RootState;
-    const id = state.menu.activeMenuId;
+    const previousActiveMenuId = state.menu.activeMenuId;
 
     await thunkAPI.dispatch(initializeMenu());
 
     const nextState = thunkAPI.getState() as RootState;
-    const stillValid = nextState.menu.rawMenu.some((m) => m.menuID === id);
+
+    const stillValid = nextState.menu.rawMenu.some(
+      (item) => item.menuID === previousActiveMenuId,
+    );
 
     if (stillValid) {
-      await thunkAPI.dispatch(setActiveMenuId(id));
+      await thunkAPI.dispatch(setActiveMenuId(previousActiveMenuId));
     }
   },
 );
@@ -231,24 +276,31 @@ export const updateMenu = createAsyncThunk(
 export const menuSlice = createSlice({
   name: "menu",
   initialState,
+
   reducers: {
     setActiveMenuId: (state, action: PayloadAction<number>) => {
       state.activeMenuId = action.payload;
     },
 
-    clearMenu: (
-      state,
-      action: PayloadAction<AuthMethod | undefined>,
-    ) => {
-      const authenticationMethod = action.payload;
-      const staticMenu = getStaticMenu(authenticationMethod);
+    clearMenu: {
+      reducer: (
+        state,
+        action: PayloadAction<AuthMethod | undefined>,
+      ) => {
+        const authenticationMethod = action.payload;
+        const staticMenu = getStaticMenu(authenticationMethod);
 
-      state.rawMenu = staticMenu;
-      state.menu = rawListToTrees(staticMenu);
-      state.activeMenuId = getFirstUsableMenuId(
-        staticMenu,
-        authenticationMethod,
-      );
+        state.rawMenu = staticMenu;
+        state.menu = rawListToTrees(staticMenu);
+        state.activeMenuId = getFirstUsableMenuId(
+          staticMenu,
+          authenticationMethod,
+        );
+      },
+
+      prepare: (authenticationMethod?: AuthMethod) => ({
+        payload: authenticationMethod,
+      }),
     },
   },
 
@@ -260,15 +312,16 @@ export const menuSlice = createSlice({
         authenticationMethod,
       } = action.payload;
 
-      const filteredDynamic = dynamicMenu.filter((m) =>
-        isMenuEnabled(m.menuID, authenticationMethod),
+      state.rawMenu = mergeMenus(
+        staticMenu,
+        dynamicMenu,
+        authenticationMethod,
       );
 
-      state.rawMenu = [...filteredDynamic, ...staticMenu];
       state.menu = rawListToTrees(state.rawMenu);
 
       const stillValid = state.rawMenu.some(
-        (m) => m.menuID === state.activeMenuId,
+        (item) => item.menuID === state.activeMenuId,
       );
 
       if (!stillValid) {
@@ -277,6 +330,18 @@ export const menuSlice = createSlice({
           authenticationMethod,
         );
       }
+
+      console.log(
+        "[MENU DEBUG UserProfile]",
+        state.rawMenu
+          .filter((item) => item.menuID === 3025)
+          .map((item) => ({
+            id: item.menuID,
+            caption: item.caption,
+            parentID: item.parentID,
+            hasScreen: !!item.Screen,
+          })),
+      );
     });
 
     builder.addCase(internalSetLanguage, () => {
