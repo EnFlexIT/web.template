@@ -287,15 +287,23 @@ export function ServerModal({
     setShowSaveConfirm(true);
   }
 
-  async function confirmSaveSide() {
-    setShowSaveConfirm(false);
+async function confirmSaveSide() {
+  setShowSaveConfirm(false);
 
-    const res = await validateAndSaveOnly();
-    if (!res.ok || !res.baseUrl) return;
+  const res = await validateAndSaveOnly();
+  if (!res.ok || !res.baseUrl) return;
 
-    setEditMode(true);
-  }
+  const nextUrl = normalizeBaseUrl(res.baseUrl);
 
+  setEditMode(true);
+
+  const online = await ensureSelectedServerOnline(nextUrl);
+  if (!online) return;
+
+  await dispatch(switchServer(nextUrl));
+
+  onClose();
+}
   function handleDeleteSelected() {
     if (!selectedServer) return;
     setShowDeleteConfirm(true);

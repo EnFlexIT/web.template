@@ -183,7 +183,7 @@ export function LoginScreen() {
 
   const loginWindowRef = useRef<Window | null>(null);
   const autoOidcDoneRef = useRef(false);
-
+ const autoDetectServerRef = useRef<string | null>(null);
   const [highlight] = useState(false);
   styles.useVariants({ highlight });
 
@@ -263,6 +263,25 @@ export function LoginScreen() {
       return false;
     }
   }
+  useEffect(() => {
+  if (!selectedBaseUrl) return;
+  if (authenticationMethod !== "unknown") return;
+
+  const normalizedBaseUrl = normalizeBaseUrl(selectedBaseUrl);
+
+  if (autoDetectServerRef.current === normalizedBaseUrl) {
+    return;
+  }
+
+  autoDetectServerRef.current = normalizedBaseUrl;
+
+  void dispatch(
+    switchServer({
+      url: normalizedBaseUrl,
+      initializeMenu: false,
+    }),
+  );
+}, [authenticationMethod, selectedBaseUrl, dispatch]);
 
   useEffect(() => {
     if (authenticationMethod !== "oidc") return;

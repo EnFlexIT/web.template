@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
@@ -37,6 +38,7 @@ const Feather = withUnistyles(Feather_);
 
 const FILE_CONFIGURATION_PERFORMATIVE = "FILE.CONFIGURATION";
 const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
+const SERVERS_STORAGE_KEY = "servers";
 
 type ConfigDialogPhase =
   | "installing"
@@ -382,19 +384,154 @@ export function AppSettingsFileUploadScreen() {
     resetMessages();
   }
 
-  function syncSelectedServerBaseUrl(baseUrl: string) {
-    if (!selectedServer || selectedServer.id === "local") return;
+async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+
+  console.groupCollapsed("[FILE CONFIG DEBUG] syncSelectedServerBaseUrl START");
+  console.log("incoming baseUrl:", baseUrl);
+  console.log("normalizedBaseUrl:", normalizedBaseUrl);
+  console.log("selectedServerId:", selectedServerId);
+  console.log("selectedServer before:", selectedServer);
+  console.log("redux servers before:", servers);
+  console.groupEnd();
+
+  const serverToUpdate =
+    servers.find((server) => server.id === selectedServerId) ??
+    selectedServer ??
+    servers[0];
+
+  if (serverToUpdate) {
+    console.log("[FILE CONFIG DEBUG] updating redux server:", {
+      id: serverToUpdate.id,
+      name: serverToUpdate.name,
+      oldBaseUrl: serverToUpdate.baseUrl,
+      newBaseUrl: normalizedBaseUrl,
+    });
 
     dispatch(
       updateServer({
-        id: selectedServer.id,
-        name: selectedServer.name,
-        baseUrl,
+        id: serverToUpdate.id,
+        name: serverToUpdate.name,
+        baseUrl: normalizedBaseUrl,
       }),
     );
 
-    dispatch(selectServerAction(selectedServer.id));
+    dispatch(selectServerAction(serverToUpdate.id));
+  } else {
+    console.warn("[FILE CONFIG DEBUG] no serverToUpdate found");
   }
+
+  try {
+    const raw = await AsyncStorage.getItem(SERVERS_STORAGE_KEY);
+
+    console.log("[FILE CONFIG DEBUG] servers storage before:", raw);
+
+    if (!raw) {
+      const fallbackServerId = serverToUpdate?.id ?? selectedServerId ?? "local";
+
+      const nextState = {
+        servers: [
+          {
+            id: fallbackServerId,
+            name: serverToUpdate?.name ?? "Smart Home Systeme",
+            baseUrl: normalizedBaseUrl,
+            environment: serverToUpdate?.environment ?? "DEV",
+          },
+        ],
+        selectedServerId: fallbackServerId,
+        activeEnvironment: serverToUpdate?.environment ?? "DEV",
+      };
+
+      await AsyncStorage.setItem(
+        SERVERS_STORAGE_KEY,
+        JSON.stringify(nextState),
+      );
+
+      console.log("[FILE CONFIG DEBUG] servers storage created:", nextState);
+      return;
+    }
+
+    const parsed = JSON.parse(raw) as {
+      servers?: Array<{
+        id: string;
+        name?: string;
+        baseUrl: string;
+        environment?: "DEV" | "TEST" | "PROD";
+        [key: string]: unknown;
+      }>;
+      selectedServerId?: string;
+      activeEnvironment?: "DEV" | "TEST" | "PROD";
+      [key: string]: unknown;
+    };
+
+    const storedServers = Array.isArray(parsed.servers)
+      ? parsed.servers
+      : [];
+
+    const storedSelectedServerId =
+      typeof parsed.selectedServerId === "string"
+        ? parsed.selectedServerId
+        : selectedServerId || serverToUpdate?.id || "local";
+
+    let didUpdate = false;
+
+    const nextServers = storedServers.map((server) => {
+      if (server.id !== storedSelectedServerId) {
+        return server;
+      }
+
+      didUpdate = true;
+
+      console.log("[FILE CONFIG DEBUG] updating stored server:", {
+        id: server.id,
+        name: server.name,
+        oldBaseUrl: server.baseUrl,
+        newBaseUrl: normalizedBaseUrl,
+      });
+
+      return {
+        ...server,
+        baseUrl: normalizedBaseUrl,
+      };
+    });
+
+    if (!didUpdate) {
+      const fallbackServer = serverToUpdate ?? {
+        id: storedSelectedServerId,
+        name: "Smart Home Systeme",
+        baseUrl: normalizedBaseUrl,
+        environment: "DEV" as const,
+      };
+
+      console.warn(
+        "[FILE CONFIG DEBUG] selected server not found in storage, pushing fallback server",
+        fallbackServer,
+      );
+
+      nextServers.push({
+        ...fallbackServer,
+        baseUrl: normalizedBaseUrl,
+      });
+    }
+
+    const nextStorageValue = {
+      ...parsed,
+      servers: nextServers,
+      selectedServerId: storedSelectedServerId,
+      activeEnvironment:
+        parsed.activeEnvironment ?? serverToUpdate?.environment ?? "DEV",
+    };
+
+    await AsyncStorage.setItem(
+      SERVERS_STORAGE_KEY,
+      JSON.stringify(nextStorageValue),
+    );
+
+    console.log("[FILE CONFIG DEBUG] servers storage after:", nextStorageValue);
+  } catch (error) {
+    console.warn("[FILE CONFIG] could not persist selected server url", error);
+  }
+}
 
   const { dropRef, dragging } = useFileDropWeb({
     enabled: Platform.OS === "web",
@@ -623,7 +760,7 @@ export function AppSettingsFileUploadScreen() {
         }),
       ).unwrap();
 
-       if (isUploadRejectedByBackend(result)) {
+      if (isUploadRejectedByBackend(result)) {
         const backendMessage =
           getUploadResultMessage(result) ||
           t(
@@ -635,9 +772,6 @@ export function AppSettingsFileUploadScreen() {
         setUploadWarningText(backendMessage);
         setUploadWarningDialogVisible(true);
 
-        // Wichtig:
-        // Backend-WARNING/ERROR soll nicht zusätzlich im Screen angezeigt werden.
-        // Der Dialog reicht.
         dispatch(resetUploadState());
 
         return;
@@ -670,12 +804,14 @@ export function AppSettingsFileUploadScreen() {
 
       await wait(900);
 
-    await dispatch(
-      resetAuthAfterConfigurationChange({
-        baseUrl: targetBaseUrl,
-      }),
-    );
-      syncSelectedServerBaseUrl(targetBaseUrl);
+      await dispatch(
+        resetAuthAfterConfigurationChange({
+          baseUrl: targetBaseUrl,
+        }),
+      );
+
+      await syncSelectedServerBaseUrl(targetBaseUrl);
+
       await dispatch(setIpAsync(targetBaseUrl));
 
       setConfigDialogVisible(false);
@@ -920,17 +1056,17 @@ export function AppSettingsFileUploadScreen() {
             <ThemedText style={s.error}>{uploadState.error}</ThemedText>
           ) : null}
 
-        {uploadState.result && !uploadWarningDialogVisible ? (
-        <ThemedText
-          style={[
-            s.message,
-            uploadState.result.messageType === "WARNING"
-              ? s.warning
-              : s.success,
-          ]}
-        >
-          {uploadState.result.message || t("messageUploadSuccessful")}
-        </ThemedText>
+          {uploadState.result && !uploadWarningDialogVisible ? (
+            <ThemedText
+              style={[
+                s.message,
+                uploadState.result.messageType === "WARNING"
+                  ? s.warning
+                  : s.success,
+              ]}
+            >
+              {uploadState.result.message || t("messageUploadSuccessful")}
+            </ThemedText>
           ) : null}
         </View>
 
@@ -974,29 +1110,30 @@ export function AppSettingsFileUploadScreen() {
             setPortDialogVisible(false);
           }}
         />
-      <ConfirmDialog
-        visible={uploadWarningDialogVisible}
-        variant="warning"
-        icon="alert-triangle"
-        title={t(
-          "messageConfigurationUploadWarningTitle",
-          "Konfigurationsdatei ungültig",
-        )}
-        description={
-          uploadWarningText ||
-          t(
-            "messageConfigurationUploadInvalid",
-            "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
-          )
-        }
-        confirmLabel={t("buttonClose", "Schließen")}
-        onConfirm={() => {
-          setUploadWarningDialogVisible(false);
-        }}
-        onClose={() => {
-          setUploadWarningDialogVisible(false);
-        }}
-      />
+
+        <ConfirmDialog
+          visible={uploadWarningDialogVisible}
+          variant="warning"
+          icon="alert-triangle"
+          title={t(
+            "messageConfigurationUploadWarningTitle",
+            "Konfigurationsdatei ungültig",
+          )}
+          description={
+            uploadWarningText ||
+            t(
+              "messageConfigurationUploadInvalid",
+              "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+            )
+          }
+          confirmLabel={t("buttonClose", "Schließen")}
+          onConfirm={() => {
+            setUploadWarningDialogVisible(false);
+          }}
+          onClose={() => {
+            setUploadWarningDialogVisible(false);
+          }}
+        />
       </Card>
     </View>
   );
