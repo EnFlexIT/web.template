@@ -22,6 +22,7 @@
     - [unistyles vs legacy](#UnistylesVSLegacy)
 - [Api](#api)
 - [Data Management](#redux)
+- [Additional Documentation](#Additional-Documentation)
 
 ## <a id="About">About</a>
 
@@ -328,3 +329,4 @@ The template contains additional application infrastructure that is documented i
 - [Redux State Management](doc/redux-state-management.md)
 - [Components](doc/components.md)
 - [Review Notes](doc/review-notes.md)
+- [AI Context](doc/ai-context.md)
