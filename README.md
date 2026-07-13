@@ -266,6 +266,25 @@ export const lightTheme = {
     // ....
 } as const
 ```
+# Components
+
+This document describes reusable frontend components used in the web.template project.
+
+The goal is to make common UI building blocks easier to understand, reuse and extend.
+
+## UI Elements
+
+The `ui-elements` folder contains reusable UI primitives that should be used across screens, dialogs and feature modules.
+
+### Overview
+
+- [ActionButton](#actionbutton)
+- [Card](#card)
+- [InfoBox](#infobox)
+- [ConfirmDialog](#confirmdialog)
+- [Dropdown](#dropdown)
+- [Table](#table)
+- [ToolBox](#toolbox)
 
 ### <a id="HowItIsActuallyImplemented">How it is actually implemented</a>
 
