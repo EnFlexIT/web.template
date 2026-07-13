@@ -102,16 +102,16 @@ export function ConfirmDialog({
                 </View>
               ) : null}
 
-              {confirmLabel ? (
-                <View style={s.actionButton}>
-                  <ActionButton
-                    label={confirmLabel}
-                    variant="primary"
-                    size="sm"
-                    onPress={onConfirm ?? closeDialog}
-                  />
-                </View>
-              ) : null}
+            {confirmLabel ? (
+  <View style={s.actionButton}>
+    <ActionButton
+      label={confirmLabel}
+      variant={cancelLabel ? "primary" : "secondary"}
+      size="sm"
+      onPress={onConfirm ?? closeDialog}
+    />
+  </View>
+) : null}
             </View>
           ) : null}
         </View>

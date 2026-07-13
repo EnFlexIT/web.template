@@ -623,7 +623,7 @@ export function AppSettingsFileUploadScreen() {
         }),
       ).unwrap();
 
-      if (isUploadRejectedByBackend(result)) {
+       if (isUploadRejectedByBackend(result)) {
         const backendMessage =
           getUploadResultMessage(result) ||
           t(
@@ -634,7 +634,11 @@ export function AppSettingsFileUploadScreen() {
         setConfigDialogVisible(false);
         setUploadWarningText(backendMessage);
         setUploadWarningDialogVisible(true);
-        setDownloadError(backendMessage);
+
+        // Wichtig:
+        // Backend-WARNING/ERROR soll nicht zusätzlich im Screen angezeigt werden.
+        // Der Dialog reicht.
+        dispatch(resetUploadState());
 
         return;
       }
@@ -916,17 +920,17 @@ export function AppSettingsFileUploadScreen() {
             <ThemedText style={s.error}>{uploadState.error}</ThemedText>
           ) : null}
 
-          {uploadState.result ? (
-            <ThemedText
-              style={[
-                s.message,
-                uploadState.result.messageType === "WARNING"
-                  ? s.warning
-                  : s.success,
-              ]}
-            >
-              {uploadState.result.message || t("messageUploadSuccessful")}
-            </ThemedText>
+        {uploadState.result && !uploadWarningDialogVisible ? (
+        <ThemedText
+          style={[
+            s.message,
+            uploadState.result.messageType === "WARNING"
+              ? s.warning
+              : s.success,
+          ]}
+        >
+          {uploadState.result.message || t("messageUploadSuccessful")}
+        </ThemedText>
           ) : null}
         </View>
 
