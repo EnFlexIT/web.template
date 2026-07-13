@@ -18,6 +18,7 @@ const resources = {
     DataBase: require("./assets/locales/en/DataBase.json"),
     programStart : require("./assets/locales/en/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/en/FileConfiguration.json"),
+    UserProfile: require("./assets/locales/en/UserProfile.json"),
 
     },
   de: {
@@ -36,6 +37,7 @@ const resources = {
     DataBase: require("./assets/locales/de/DataBase.json"),
     programStart : require("./assets/locales/de/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/de/FileConfiguration.json"),
+    UserProfile: require("./assets/locales/de/UserProfile.json"),
   },
 };
 

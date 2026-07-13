@@ -1,0 +1,16 @@
+{
+  "title": "User Profile",
+  "refresh": "Refresh",
+  "noProfileSubtitle": "No user profile is available for this login method.",
+  "loadingSubtitle": "Loading profile information.",
+  "signedInAs": "Signed in as {{name}}",
+  "oidcInfoSubtitle": "OpenID Connect user information",
+  "noProfileTitle": "No profile available",
+  "noProfileText": "A user profile is currently only shown for OpenID Connect.",
+  "profileLoadErrorTitle": "Profile could not be loaded",
+  "unknownUser": "Unknown user",
+  "fullName": "Full name",
+  "email": "Email",
+  "givenName": "First name",
+  "familyName": "Last name"
+}

@@ -1,9 +1,10 @@
-// src/screens/user/UserProfileScreen.tsx
+// src/screens/UserProfile/UserProfileScreen.tsx
 
 import React, { useEffect, useMemo } from "react";
 import { ScrollView, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
+import { useTranslation } from "react-i18next";
 
 import { Screen } from "../../components/Screen";
 import { Card } from "../../components/ui-elements/Card";
@@ -12,15 +13,11 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectAuthenticationMethod } from "../../redux/slices/apiSlice";
-import {
-  loadUserProfile,
-  selectIsUserProfileLoading,
-  selectUserProfile,
-  selectUserProfileError,
-} from "../../redux/slices/userProfileSlice";
+import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "../../redux/slices/userProfileSlice";
 
 export function UserProfileScreen() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation(["UserProfile"]);
 
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);
   const profile = useAppSelector(selectUserProfile);
@@ -36,11 +33,13 @@ export function UserProfileScreen() {
   }, [dispatch, isOidc, profile]);
 
   const subtitle = useMemo(() => {
-    if (!isOidc) return "Fuer diese Anmeldung ist kein Benutzerprofil verfuegbar.";
-    if (isLoading) return "Profilinformationen werden geladen.";
-    if (profile?.fullName) return `Angemeldet als ${profile.fullName}`;
-    return "OpenID Connect Benutzerinformationen";
-  }, [isOidc, isLoading, profile?.fullName]);
+    if (!isOidc) return t("noProfileSubtitle");
+    if (isLoading) return t("loadingSubtitle");
+    if (profile?.fullName) {
+      return t("signedInAs", { name: profile.fullName });
+    }
+    return t("oidcInfoSubtitle");
+  }, [isOidc, isLoading, profile?.fullName, t]);
 
   function onRefresh() {
     if (!isOidc) return;
@@ -57,13 +56,13 @@ export function UserProfileScreen() {
             </View>
 
             <View style={styles.headerTextWrap}>
-              <ThemedText style={styles.title}>User Profile</ThemedText>
+              <ThemedText style={styles.title}>{t("title")}</ThemedText>
               <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
             </View>
           </View>
 
           <ActionButton
-            label="Aktualisieren"
+            label={t("refresh")}
             size="xs"
             variant="secondary"
             onPress={onRefresh}
@@ -74,13 +73,13 @@ export function UserProfileScreen() {
         {!isOidc ? (
           <InfoState
             icon="lock"
-            title="Kein Profil verfuegbar"
-            text="Ein User Profile wird aktuell nur für OpenID Connect angezeigt."
+            title={t("noProfileTitle")}
+            text={t("noProfileText")}
           />
         ) : error ? (
           <InfoState
             icon="alert-triangle"
-            title="Profil konnte nicht geladen werden"
+            title={t("profileLoadErrorTitle")}
             text={error}
             danger
           />
@@ -96,7 +95,7 @@ export function UserProfileScreen() {
 
               <View style={styles.profileHeaderText}>
                 <ThemedText style={styles.profileName}>
-                  {profile?.fullName || "Unbekannter Benutzer"}
+                  {profile?.fullName || t("unknownUser")}
                 </ThemedText>
 
                 <View style={styles.badge}>
@@ -111,25 +110,25 @@ export function UserProfileScreen() {
             <View style={styles.details}>
               <ProfileRow
                 icon="user"
-                label="Vollstaendiger Name"
+                label={t("fullName")}
                 value={profile?.fullName}
               />
 
               <ProfileRow
                 icon="mail"
-                label="E-Mail"
+                label={t("email")}
                 value={profile?.email}
               />
 
               <ProfileRow
                 icon="corner-down-right"
-                label="Vorname"
+                label={t("givenName")}
                 value={profile?.givenName}
               />
 
               <ProfileRow
                 icon="users"
-                label="Nachname"
+                label={t("familyName")}
                 value={profile?.familyName}
               />
             </View>

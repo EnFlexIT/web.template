@@ -1,0 +1,16 @@
+{
+  "title": "Benutzerprofil",
+  "refresh": "Aktualisieren",
+  "noProfileSubtitle": "Für diese Anmeldung ist kein Benutzerprofil verfügbar.",
+  "loadingSubtitle": "Profilinformationen werden geladen.",
+  "signedInAs": "Angemeldet als {{name}}",
+  "oidcInfoSubtitle": "OpenID Connect Benutzerinformationen",
+  "noProfileTitle": "Kein Profil verfügbar",
+  "noProfileText": "Ein Benutzerprofil wird aktuell nur für OpenID Connect angezeigt.",
+  "profileLoadErrorTitle": "Profil konnte nicht geladen werden",
+  "unknownUser": "Unbekannter Benutzer",
+  "fullName": "Vollständiger Name",
+  "email": "E-Mail",
+  "givenName": "Vorname",
+  "familyName": "Nachname"
+}
