@@ -3,7 +3,7 @@
 import reducer, {
   ReadyState,
   setReady,
-} from "../redux/slices/readySlice";
+} from "../src/redux/slices/readySlice";
 
 describe("readySlice", () => {
   const initialState: ReadyState = {

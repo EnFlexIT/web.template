@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import reducer, {
   setBaseModeLoggedIn,
   logoutBaseMode,
-} from "../redux/slices/baseModeSlice";
+} from "../src/redux/slices/baseModeSlice";
 
 describe("baseModeSlice", () => {
   beforeEach(() => {

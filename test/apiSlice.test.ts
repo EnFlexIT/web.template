@@ -59,7 +59,7 @@ import reducer, {
   initializeApi,
   login,
   switchServer,
-} from "../redux/slices/apiSlice";
+} from "../src/redux/slices/apiSlice";
 
 describe("apiSlice", () => {
   it("should return the initial state", () => {

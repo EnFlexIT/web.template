@@ -20,7 +20,7 @@ import reducer, {
   setTheme,
   setThemeState,
   initializeTheme,
-} from "../redux/slices/themeSlice";
+} from "../src/redux/slices/themeSlice";
 
 describe("themeSlice", () => {
   const initialState: ThemeState = {

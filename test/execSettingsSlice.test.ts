@@ -12,7 +12,7 @@ import reducer, {
   fetchProjects,
   fetchProjectSetups,
   fetchAvailableExecAgents,
-} from "../redux/slices/execSettingsSlice";
+} from "../src/redux/slices/execSettingsSlice";
 
 describe("execSettingsSlice", () => {
   it("should return the initial state", () => {

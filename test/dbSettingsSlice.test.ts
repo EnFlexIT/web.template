@@ -15,7 +15,7 @@ import reducer, {
   saveDerbyNetworkServerSettings,
   testGeneralDbConnection,
   testFactoryDbConnection,
-} from "../redux/slices/dbSettingsSlice";
+} from "../src/redux/slices/dbSettingsSlice";
 
 describe("dbSettingsSlice", () => {
   it("should return the initial state", () => {

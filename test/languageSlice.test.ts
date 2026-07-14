@@ -19,7 +19,7 @@ import reducer, {
   LanguageState,
   internalSetLanguage,
   initializeLanguage,
-} from "../redux/slices/languageSlice";
+} from "../src/redux/slices/languageSlice";
 
 describe("languageSlice", () => {
   const initialState: LanguageState = {

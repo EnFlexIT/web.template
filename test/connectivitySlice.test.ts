@@ -9,7 +9,7 @@ import reducer, {
   dismissBackOnline,
   setOfflineLocal,
   checkAlive,
-} from "../redux/slices/connectivitySlice";
+} from "../src/redux/slices/connectivitySlice";
 
 describe("connectivitySlice", () => {
   it("should return the initial state", () => {

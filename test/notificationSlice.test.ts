@@ -23,7 +23,7 @@ import reducer, {
   selectUnreadNotificationCount,
   selectLatestNotifications,
   selectNotificationPopupOpen,
-} from "../redux/slices/notificationSlice";
+} from "../src/redux/slices/notificationSlice";
 
 const createNotification = (
   overrides: Partial<AppNotification> = {},
