@@ -54,6 +54,10 @@
       "UserProfile": {
         "title": "User Profile",
         "description": "Manage your personal information and settings."
+      },
+       "settingsFileUpload": {
+        "title": "Upload Settings",
+        "description": "Download the current configuration or upload a configuration file"
       }
       
 }

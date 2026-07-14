@@ -383,6 +383,7 @@ export function AppSettingsFileUploadScreen() {
     setSelectedFilePath(file ? getDisplayFilePath(file, inputValue) : null);
     resetMessages();
   }
+ 
 
 async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);

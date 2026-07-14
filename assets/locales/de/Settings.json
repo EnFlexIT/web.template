@@ -54,7 +54,7 @@
       },
       "settingsFileUpload": {
         "title": "Einstellungen hochladen",
-        "description": "Lade eine JSON-Datei mit deinen Einstellungen hoch."
+        "description": "Aktuelle Konfiguration herunterladen oder eine Konfigurationsdatei hochladen"
       },
       "UserProfile": {
         "title": "Benutzerprofil",
