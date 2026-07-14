@@ -20,6 +20,7 @@ import seversStatusReducer from "./slices/serverStatusSlice";
 import appSettingsFileUploadReducer from "./slices/appSettingsFileUploadSlice";
 import appReleaseReducer from "./slices/appReleaseSlice";
 import userProfileReducer from "./slices/userProfileSlice";
+import liveConsole from "./slices/liveConsoleSlice";
 export const store = configureStore({
   reducer: {
     language: languageReducer,
@@ -43,6 +44,7 @@ export const store = configureStore({
     appSettingsFileUpload: appSettingsFileUploadReducer,
     appRelease: appReleaseReducer,
     userProfile: userProfileReducer,
+    liveConsole: liveConsole,
   },
 });
 

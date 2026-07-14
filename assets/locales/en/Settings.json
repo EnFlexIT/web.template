@@ -58,7 +58,12 @@
        "settingsFileUpload": {
         "title": "Upload Settings",
         "description": "Download the current configuration or upload a configuration file"
+      },
+      "liveConsole": {
+        "title": "Live Console",
+        "description": "Interactive console for real-time communication and debugging."
       }
+
       
 }
 }

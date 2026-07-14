@@ -59,7 +59,13 @@
       "UserProfile": {
         "title": "Benutzerprofil",
         "description": "Verwalte deine persönlichen Informationen und Einstellungen."
+      },
+
+      "liveConsole": {
+        "title": "Live-Konsole",
+        "description": "Interaktive Konsole für Echtzeit-Kommunikation und Debugging."
       }
+    
 
   }
 }

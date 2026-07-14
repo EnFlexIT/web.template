@@ -16,10 +16,13 @@ import type { AuthMethod } from "../../redux/slices/apiSlice";
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "../../screens/settings/AppSettingsFileUploadScreen";
 
+// Agent Workbench Options
+import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
+import { LiveConsoleScreen} from "./../../screens/liveConsole/LiveConsoleScreen";
+
 // Logic
 import { isMenuEnabled } from "./featureFlags";
 import { withAutoTabs } from "../../components/config/tabAuto";
-import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
 
 export type StaticMenuItem = {
   caption: string;
@@ -68,26 +71,12 @@ export function getStaticMenu(
       parentID: 3022,
       Screen: PrivacySettings,
     },
-
-    /**
-     * Wichtig:
-     * UserProfile wird IMMER registriert,
-     * damit Routing und Screen-Auflösung den Screen kennen.
-     *
-     * Sichtbarkeit wird NICHT hier entschieden,
-     * sondern sauber in featureFlags.ts:
-     *
-     * if (menuID === 3025) {
-     *   return authenticationMethod === "oidc";
-     * }
-     */
     {
       caption: "UserProfile",
       menuID: 3025,
       parentID: 3022,
       Screen: UserProfileScreen,
     },
-
     {
       caption: "changePassword",
       menuID: 3013,
@@ -106,12 +95,22 @@ export function getStaticMenu(
       parentID: 3021,
       Screen: UpdateWebAppTab,
     },
+
+    // Agent Workbench Options
     {
       caption: "options",
       menuID: 3023,
       parentID: 3021,
+      position: 1,
       Screen: ProgramStartTab,
     },
+    {
+      caption: "liveConsole",
+      menuID: 3026,
+      parentID: 3021,
+      Screen: LiveConsoleScreen,
+    },
+
     {
       caption: "databaseConnectionsAndSettings",
       menuID: 3010,
