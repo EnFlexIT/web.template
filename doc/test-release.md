@@ -1,96 +1,255 @@
 # Test Release
 
-The project contains a separate GitHub Action for test releases.
+This document describes the test release workflow of the web.template project.
 
-## Workflow
+The test release workflow creates a web application build like the production release workflow, but uploads it into a dedicated test target folder.
 
-File:
+## Purpose
 
-```text
+The test release workflow is used to validate a new frontend build before publishing it as production release.
+
+It is intended for:
+
+- internal testing
+- validation with backend update logic
+- checking update behavior
+- testing new UI or infrastructure changes
+- verifying a release artifact before production usage
+
+## Workflow file
+
+```txt
 .github/workflows/export-put-test-release.yml
 ```
 
 Workflow name:
 
-```text
+```txt
 Export Put Test Release
 ```
 
-The workflow is started manually through `workflow_dispatch`.
+The workflow is started manually through GitHub Actions by using:
 
-## Purpose
+```txt
+workflow_dispatch
+```
 
-The test release workflow allows publishing a web build without replacing the normal production release location. This is useful for validating a new frontend build with the backend update mechanism before publishing it as production release.
+## Difference to production release
 
-## Main steps
+| Area | Production release | Test release |
+| --- | --- | --- |
+| Workflow file | `export-put-release.yml` | `export-put-test-release.yml` |
+| GitHub Action name | `Export Put Release` | `Export Put Test Release` |
+| FTP target | `<PROJECT_PATH>` | `<PROJECT_PATH>/test` |
+| GitHub release | Created | Not created |
+| Workflow artifact | Not uploaded separately | Uploaded as GitHub workflow artifact |
+| Usage | Stable production build | Internal validation/test build |
 
-1. Checkout repository.
-2. Setup Node.js 20.
-3. Update npm to version 10.
-4. Validate dependencies with `npm ci`.
-5. Read the version from `package.json`.
-6. Generate a timestamp.
-7. Export the Expo web build:
+## Main workflow steps
+
+The test release workflow performs the following steps:
+
+1. Checkout the repository.
+2. Print Git and package debug information.
+3. Setup Node.js 20.
+4. Update npm to version 10.
+5. Validate the lockfile and install dependencies with `npm ci`.
+6. Read the application version from `package.json`.
+7. Generate a timestamp.
+8. Export the Expo web application.
+9. Package the generated `dist` folder into a ZIP file.
+10. Upload the ZIP file as GitHub workflow artifact.
+11. Upload the ZIP file to the FTP test folder.
+
+## Build command
+
+The Expo web export is created with:
 
 ```bash
 npx expo export -p web
 ```
 
-8. Package the `dist` folder into a ZIP file.
-9. Upload the ZIP as GitHub workflow artifact.
-10. Upload the ZIP to the FTP test folder:
+The output is written to:
 
-```text
-<PROJECT_PATH>/test
+```txt
+dist/
 ```
 
-## Artifact naming in the current workflow
+The content of this folder is then zipped and uploaded.
 
-The current workflow creates the same base artifact name as the production workflow:
+## Required repository secrets
 
-```text
+The workflow requires the following GitHub repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `FTP_UPLOAD_URL` | FTP server URL used for uploading the test artifact. |
+| `FTP_USER` | FTP username. |
+| `FTP_PSWD` | FTP password. |
+| `PROJECT_NAME` | Name prefix used for the generated ZIP file. |
+| `PROJECT_PATH` | Base target directory on the FTP server. The test workflow appends `/test`. |
+
+> Important: The workflow uses `FTP_PSWD`. Keep the secret name exactly as defined in the workflow file.
+
+## Artifact naming
+
+The current test release workflow creates ZIP files using the same base naming pattern as the production release workflow:
+
+```txt
 <PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
 ```
 
-The test character is currently expressed through the target folder:
+Example:
 
-```text
+```txt
+baseTemplate_0.0.4_20260706-1421.zip
+```
+
+The test character is currently expressed through the upload target:
+
+```txt
 <PROJECT_PATH>/test
 ```
 
-## Optional naming convention
+## Upload target
 
-If test releases should be visible directly in the filename, the workflow can be adjusted to create:
+The test ZIP file is uploaded to:
 
-```text
-<PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>-TEST.zip
+```txt
+<PROJECT_PATH>/test
 ```
 
-This would make backup, FTP overview and manual inspection easier.
+on the configured FTP server.
+
+The workflow uses an FTP command sequence similar to:
+
+```txt
+open <FTP_UPLOAD_URL>
+user <FTP_USER> <FTP_PSWD>
+cd <PROJECT_PATH>/test
+put <artifact>.zip
+exit
+```
+
+The `/test` directory must already exist on the FTP server.
+
+## GitHub workflow artifact
+
+In addition to the FTP upload, the test workflow uploads the generated ZIP as a GitHub workflow artifact.
+
+This is useful because the artifact can be downloaded directly from the GitHub Actions run for inspection or manual testing.
 
 ## Frontend release type display
 
-The frontend stores the current web application release type in `appReleaseSlice.tsx`.
+The frontend supports displaying whether the currently loaded web application is a test release.
 
-Supported release types:
+Relevant Redux release types:
 
 ```ts
 "PRODUCTION_RELEASE" | "TEST_RELEASE" | "UNKNOWN"
 ```
 
-The release type is read from the backend app settings key:
+The release type is read from the backend application settings key:
 
-```text
+```txt
 _WebAppReleaseType
 ```
 
-If the backend returns `TEST_RELEASE`, the footer shows a visible `TEST` badge.
+If the backend returns:
 
-## Related files
+```txt
+TEST_RELEASE
+```
+
+the footer can show a visible `TEST` badge.
+
+## Related frontend files
 
 | File | Purpose |
 | --- | --- |
-| `.github/workflows/export-put-test-release.yml` | Builds and uploads test release. |
-| `src/redux/slices/appReleaseSlice.tsx` | Stores release type in Redux/localStorage. |
-| `src/screens/login/serverCheck.ts` | Parses `_WebAppReleaseType` from app settings. |
-| `src/components/Footer.tsx` | Displays the `TEST` badge. |
+| `src/redux/slices/appReleaseSlice.tsx` | Stores the current web application release type. |
+| `src/screens/login/serverCheck.ts` | Reads backend application settings and parses `_WebAppReleaseType`. |
+| `src/components/Footer.tsx` | Displays release related UI such as the `TEST` badge. |
+
+## When to use this workflow
+
+Use the test release workflow when:
+
+- a build should be tested before production
+- update behavior needs to be validated
+- backend/frontend compatibility should be checked
+- release artifacts should be inspected manually
+- new infrastructure changes should be tested safely
+
+Do not use this workflow as final production release.
+
+## Optional improvement: TEST suffix in file name
+
+Currently, the test release is identified by the target folder:
+
+```txt
+<PROJECT_PATH>/test
+```
+
+Optionally, the workflow can be changed to include a `-TEST` suffix in the file name:
+
+```txt
+<PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>-TEST.zip
+```
+
+This would make it easier to identify test artifacts in backups, logs and manual FTP inspection.
+
+## Troubleshooting
+
+### Test artifact does not appear on FTP server
+
+Possible reasons:
+
+- `<PROJECT_PATH>/test` does not exist
+- wrong FTP credentials
+- wrong `PROJECT_PATH`
+- missing repository secrets
+
+Check:
+
+```txt
+FTP_UPLOAD_URL
+FTP_USER
+FTP_PSWD
+PROJECT_NAME
+PROJECT_PATH
+```
+
+Also verify that this directory exists on the FTP server:
+
+```txt
+<PROJECT_PATH>/test
+```
+
+### Test badge is not visible
+
+Possible reasons:
+
+- backend does not return `_WebAppReleaseType`
+- value is not `TEST_RELEASE`
+- release type was not loaded during server check
+- frontend state still contains an old value
+
+Check the backend application settings response and the release type handling in:
+
+```txt
+src/screens/login/serverCheck.ts
+src/redux/slices/appReleaseSlice.tsx
+src/components/Footer.tsx
+```
+
+### Workflow artifact exists, but FTP upload failed
+
+This means the build and packaging steps were successful, but the FTP upload failed.
+
+Check:
+
+- FTP credentials
+- FTP target path
+- FTP server availability
+- workflow logs for the `Put to test folder` step
