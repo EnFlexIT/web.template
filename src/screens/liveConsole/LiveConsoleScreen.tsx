@@ -248,24 +248,6 @@ export function LiveConsoleScreen() {
             </ScrollView>
           </View>
 
-          <View style={s.footerRow}>
-            <ThemedText style={s.footerText}>
-              {t("lineCount", {
-                count:
-                  liveConsole.lines.length,
-              })}
-            </ThemedText>
-
-            {liveConsole.closeCode &&
-            liveConsole.closeCode !== 1000 ? (
-              <ThemedText style={s.footerText}>
-                {t("closeCode", {
-                  code:
-                    liveConsole.closeCode,
-                })}
-              </ThemedText>
-            ) : null}
-          </View>
         </View>
       </Card>
     </View>
