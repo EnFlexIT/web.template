@@ -49,12 +49,15 @@
   "confirmDeleteServer": "Server löschen?",
   "confirmDeleteServerMessage": "Möchtest du diesen Server wirklich löschen?",
   "delete": "Löschen",
-
   "auth_method_unknown": "Authentifizierungsmethode konnte noch nicht erkannt werden.",
   "please_check_server_version": "Bitte Server prüfen oder erneut verbinden.",
   "cannot_open_oidc_url": "OIDC-Login-URL konnte nicht geöffnet werden.",
   "username_and_password_required": "Bitte Benutzername und Passwort eingeben.",
-  "saveServer": "änderungen speichern"
+  "saveServer": "änderungen speichern",
+  "DefaultPassword": {
+    "Title": "Passwortänderung empfohlen",
+    "Message": "Du verwendest noch das Standardpasswort. Bitte ändere es bald."
+  }
   
   
 }

@@ -50,7 +50,7 @@
     },
    "options": {
         "title": "Programmstart",
-        "description": "App-Optionen, Datenschutz und Verbindungsverwaltung."
+        "description": "App-Optionen, Einstellungen und Konfigurationen für den Start."
       },
       "settingsFileUpload": {
         "title": "Einstellungen hochladen",

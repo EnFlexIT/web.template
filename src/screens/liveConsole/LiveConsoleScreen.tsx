@@ -1,14 +1,6 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-} from "react";
+import React, { useEffect, useMemo,useRef,} from "react";
 
-import {
-  Platform,
-  ScrollView,
-  View,
-} from "react-native";
+import { Platform,ScrollView, View,} from "react-native";
 
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -16,21 +8,13 @@ import { StyleSheet } from "react-native-unistyles";
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../components/themed/ThemedText";
-import { H3 } from "../../components/stylistic/H3";
 
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
 import { selectIp } from "../../redux/slices/apiSlice";
 
-import {
-  clearLines,
-  connectLiveConsole,
-  disconnectLiveConsole,
-  selectLiveConsole,
-  setFollowOutput,
-  type LiveConsoleStatus,
-} from "../../redux/slices/liveConsoleSlice";
+import {clearLines, connectLiveConsole,disconnectLiveConsole,selectLiveConsole,setFollowOutput,type LiveConsoleStatus,} from "../../redux/slices/liveConsoleSlice";
 
 function getStatusTranslationKey(
   status: LiveConsoleStatus,

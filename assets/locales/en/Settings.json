@@ -49,7 +49,7 @@
       },
       "options": {
         
-        "description": "App options, privacy and connection management."
+        "description": "App options, settings, and configurations for startup."
       },
       "UserProfile": {
         "title": "User Profile",

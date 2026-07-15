@@ -58,5 +58,9 @@
   "please_check_server_version": "Please check server or reconnect.",
   "cannot_open_oidc_url": "Cannot open OIDC login URL.",
   "username_and_password_required": "Please enter username and password.",
-  "saveServer": "Save changes"
+  "saveServer": "Save changes",
+  "DefaultPassword": {
+    "Title": "Password change recommended",
+    "Message": "You are still using the default password. Please change it soon."
+  }
 }
