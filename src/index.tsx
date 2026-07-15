@@ -1,6 +1,6 @@
 // src/index.tsx
-
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { DeveloperConsole,DeveloperConsoleConnection,} from "./components/developer-console/DeveloperConsole";
+  import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -342,14 +342,19 @@ function RootStack() {
             />
           );
         }}
-        screenLayout={({ children }) => (
+       screenLayout={({ children }) => (
           <View style={styles.layoutContainer}>
             <DataPermissionsDialog />
             <OfflineOverlay />
             <ServerSwitchOverlay />
             <InitialPasswordChangeDialog />
             <NotificationPopup />
-            {children}
+
+            <DeveloperConsole
+              enabled={isLoggedIn}
+            >
+              {children}
+            </DeveloperConsole>
           </View>
         )}
       >
@@ -400,14 +405,16 @@ function RootStack() {
     </NavigationContainer>
   );
 }
-
 export default function App() {
   return (
     <Provider store={store}>
+      <DeveloperConsoleConnection />
+
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
           <RootStack />
         </View>
+
         <Footer />
       </View>
     </Provider>
@@ -415,8 +422,25 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  drawer: { width: 200 },
-  layoutContainer: { flex: 1 },
+  appContainer: {
+    flex: 1,
+  },
+
+  appContent: {
+    flex: 1,
+    minHeight: 0,
+  },
+
+  drawer: {
+    width: 200,
+  },
+
+  layoutContainer: {
+  flex: 1,
+  minHeight: 0,
+  overflow: "hidden",
+},
+
   loadingScreen: {
     flex: 1,
     justifyContent: "center",

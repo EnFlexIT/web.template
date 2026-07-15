@@ -19,6 +19,7 @@ const resources = {
     programStart : require("./assets/locales/en/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/en/FileConfiguration.json"),
     UserProfile: require("./assets/locales/en/UserProfile.json"),
+    liveConsole: require("./assets/locales/en/LiveConsole.json"),
 
     },
   de: {
@@ -38,6 +39,7 @@ const resources = {
     programStart : require("./assets/locales/de/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/de/FileConfiguration.json"),
     UserProfile: require("./assets/locales/de/UserProfile.json"),
+    liveConsole: require("./assets/locales/de/LiveConsole.json"),
   },
 };
 

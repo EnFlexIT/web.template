@@ -1,10 +1,16 @@
-import React, { useEffect, useMemo,useRef,} from "react";
+import React, {
+  useMemo,
+  useRef,
+} from "react";
 
-import { Platform,ScrollView, View,} from "react-native";
+import {
+  Platform,
+  ScrollView,
+  View,
+} from "react-native";
 
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
-
 import { Card } from "../../components/ui-elements/Card";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../components/themed/ThemedText";
@@ -12,9 +18,21 @@ import { ThemedText } from "../../components/themed/ThemedText";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 
-import { selectIp } from "../../redux/slices/apiSlice";
+import {
+  clearLines,
+  connectLiveConsole,
+  selectLiveConsole,
+  setFollowOutput,
+  type LiveConsoleStatus,
+} from "../../redux/slices/liveConsoleSlice";
 
-import {clearLines, connectLiveConsole,disconnectLiveConsole,selectLiveConsole,setFollowOutput,type LiveConsoleStatus,} from "../../redux/slices/liveConsoleSlice";
+import {
+  dockDeveloperConsole,
+} from "../../redux/slices/developerConsoleSlice";
+
+type LiveConsoleScreenProps = {
+  embedded?: boolean;
+};
 
 function getStatusTranslationKey(
   status: LiveConsoleStatus,
@@ -44,13 +62,12 @@ function getStatusTranslationKey(
   }
 }
 
-export function LiveConsoleScreen() {
-  const { t } = useTranslation(["LiveConsole"]);
+export function LiveConsoleScreen({
+  embedded = false,
+}: LiveConsoleScreenProps) {
+  const { t } = useTranslation(["liveConsole"]);
 
   const dispatch = useAppDispatch();
-
-  const serverBaseUrl =
-    useAppSelector(selectIp);
 
   const liveConsole =
     useAppSelector(selectLiveConsole);
@@ -68,32 +85,6 @@ export function LiveConsoleScreen() {
     liveConsole.status === "requesting-ticket" ||
     liveConsole.status === "connecting" ||
     liveConsole.status === "closing";
-
-  /**
-   * Vollautomatischer Ablauf:
-   *
-   * 1. Screen wird geöffnet.
-   * 2. Ticket wird im Slice angefordert.
-   * 3. WebSocket-Verbindung wird aufgebaut.
-   * 4. Logs werden angezeigt.
-   *
-   * Bei einem Serverwechsel wird automatisch
-   * eine neue Verbindung aufgebaut.
-   *
-   * Beim Verlassen des Screens wird der
-   * WebSocket geschlossen.
-   */
-  useEffect(() => {
-    if (!serverBaseUrl) {
-      return;
-    }
-
-    void dispatch(connectLiveConsole());
-
-    return () => {
-      dispatch(disconnectLiveConsole());
-    };
-  }, [dispatch, serverBaseUrl]);
 
   function getEmptyText(): string {
     switch (liveConsole.status) {
@@ -119,121 +110,164 @@ export function LiveConsoleScreen() {
     }
   }
 
-  return (
-    <View style={s.container}>
-      <Card>
-        <View style={s.content}>
-          <View style={s.headerRow}>
-            <View style={s.titleBox}>
-              
+  const content = (
+      <View
+        style={[
+          s.content,
+          embedded && s.contentEmbedded,
+        ]}
+      >
+      {!embedded ? (
+    <View style={s.headerRow}>
+      <View style={s.statusBox}>
+        <View
+          style={[
+            s.statusDot,
 
-            </View>
+            liveConsole.status === "connected" &&
+              s.statusDotConnected,
 
-            <View style={s.statusBox}>
-              <View
-                style={[
-                  s.statusDot,
+            liveConsole.status === "error" &&
+              s.statusDotError,
 
-                  liveConsole.status === "connected" &&
-                    s.statusDotConnected,
+            isBusy &&
+              s.statusDotBusy,
+          ]}
+        />
 
-                  liveConsole.status === "error" &&
-                    s.statusDotError,
+        <ThemedText style={s.statusText}>
+          {t(
+            getStatusTranslationKey(
+              liveConsole.status,
+            ),
+          )}
+        </ThemedText>
+      </View>
+    </View>
+) : null}
 
-                  isBusy &&
-                    s.statusDotBusy,
-                ]}
-              />
+      <View style={s.toolbar}>
+        <ActionButton
+          label={t("reconnect")}
+          variant="secondary"
+          size="sm"
+          disabled={isBusy}
+          onPress={() => {
+            void dispatch(
+              connectLiveConsole(),
+            );
+          }}
+        />
 
-              <ThemedText style={s.statusText}>
-                {t(
-                  getStatusTranslationKey(
-                    liveConsole.status,
-                  ),
-                )}
-              </ThemedText>
-            </View>
-          </View>
+        <ActionButton
+          label={t("clear")}
+          variant="secondary"
+          size="sm"
+          disabled={
+            liveConsole.lines.length === 0
+          }
+          onPress={() => {
+            dispatch(clearLines());
+          }}
+        />
 
-          <View style={s.toolbar}>
+        <ActionButton
+          label={
+            liveConsole.followOutput
+              ? t("autoScrollOn")
+              : t("autoScrollOff")
+          }
+          variant="secondary"
+          size="sm"
+          onPress={() => {
+            dispatch(
+              setFollowOutput(
+                !liveConsole.followOutput,
+              ),
+            );
+          }}
+        />
+
+        {!embedded ? (
+          <>
             <ActionButton
-              label={t("reconnect")}
-              variant="secondary"
-              size="sm"
-              disabled={isBusy}
-              onPress={() => {
-                void dispatch(
-                  connectLiveConsole(),
-                );
-              }}
-            />
-
-            <ActionButton
-              label={t("clear")}
-              variant="secondary"
-              size="sm"
-              disabled={
-                liveConsole.lines.length === 0
-              }
-              onPress={() => {
-                dispatch(clearLines());
-              }}
-            />
-
-            <ActionButton
-              label={
-                liveConsole.followOutput
-                  ? t("autoScrollOn")
-                  : t("autoScrollOff")
-              }
+              label={t("dockBottom")}
               variant="secondary"
               size="sm"
               onPress={() => {
                 dispatch(
-                  setFollowOutput(
-                    !liveConsole.followOutput,
-                  ),
+                dockDeveloperConsole("bottom"),
                 );
               }}
             />
-          </View>
 
-          {liveConsole.error ? (
-            <View style={s.errorBox}>
-              <ThemedText style={s.errorText}>
-                {liveConsole.error}
-              </ThemedText>
-            </View>
-          ) : null}
-
-          <View style={s.consoleFrame}>
-            <ScrollView
-              ref={scrollRef}
-              style={s.consoleScroll}
-              contentContainerStyle={
-                s.consoleContent
-              }
-              onContentSizeChange={() => {
-                if (
-                  liveConsole.followOutput
-                ) {
-                  scrollRef.current?.scrollToEnd({
-                    animated: false,
-                  });
-                }
+            <ActionButton
+              label={t("dockRight")}
+              variant="secondary"
+              size="sm"
+              onPress={() => {
+                dispatch(
+                  dockDeveloperConsole("right"),
+                );
               }}
-            >
-              <ThemedText
-                selectable
-                style={s.consoleText}
-              >
-                {consoleText || getEmptyText()}
-              </ThemedText>
-            </ScrollView>
-          </View>
+            />
+          </>
+        ) : null}
+      </View>
 
+      {liveConsole.error ? (
+        <View style={s.errorBox}>
+          <ThemedText style={s.errorText}>
+            {liveConsole.error}
+          </ThemedText>
         </View>
-      </Card>
+      ) : null}
+
+      <View
+        style={[
+          s.consoleFrame,
+          embedded && s.consoleFrameEmbedded,
+        ]}
+      >
+        <ScrollView
+          ref={scrollRef}
+          style={s.consoleScroll}
+          contentContainerStyle={[
+            s.consoleContent,
+            embedded &&
+              s.consoleContentEmbedded,
+          ]}
+          onContentSizeChange={() => {
+            if (liveConsole.followOutput) {
+              scrollRef.current?.scrollToEnd({
+                animated: false,
+              });
+            }
+          }}
+        >
+          <ThemedText
+            selectable
+            style={s.consoleText}
+          >
+            {consoleText || getEmptyText()}
+          </ThemedText>
+        </ScrollView>
+      </View>
+    </View>
+  );
+
+  return (
+    <View
+      style={[
+        s.container,
+        embedded && s.containerEmbedded,
+      ]}
+    >
+      {embedded ? (
+        content
+      ) : (
+        <Card>{content}</Card>
+      )}
     </View>
   );
 }
@@ -245,27 +279,30 @@ const s = StyleSheet.create((theme) => ({
     maxWidth: 1200,
   },
 
+  containerEmbedded: {
+    flex: 1,
+    width: "100%",
+    maxWidth: "100%",
+    minHeight: 0,
+    padding: 8,
+  },
+
   content: {
     gap: 16,
   },
 
+  contentEmbedded: {
+    flex: 1,
+    minHeight: 0,
+    gap: 8,
+  },
+
   headerRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    alignItems: "center",
+    justifyContent: "flex-end",
     flexWrap: "wrap",
     gap: 16,
-  },
-
-  titleBox: {
-    flex: 1,
-    minWidth: 280,
-    gap: 5,
-  },
-
-  description: {
-    fontSize: 13,
-    opacity: 0.72,
   },
 
   statusBox: {
@@ -312,10 +349,8 @@ const s = StyleSheet.create((theme) => ({
 
   errorBox: {
     borderWidth: 1,
-    borderColor:
-      "rgba(239,68,68,0.55)",
-    backgroundColor:
-      "rgba(239,68,68,0.08)",
+    borderColor: "rgba(239,68,68,0.55)",
+    backgroundColor: "rgba(239,68,68,0.08)",
     borderRadius: 8,
     padding: 12,
   },
@@ -334,7 +369,17 @@ const s = StyleSheet.create((theme) => ({
     overflow: "hidden",
     backgroundColor: "#0b0f14",
   },
-
+consoleFrameEmbedded: {
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  maxHeight: "100%",
+  marginHorizontal: 8,
+  marginBottom: 8,
+  marginTop: 0,
+  borderRadius: 6,
+  borderColor: theme.colors.border,
+},
   consoleScroll: {
     flex: 1,
   },
@@ -342,6 +387,11 @@ const s = StyleSheet.create((theme) => ({
   consoleContent: {
     padding: 16,
     minHeight: 458,
+  },
+
+  consoleContentEmbedded: {
+    minHeight: 0,
+    padding: 10,
   },
 
   consoleText: {
@@ -361,18 +411,5 @@ const s = StyleSheet.create((theme) => ({
 
     fontSize: 12,
     lineHeight: 18,
-  },
-
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-
-  footerText: {
-    fontSize: 12,
-    opacity: 0.65,
   },
 }));

@@ -23,5 +23,14 @@
   "statusConnected": "Live verbunden",
   "statusClosing": "Verbindung wird getrennt",
   "statusClosed": "Verbindung geschlossen",
-  "statusError": "Fehler"
+  "statusError": "Fehler",
+  "developerConsole": "Developer Console",
+  "dockBottom": "Unten andocken",
+  "dockRight": "Rechts andocken",
+  "dockBottomShort": "Unten",
+  "dockRightShort": "Rechts",
+  "hideConsoleTitle": "Developer Console ausblenden?",
+  "hideConsoleDescription": "Die Developer Console und die dazugehörige Leiste werden ausgeblendet. Du kannst sie über den Bildschirm „Live-Konsole“ oder mit Strg + Umschalt + L wieder öffnen.",
+  "hideConsoleConfirm": "Ausblenden",
+  "cancel": "Abbrechen"
 }

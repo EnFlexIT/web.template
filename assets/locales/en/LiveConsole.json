@@ -23,5 +23,14 @@
   "statusConnected": "Connected live",
   "statusClosing": "Disconnecting",
   "statusClosed": "Connection closed",
-  "statusError": "Error"
+  "statusError": "Error",
+  "developerConsole": "Developer Console",
+  "dockBottom": "Dock bottom",
+  "dockRight": "Dock right",
+  "dockBottomShort": "Bottom",
+  "dockRightShort": "Right",
+    "hideConsoleTitle": "Hide Developer Console?",
+  "hideConsoleDescription": "The Developer Console and its launcher bar will be hidden. You can reopen it from the Live Console screen or by pressing Ctrl + Shift + L.",
+  "hideConsoleConfirm": "Hide",
+  "cancel": "Cancel"
 }
