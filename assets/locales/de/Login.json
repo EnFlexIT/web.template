@@ -57,7 +57,13 @@
   "DefaultPassword": {
     "Title": "Passwortänderung empfohlen",
     "Message": "Du verwendest noch das Standardpasswort. Bitte ändere es bald."
-  }
+  },
+"errors.serverNameExists": "Dieser Servername existiert bereits. Bitte wähle einen anderen.",
+"errors.serverUrlExists": "Diese Server-URL existiert bereits. Bitte wähle eine andere.",
+"errors.serverUrlRequired": "Server-URL ist erforderlich."
+
+
+
   
   
 }

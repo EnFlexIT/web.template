@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import { Buffer } from "buffer";
+
 import { Screen } from "../components/Screen";
 import { Card } from "../components/ui-elements/Card";
 import { ActionButton } from "../components/ui-elements/ActionButton";
@@ -12,6 +13,7 @@ import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
 import { ThemedText } from "../components/themed/ThemedText";
 import { H1 } from "../components/stylistic/H1";
 import { H4 } from "../components/stylistic/H4";
+
 import {
   SelectableList,
   SelectableItem,
@@ -33,6 +35,7 @@ import {
 import {
   switchServer,
   getJwtForServer,
+  selectIp,
   type AuthMethod,
 } from "../redux/slices/apiSlice";
 
@@ -40,7 +43,6 @@ import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-
 } from "../screens/login/serverCheck";
 
 type Server = {
@@ -92,16 +94,136 @@ function detectEnvironment(url: string): ServerEnvironment {
   return "PROD";
 }
 
-function toBase64(str: string) {
+function toBase64(value: string): string {
   return typeof btoa !== "undefined"
-    ? btoa(str)
-    : Buffer.from(str).toString("base64");
+    ? btoa(value)
+    : Buffer.from(value).toString("base64");
 }
 
 function extractBearerToken(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const m = value.match(/Bearer\s+(.+)/i);
-  return m?.[1]?.trim() ?? null;
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const match = value.match(/Bearer\s+(.+)/i);
+
+  return match?.[1]?.trim() ?? null;
+}
+
+async function checkServerAuthenticated(
+  baseUrl: string,
+  jwt: string | null,
+): Promise<ServerAuthInfo> {
+  const normalizedUrl = normalizeBaseUrl(baseUrl);
+
+  try {
+    const response = await fetch(
+      `${normalizedUrl}/api/app/settings/get`,
+      {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          ...(jwt
+            ? {
+                Authorization: `Bearer ${jwt}`,
+              }
+            : {}),
+        },
+      },
+    );
+
+    if (response.status === 400) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: true,
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        authenticated: false,
+        authenticationMethod: "unknown",
+        oidcBearer: null,
+        sessionInvalid: false,
+      };
+    }
+
+    const data = await response.json();
+
+    const entries = Array.isArray(data?.propertyEntries)
+      ? data.propertyEntries
+      : [];
+
+    const authenticationConfiguration = entries.find(
+      (entry: any) =>
+        entry?.key === "_ServerWideSecurityConfiguration",
+    )?.value;
+
+    const authenticatedValue = entries.find(
+      (entry: any) => entry?.key === "_Authenticated",
+    )?.value;
+
+    const oidcBearerValue = entries.find(
+      (entry: any) => entry?.key === "_oidc.bearer",
+    )?.value;
+
+    const hasSessionId = entries.some(
+      (entry: any) => entry?.key === "_session.id",
+    );
+
+    const hasSessionPathParameter = entries.some(
+      (entry: any) =>
+        entry?.key === "_session.pathParameter",
+    );
+
+    const authenticated =
+      typeof authenticatedValue === "boolean"
+        ? authenticatedValue
+        : String(authenticatedValue).toLowerCase() === "true";
+
+    let authenticationMethod: AuthMethod = "unknown";
+
+    if (
+      authenticationConfiguration ===
+      "OIDCSecurityHandler"
+    ) {
+      authenticationMethod = "oidc";
+    } else if (
+      authenticationConfiguration ===
+      "JwtSingleUserSecurityHandler"
+    ) {
+      authenticationMethod = "jwt";
+    } else if (
+      oidcBearerValue ||
+      hasSessionId ||
+      hasSessionPathParameter
+    ) {
+      authenticationMethod = "oidc";
+    } else {
+      authenticationMethod = "jwt";
+    }
+
+    return {
+      authenticated,
+      authenticationMethod,
+      oidcBearer:
+        typeof oidcBearerValue === "string"
+          ? oidcBearerValue
+          : null,
+      sessionInvalid: false,
+    };
+  } catch {
+    return {
+      authenticated: false,
+      authenticationMethod: "unknown",
+      oidcBearer: null,
+      sessionInvalid: false,
+    };
+  }
 }
 
 export function ServerSettingsScreen() {
@@ -109,40 +231,81 @@ export function ServerSettingsScreen() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const { theme } = useUnistyles();
+
   const serversState = useAppSelector(selectServers);
+  const activeServerUrl = useAppSelector(selectIp);
+
   const servers: Server[] = serversState?.servers ?? [];
-  const activeServerId = serversState?.selectedServerId ?? "local";
-  const activeServer = servers.find((s) => s.id === activeServerId);
+
+  const activeServerId =
+    serversState?.selectedServerId ?? "local";
+
+  const activeServer = servers.find(
+    (server) => server.id === activeServerId,
+  );
 
   const [busy, setBusy] = useState(false);
 
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [generalError, setGeneralError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(
+    null,
+  );
 
-  const [draftServerId, setDraftServerId] = useState(activeServerId);
-  const [nameInput, setNameInput] = useState(activeServer?.name ?? "");
-  const [urlInput, setUrlInput] = useState(activeServer?.baseUrl ?? "");
+  const [urlError, setUrlError] = useState<string | null>(
+    null,
+  );
+
+  const [generalError, setGeneralError] = useState<
+    string | null
+  >(null);
+
+  const [draftServerId, setDraftServerId] =
+    useState(activeServerId);
+
+  const [nameInput, setNameInput] = useState(
+    activeServer?.name ?? "",
+  );
+
+  const [urlInput, setUrlInput] = useState(
+    activeServer?.baseUrl ?? "",
+  );
+
   const [editMode, setEditMode] = useState(true);
 
-  const [loginModalVisible, setLoginModalVisible] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [pendingServerUrl, setPendingServerUrl] = useState<string | null>(null);
-  const [pendingServerLabel, setPendingServerLabel] = useState<string>("");
-  const [pendingServerId, setPendingServerId] = useState<string | null>(null);
-  const [pendingServerAuthMethod, setPendingServerAuthMethod] =
-    useState<AuthMethod>("unknown");
-  const [pendingOidcBearer, setPendingOidcBearer] = useState<string | null>(null);
+  const [loginModalVisible, setLoginModalVisible] =
+    useState(false);
 
-  const [showOidcConfirm, setShowOidcConfirm] = useState(false);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showUseSaveConfirm, setShowUseSaveConfirm] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [loginError, setLoginError] = useState<
+    string | null
+  >(null);
+
+  const [pendingServerUrl, setPendingServerUrl] =
+    useState<string | null>(null);
+
+  const [pendingServerLabel, setPendingServerLabel] =
+    useState("");
+
+  const [pendingServerId, setPendingServerId] =
+    useState<string | null>(null);
+
+  const [showSaveConfirm, setShowSaveConfirm] =
+    useState(false);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] =
+    useState(false);
+
+  const [showUseSaveConfirm, setShowUseSaveConfirm] =
+    useState(false);
 
   useEffect(() => {
-    const draftServer = servers.find((s) => s.id === draftServerId);
-    if (!draftServer) return;
+    const draftServer = servers.find(
+      (server) => server.id === draftServerId,
+    );
+
+    if (!draftServer) {
+      return;
+    }
 
     setEditMode(true);
     setNameInput(draftServer.name ?? "");
@@ -150,21 +313,35 @@ export function ServerSettingsScreen() {
   }, [draftServerId, servers]);
 
   useEffect(() => {
-    if (!servers.some((s) => s.id === draftServerId)) {
+    if (draftServerId === "__new__") {
+      return;
+    }
+
+    const draftServerStillExists = servers.some(
+      (server) => server.id === draftServerId,
+    );
+
+    if (!draftServerStillExists) {
       setDraftServerId(activeServerId);
     }
   }, [servers, draftServerId, activeServerId]);
 
-  const serverItems = useMemo<SelectableItem<string>[]>(() => {
-    return servers.map((s) => ({
-      id: s.id,
-      label: s.name,
-      subtitle: s.baseUrl,
-    }));
-  }, [servers]);
+  const serverItems = useMemo<SelectableItem<string>[]>(
+    () =>
+      servers.map((server) => ({
+        id: server.id,
+        label: server.name,
+        subtitle: server.baseUrl,
+      })),
+    [servers],
+  );
 
-  const firstError = urlError || nameError || generalError;
-  const currentDraftServer = servers.find((s) => s.id === draftServerId);
+  const currentDraftServer = servers.find(
+    (server) => server.id === draftServerId,
+  );
+
+  const firstError =
+    urlError || nameError || generalError;
 
   function resetErrors() {
     setNameError(null);
@@ -176,15 +353,13 @@ export function ServerSettingsScreen() {
     setPendingServerUrl(null);
     setPendingServerLabel("");
     setPendingServerId(null);
-    setPendingServerAuthMethod("unknown");
-    setPendingOidcBearer(null);
     setLoginError(null);
     setLoginModalVisible(false);
-    setShowOidcConfirm(false);
   }
 
   function startAddNew() {
     resetErrors();
+
     setEditMode(false);
     setDraftServerId("__new__");
     setNameInput("");
@@ -199,32 +374,74 @@ export function ServerSettingsScreen() {
   }
 
   function hasUnsavedChanges(): boolean {
-    const { name, baseUrl } = getCurrentInputsNormalized();
+    const { name, baseUrl } =
+      getCurrentInputsNormalized();
 
-    if (!normalizeName(nameInput) && !normalizeBaseUrl(urlInput)) return false;
+    const normalizedNameInput = normalizeName(nameInput);
+    const normalizedUrlInput =
+      normalizeBaseUrl(urlInput);
+
+    if (!normalizedNameInput && !normalizedUrlInput) {
+      return false;
+    }
 
     if (editMode && currentDraftServer) {
-      const currentName = normalizeName(currentDraftServer.name ?? "") || "";
-      const currentUrl = normalizeBaseUrl(currentDraftServer.baseUrl ?? "");
+      const currentName =
+        normalizeName(currentDraftServer.name ?? "") || "";
+
+      const currentUrl = normalizeBaseUrl(
+        currentDraftServer.baseUrl ?? "",
+      );
+
       return currentName !== name || currentUrl !== baseUrl;
     }
 
-    return !!nameInput.trim() || !!urlInput.trim();
+    return Boolean(nameInput.trim() || urlInput.trim());
   }
 
-  async function ensureServerOnline(baseUrl: string): Promise<boolean> {
+  const hasChanges = hasUnsavedChanges();
+
+  const normalizedDraftUrl =
+    normalizeBaseUrl(urlInput);
+
+  const normalizedActiveServerUrl = normalizeBaseUrl(
+    activeServerUrl || activeServer?.baseUrl || "",
+  );
+
+  const hasValidServerUrl =
+    /^https?:\/\//i.test(normalizedDraftUrl);
+
+  const canUseServer =
+    hasValidServerUrl &&
+    normalizedDraftUrl !== normalizedActiveServerUrl;
+
+  async function ensureServerOnline(
+    baseUrl: string,
+  ): Promise<boolean> {
     setBusy(true);
-    const result = await checkServerReachable(baseUrl);
-    setBusy(false);
 
-    if (result.ok) return true;
+    try {
+      const result =
+        await checkServerReachable(baseUrl);
 
-    setGeneralError(t("errors.serverNotReachable"));
-    return false;
+      if (result.ok) {
+        return true;
+      }
+
+      setGeneralError(
+        t("errors.serverNotReachable"),
+      );
+
+      return false;
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function validateAndSaveOnly(
-    options?: { forceCreate?: boolean },
+    options?: {
+      forceCreate?: boolean;
+    },
   ): Promise<{
     ok: boolean;
     baseUrl?: string;
@@ -233,52 +450,104 @@ export function ServerSettingsScreen() {
   }> {
     resetErrors();
 
-    const { name, baseUrl } = getCurrentInputsNormalized();
-    const forceCreate = options?.forceCreate ?? false;
+    const { name, baseUrl } =
+      getCurrentInputsNormalized();
+
+    const forceCreate =
+      options?.forceCreate ?? false;
 
     if (!baseUrl) {
       setUrlError(t("errors.serverUrlRequired"));
-      return { ok: false };
+
+      return {
+        ok: false,
+      };
     }
 
     if (!/^https?:\/\//i.test(baseUrl)) {
       setUrlError(t("errors.serverUrlInvalid"));
-      return { ok: false };
+
+      return {
+        ok: false,
+      };
     }
 
     const editableServer =
-      !forceCreate && editMode && currentDraftServer ? currentDraftServer : null;
+      !forceCreate &&
+      editMode &&
+      currentDraftServer
+        ? currentDraftServer
+        : null;
 
-    const editableServerId = editableServer?.id ?? null;
+    const editableServerId =
+      editableServer?.id ?? null;
 
-    const nameExists = servers.some((s) => {
-      if (editableServerId && s.id === editableServerId) return false;
-      return normalizeName(s.name ?? "").toLowerCase() === name.toLowerCase();
+    const nameExists = servers.some((server) => {
+      if (
+        editableServerId &&
+        server.id === editableServerId
+      ) {
+        return false;
+      }
+
+      return (
+        normalizeName(server.name ?? "").toLowerCase() ===
+        name.toLowerCase()
+      );
     });
 
     if (nameExists) {
       setNameError(t("errors.serverNameExists"));
-      return { ok: false };
+
+      return {
+        ok: false,
+      };
     }
 
-    const urlExists = servers.some((s) => {
-      if (editableServerId && s.id === editableServerId) return false;
-      return normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase();
+    const urlExists = servers.some((server) => {
+      if (
+        editableServerId &&
+        server.id === editableServerId
+      ) {
+        return false;
+      }
+
+      return (
+        normalizeBaseUrl(
+          server.baseUrl,
+        ).toLowerCase() === baseUrl.toLowerCase()
+      );
     });
 
     if (urlExists) {
       setUrlError(t("errors.serverUrlExists"));
-      return { ok: false };
+
+      return {
+        ok: false,
+      };
     }
 
     const online = await ensureServerOnline(baseUrl);
+
     if (!online) {
-      setUrlError(t("errors.serverNotReachable"));
-      return { ok: false };
+      setUrlError(
+        t("errors.serverNotReachable"),
+      );
+
+      return {
+        ok: false,
+      };
     }
 
     if (editableServer) {
-      dispatch(updateServer({ id: editableServer.id, name, baseUrl }));
+      dispatch(
+        updateServer({
+          id: editableServer.id,
+          name,
+          baseUrl,
+        }),
+      );
+
       return {
         ok: true,
         baseUrl,
@@ -287,7 +556,9 @@ export function ServerSettingsScreen() {
       };
     }
 
-    const id = `${normalizeName(name).toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
+    const id = `${normalizeName(name)
+      .toLowerCase()
+      .replace(/\s+/g, "-")}-${Date.now()}`;
 
     dispatch(
       addServer({
@@ -310,20 +581,37 @@ export function ServerSettingsScreen() {
   }
 
   async function handleAddByPlus() {
-    if (busy || loginLoading) return;
+    if (busy || loginLoading) {
+      return;
+    }
 
-    const result = await validateAndSaveOnly({ forceCreate: true });
-    if (!result.ok || !result.baseUrl || !result.id) return;
+    const result = await validateAndSaveOnly({
+      forceCreate: true,
+    });
+
+    if (
+      !result.ok ||
+      !result.baseUrl ||
+      !result.id
+    ) {
+      return;
+    }
 
     setDraftServerId(result.id);
     setNameInput(result.serverLabel ?? "");
     setUrlInput(result.baseUrl);
+
     resetErrors();
   }
 
   function handleSaveSide() {
-    if (busy || loginLoading) return;
-    if (!hasUnsavedChanges()) return;
+    if (
+      busy ||
+      loginLoading ||
+      !hasChanges
+    ) {
+      return;
+    }
 
     setShowSaveConfirm(true);
   }
@@ -331,161 +619,140 @@ export function ServerSettingsScreen() {
   async function confirmSaveSide() {
     setShowSaveConfirm(false);
 
-    const result = await validateAndSaveOnly({ forceCreate: false });
-    if (!result.ok) return;
+    const result = await validateAndSaveOnly({
+      forceCreate: false,
+    });
+
+    if (!result.ok) {
+      return;
+    }
 
     resetErrors();
   }
 
   function handleDeleteSelected() {
-    if (!currentDraftServer || busy || loginLoading) return;
+    if (
+      !currentDraftServer ||
+      busy ||
+      loginLoading
+    ) {
+      return;
+    }
+
     setShowDeleteConfirm(true);
   }
 
   function confirmDeleteSelected() {
-    if (!currentDraftServer) return;
+    if (!currentDraftServer) {
+      return;
+    }
 
     dispatch(removeServer(currentDraftServer.id));
-    setShowDeleteConfirm(false);
-    startAddNew();
 
-    const local = servers.find((s) => s.id === "local" && s.id !== currentDraftServer.id);
-    if (local) {
-      setDraftServerId(local.id);
-      setNameInput(local.name ?? "");
-      setUrlInput(local.baseUrl ?? "");
+    setShowDeleteConfirm(false);
+
+    const localServer = servers.find(
+      (server) =>
+        server.id === "local" &&
+        server.id !== currentDraftServer.id,
+    );
+
+    if (localServer) {
+      setDraftServerId(localServer.id);
+      setNameInput(localServer.name ?? "");
+      setUrlInput(localServer.baseUrl ?? "");
       setEditMode(true);
+      resetErrors();
+
+      return;
     }
+
+    startAddNew();
   }
 
-  async function proceedUseServerAfterOptionalSave(skipSave = false) {
+  async function proceedUseServerAfterOptionalSave(
+    skipSave = false,
+  ) {
     let targetUrl = "";
     let targetId: string | null = null;
     let targetLabel = "";
 
     if (hasUnsavedChanges() && !skipSave) {
-      const saveResult = await validateAndSaveOnly({ forceCreate: false });
-      if (!saveResult.ok || !saveResult.baseUrl) return;
+      const saveResult = await validateAndSaveOnly({
+        forceCreate: false,
+      });
 
-      targetUrl = normalizeBaseUrl(saveResult.baseUrl);
+      if (
+        !saveResult.ok ||
+        !saveResult.baseUrl
+      ) {
+        return;
+      }
+
+      targetUrl = normalizeBaseUrl(
+        saveResult.baseUrl,
+      );
+
       targetId = saveResult.id ?? null;
-      targetLabel = saveResult.serverLabel ?? saveResult.baseUrl;
-    } else {
-      const draftServer = servers.find((s) => s.id === draftServerId);
 
-      targetUrl = normalizeBaseUrl(draftServer?.baseUrl ?? urlInput);
+      targetLabel =
+        saveResult.serverLabel ??
+        saveResult.baseUrl;
+    } else {
+      const draftServer = servers.find(
+        (server) => server.id === draftServerId,
+      );
+
+      targetUrl = normalizeBaseUrl(
+        draftServer?.baseUrl ?? urlInput,
+      );
+
       targetId = draftServer?.id ?? null;
-      targetLabel = draftServer?.name ?? draftServer?.baseUrl ?? targetUrl;
+
+      targetLabel =
+        draftServer?.name ??
+        draftServer?.baseUrl ??
+        targetUrl;
 
       if (!targetUrl) {
-        setUrlError(t("errors.serverUrlRequired"));
+        setUrlError(
+          t("errors.serverUrlRequired"),
+        );
+
         return;
       }
 
-      const online = await ensureServerOnline(targetUrl);
+      const online =
+        await ensureServerOnline(targetUrl);
+
       if (!online) {
-        setUrlError(t("errors.serverNotReachable"));
+        setUrlError(
+          t("errors.serverNotReachable"),
+        );
+
         return;
       }
     }
-  async function checkServerAuthenticated(
-    baseUrl: string,
-    jwt: string | null,
-  ): Promise<ServerAuthInfo> {
-    const normalized = normalizeBaseUrl(baseUrl);
 
-  try {
-    const res = await fetch(`${normalized}/api/app/settings/get`, {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-      },
-    });
+    setBusy(true);
 
-    if (res.status === 400) {
-      return {
-        authenticated: false,
-        authenticationMethod: "unknown",
-        oidcBearer: null,
-        sessionInvalid: true,
-      };
+    let existingJwt: string | null = null;
+    let authenticationInfo: ServerAuthInfo;
+
+    try {
+      existingJwt =
+        await getJwtForServer(targetUrl);
+
+      authenticationInfo =
+        await checkServerAuthenticated(
+          targetUrl,
+          existingJwt,
+        );
+    } finally {
+      setBusy(false);
     }
 
-    if (!res.ok) {
-      return {
-        authenticated: false,
-        authenticationMethod: "unknown",
-        oidcBearer: null,
-        sessionInvalid: false,
-      };
-    }
-
-    const data = await res.json();
-    const entries = Array.isArray(data?.propertyEntries) ? data.propertyEntries : [];
-
-    const authCfg = entries.find(
-      (entry: any) => entry?.key === "_ServerWideSecurityConfiguration",
-    )?.value;
-
-    const authenticatedRaw = entries.find(
-      (entry: any) => entry?.key === "_Authenticated",
-    )?.value;
-
-    const oidcBearer = entries.find(
-      (entry: any) => entry?.key === "_oidc.bearer",
-    )?.value;
-
-    const hasSessionId = entries.some(
-      (entry: any) => entry?.key === "_session.id",
-    );
-
-    const hasSessionPathParameter = entries.some(
-      (entry: any) => entry?.key === "_session.pathParameter",
-    );
-
-    const authenticated =
-      typeof authenticatedRaw === "boolean"
-        ? authenticatedRaw
-        : String(authenticatedRaw).toLowerCase() === "true";
-
-    let authenticationMethod: AuthMethod = "unknown";
-
-    if (authCfg === "OIDCSecurityHandler") {
-      authenticationMethod = "oidc";
-    } else if (authCfg === "JwtSingleUserSecurityHandler") {
-      authenticationMethod = "jwt";
-    } else if (oidcBearer || hasSessionId || hasSessionPathParameter) {
-      authenticationMethod = "oidc";
-    } else if (jwt) {
-      authenticationMethod = "jwt";
-    } else {
-      authenticationMethod = "jwt";
-    }
-
-    return {
-      authenticated,
-      authenticationMethod,
-      oidcBearer: typeof oidcBearer === "string" ? oidcBearer : null,
-      sessionInvalid: false,
-    };
-   } catch {
-    return {
-      authenticated: false,
-      authenticationMethod: "unknown",
-      oidcBearer: null,
-      sessionInvalid: false,
-    };
-   }
-   }
-     setBusy(true);
-    const existingJwt = await getJwtForServer(targetUrl);
-    const info = await checkServerAuthenticated(targetUrl, existingJwt);
-    setBusy(false);
-
-    if (info.authenticated) {
+    if (authenticationInfo.authenticated) {
       await dispatch(
         switchServer({
           url: targetUrl,
@@ -499,38 +766,61 @@ export function ServerSettingsScreen() {
       }
 
       navigation.goBack();
+
       return;
     }
 
-    // JWT -> alter Login-Dialog
-    if (info.authenticationMethod === "jwt") {
+    if (
+      authenticationInfo.authenticationMethod ===
+      "jwt"
+    ) {
       setPendingServerUrl(targetUrl);
       setPendingServerLabel(targetLabel);
       setPendingServerId(targetId);
-      setPendingServerAuthMethod("jwt");
-      setPendingOidcBearer(null);
       setLoginError(null);
       setLoginModalVisible(true);
+
       return;
     }
 
-    // OIDC oder unknown -> OpenID-Dialog
-    setPendingServerUrl(targetUrl);
-    setPendingServerLabel(targetLabel);
-    setPendingServerId(targetId);
-    setPendingServerAuthMethod(
-      info.authenticationMethod === "oidc" ? "oidc" : "unknown",
-    );
-    setPendingOidcBearer(info.oidcBearer ?? null);
-    setLoginError(null);
-    setShowOidcConfirm(true);
+    setLoginLoading(true);
+
+    try {
+      await dispatch(
+        switchServer({
+          url: targetUrl,
+          providedJwt:
+            authenticationInfo.oidcBearer ??
+            undefined,
+          initializeMenu: Boolean(
+            authenticationInfo.oidcBearer,
+          ),
+        }),
+      );
+
+      if (targetId) {
+        dispatch(selectServer(targetId));
+        setDraftServerId(targetId);
+      }
+
+      navigation.goBack();
+    } finally {
+      setLoginLoading(false);
+    }
   }
 
   function handleUseServer() {
-    if (busy || loginLoading) return;
+    if (
+      busy ||
+      loginLoading ||
+      !canUseServer
+    ) {
+      return;
+    }
 
-    if (hasUnsavedChanges()) {
+    if (hasChanges) {
       setShowUseSaveConfirm(true);
+
       return;
     }
 
@@ -539,6 +829,7 @@ export function ServerSettingsScreen() {
 
   async function confirmUseWithSave() {
     setShowUseSaveConfirm(false);
+
     await proceedUseServerAfterOptionalSave(false);
   }
 
@@ -546,34 +837,52 @@ export function ServerSettingsScreen() {
     username: string;
     password: string;
   }) {
-    if (!pendingServerUrl) return;
+    if (!pendingServerUrl) {
+      return;
+    }
 
     setLoginLoading(true);
     setLoginError(null);
 
     try {
-      const basic = toBase64(`${params.username}:${params.password}`);
+      const basicAuthentication = toBase64(
+        `${params.username}:${params.password}`,
+      );
 
-      const res = await fetch(`${pendingServerUrl}/api/user/login`, {
-        method: "GET",
-        headers: {
-          Authorization: `Basic ${basic}`,
-          Accept: "application/json",
+      const response = await fetch(
+        `${pendingServerUrl}/api/user/login`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Basic ${basicAuthentication}`,
+            Accept: "application/json",
+          },
+          credentials: "include",
         },
-        credentials: "include",
-      });
+      );
 
-      const hdr =
-        res.headers.get("www-authenticate") ??
-        res.headers.get("WWW-Authenticate") ??
-        res.headers.get("authorization") ??
-        res.headers.get("Authorization");
+      const authenticationHeader =
+        response.headers.get(
+          "www-authenticate",
+        ) ??
+        response.headers.get(
+          "WWW-Authenticate",
+        ) ??
+        response.headers.get("authorization") ??
+        response.headers.get("Authorization");
 
-      const bodyText = await res.text();
-      const bearerToken = extractBearerToken(hdr) ?? extractBearerToken(bodyText);
+      const responseText = await response.text();
+
+      const bearerToken =
+        extractBearerToken(
+          authenticationHeader,
+        ) ??
+        extractBearerToken(responseText);
 
       if (!bearerToken) {
-        throw new Error("Anmeldung fehlgeschlagen.");
+        throw new Error(
+          "Anmeldung fehlgeschlagen.",
+        );
       }
 
       await dispatch(
@@ -585,50 +894,23 @@ export function ServerSettingsScreen() {
       );
 
       if (pendingServerId) {
-        dispatch(selectServer(pendingServerId));
+        dispatch(
+          selectServer(pendingServerId),
+        );
+
         setDraftServerId(pendingServerId);
       }
 
       resetPendingAuthState();
       navigation.goBack();
-    } catch (err: any) {
-      setLoginError(err?.message ?? "Anmeldung fehlgeschlagen.");
-    } finally {
-      setLoginLoading(false);
-    }
-  }
-
-  async function handleOidcConfirm() {
-    if (!pendingServerUrl || loginLoading) return;
-
-    setLoginLoading(true);
-    setLoginError(null);
-
-    try {
-      await dispatch(
-        switchServer({
-          url: pendingServerUrl,
-          providedJwt: pendingOidcBearer ?? undefined,
-          initializeMenu: !!pendingOidcBearer,
-        }),
+    } catch (error: any) {
+      setLoginError(
+        error?.message ??
+          "Anmeldung fehlgeschlagen.",
       );
-
-      if (pendingServerId) {
-        dispatch(selectServer(pendingServerId));
-        setDraftServerId(pendingServerId);
-      }
-
-      resetPendingAuthState();
-      navigation.goBack();
     } finally {
       setLoginLoading(false);
     }
-  }
-  if (showOidcConfirm)
-
-  {
-    return (handleOidcConfirm(), null);
-
   }
 
   return (
@@ -660,12 +942,14 @@ export function ServerSettingsScreen() {
                   flex: 1,
                   padding: 5,
                   borderWidth: 1,
-                  borderColor: nameError ? "red" : theme.colors.border,
+                  borderColor: nameError
+                    ? "red"
+                    : theme.colors.border,
                 }}
                 placeholder={t("serverLabel")}
                 value={nameInput}
-                onChangeText={(v) => {
-                  setNameInput(v);
+                onChangeText={(value) => {
+                  setNameInput(value);
                   setNameError(null);
                   setGeneralError(null);
                 }}
@@ -693,12 +977,14 @@ export function ServerSettingsScreen() {
                   flex: 1,
                   padding: 5,
                   borderWidth: 1,
-                  borderColor: urlError ? "red" : theme.colors.border,
+                  borderColor: urlError
+                    ? "red"
+                    : theme.colors.border,
                 }}
                 placeholder={t("serverUrl")}
                 value={urlInput}
-                onChangeText={(v) => {
-                  setUrlInput(v);
+                onChangeText={(value) => {
+                  setUrlInput(value);
                   setUrlError(null);
                   setGeneralError(null);
                 }}
@@ -709,7 +995,11 @@ export function ServerSettingsScreen() {
                 icon="save"
                 onPress={handleSaveSide}
                 size="sm"
-                disabled={busy || loginLoading}
+                disabled={
+                  !hasChanges ||
+                  busy ||
+                  loginLoading
+                }
                 tooltip={t("saveServer")}
               />
             </View>
@@ -723,23 +1013,41 @@ export function ServerSettingsScreen() {
               gap: 8,
             }}
           >
-            {busy && <ActivityIndicator size="small" />}
+            {busy ? (
+              <ActivityIndicator size="small" />
+            ) : null}
 
             {firstError ? (
               <ThemedText
-                style={{ color: "red", fontSize: 12, lineHeight: 16, flex: 1 }}
+                style={{
+                  color: "red",
+                  fontSize: 12,
+                  lineHeight: 16,
+                  flex: 1,
+                }}
                 numberOfLines={2}
               >
                 {firstError}
               </ThemedText>
             ) : (
-              <ThemedText style={{ fontSize: 12, opacity: 0, flex: 1 }}>
+              <ThemedText
+                style={{
+                  fontSize: 12,
+                  opacity: 0,
+                  flex: 1,
+                }}
+              >
                 Platzhalter
               </ThemedText>
             )}
           </View>
 
-          <View style={{ gap: 10, marginTop: -10 }}>
+          <View
+            style={{
+              gap: 10,
+              marginTop: -10,
+            }}
+          >
             <View
               style={{
                 flexDirection: "row",
@@ -754,7 +1062,11 @@ export function ServerSettingsScreen() {
                 icon="delete"
                 onPress={handleDeleteSelected}
                 size="sm"
-                disabled={!currentDraftServer || busy || loginLoading}
+                disabled={
+                  !currentDraftServer ||
+                  busy ||
+                  loginLoading
+                }
               />
             </View>
 
@@ -764,15 +1076,26 @@ export function ServerSettingsScreen() {
               items={serverItems}
               value={draftServerId}
               onChange={(id) => {
-                if (busy || loginLoading) return;
+                if (busy || loginLoading) {
+                  return;
+                }
 
                 setDraftServerId(id);
 
-                const s = servers.find((x) => x.id === id);
-                if (s) {
+                const selectedServer = servers.find(
+                  (server) => server.id === id,
+                );
+
+                if (selectedServer) {
                   setEditMode(true);
-                  setNameInput(s.name ?? "");
-                  setUrlInput(s.baseUrl ?? "");
+
+                  setNameInput(
+                    selectedServer.name ?? "",
+                  );
+
+                  setUrlInput(
+                    selectedServer.baseUrl ?? "",
+                  );
                 } else {
                   startAddNew();
                 }
@@ -781,8 +1104,13 @@ export function ServerSettingsScreen() {
               }}
               maxHeight={260}
               showSearch={false}
-              searchPlaceholder={t("search") ?? "Server suchen…"}
-              emptyText={t("noServers") ?? "Keine Server gefunden"}
+              searchPlaceholder={
+                t("search") ?? "Server suchen…"
+              }
+              emptyText={
+                t("noServers") ??
+                "Keine Server gefunden"
+              }
             />
 
             <ActionButton
@@ -791,7 +1119,11 @@ export function ServerSettingsScreen() {
               icon="check"
               onPress={handleUseServer}
               size="sm"
-              disabled={busy || loginLoading}
+              disabled={
+                !canUseServer ||
+                busy ||
+                loginLoading
+              }
             />
           </View>
         </Card>
@@ -804,7 +1136,10 @@ export function ServerSettingsScreen() {
         loading={loginLoading}
         error={loginError}
         onClose={() => {
-          if (loginLoading) return;
+          if (loginLoading) {
+            return;
+          }
+
           resetPendingAuthState();
         }}
         onSubmit={handleServerLoginSubmit}
@@ -813,11 +1148,15 @@ export function ServerSettingsScreen() {
       <ConfirmModal
         visible={showSaveConfirm}
         title={t("confirmSaveChanges")}
-        message={t("confirmSaveChangesMessage")}
+        message={t(
+          "confirmSaveChangesMessage",
+        )}
         confirmLabel={t("yes")}
         cancelLabel={t("cancel")}
         onConfirm={confirmSaveSide}
-        onCancel={() => setShowSaveConfirm(false)}
+        onCancel={() =>
+          setShowSaveConfirm(false)
+        }
       />
 
       <ConfirmModal
@@ -832,17 +1171,23 @@ export function ServerSettingsScreen() {
         cancelLabel={t("cancel")}
         confirmIcon="delete"
         onConfirm={confirmDeleteSelected}
-        onCancel={() => setShowDeleteConfirm(false)}
+        onCancel={() =>
+          setShowDeleteConfirm(false)
+        }
       />
 
       <ConfirmModal
         visible={showUseSaveConfirm}
         title={t("confirmSaveChanges")}
-        message={t("confirmSaveChangesMessage")}
+        message={t(
+          "confirmSaveChangesMessage",
+        )}
         confirmLabel={t("yes")}
         cancelLabel={t("cancel")}
         onConfirm={confirmUseWithSave}
-        onCancel={() => setShowUseSaveConfirm(false)}
+        onCancel={() =>
+          setShowUseSaveConfirm(false)
+        }
       />
     </>
   );

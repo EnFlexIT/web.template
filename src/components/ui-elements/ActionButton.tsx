@@ -1,8 +1,11 @@
+import React, { useState } from "react";
 import { Pressable, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
-import { useUnistyles } from "react-native-unistyles";
+import {
+  StyleSheet,
+  useUnistyles,
+} from "react-native-unistyles";
+
 import { Icon, IconName } from "./Icon/Icon";
-import { useState } from "react";
 import { ThemedText } from "../themed/ThemedText";
 
 interface ActionButtonProps {
@@ -37,12 +40,14 @@ export function ActionButton({
   const backgroundColor = isPrimary
     ? theme.colors.highlight
     : pressed
-    ? theme.colors.border
-    : hovered
-    ? theme.colors.highlight
-    : "transparent";
+      ? theme.colors.border
+      : hovered
+        ? theme.colors.highlight
+        : "transparent";
 
-  const textColor = isPrimary ? theme.colors.background : theme.colors.text;
+  const textColor = isPrimary
+    ? theme.colors.background
+    : theme.colors.text;
 
   function showTooltip() {
     if (!tooltip || disabled) return;
@@ -54,9 +59,15 @@ export function ActionButton({
   }
 
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[
+        styles.wrapper,
+        tooltipVisible && styles.wrapperWithTooltip,
+      ]}
+    >
       {tooltipVisible && tooltip ? (
         <View
+          pointerEvents="none"
           style={[
             styles.tooltip,
             {
@@ -65,7 +76,9 @@ export function ActionButton({
             },
           ]}
         >
-          <ThemedText style={styles.tooltipText}>{tooltip}</ThemedText>
+          <ThemedText style={styles.tooltipText}>
+            {tooltip}
+          </ThemedText>
         </View>
       ) : null}
 
@@ -82,9 +95,7 @@ export function ActionButton({
           hideTooltip();
         }}
         onPressIn={() => setPressed(true)}
-        onPressOut={() => {
-          setPressed(false);
-        }}
+        onPressOut={() => setPressed(false)}
         onLongPress={showTooltip}
         delayLongPress={250}
         onFocus={() => {
@@ -93,6 +104,7 @@ export function ActionButton({
         }}
         onBlur={() => {
           setHovered(false);
+          setPressed(false);
           hideTooltip();
         }}
         style={[
@@ -105,27 +117,38 @@ export function ActionButton({
           },
         ]}
       >
-        {icon && (
+        {icon ? (
           <View style={styles.icon}>
-            <Icon name={icon} size={iconSize} color={textColor} />
+            <Icon
+              name={icon}
+              size={iconSize}
+              color={textColor}
+            />
           </View>
-        )}
+        ) : null}
 
-        {label && (
+        {label ? (
           <ThemedText style={{ color: textColor }}>
             {label}
           </ThemedText>
-        )}
+        ) : null}
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create(() => ({
   wrapper: {
     position: "relative",
-     alignSelf: "stretch",
+    alignSelf: "stretch",
+    overflow: "visible",
   },
+
+  wrapperWithTooltip: {
+    zIndex: 10000,
+    elevation: 20,
+  },
+
   button: {
     borderWidth: 1,
     flexDirection: "row",
@@ -133,21 +156,46 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     gap: 8,
   },
-  icon: {},
+
+  icon: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   tooltip: {
     position: "absolute",
+
+    // Der Button steht rechts neben dem Eingabefeld.
+    // Deshalb öffnet sich der Tooltip nach links.
+    right: 0,
     bottom: "100%",
     marginBottom: 8,
-    left: 0,
-    maxWidth: 260,
+
+    minWidth: 180,
+    maxWidth: 280,
+
     paddingVertical: 8,
     paddingHorizontal: 10,
+
     borderWidth: 1,
-    zIndex: 1000,
+    borderRadius: 4,
+
+    zIndex: 10001,
+    elevation: 21,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
   },
+
   tooltipText: {
     fontSize: 12,
     lineHeight: 16,
+    flexShrink: 1,
   },
 }));
 
