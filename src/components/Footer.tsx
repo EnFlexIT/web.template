@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { Platform,Pressable,useWindowDimensions, View,} from "react-native";import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Buffer } from "buffer";
 import { useTranslation } from "react-i18next";
+import { isMobileShellRuntime } from "../util/runtime";
 
+import { selectDeveloperConsole,toggleDeveloperConsole,} from "../redux/slices/developerConsoleSlice";
+
+import {selectLiveConsole,} from "../redux/slices/liveConsoleSlice";
 import { ThemedText } from "./themed/ThemedText";
 import { Dropdown } from "./ui-elements/Dropdown";
 import { useAppSelector } from "../hooks/useAppSelector";
@@ -68,7 +71,7 @@ function extractBearerToken(value: unknown): string | null {
 export function Footer() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Login"]);
-
+  const { width } =useWindowDimensions();
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const isTestRelease = useAppSelector(selectIsTestRelease);
@@ -77,17 +80,16 @@ export function Footer() {
   const serversState = useAppSelector(selectServers);
   const serverOptionMeta = useAppSelector(selectServerStatuses);
   const unreadNotificationCount = useAppSelector(selectUnreadNotificationCount);
-
+  const developerConsole =useAppSelector( selectDeveloperConsole,);
+  const liveConsole =useAppSelector(selectLiveConsole,);
   const servers = serversState?.servers ?? [];
-
   const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [pendingServerId, setPendingServerId] = useState<string | null>(null);
   const [pendingServerUrl, setPendingServerUrl] = useState<string | null>(null);
   const [pendingServerLabel, setPendingServerLabel] = useState("");
-  const [pendingServerAuthMethod, setPendingServerAuthMethod] =
-    useState<AuthMethod>("unknown");
+  const [pendingServerAuthMethod, setPendingServerAuthMethod] =useState<AuthMethod>("unknown");
 
   const isLoginPage =
     typeof window !== "undefined" &&
@@ -95,6 +97,8 @@ export function Footer() {
       window.location.pathname === "/base-login");
 
   const showNotificationButton = !isLoginPage && isLoggedIn;
+  const showDeveloperConsoleButton =!isLoginPage &&isLoggedIn &&
+  Platform.OS === "web" && width >= 1024 &&!isMobileShellRuntime();
 
   useEffect(() => {
     async function loadReleaseType() {
@@ -308,6 +312,20 @@ export function Footer() {
 
     dispatch(toggleNotificationPopup());
   }
+  function handleDeveloperConsoleButtonPress() {
+  if (
+    loginLoading ||
+    !showDeveloperConsoleButton
+  ) {
+    return;
+  }
+
+  dispatch(closeNotificationPopup());
+
+  dispatch(
+    toggleDeveloperConsole(),
+  );
+}
 
   return (
     <>
@@ -348,25 +366,74 @@ export function Footer() {
           <>
             <ThemedText style={styles.separator}>|</ThemedText>
 
-            <View style={styles.statusWrap}>
-              <Pressable
-                onPress={handleNotificationButtonPress}
-                style={styles.notificationButton}
-                disabled={loginLoading}
-              >
-                <Feather name="bookmark" size={15} style={styles.color} />
+     <View style={styles.statusWrap}>
+  <Pressable
+    accessibilityRole="button"
+    accessibilityLabel="Benachrichtigungen"
+    onPress={
+      handleNotificationButtonPress
+    }
+    style={styles.footerToolButton}
+    disabled={loginLoading}
+  >
+    <Feather
+      name="bookmark"
+      size={15}
+      style={styles.color}
+    />
 
-                {unreadNotificationCount > 0 ? (
-                  <View style={styles.notificationBadge}>
-                    <ThemedText style={styles.notificationBadgeText}>
-                      {unreadNotificationCount > 99
-                        ? "99+"
-                        : String(unreadNotificationCount)}
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </Pressable>
-            </View>
+    {unreadNotificationCount > 0 ? (
+      <View style={styles.notificationBadge}>
+        <ThemedText
+          style={styles.notificationBadgeText}
+        >
+          {unreadNotificationCount > 99
+            ? "99+"
+            : String(
+                unreadNotificationCount,
+              )}
+        </ThemedText>
+      </View>
+    ) : null}
+  </Pressable>
+
+  {showDeveloperConsoleButton ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Developer Console"
+      onPress={
+        handleDeveloperConsoleButtonPress
+      }
+      style={[
+        styles.footerToolButton,
+
+        developerConsole.isOpen &&
+          styles.footerToolButtonActive,
+      ]}
+      disabled={loginLoading}
+    >
+      <Feather
+        name="terminal"
+        size={16}
+        style={styles.color}
+      />
+
+      <View
+        style={[
+          styles.consoleStatusDot,
+
+          liveConsole.status ===
+            "connected" &&
+            styles.consoleStatusDotConnected,
+
+          liveConsole.status ===
+            "error" &&
+            styles.consoleStatusDotError,
+        ]}
+      />
+    </Pressable>
+  ) : null}
+</View>
           </>
         ) : null}
       </View>
@@ -472,4 +539,44 @@ const styles = StyleSheet.create((theme) => ({
     lineHeight: 11,
     fontWeight: "700",
   },
+  footerToolButton: {
+  position: "relative",
+
+  minWidth: 24,
+  minHeight: 24,
+
+  justifyContent: "center",
+  alignItems: "center",
+
+  borderRadius: 4,
+},
+
+footerToolButtonActive: {
+  backgroundColor:
+    theme.colors.card,
+},
+
+consoleStatusDot: {
+  position: "absolute",
+  top: 2,
+  right: 1,
+
+  width: 6,
+  height: 6,
+  borderRadius: 999,
+
+  backgroundColor: "#7b8794",
+
+  borderWidth: 1,
+  borderColor:
+    theme.colors.background,
+},
+
+consoleStatusDotConnected: {
+  backgroundColor: "#22c55e",
+},
+
+consoleStatusDotError: {
+  backgroundColor: "#ef4444",
+},
 }));

@@ -1,6 +1,5 @@
 import React, {
   useEffect,
-  useState,
 } from "react";
 
 import {
@@ -14,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
 import { ThemedText } from "../themed/ThemedText";
-import { ConfirmDialog } from "../ui-elements/ConfirmDialog";
 
 import { isMobileShellRuntime } from "../../util/runtime";
 
@@ -35,8 +33,9 @@ import {
 } from "../../redux/slices/liveConsoleSlice";
 
 import {
+  closeDeveloperConsole,
   dockDeveloperConsole,
-  hideDeveloperConsole,
+  persistDeveloperConsoleState,
   selectDeveloperConsole,
   toggleDeveloperConsole,
 } from "../../redux/slices/developerConsoleSlice";
@@ -46,28 +45,23 @@ type DeveloperConsoleProps = {
   enabled?: boolean;
 };
 
-type ConsoleBarPlacement =
-  | "bottom"
-  | "right";
-
 const DESKTOP_MIN_WIDTH = 1024;
 const BOTTOM_PANEL_HEIGHT = 260;
 const RIGHT_PANEL_WIDTH = 460;
-const CONSOLE_BAR_HEIGHT = 38;
+const CONSOLE_HEADER_HEIGHT = 38;
 
 /**
- * Verwaltet die WebSocket-Verbindung global.
+ * Verwaltet die WebSocket-Verbindung unabhängig
+ * von der sichtbaren Console-Darstellung.
  *
- * Diese Komponente wird nur einmal in index.tsx
+ * Diese Komponente wird genau einmal in index.tsx
  * innerhalb des Redux-Providers eingebunden.
- *
- * Dadurch bleibt die Verbindung auch bei einem
- * Screenwechsel bestehen.
  */
 export function DeveloperConsoleConnection() {
   const dispatch = useAppDispatch();
 
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const serverBaseUrl =
     useAppSelector(selectIp);
@@ -89,10 +83,14 @@ export function DeveloperConsoleConnection() {
       return;
     }
 
-    void dispatch(connectLiveConsole());
+    void dispatch(
+      connectLiveConsole(),
+    );
 
     return () => {
-      dispatch(disconnectLiveConsole());
+      dispatch(
+        disconnectLiveConsole(),
+      );
     };
   }, [
     dispatch,
@@ -104,20 +102,6 @@ export function DeveloperConsoleConnection() {
   return null;
 }
 
-/**
- * Globale Darstellung der Developer Console.
- *
- * Die Komponente steuert:
- *
- * - geöffnet / minimiert
- * - unten / rechts angedockt
- * - vollständiges Ausblenden
- * - Shortcut
- * - Bestätigungsdialog
- *
- * Die WebSocket-Verbindung wird nicht hier,
- * sondern in DeveloperConsoleConnection verwaltet.
- */
 export function DeveloperConsole({
   children,
   enabled = true,
@@ -125,18 +109,13 @@ export function DeveloperConsole({
   const { t } =
     useTranslation(["liveConsole"]);
 
-  const dispatch = useAppDispatch();
+  const dispatch =
+    useAppDispatch();
 
   const { width } =
     useWindowDimensions();
 
-  const [
-    closeDialogVisible,
-    setCloseDialogVisible,
-  ] = useState(false);
-
   const {
-    isVisible,
     isOpen,
     placement,
   } = useAppSelector(
@@ -154,16 +133,6 @@ export function DeveloperConsole({
   const isAvailable =
     enabled && isDesktop;
 
-  const isBottomOpen =
-    isVisible &&
-    isOpen &&
-    placement === "bottom";
-
-  const isRightOpen =
-    isVisible &&
-    isOpen &&
-    placement === "right";
-
   const isBusy =
     liveConsole.status ===
       "requesting-ticket" ||
@@ -173,14 +142,25 @@ export function DeveloperConsole({
       "closing";
 
   /**
+   * Speichert geöffnet/geschlossen und
+   * die letzte Docking-Position.
+   */
+  useEffect(() => {
+    persistDeveloperConsoleState({
+      isOpen,
+      placement,
+    });
+  }, [
+    isOpen,
+    placement,
+  ]);
+
+  /**
    * Windows / Linux:
    * Ctrl + Shift + L
    *
    * macOS:
    * Cmd + Shift + L
-   *
-   * Der Shortcut kann eine vollständig
-   * ausgeblendete Konsole wieder anzeigen.
    */
   useEffect(() => {
     if (
@@ -229,48 +209,10 @@ export function DeveloperConsole({
     isAvailable,
   ]);
 
-  function renderConsoleBar(
-    barPlacement: ConsoleBarPlacement,
-  ) {
+  function renderConsoleHeader() {
     return (
-      <View
-        style={[
-          s.consoleBar,
-
-          barPlacement === "bottom"
-            ? s.consoleBarBottom
-            : s.consoleBarRight,
-        ]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            isOpen
-              ? t(
-                  "minimizeDeveloperConsole",
-                  {
-                    defaultValue:
-                      "Developer Console minimieren",
-                  },
-                )
-              : t(
-                  "openDeveloperConsole",
-                  {
-                    defaultValue:
-                      "Developer Console öffnen",
-                  },
-                )
-          }
-          onPress={() => {
-            dispatch(
-              toggleDeveloperConsole(),
-            );
-          }}
-          style={({ pressed }) => [
-            s.titleButton,
-            pressed && s.pressed,
-          ]}
-        >
+      <View style={s.consoleHeader}>
+        <View style={s.headerTitleArea}>
           <View style={s.consoleIcon}>
             <ThemedText
               style={s.consoleIconText}
@@ -306,24 +248,16 @@ export function DeveloperConsole({
             ]}
           />
 
-          <View
-            style={s.lineCountBadge}
-          >
+          <View style={s.lineCountBadge}>
             <ThemedText
               style={s.lineCountText}
             >
               {liveConsole.lines.length}
             </ThemedText>
           </View>
+        </View>
 
-          <ThemedText
-            style={s.openIndicator}
-          >
-            {isOpen ? "▼" : "▲"}
-          </ThemedText>
-        </Pressable>
-
-        <View style={s.barActions}>
+        <View style={s.headerActions}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t(
@@ -341,16 +275,17 @@ export function DeveloperConsole({
               );
             }}
             style={({ pressed }) => [
-              s.dockButton,
+              s.headerButton,
 
               placement === "bottom" &&
-                s.dockButtonActive,
+                s.headerButtonActive,
 
-              pressed && s.pressed,
+              pressed &&
+                s.buttonPressed,
             ]}
           >
             <ThemedText
-              style={s.dockButtonText}
+              style={s.headerButtonText}
             >
               {t("dockBottomShort", {
                 defaultValue: "Unten",
@@ -375,16 +310,17 @@ export function DeveloperConsole({
               );
             }}
             style={({ pressed }) => [
-              s.dockButton,
+              s.headerButton,
 
               placement === "right" &&
-                s.dockButtonActive,
+                s.headerButtonActive,
 
-              pressed && s.pressed,
+              pressed &&
+                s.buttonPressed,
             ]}
           >
             <ThemedText
-              style={s.dockButtonText}
+              style={s.headerButtonText}
             >
               {t("dockRightShort", {
                 defaultValue: "Rechts",
@@ -395,18 +331,21 @@ export function DeveloperConsole({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t(
-              "hideDeveloperConsole",
+              "closeDeveloperConsole",
               {
                 defaultValue:
-                  "Developer Console ausblenden",
+                  "Developer Console schließen",
               },
             )}
             onPress={() => {
-              setCloseDialogVisible(true);
+              dispatch(
+                closeDeveloperConsole(),
+              );
             }}
             style={({ pressed }) => [
               s.closeButton,
-              pressed && s.pressed,
+              pressed &&
+                s.buttonPressed,
             ]}
           >
             <ThemedText
@@ -420,340 +359,288 @@ export function DeveloperConsole({
     );
   }
 
-  /**
-   * Auf Mobile, Tablet oder im Login
-   * bleibt das normale Layout unverändert.
-   */
-  if (!isAvailable) {
+  if (
+    !isAvailable ||
+    !isOpen
+  ) {
     return (
-      <View
-        style={s.fallbackContainer}
-      >
+      <View style={s.fallbackContainer}>
         {children}
       </View>
     );
   }
 
-  /**
-   * Die Developer Console wurde über X
-   * vollständig ausgeblendet.
-   *
-   * Wiederherstellung:
-   *
-   * - Ctrl/Cmd + Shift + L
-   * - Unten andocken im LiveConsoleScreen
-   * - Rechts andocken im LiveConsoleScreen
-   */
-  if (!isVisible) {
+  if (placement === "right") {
     return (
-      <View
-        style={s.fallbackContainer}
-      >
-        {children}
+      <View style={s.workspaceRight}>
+        <View style={s.screenArea}>
+          {children}
+        </View>
+
+        <View style={s.rightDock}>
+          {renderConsoleHeader()}
+
+          <View style={s.rightPanel}>
+            <LiveConsoleScreen embedded />
+          </View>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={s.root}>
-      {isRightOpen ? (
-        <View style={s.workspaceRight}>
-          <View style={s.screenArea}>
-            {children}
-          </View>
-
-          <View style={s.rightDock}>
-            {renderConsoleBar("right")}
-
-            <View style={s.rightPanel}>
-              <LiveConsoleScreen
-                embedded
-              />
-            </View>
-          </View>
+      <View style={s.workspace}>
+        <View style={s.screenArea}>
+          {children}
         </View>
-      ) : (
-        <>
-          <View style={s.workspace}>
-            <View style={s.screenArea}>
-              {children}
-            </View>
-          </View>
+      </View>
 
-          {renderConsoleBar("bottom")}
+      <View style={s.bottomDock}>
+        {renderConsoleHeader()}
 
-          {isBottomOpen ? (
-            <View style={s.bottomPanel}>
-              <LiveConsoleScreen
-                embedded
-              />
-            </View>
-          ) : null}
-        </>
-      )}
-
-    <ConfirmDialog
-  visible={closeDialogVisible}
-  title={t("hideConsoleTitle")}
-  description={t("hideConsoleDescription")}
-  icon="x-circle"
-  variant="warning"
-  confirmLabel={t("hideConsoleConfirm")}
-  cancelLabel={t("cancel")}
-  onConfirm={() => {
-    setCloseDialogVisible(false);
-    dispatch(hideDeveloperConsole());
-  }}
-  onCancel={() => {
-    setCloseDialogVisible(false);
-  }}
-  onClose={() => {
-    setCloseDialogVisible(false);
-  }}
-/>
+        <View style={s.bottomPanel}>
+          <LiveConsoleScreen embedded />
+        </View>
+      </View>
     </View>
   );
 }
 
-const s = StyleSheet.create(
-  (theme) => ({
-    root: {
-      flex: 1,
-      width: "100%",
-      minHeight: 0,
-      overflow: "hidden",
+const s = StyleSheet.create((theme) => ({
+  root: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+    overflow: "hidden",
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    fallbackContainer: {
-      flex: 1,
-      width: "100%",
-      minHeight: 0,
-    },
+  fallbackContainer: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+  },
 
-    workspace: {
-      flex: 1,
-      width: "100%",
-      minHeight: 0,
-      overflow: "hidden",
-    },
+  workspace: {
+    flex: 1,
+    width: "100%",
+    minHeight: 0,
+    overflow: "hidden",
+  },
 
-    workspaceRight: {
-      flex: 1,
-      width: "100%",
-      minWidth: 0,
-      minHeight: 0,
+  workspaceRight: {
+    flex: 1,
+    width: "100%",
+    minWidth: 0,
+    minHeight: 0,
 
-      flexDirection: "row",
-      overflow: "hidden",
-    },
+    flexDirection: "row",
+    overflow: "hidden",
+  },
 
-    screenArea: {
-      flex: 1,
-      minWidth: 0,
-      minHeight: 0,
-      overflow: "hidden",
-    },
+  screenArea: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+    overflow: "hidden",
+  },
 
-    rightDock: {
-      width: RIGHT_PANEL_WIDTH,
-      minWidth: 380,
-      maxWidth: 560,
-      minHeight: 0,
+  bottomDock: {
+    width: "100%",
 
-      borderLeftWidth: 1,
-      borderLeftColor:
-        theme.colors.border,
+    borderTopWidth: 1,
+    borderTopColor:
+      theme.colors.border,
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    rightPanel: {
-      flex: 1,
-      minWidth: 0,
-      minHeight: 0,
+  bottomPanel: {
+    width: "100%",
+    height: BOTTOM_PANEL_HEIGHT,
+    minHeight: 0,
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    bottomPanel: {
-      width: "100%",
-      height: BOTTOM_PANEL_HEIGHT,
-      minHeight: 0,
+  rightDock: {
+    width: RIGHT_PANEL_WIDTH,
+    minWidth: 380,
+    maxWidth: 560,
+    minHeight: 0,
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    borderLeftWidth: 1,
+    borderLeftColor:
+      theme.colors.border,
 
-    consoleBar: {
-      width: "100%",
-      height: CONSOLE_BAR_HEIGHT,
+    backgroundColor:
+      theme.colors.background,
+  },
 
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+  rightPanel: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
 
-      backgroundColor:
-        theme.colors.card,
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    consoleBarBottom: {
-      borderTopWidth: 1,
-      borderBottomWidth: 1,
-      borderColor:
-        theme.colors.border,
-    },
+  consoleHeader: {
+    width: "100%",
+    height: CONSOLE_HEADER_HEIGHT,
 
-    consoleBarRight: {
-      borderBottomWidth: 1,
-      borderBottomColor:
-        theme.colors.border,
-    },
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
 
-    titleButton: {
-      flex: 1,
-      minWidth: 0,
-      height: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor:
+      theme.colors.border,
 
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 7,
+    backgroundColor:
+      theme.colors.card,
+  },
 
-      paddingHorizontal: 12,
-    },
+  headerTitleArea: {
+    flex: 1,
+    minWidth: 0,
+    height: "100%",
 
-    consoleIcon: {
-      width: 22,
-      height: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
 
-      justifyContent: "center",
-      alignItems: "center",
+    paddingHorizontal: 10,
+  },
 
-      borderWidth: 1,
-      borderColor:
-        theme.colors.border,
-      borderRadius: 4,
+  consoleIcon: {
+    width: 22,
+    height: 22,
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    justifyContent: "center",
+    alignItems: "center",
 
-    consoleIconText: {
-      fontSize: 10,
-      fontWeight: "700",
-    },
+    borderWidth: 1,
+    borderColor:
+      theme.colors.border,
+    borderRadius: 4,
 
-    title: {
-      flexShrink: 1,
-      fontSize: 12,
-      fontWeight: "700",
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    statusDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 999,
+  consoleIconText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
 
-      backgroundColor: "#7b8794",
-    },
+  title: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "700",
+  },
 
-    statusDotConnected: {
-      backgroundColor: "#22c55e",
-    },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
 
-    statusDotBusy: {
-      backgroundColor: "#f59e0b",
-    },
+    backgroundColor: "#7b8794",
+  },
 
-    statusDotError: {
-      backgroundColor: "#ef4444",
-    },
+  statusDotConnected: {
+    backgroundColor: "#22c55e",
+  },
 
-    lineCountBadge: {
-      minWidth: 22,
-      height: 18,
+  statusDotBusy: {
+    backgroundColor: "#f59e0b",
+  },
 
-      justifyContent: "center",
-      alignItems: "center",
+  statusDotError: {
+    backgroundColor: "#ef4444",
+  },
 
-      paddingHorizontal: 5,
+  lineCountBadge: {
+    minWidth: 22,
+    height: 18,
 
-      borderRadius: 9,
-      borderWidth: 1,
-      borderColor:
-        theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
 
-      backgroundColor:
-        theme.colors.background,
-    },
+    paddingHorizontal: 5,
 
-    lineCountText: {
-      fontSize: 10,
-      lineHeight: 12,
-    },
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor:
+      theme.colors.border,
 
-    openIndicator: {
-      fontSize: 9,
-      opacity: 0.6,
-    },
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    barActions: {
-      height: "100%",
+  lineCountText: {
+    fontSize: 10,
+    lineHeight: 12,
+  },
 
-      flexDirection: "row",
-      alignItems: "center",
-    },
+  headerActions: {
+    height: "100%",
 
-    dockButton: {
-      height: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+  },
 
-      justifyContent: "center",
+  headerButton: {
+    height: "100%",
 
-      paddingHorizontal: 12,
+    justifyContent: "center",
 
-      borderLeftWidth: 1,
-      borderLeftColor:
-        theme.colors.border,
+    paddingHorizontal: 12,
 
-      backgroundColor:
-        theme.colors.card,
-    },
+    borderLeftWidth: 1,
+    borderLeftColor:
+      theme.colors.border,
 
-    dockButtonActive: {
-      backgroundColor:
-        theme.colors.background,
-    },
+    backgroundColor:
+      theme.colors.card,
+  },
 
-    dockButtonText: {
-      fontSize: 11,
-    },
+  headerButtonActive: {
+    backgroundColor:
+      theme.colors.background,
+  },
 
-    closeButton: {
-      width: 38,
-      height: "100%",
+  headerButtonText: {
+    fontSize: 11,
+  },
 
-      justifyContent: "center",
-      alignItems: "center",
+  closeButton: {
+    width: 38,
+    height: "100%",
 
-      borderLeftWidth: 1,
-      borderLeftColor:
-        theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
 
-      backgroundColor:
-        theme.colors.card,
-    },
+    borderLeftWidth: 1,
+    borderLeftColor:
+      theme.colors.border,
 
-    closeButtonText: {
-      fontSize: 20,
-      lineHeight: 21,
-    },
+    backgroundColor:
+      theme.colors.card,
+  },
 
-    pressed: {
-      opacity: 0.55,
-    },
-  }),
-);
+  closeButtonText: {
+    fontSize: 20,
+    lineHeight: 21,
+  },
+
+  buttonPressed: {
+    opacity: 0.55,
+  },
+}));

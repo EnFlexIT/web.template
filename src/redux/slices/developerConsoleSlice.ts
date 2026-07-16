@@ -7,92 +7,86 @@ export type DeveloperConsolePlacement =
   | "right";
 
 export type DeveloperConsoleState = {
-  /**
-   * Steuert, ob die komplette Developer Console
-   * inklusive Launcher-Leiste sichtbar ist.
-   */
-  isVisible: boolean;
-
-  /**
-   * Steuert, ob das eigentliche Panel geöffnet ist.
-   * Bei false bleibt normalerweise nur die Leiste sichtbar.
-   */
   isOpen: boolean;
-
   placement: DeveloperConsolePlacement;
 };
 
-const initialState: DeveloperConsoleState = {
-  isVisible: true,
+export const DEVELOPER_CONSOLE_STORAGE_KEY =
+  "webTemplate.developerConsole";
+
+const fallbackState: DeveloperConsoleState = {
   isOpen: false,
   placement: "bottom",
 };
 
-const developerConsoleSlice = createSlice({
-  name: "developerConsole",
-  initialState,
-  reducers: {
-    /**
-     * Öffnet das Panel an der zuletzt gewählten Position.
-     */
-    openDeveloperConsole(state) {
-      state.isVisible = true;
-      state.isOpen = true;
-    },
+function loadInitialState(): DeveloperConsoleState {
+  if (
+    typeof window === "undefined" ||
+    !window.localStorage
+  ) {
+    return fallbackState;
+  }
 
-    /**
-     * Minimiert das Panel.
-     * Die untere Launcher-Leiste bleibt sichtbar.
-     */
-    closeDeveloperConsole(state) {
-      state.isVisible = true;
-      state.isOpen = false;
-    },
+  try {
+    const rawValue =
+      window.localStorage.getItem(
+        DEVELOPER_CONSOLE_STORAGE_KEY,
+      );
 
-    /**
-     * Blendet die komplette Developer Console aus.
-     * Auch die Launcher-Leiste verschwindet.
-     */
-    hideDeveloperConsole(state) {
-      state.isVisible = false;
-      state.isOpen = false;
-    },
+    if (!rawValue) {
+      return fallbackState;
+    }
 
-    /**
-     * Funktioniert auch, wenn die Konsole komplett
-     * ausgeblendet wurde.
-     */
-    toggleDeveloperConsole(state) {
-      if (!state.isVisible) {
-        state.isVisible = true;
+    const parsed = JSON.parse(
+      rawValue,
+    ) as Partial<DeveloperConsoleState>;
+
+    return {
+      isOpen: parsed.isOpen === true,
+      placement:
+        parsed.placement === "right"
+          ? "right"
+          : "bottom",
+    };
+  } catch {
+    return fallbackState;
+  }
+}
+
+const initialState =
+  loadInitialState();
+
+const developerConsoleSlice =
+  createSlice({
+    name: "developerConsole",
+    initialState,
+
+    reducers: {
+      openDeveloperConsole(state) {
         state.isOpen = true;
-        return;
-      }
+      },
 
-      state.isOpen = !state.isOpen;
-    },
+      closeDeveloperConsole(state) {
+        state.isOpen = false;
+      },
 
-    /**
-     * Position auswählen und Panel direkt öffnen.
-     *
-     * Dadurch kann eine ausgeblendete Konsole über
-     * den normalen Live-Console-Screen zurückgeholt werden.
-     */
-    dockDeveloperConsole(
-      state,
-      action: PayloadAction<DeveloperConsolePlacement>,
-    ) {
-      state.isVisible = true;
-      state.isOpen = true;
-      state.placement = action.payload;
+      toggleDeveloperConsole(state) {
+        state.isOpen = !state.isOpen;
+      },
+
+      dockDeveloperConsole(
+        state,
+        action: PayloadAction<DeveloperConsolePlacement>,
+      ) {
+        state.placement = action.payload;
+        state.isOpen = true;
+      },
     },
-  },
-});
+  });
 
 export const {
   openDeveloperConsole,
   closeDeveloperConsole,
-  hideDeveloperConsole,
   toggleDeveloperConsole,
   dockDeveloperConsole,
 } = developerConsoleSlice.actions;
@@ -102,3 +96,27 @@ export default developerConsoleSlice.reducer;
 export const selectDeveloperConsole = (
   state: RootState,
 ) => state.developerConsole;
+
+export function persistDeveloperConsoleState(
+  state: DeveloperConsoleState,
+): void {
+  if (
+    typeof window === "undefined" ||
+    !window.localStorage
+  ) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      DEVELOPER_CONSOLE_STORAGE_KEY,
+      JSON.stringify({
+        isOpen: state.isOpen,
+        placement: state.placement,
+      }),
+    );
+  } catch {
+    // Fehlender LocalStorage darf die Anwendung
+    // nicht beeinträchtigen.
+  }
+}
