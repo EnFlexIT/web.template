@@ -23,7 +23,6 @@ import { setLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
 import {
   checkBackendUpdate,
   executeBackendUpdate,
-  loadUpdateSettingsIfNeeded,
 } from "../../../redux/slices/updateSlice";
 
 import { checkServerReachable } from "../../login/serverCheck";
@@ -450,12 +449,8 @@ export function UpdateBackendTab() {
     setIsChecking(true);
 
     try {
-      await dispatch(checkBackendUpdate()).unwrap();
-
       await dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: true,
-        }),
+        checkBackendUpdate(),
       ).unwrap();
 
       await loadFeaturesAndBundles();
@@ -546,7 +541,7 @@ export function UpdateBackendTab() {
       if (attempts >= maxAttempts) {
         clearUpdateTimers();
 
-        setUpdatePhase("reconnecting");
+        setUpdatePhase("error");
         setStatusText(
           t(
             "backend.updateDialog.steps.failedReconnect",
@@ -600,15 +595,13 @@ export function UpdateBackendTab() {
   ]);
 
   useEffect(() => {
+    /*
+     * Lädt nur die installierten Features und Bundles.
+     * Der Update-Check wird zentral durch den Post-Login-
+     * beziehungsweise Notification-Watcher ausgeführt.
+     */
     void loadFeaturesAndBundles();
-
-    void dispatch(
-      loadUpdateSettingsIfNeeded({
-        force: false,
-        maxAgeMs: 30 * 60 * 1000,
-      }),
-    );
-  }, [dispatch, loadFeaturesAndBundles]);
+  }, [loadFeaturesAndBundles]);
 
   useEffect(() => {
     return () => {
@@ -651,9 +644,26 @@ export function UpdateBackendTab() {
     }));
   }, [bundles]);
 
-  const backendStatus = updateState.backend.isAvailable
-    ? t("serverWeb.statusTexts.updateAvailable", "Update available")
-    : t("serverWeb.statusTexts.upToDate", "Up to date");
+  const backendStatus =
+    updateState.backend.isPending
+      ? t(
+          "backend.statusTexts.checking",
+          "Suche nach Updates...",
+        )
+      : updateState.backend.isAvailable
+        ? t(
+            "serverWeb.statusTexts.updateAvailable",
+            "Update verfügbar",
+          )
+        : updateState.backend.lastCheck
+          ? t(
+              "serverWeb.statusTexts.upToDate",
+              "Aktuell",
+            )
+          : t(
+              "backend.statusTexts.notChecked",
+              "Noch nicht geprüft",
+            );
 
   return (
     <Card>
@@ -684,17 +694,29 @@ export function UpdateBackendTab() {
         </View>
 
         <View style={s.buttonRow}>
-          <ActionButton
-            label={
-              isChecking
-                ? t("backend.actions.checking", "Suche nach Updates...")
-                : t("backend.actions.checkNow", "Nach Updates suchen")
-            }
-            variant="secondary"
-            size="xs"
-            onPress={checkBackendNow}
-            disabled={isChecking || !ip || updateState.loading}
-          />
+          {!updateState.autoUpdate ? (
+            <ActionButton
+              label={
+                isChecking
+                  ? t(
+                      "backend.actions.checking",
+                      "Suche nach Updates...",
+                    )
+                  : t(
+                      "backend.actions.checkNow",
+                      "Nach Updates suchen",
+                    )
+              }
+              variant="secondary"
+              size="xs"
+              onPress={checkBackendNow}
+              disabled={
+                isChecking ||
+                !ip ||
+                updateState.loading
+              }
+            />
+          ) : null}
 
           {updateState.backend.isAvailable && (
             <ActionButton

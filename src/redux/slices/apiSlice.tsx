@@ -12,7 +12,6 @@ import { setReady } from "./readySlice";
 import {
   AdminsApi,
   Configuration as RestApiConfiguration,
-  DoActionApi,
   InfoApi,
   UserApi,
 } from "../../api/implementation/AWB-RestAPI";
@@ -207,7 +206,6 @@ function buildApis(params: {
       adminsApi: new AdminsApi(restConf),
       userApi: new UserApi(restConf),
       infoApi: new InfoApi(restConf),
-      doActionApi: new DoActionApi(restConf),
     },
     dynamic_content_api: {
       defaultApi: new DefaultApi(dcConf),
@@ -449,7 +447,6 @@ export interface ApiState {
     adminsApi: AdminsApi;
     userApi: UserApi;
     infoApi: InfoApi;
-    doActionApi: DoActionApi;
   };
   dynamic_content_api: {
     defaultApi: DefaultApi;

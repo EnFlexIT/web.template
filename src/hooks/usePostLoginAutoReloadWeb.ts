@@ -1,84 +1,255 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
-import { selectApi, selectAuthenticationMethod } from "../redux/slices/apiSlice";
+import { useAppSelector } from "./useAppSelector";
+
 import {
+  normalizeBaseUrl,
+  selectApi,
+} from "../redux/slices/apiSlice";
+
+import {
+  checkBackendUpdate,
+  checkFrontendUpdate,
+  clearUpdateSettingsCache,
   executeFrontendUpdate,
-  loadUpdateSettingsIfNeeded,
+  loadUpdateStrategy,
 } from "../redux/slices/updateSlice";
 
 type Params = {
   enabled: boolean;
 };
 
-function isTrue(value: any) {
-  return value === true || String(value).trim().toLowerCase() === "true";
+type UpdateEntry = {
+  key?: string;
+  value?: string;
+};
+
+function findEntryValue(
+  entries: UpdateEntry[],
+  key: string,
+): string {
+  return String(
+    entries.find(
+      (entry) => entry.key === key,
+    )?.value ?? "",
+  ).trim();
 }
 
-export function usePostLoginAutoReloadWeb({ enabled }: Params) {
+function toBoolean(value: unknown): boolean {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase() === "true";
+}
+
+function reloadCurrentWebApp(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const targetUrl =
+    new URL(window.location.href);
+
+  targetUrl.searchParams.set(
+    "updated",
+    String(Date.now()),
+  );
+
+  window.location.replace(
+    targetUrl.toString(),
+  );
+}
+
+/**
+ * Automatischer Ablauf direkt nach dem Login:
+ *
+ * 1. Strategie laden.
+ * 2. Nur bei aktivierter Automatik Frontend und Backend prüfen.
+ * 3. Frontend darf direkt nach Login automatisch installiert werden.
+ * 4. Backend wird niemals automatisch installiert.
+ */
+export function usePostLoginAutoReloadWeb({
+  enabled,
+}: Params): void {
   const dispatch = useAppDispatch();
-
-  const hasCheckedRef = useRef(false);
-
   const api = useAppSelector(selectApi);
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
 
-  const isWeb = Platform.OS === "web";
-  const ip = api.ip;
-  const isLoggedIn = api.isLoggedIn;
+  const requestRunningRef =
+    useRef(false);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      hasCheckedRef.current = false;
+    if (!enabled) return;
+    if (Platform.OS !== "web") return;
+
+    if (
+      !api.ip ||
+      !api.isLoggedIn ||
+      !api.isPointingToServer ||
+      api.isSwitchingServer ||
+      api.isLoggingOut
+    ) {
+      return;
     }
-  }, [isLoggedIn]);
 
-  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const serverKey =
+      normalizeBaseUrl(api.ip);
+
+    if (!serverKey) {
+      return;
+    }
+
+    const checkedStorageKey =
+      `postLoginAutoReloadChecked::${serverKey}`;
+
+    if (
+      window.sessionStorage.getItem(
+        checkedStorageKey,
+      ) === "true"
+    ) {
+      return;
+    }
+
+    if (requestRunningRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+    let updateAttemptStorageKey:
+      | string
+      | null = null;
+
+    requestRunningRef.current = true;
+
     async function run() {
-      if (!enabled) return;
-      if (!isWeb) return;
-      if (!ip || !isLoggedIn) return;
-      if (hasCheckedRef.current) return;
-      if (authenticationMethod === "oidc") return;
+      try {
+        const autoUpdate =
+          await dispatch(
+            loadUpdateStrategy(),
+          ).unwrap();
 
-      hasCheckedRef.current = true;
+        if (cancelled) {
+          return;
+        }
 
-      const result = await dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: true,
-        }),
-      ).unwrap();
+        /*
+         * Bei manueller Strategie erfolgt keine automatische Suche.
+         * Dafür bleiben die Suchbuttons in den Tabs sichtbar.
+         */
+        if (!autoUpdate) {
+          window.sessionStorage.setItem(
+            checkedStorageKey,
+            "true",
+          );
 
-      if (!result) return;
+          return;
+        }
 
-      const autoUpdate = isTrue(result.autoUpdate);
-      const frontendUpdateAvailable = isTrue(
-        result.frontend?.isAvailable,
-      );
+        const [
+          frontendEntries,
+        ] = await Promise.all([
+          dispatch(
+            checkFrontendUpdate(),
+          ).unwrap(),
 
-      console.log("[POST LOGIN UPDATE]", {
-        autoUpdate,
-        frontendUpdateAvailable,
-        result,
-      });
+          /*
+           * Nur prüfen. Niemals automatisch ausführen.
+           */
+          dispatch(
+            checkBackendUpdate(),
+          ).unwrap(),
+        ]);
 
-      if (!autoUpdate || !frontendUpdateAvailable) return;
+        if (cancelled) {
+          return;
+        }
 
-      await dispatch(executeFrontendUpdate()).unwrap();
+        window.sessionStorage.setItem(
+          checkedStorageKey,
+          "true",
+        );
 
-      await dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: true,
-        }),
-      ).unwrap();
+        const updateAvailable =
+          toBoolean(
+            findEntryValue(
+              frontendEntries,
+              "updatecheck.frontend.isavailable",
+            ),
+          );
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
+        const newVersion =
+          findEntryValue(
+            frontendEntries,
+            "updatecheck.frontend.newversion",
+          ) ||
+          "unknown";
+
+        if (!updateAvailable) {
+          return;
+        }
+
+        updateAttemptStorageKey =
+          `frontendUpdateAttempt::${serverKey}::${newVersion}`;
+
+        if (
+          window.sessionStorage.getItem(
+            updateAttemptStorageKey,
+          ) === "true"
+        ) {
+          return;
+        }
+
+        window.sessionStorage.setItem(
+          updateAttemptStorageKey,
+          "true",
+        );
+
+        await dispatch(
+          executeFrontendUpdate(),
+        ).unwrap();
+
+        if (cancelled) {
+          return;
+        }
+
+        clearUpdateSettingsCache();
+        reloadCurrentWebApp();
+      } catch (error) {
+        console.error(
+          "[POST LOGIN UPDATE] Automatic check/update failed",
+          error,
+        );
+
+        window.sessionStorage.removeItem(
+          checkedStorageKey,
+        );
+
+        if (updateAttemptStorageKey) {
+          window.sessionStorage.removeItem(
+            updateAttemptStorageKey,
+          );
+        }
+      } finally {
+        requestRunningRef.current = false;
       }
     }
 
     void run();
-  }, [dispatch, enabled, authenticationMethod, ip, isLoggedIn, isWeb]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    dispatch,
+    enabled,
+    api.ip,
+    api.isLoggedIn,
+    api.isPointingToServer,
+    api.isSwitchingServer,
+    api.isLoggingOut,
+  ]);
 }

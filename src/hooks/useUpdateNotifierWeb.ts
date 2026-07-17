@@ -2,102 +2,419 @@ import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
-import { addNotification } from "../redux/slices/notificationSlice";
-import { loadUpdateSettingsIfNeeded } from "../redux/slices/updateSlice";
+import { useAppSelector } from "./useAppSelector";
+
+import {
+  addNotification,
+  removeNotification,
+} from "../redux/slices/notificationSlice";
+
+import {
+  checkBackendUpdate,
+  checkFrontendUpdate,
+} from "../redux/slices/updateSlice";
+
 import { selectApi } from "../redux/slices/apiSlice";
 import { normalizeServerKey } from "../redux/selectors/serverSelectors";
 
-const UPDATE_CHECK_MAX_AGE_MS = 60 * 60 * 1000;
+const DEFAULT_UPDATE_CHECK_INTERVAL_MS =
+  60 * 60 * 1000;
 
-export function useUpdateNotifierWeb(opts?: { intervalMs?: number }) {
+const UPDATE_MENU_ID = 3014;
+
+type UseUpdateNotifierOptions = {
+  enabled: boolean;
+  intervalMs?: number;
+};
+
+export function useUpdateNotifierWeb({
+  enabled,
+  intervalMs = DEFAULT_UPDATE_CHECK_INTERVAL_MS,
+}: UseUpdateNotifierOptions): void {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Notifications"]);
 
-  const intervalMs = opts?.intervalMs ?? UPDATE_CHECK_MAX_AGE_MS;
-
   const api = useAppSelector(selectApi);
-  const updateState = useAppSelector((state) => state.update);
+  const updateState = useAppSelector(
+    (state) => state.update,
+  );
 
-  const ip = api.ip;
-  const isLoggedIn = api.isLoggedIn;
+  const notificationItems = useAppSelector(
+    (state) => state.notifications.items,
+  );
+
+  const requestRunningRef = useRef(false);
+  const activeRequestsRef = useRef<any[]>([]);
+  const lastCheckStartedAtRef = useRef(0);
+
   const isWeb = Platform.OS === "web";
-  const serverKey = normalizeServerKey(ip);
-
-  const lastNotifiedVersionRef = useRef<string | null>(null);
-  const postLoginCheckedRef = useRef(false);
+  const serverKey = normalizeServerKey(api.ip);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      postLoginCheckedRef.current = false;
-      lastNotifiedVersionRef.current = null;
+    lastCheckStartedAtRef.current = Date.now();
+  }, [serverKey]);
+
+  /**
+   * Periodische automatische Suche während der Benutzung.
+   *
+   * Nur bei aktivierter automatischer Strategie.
+   * Frontend und Backend werden geprüft.
+   * Installiert wird hier niemals etwas.
+   */
+  useEffect(() => {
+    if (!enabled || !isWeb) return;
+
+    if (
+      !updateState.autoUpdate ||
+      !api.ip ||
+      !serverKey ||
+      !api.isLoggedIn ||
+      !api.isPointingToServer ||
+      api.isSwitchingServer ||
+      api.isLoggingOut
+    ) {
+      return;
     }
-  }, [isLoggedIn]);
 
-  useEffect(() => {
-    if (!isWeb || !ip || !isLoggedIn) return;
-
-    if (!postLoginCheckedRef.current) {
-      postLoginCheckedRef.current = true;
-
-      dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: true,
-        }),
-      );
+    if (typeof window === "undefined") {
+      return;
     }
 
-    const timer = setInterval(() => {
-      dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: false,
-          maxAgeMs: UPDATE_CHECK_MAX_AGE_MS,
-        }),
+    let disposed = false;
+
+    async function runUpdateChecks() {
+      if (
+        disposed ||
+        requestRunningRef.current
+      ) {
+        return;
+      }
+
+      requestRunningRef.current = true;
+      lastCheckStartedAtRef.current =
+        Date.now();
+
+      const frontendRequest = dispatch(
+        checkFrontendUpdate(),
       );
-    }, intervalMs);
 
-    return () => clearInterval(timer);
-  }, [dispatch, intervalMs, ip, isLoggedIn, isWeb]);
+      const backendRequest = dispatch(
+        checkBackendUpdate(),
+      );
 
+      activeRequestsRef.current = [
+        frontendRequest,
+        backendRequest,
+      ];
+
+      try {
+        await Promise.allSettled([
+          frontendRequest.unwrap(),
+          backendRequest.unwrap(),
+        ]);
+      } finally {
+        activeRequestsRef.current = [];
+        requestRunningRef.current = false;
+      }
+    }
+
+    /*
+     * Kein sofortiger Check:
+     * Direkt nach Login übernimmt der PostLoginUpdateWatcher.
+     */
+    const intervalId = window.setInterval(
+      () => {
+        void runUpdateChecks();
+      },
+      intervalMs,
+    );
+
+    function handleWindowFocus() {
+      const age =
+        Date.now() -
+        lastCheckStartedAtRef.current;
+
+      if (age < intervalMs) {
+        return;
+      }
+
+      void runUpdateChecks();
+    }
+
+    window.addEventListener(
+      "focus",
+      handleWindowFocus,
+    );
+
+    return () => {
+      disposed = true;
+
+      window.clearInterval(intervalId);
+
+      window.removeEventListener(
+        "focus",
+        handleWindowFocus,
+      );
+
+      for (
+        const request of
+        activeRequestsRef.current
+      ) {
+        request?.abort?.();
+      }
+
+      activeRequestsRef.current = [];
+      requestRunningRef.current = false;
+    };
+  }, [
+    dispatch,
+    enabled,
+    intervalMs,
+    isWeb,
+    serverKey,
+    api.ip,
+    api.isLoggedIn,
+    api.isPointingToServer,
+    api.isSwitchingServer,
+    api.isLoggingOut,
+    updateState.autoUpdate,
+  ]);
+
+  /**
+   * Frontend-Notification.
+   */
   useEffect(() => {
-    if (!isWeb || !ip || !isLoggedIn) return;
-    if (!updateState.frontend.isAvailable) return;
+    if (!enabled || !isWeb || !serverKey) {
+      return;
+    }
+
+    if (
+      !api.isLoggedIn ||
+      api.isSwitchingServer ||
+      api.isLoggingOut
+    ) {
+      return;
+    }
+
+    const prefix =
+      `update:frontend:${serverKey}:`;
+
+    const existing =
+      notificationItems.filter(
+        (item) =>
+          normalizeServerKey(
+            item.serverKey,
+          ) === serverKey &&
+          item.id.startsWith(prefix),
+      );
 
     const version =
-      updateState.frontend.newVersion ||
-      updateState.frontend.version ||
-      "unknown";
+      String(
+        updateState.frontend.newVersion ||
+          updateState.frontend.version ||
+          "",
+      ).trim();
 
-    if (lastNotifiedVersionRef.current === version) return;
+    if (
+      !updateState.frontend.isAvailable ||
+      !version
+    ) {
+      existing.forEach((item) => {
+        dispatch(
+          removeNotification(item.id),
+        );
+      });
 
-    lastNotifiedVersionRef.current = version;
+      return;
+    }
+
+    const notificationId =
+      `${prefix}${version}`;
+
+    const automaticAttemptKey =
+      `frontendUpdateAttempt::${serverKey}::${version}`;
+
+    const automaticUpdateIsRunning =
+      typeof window !== "undefined" &&
+      window.sessionStorage.getItem(
+        automaticAttemptKey,
+      ) === "true";
+
+    if (automaticUpdateIsRunning) {
+      return;
+    }
+
+    existing
+      .filter(
+        (item) =>
+          item.id !== notificationId,
+      )
+      .forEach((item) => {
+        dispatch(
+          removeNotification(item.id),
+        );
+      });
+
+    if (
+      existing.some(
+        (item) =>
+          item.id === notificationId,
+      )
+    ) {
+      return;
+    }
 
     dispatch(
       addNotification({
-        id: `web-update-${serverKey}-${version}`,
+        id: notificationId,
         serverKey,
         type: "update",
-        title: t("new_version_available"),
-        message: version,
-        createdAt: new Date().toISOString(),
+        title: t(
+          "frontend_update_available_title",
+          "Web-App-Update verfügbar",
+        ),
+        message: t(
+          "frontend_update_available_message",
+          {
+            version,
+            defaultValue:
+              "Die Web-App-Version {{version}} ist verfügbar.",
+          },
+        ),
+        createdAt:
+          new Date().toISOString(),
         read: false,
         severity: "info",
         action: {
           type: "navigate",
-          menuId: 3014,
+          menuId: UPDATE_MENU_ID,
         },
       }),
     );
   }, [
     dispatch,
-    ip,
-    isLoggedIn,
+    enabled,
     isWeb,
     serverKey,
-    t,
+    api.isLoggedIn,
+    api.isSwitchingServer,
+    api.isLoggingOut,
     updateState.frontend.isAvailable,
     updateState.frontend.newVersion,
     updateState.frontend.version,
+    notificationItems,
+    t,
+  ]);
+
+  /**
+   * Backend-Notification.
+   *
+   * Ein Backend-Update wird ausschließlich gemeldet,
+   * niemals automatisch installiert.
+   */
+  useEffect(() => {
+    if (!enabled || !isWeb || !serverKey) {
+      return;
+    }
+
+    if (
+      !api.isLoggedIn ||
+      api.isSwitchingServer ||
+      api.isLoggingOut
+    ) {
+      return;
+    }
+
+    const prefix =
+      `update:backend:${serverKey}:`;
+
+    const existing =
+      notificationItems.filter(
+        (item) =>
+          normalizeServerKey(
+            item.serverKey,
+          ) === serverKey &&
+          item.id.startsWith(prefix),
+      );
+
+    if (
+      !updateState.backend.isAvailable
+    ) {
+      existing.forEach((item) => {
+        dispatch(
+          removeNotification(item.id),
+        );
+      });
+
+      return;
+    }
+
+    const checkToken =
+      String(
+        updateState.backend.lastCheck ||
+          "available",
+      )
+        .trim()
+        .replace(/\s+/g, "_");
+
+    const notificationId =
+      `${prefix}${checkToken}`;
+
+    existing
+      .filter(
+        (item) =>
+          item.id !== notificationId,
+      )
+      .forEach((item) => {
+        dispatch(
+          removeNotification(item.id),
+        );
+      });
+
+    if (
+      existing.some(
+        (item) =>
+          item.id === notificationId,
+      )
+    ) {
+      return;
+    }
+
+    dispatch(
+      addNotification({
+        id: notificationId,
+        serverKey,
+        type: "update",
+        title: t(
+          "backend_update_available_title",
+          "Backend-Update verfügbar",
+        ),
+        message: t(
+          "backend_update_available_message",
+          "Für das Backend ist ein Update verfügbar. Die Installation muss manuell gestartet werden.",
+        ),
+        createdAt:
+          new Date().toISOString(),
+        read: false,
+        severity: "warning",
+        action: {
+          type: "navigate",
+          menuId: UPDATE_MENU_ID,
+        },
+      }),
+    );
+  }, [
+    dispatch,
+    enabled,
+    isWeb,
+    serverKey,
+    api.isLoggedIn,
+    api.isSwitchingServer,
+    api.isLoggingOut,
+    updateState.backend.isAvailable,
+    updateState.backend.lastCheck,
+    notificationItems,
+    t,
   ]);
 }

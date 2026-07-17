@@ -12,7 +12,9 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
-  loadUpdateSettingsIfNeeded,
+  checkBackendUpdate,
+  checkFrontendUpdate,
+  loadUpdateStrategy,
   saveAutoUpdate,
 } from "../../../redux/slices/updateSlice";
 
@@ -67,46 +69,58 @@ export function UpdateGeneralTab() {
     (state) => state.update,
   );
 
+  /*
+   * Der General-Tab lädt ausschließlich die Strategie.
+   * Frontend und Backend werden von den Watchern beziehungsweise
+   * den manuellen Buttons gezielt geprüft.
+   */
   useEffect(() => {
-    dispatch(
-      loadUpdateSettingsIfNeeded({
-        force: false,
-        maxAgeMs: 30 * 60 * 1000,
-      }),
+    void dispatch(
+      loadUpdateStrategy(),
     );
   }, [dispatch]);
 
   const webStatus =
     updateState.frontend.isPending
       ? t(
-          "serverWeb.statusTexts.installing",
-          "Update wird verarbeitet",
+          "serverWeb.statusTexts.checking",
+          "Suche nach Updates...",
         )
       : updateState.frontend.isAvailable
         ? t(
             "serverWeb.statusTexts.updateAvailable",
             "Update verfügbar",
           )
-        : t(
-            "serverWeb.statusTexts.upToDate",
-            "Aktuell",
-          );
+        : updateState.frontend.lastCheck
+          ? t(
+              "serverWeb.statusTexts.upToDate",
+              "Aktuell",
+            )
+          : t(
+              "serverWeb.statusTexts.notChecked",
+              "Noch nicht geprüft",
+            );
 
   const backendStatus =
     updateState.backend.isPending
       ? t(
-          "backend.statusTexts.installing",
-          "Update wird verarbeitet",
+          "backend.statusTexts.checking",
+          "Suche nach Updates...",
         )
       : updateState.backend.isAvailable
         ? t(
             "serverWeb.statusTexts.updateAvailable",
             "Update verfügbar",
           )
-        : t(
-            "serverWeb.statusTexts.upToDate",
-            "Aktuell",
-          );
+        : updateState.backend.lastCheck
+          ? t(
+              "serverWeb.statusTexts.upToDate",
+              "Aktuell",
+            )
+          : t(
+              "backend.statusTexts.notChecked",
+              "Noch nicht geprüft",
+            );
 
   return (
     <Card>
@@ -134,11 +148,21 @@ export function UpdateGeneralTab() {
                 saveAutoUpdate(next),
               ).unwrap();
 
-              dispatch(
-                loadUpdateSettingsIfNeeded({
-                  force: true,
-                }),
-              );
+              /*
+               * Beim Aktivieren werden Frontend und Backend sofort geprüft.
+               * Während einer aktiven Sitzung wird hier nichts installiert.
+               */
+              if (next) {
+                await Promise.allSettled([
+                  dispatch(
+                    checkFrontendUpdate(),
+                  ).unwrap(),
+
+                  dispatch(
+                    checkBackendUpdate(),
+                  ).unwrap(),
+                ]);
+              }
             }}
           />
         </View>

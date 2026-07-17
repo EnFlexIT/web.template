@@ -15,12 +15,7 @@ import { H3 } from "../../../components/stylistic/H3";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 
-import {
-  logoutAsync,
-  selectApi,
-} from "../../../redux/slices/apiSlice";
-
-import { setLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
+import { selectApi } from "../../../redux/slices/apiSlice";
 
 import {
   checkFrontendUpdate,
@@ -30,27 +25,39 @@ import {
 
 import {
   UpdateProgressDialog,
-  UpdateProgressPhase,
+  type UpdateProgressPhase,
 } from "../Dialog/UpdateProgressDialog";
-
-const MAX_CHECK_WAIT_MS = 1000;
-const MAX_EXECUTE_WAIT_MS = 1000;
-const MAX_LOGOUT_WAIT_MS = 1000;
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
+    window.setTimeout(resolve, milliseconds);
   });
 }
 
-async function waitAtMost<T>(
-  promise: Promise<T>,
-  milliseconds: number,
-): Promise<T | undefined> {
-  return Promise.race([
-    promise,
-    wait(milliseconds).then(() => undefined),
-  ]);
+/**
+ * Lädt die aktuelle Web-App neu, ohne die bestehende
+ * JWT- oder OIDC-Sitzung zurückzusetzen.
+ *
+ * Der Zeitstempel verhindert, dass index.html aus einem
+ * veralteten Browser-Cache geladen wird.
+ */
+function reloadCurrentWebApp(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const targetUrl = new URL(window.location.href);
+
+  targetUrl.searchParams.set(
+    "updated",
+    String(Date.now()),
+  );
+
+  window.location.replace(
+    targetUrl.toString(),
+  );
+
+  return true;
 }
 
 export function UpdateWebAppTab() {
@@ -85,15 +92,33 @@ export function UpdateWebAppTab() {
   const [updatePhase, setUpdatePhase] =
     useState<UpdateProgressPhase>("installing");
 
-  /*
-   * Beim Öffnen des Tabs wird nur der Frontend-Status geladen.
+  /**
+   * Beim Öffnen des Tabs wird ausschließlich der
+   * Frontend-Update-Status geprüft.
    *
-   * loadUpdateSettingsIfNeeded wurde hier entfernt, weil diese
-   * Funktion zusätzlich Strategie- und Backend-Daten lädt.
+   * checkFrontendUpdate lädt parallel auch die tatsächlich
+   * installierte Version über:
+   *
+   * GET /api/version?type=WEBAPP
    */
-  useEffect(() => {
-    void dispatch(checkFrontendUpdate());
-  }, [dispatch]);
+      useEffect(() => {
+        if (!ip || updateState.autoUpdate) {
+          return;
+        }
+
+        void dispatch(checkFrontendUpdate())
+          .unwrap()
+          .catch((error) => {
+            console.warn(
+              "[FRONTEND UPDATE] Initial update check failed",
+              error,
+            );
+          });
+      }, [
+        dispatch,
+        ip,
+        updateState.autoUpdate,
+      ]);
 
   const checkNow = useCallback(async () => {
     if (
@@ -107,97 +132,26 @@ export function UpdateWebAppTab() {
     checkRequestActiveRef.current = true;
     setIsChecking(true);
 
-    const request = dispatch(
-      checkFrontendUpdate(),
-    )
-      .unwrap()
-      .catch((error) => {
-        console.warn(
-          "[FRONTEND UPDATE] Update check failed",
-          error,
-        );
-
-        return undefined;
-      })
-      .finally(() => {
-        checkRequestActiveRef.current = false;
-      });
-
-    /*
-     * Die Benutzeroberfläche wartet maximal eine Sekunde.
-     * Die Anfrage darf im Hintergrund noch fertig werden und
-     * aktualisiert anschließend automatisch den Redux-State.
-     */
-    await waitAtMost(
-      request,
-      MAX_CHECK_WAIT_MS,
-    );
-
-    setIsChecking(false);
-  }, [dispatch, ip]);
-
-  const logoutAndOpenLogin = useCallback(async () => {
-    setUpdatePhase("logout");
-
-    setStatusText(
-      t(
-        "serverWeb.updateDialog.steps.logout",
-        "Du wirst abgemeldet. Anschließend wird die Web-App neu geladen.",
-      ),
-    );
-
-    setLogoutFlowActive(true);
-
-    const logoutRequest = dispatch(
-      logoutAsync(),
-    )
-      .unwrap()
-      .catch((error) => {
-        /*
-         * Beim Update kann die Verbindung bereits unterbrochen
-         * sein. Der Browser wird trotzdem zur Anmeldung geleitet.
-         */
-        console.warn(
-          "[FRONTEND UPDATE] Logout request failed",
-          error,
-        );
-
-        return undefined;
-      });
-
-    await waitAtMost(
-      logoutRequest,
-      MAX_LOGOUT_WAIT_MS,
-    );
-
-    clearUpdateSettingsCache();
-
-    if (typeof window !== "undefined") {
-      const loginUrl = new URL(
-        "/login",
-        window.location.origin,
-      );
-
-      /*
-       * Der Zeitstempel verhindert, dass der Browser eine alte
-       * Web-App-Version aus dem Cache verwendet.
+    try {
+      /**
+       * Keine künstliche Wartezeit.
+       *
+       * Der Button bleibt so lange deaktiviert, bis der echte
+       * Server-Request abgeschlossen oder fehlgeschlagen ist.
        */
-      loginUrl.searchParams.set(
-        "updated",
-        String(Date.now()),
+      await dispatch(
+        checkFrontendUpdate(),
+      ).unwrap();
+    } catch (error) {
+      console.warn(
+        "[FRONTEND UPDATE] Update check failed",
+        error,
       );
-
-      window.location.replace(
-        loginUrl.toString(),
-      );
-
-      return;
+    } finally {
+      checkRequestActiveRef.current = false;
+      setIsChecking(false);
     }
-
-    setLogoutFlowActive(false);
-    setShowUpdateDialog(false);
-    setIsInstalling(false);
-  }, [dispatch, t]);
+  }, [dispatch, ip]);
 
   const installFrontendUpdate =
     useCallback(async () => {
@@ -223,75 +177,94 @@ export function UpdateWebAppTab() {
       );
 
       try {
-        /*
-         * UPDATE.FRONTEND.EXECUTE wird nur einmal ausgelöst.
+        /**
+         * UPDATE.FRONTEND.EXECUTE wird genau einmal ausgeführt.
          *
-         * Die Oberfläche wartet maximal eine Sekunde auf die
-         * Antwort. Ein möglicher Verbindungsabbruch beim Update
-         * blockiert den Benutzer dadurch nicht.
+         * Der Request wird vollständig abgewartet. Dadurch wird
+         * verhindert, dass der Browser den Request während der
+         * eigentlichen Installation abbricht.
          */
-        const executeRequest = dispatch(
+        await dispatch(
           executeFrontendUpdate(),
-        )
-          .unwrap()
-          .catch((error) => {
-            /*
-             * Der Request kann abbrechen, wenn die aktualisierte
-             * Web-App oder der Server die Verbindung beendet.
-             * Der Ablauf wird trotzdem mit Logout und Reload
-             * fortgesetzt.
-             */
-            console.warn(
-              "[FRONTEND UPDATE] Execute request interrupted",
-              error,
-            );
-
-            return undefined;
-          });
-
-        await waitAtMost(
-          executeRequest,
-          MAX_EXECUTE_WAIT_MS,
-        );
+        ).unwrap();
 
         clearUpdateSettingsCache();
 
-        await logoutAndOpenLogin();
+        setUpdatePhase("success");
+
+        setStatusText(
+          t(
+            "serverWeb.updateDialog.steps.success",
+            "Das Frontend-Update wurde erfolgreich installiert.",
+          ),
+        );
+
+        /**
+         * Nur eine kurze UI-Übergangszeit.
+         * Das ist keine Update-Polling-Schleife.
+         */
+        await wait(350);
+
+        setUpdatePhase("restarting");
+
+        setStatusText(
+          t(
+            "serverWeb.updateDialog.steps.restarting",
+            "Die Web-App wird neu geladen. Deine Anmeldung bleibt erhalten.",
+          ),
+        );
+
+        await wait(250);
+
+        const reloadStarted =
+          reloadCurrentWebApp();
+
+        /**
+         * Dieser Fall betrifft nur Nicht-Web-Runtimes.
+         * Im Browser wird die aktuelle Seite jetzt ersetzt.
+         */
+        if (!reloadStarted) {
+          installRequestActiveRef.current = false;
+
+          setIsInstalling(false);
+          setShowUpdateDialog(false);
+        }
       } catch (error) {
         console.error(
           "[FRONTEND UPDATE] Update failed",
           error,
         );
 
+        installRequestActiveRef.current = false;
+        setIsInstalling(false);
+
         setUpdatePhase("error");
 
         setStatusText(
           t(
             "serverWeb.updateDialog.steps.failed",
-            "Das Update konnte nicht gestartet werden. Bitte versuche es erneut.",
+            "Das Frontend-Update konnte nicht installiert werden. Bitte versuche es erneut.",
           ),
         );
-
-        installRequestActiveRef.current = false;
-        setIsInstalling(false);
       }
-    }, [
-      dispatch,
-      ip,
-      logoutAndOpenLogin,
-      t,
-    ]);
+    }, [dispatch, ip, t]);
 
-  const closeErrorDialog = useCallback(() => {
-    if (updatePhase !== "error") {
-      return;
-    }
+  const closeErrorDialog =
+    useCallback(() => {
+      if (updatePhase !== "error") {
+        return;
+      }
 
-    installRequestActiveRef.current = false;
+      installRequestActiveRef.current = false;
 
-    setShowUpdateDialog(false);
-    setIsInstalling(false);
-  }, [updatePhase]);
+      setShowUpdateDialog(false);
+      setIsInstalling(false);
+    }, [updatePhase]);
+
+  const availableVersion =
+    updateState.frontend.newVersion ||
+    updateState.frontend.version ||
+    "-";
 
   const updateStatus =
     isInstalling ||
@@ -304,10 +277,7 @@ export function UpdateWebAppTab() {
         ? t(
             "serverWeb.statusTexts.updateAvailable",
             {
-              version:
-                updateState.frontend.newVersion ||
-                updateState.frontend.version ||
-                "-",
+              version: availableVersion,
               defaultValue:
                 "Neues Update verfügbar",
             },
@@ -317,20 +287,22 @@ export function UpdateWebAppTab() {
             "Aktuell",
           );
 
+  /**
+   * Die installierte Version kommt ausschließlich von:
+   * GET /api/version?type=WEBAPP
+   */
   const currentVersion =
     updateState.frontend.currentVersion ||
-    updateState.frontend.version ||
     "-";
 
   const newVersion =
-    updateState.frontend.newVersion ||
-    (updateState.frontend.isAvailable
-      ? updateState.frontend.version
-      : "") ||
-    "-";
+    updateState.frontend.isAvailable
+      ? availableVersion
+      : "-";
 
   const lastCheckedAt =
-    updateState.frontend.lastCheck || "-";
+    updateState.frontend.lastCheck ||
+    "-";
 
   const controlsDisabled =
     isChecking ||
@@ -348,7 +320,10 @@ export function UpdateWebAppTab() {
 
       <View style={s.container}>
         <H3>
-          {t("serverWeb.title", "Web-App")}
+          {t(
+            "serverWeb.title",
+            "Web-App",
+          )}
         </H3>
 
         <Row
@@ -383,45 +358,47 @@ export function UpdateWebAppTab() {
           value={lastCheckedAt}
         />
 
-        <View style={s.btnRow}>
-          <ActionButton
-            label={
-              isChecking
-                ? t(
-                    "serverWeb.actions.checking",
-                    "Prüfe…",
-                  )
-                : t(
-                    "serverWeb.actions.checkNow",
-                    "Nach Updates suchen",
-                  )
-            }
-            variant="secondary"
-            size="xs"
-            onPress={checkNow}
-            disabled={controlsDisabled}
-          />
+       <View style={s.btnRow}>
+  {!updateState.autoUpdate ? (
+    <ActionButton
+      label={
+        isChecking
+          ? t(
+              "serverWeb.actions.checking",
+              "Prüfe…",
+            )
+          : t(
+              "serverWeb.actions.checkNow",
+              "Nach Updates suchen",
+            )
+      }
+      variant="secondary"
+      size="xs"
+      onPress={checkNow}
+      disabled={controlsDisabled}
+    />
+  ) : null}
 
-          {updateState.frontend.isAvailable ? (
-            <ActionButton
-              label={
-                isInstalling
-                  ? t(
-                      "serverWeb.actions.installing",
-                      "Update wird installiert…",
-                    )
-                  : t(
-                      "serverWeb.actions.executeUpdate",
-                      "Update installieren",
-                    )
-              }
-              variant="primary"
-              size="xs"
-              onPress={installFrontendUpdate}
-              disabled={controlsDisabled}
-            />
-          ) : null}
-        </View>
+  {updateState.frontend.isAvailable ? (
+    <ActionButton
+      label={
+        isInstalling
+          ? t(
+              "serverWeb.actions.installing",
+              "Update wird installiert…",
+            )
+          : t(
+              "serverWeb.actions.executeUpdate",
+              "Update installieren",
+            )
+      }
+      variant="primary"
+      size="xs"
+      onPress={installFrontendUpdate}
+      disabled={controlsDisabled}
+    />
+  ) : null}
+</View>
       </View>
     </Card>
   );

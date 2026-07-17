@@ -1,30 +1,16 @@
 import {
   createAsyncThunk,
   createSlice,
-  PayloadAction,
+  type PayloadAction,
 } from "@reduxjs/toolkit";
 
-import { RootState } from "../store";
-
-type ApiVersion = {
-  major?: number;
-  minor?: number;
-  micro?: number;
-  qualifier?: string;
-};
-
-type SoftwareComponent = {
-  ID?: string;
-  id?: string;
-  Id?: string;
-  name?: string;
-  Name?: string;
-  componentType?: string;
-  ComponentType?: string;
-  type?: string;
-  version?: ApiVersion;
-  Version?: ApiVersion;
-};
+import {
+  SoftwareComponentType,
+  ValueType,
+  type InfoApi,
+  type PropertyEntry,
+  type Version as ApiVersion,
+} from "../../api/implementation/AWB-RestAPI/api";
 
 type InstalledFrontendVersion = {
   id: string;
@@ -32,38 +18,72 @@ type InstalledFrontendVersion = {
   currentVersion: string;
 };
 
-interface UpdateState {
+export type FrontendUpdateState = {
+  /**
+   * Bedeutet ausschließlich:
+   * UPDATE.FRONTEND.CHECK ist noch nicht abgeschlossen.
+   */
+  isPending: boolean;
+  isAvailable: boolean;
+  lastCheck: string;
+  version: string;
+  newVersion: string;
+
+  /**
+   * Verbindliche Quelle:
+   * GET /api/version?type=WEBAPP
+   */
+  currentVersion: string;
+};
+
+export type BackendUpdateState = {
+  /**
+   * Bedeutet ausschließlich:
+   * UPDATE.BACKEND.CHECK ist noch nicht abgeschlossen.
+   */
+  isPending: boolean;
+  isAvailable: boolean;
+  lastCheck: string;
+
+  /**
+   * Stammt ausschließlich aus UPDATE.BACKEND.EXECUTE.
+   */
+  status: string;
+  progress: number;
+};
+
+export type UpdateState = {
   autoUpdate: boolean;
   loading: boolean;
   lastLoadedAt: number | null;
+  frontend: FrontendUpdateState;
+  backend: BackendUpdateState;
+};
 
-  frontend: {
-    isPending: boolean;
-    isAvailable: boolean;
-    lastCheck: string;
-    version: string;
-    newVersion: string;
+type LoadedUpdateSettings = {
+  autoUpdate: boolean;
+  frontend: FrontendUpdateState;
+  backend: BackendUpdateState;
+};
 
-    /**
-     * Stammt ausschließlich aus:
-     * GET /api/version?type=WEBAPP
-     */
-    currentVersion: string;
+type LoadUpdateSettingsOptions = {
+  force?: boolean;
+  maxAgeMs?: number;
+};
+
+type UpdateThunkState = {
+  api: {
+    awb_rest_api: {
+      infoApi: InfoApi;
+    };
   };
-
-  backend: {
-    isPending: boolean;
-    isAvailable: boolean;
-    lastCheck: string;
-    status: string;
-    progress: number;
-  };
-}
+  update: UpdateState;
+};
 
 const initialState: UpdateState = {
+  autoUpdate: false,
   loading: false,
   lastLoadedAt: null,
-  autoUpdate: false,
 
   frontend: {
     isPending: false,
@@ -83,41 +103,28 @@ const initialState: UpdateState = {
   },
 };
 
-const UPDATE_LAST_LOADED_KEY =
-  "update:lastLoadedAt";
-
-const UPDATE_SETTINGS_CACHE_KEY =
-  "update:settingsCache";
-
 /**
- * Entfernt alte Update-Daten aus dem Browser-Cache.
- *
- * Wird insbesondere vor beziehungsweise nach einem
- * Frontend-Update benötigt.
+ * V2 verhindert, dass alte isPending-Werte aus dem bisherigen Cache
+ * erneut in den korrigierten State geladen werden.
  */
-export function clearUpdateSettingsCache() {
+const UPDATE_LAST_LOADED_KEY = "update:v2:lastLoadedAt";
+const UPDATE_SETTINGS_CACHE_KEY = "update:v2:settingsCache";
+
+const LEGACY_UPDATE_LAST_LOADED_KEY = "update:lastLoadedAt";
+const LEGACY_UPDATE_SETTINGS_CACHE_KEY = "update:settingsCache";
+
+export function clearUpdateSettingsCache(): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  localStorage.removeItem(
-    UPDATE_LAST_LOADED_KEY,
-  );
-
-  localStorage.removeItem(
-    UPDATE_SETTINGS_CACHE_KEY,
-  );
+  localStorage.removeItem(UPDATE_LAST_LOADED_KEY);
+  localStorage.removeItem(UPDATE_SETTINGS_CACHE_KEY);
+  localStorage.removeItem(LEGACY_UPDATE_LAST_LOADED_KEY);
+  localStorage.removeItem(LEGACY_UPDATE_SETTINGS_CACHE_KEY);
 }
 
-function normalizeBaseUrl(value: string): string {
-  return String(value ?? "")
-    .trim()
-    .replace(/\/+$/, "");
-}
-
-function normalizeQualifier(
-  value?: string | null,
-): string {
+function normalizeQualifier(value?: string | null): string {
   return String(value ?? "")
     .trim()
     .replace(/[^0-9A-Za-z]+/g, ".")
@@ -125,9 +132,7 @@ function normalizeQualifier(
     .replace(/^\.|\.$/g, "");
 }
 
-function formatVersion(
-  version?: ApiVersion | null,
-): string {
+function formatVersion(version?: ApiVersion | null): string {
   if (!version) {
     return "";
   }
@@ -135,13 +140,8 @@ function formatVersion(
   const major = Number(version.major ?? 0);
   const minor = Number(version.minor ?? 0);
   const micro = Number(version.micro ?? 0);
-
-  const qualifier = normalizeQualifier(
-    version.qualifier,
-  );
-
-  const releaseVersion =
-    `${major}.${minor}.${micro}`;
+  const qualifier = normalizeQualifier(version.qualifier);
+  const releaseVersion = `${major}.${minor}.${micro}`;
 
   return qualifier
     ? `${releaseVersion}.${qualifier}`
@@ -149,99 +149,62 @@ function formatVersion(
 }
 
 function findValue(
-  entries: any[],
+  entries: PropertyEntry[] | undefined,
   key: string,
-): unknown {
-  return entries.find(
-    (entry) => entry?.key === key,
-  )?.value;
+): string | undefined {
+  return entries?.find((entry) => entry.key === key)?.value;
 }
 
 function toBoolean(value: unknown): boolean {
-  return (
-    String(value ?? "")
-      .trim()
-      .toLowerCase() === "true"
-  );
+  return String(value ?? "")
+    .trim()
+    .toLowerCase() === "true";
 }
 
 function toNumber(value: unknown): number {
   const parsed = Number(value);
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : 0;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getApiBaseUrl(
-  state: RootState,
-): string {
-  const apiState = state.api as any;
+function hasValidUpdatePayload(
+  payload: LoadedUpdateSettings | null | undefined,
+): payload is LoadedUpdateSettings {
+  if (!payload) {
+    return false;
+  }
 
-  return normalizeBaseUrl(
-    apiState?.ip ??
-      apiState?.awb_rest_api?.ip ??
-      "",
+  return Boolean(
+    payload.frontend.currentVersion ||
+      payload.frontend.lastCheck ||
+      payload.backend.lastCheck ||
+      typeof payload.autoUpdate === "boolean",
   );
 }
 
-function getJwt(
-  state: RootState,
-): string | null {
-  const apiState = state.api as any;
+function applyUpdatePayload(
+  state: UpdateState,
+  payload: LoadedUpdateSettings,
+): void {
+  state.lastLoadedAt = Date.now();
+  state.autoUpdate = payload.autoUpdate;
 
-  const jwt =
-    apiState?.jwt ??
-    apiState?.awb_rest_api?.jwt ??
-    null;
+  state.frontend = {
+    ...state.frontend,
+    ...payload.frontend,
+    currentVersion:
+      payload.frontend.currentVersion ||
+      state.frontend.currentVersion,
+  };
 
-  return typeof jwt === "string" && jwt.trim()
-    ? jwt.trim()
-    : null;
-}
-
-function getSoftwareComponents(
-  payload: any,
-): SoftwareComponent[] {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (
-    Array.isArray(
-      payload?.SoftwareComponentList,
-    )
-  ) {
-    return payload.SoftwareComponentList;
-  }
-
-  if (
-    Array.isArray(
-      payload?.softwareComponentList,
-    )
-  ) {
-    return payload.softwareComponentList;
-  }
-
-  return [];
-}
-
-function getComponentType(
-  component: SoftwareComponent,
-): string {
-  return String(
-    component.componentType ??
-      component.ComponentType ??
-      component.type ??
-      "",
-  )
-    .trim()
-    .toUpperCase();
+  state.backend = {
+    ...state.backend,
+    ...payload.backend,
+  };
 }
 
 function updateCachedFrontendVersion(
   currentVersion: string,
-) {
+): void {
   if (
     typeof window === "undefined" ||
     !currentVersion
@@ -258,10 +221,11 @@ function updateCachedFrontendVersion(
       return;
     }
 
-    const parsed = JSON.parse(cached);
+    const parsed =
+      JSON.parse(cached) as Partial<LoadedUpdateSettings>;
 
     parsed.frontend = {
-      ...(parsed.frontend ?? {}),
+      ...(parsed.frontend ?? initialState.frontend),
       currentVersion,
     };
 
@@ -277,269 +241,143 @@ function updateCachedFrontendVersion(
   }
 }
 
-function hasValidUpdatePayload(
-  payload: any,
-): boolean {
-  return Boolean(
-    payload?.frontend?.currentVersion ||
-      payload?.frontend?.lastCheck ||
-      payload?.backend?.lastCheck ||
-      typeof payload?.autoUpdate === "boolean",
+async function requestInstalledFrontendVersion(
+  api: InfoApi,
+): Promise<InstalledFrontendVersion> {
+  const response = await api.versionGet(
+    SoftwareComponentType.Webapp,
   );
+
+  const components =
+    response.data.SoftwareComponentList ?? [];
+
+  const webApp = components.find(
+    (component) =>
+      component.componentType ===
+      SoftwareComponentType.Webapp,
+  );
+
+  if (!webApp) {
+    throw new Error(
+      "Im Versions-Endpunkt wurde keine WEBAPP-Komponente gefunden.",
+    );
+  }
+
+  const currentVersion = formatVersion(
+    webApp.version,
+  );
+
+  if (!currentVersion) {
+    throw new Error(
+      "Die installierte WEBAPP-Version konnte nicht gelesen werden.",
+    );
+  }
+
+  updateCachedFrontendVersion(
+    currentVersion,
+  );
+
+  return {
+    id: String(webApp.ID ?? ""),
+    name: String(webApp.name ?? ""),
+    currentVersion,
+  };
 }
 
-function applyUpdatePayload(
-  state: UpdateState,
-  payload: any,
-) {
-  if (!payload) {
-    return;
-  }
-
-  state.lastLoadedAt = Date.now();
-
-  if (
-    typeof payload.autoUpdate === "boolean"
-  ) {
-    state.autoUpdate = payload.autoUpdate;
-  }
-
-  if (payload.frontend) {
-    state.frontend = {
-      ...state.frontend,
-      ...payload.frontend,
-
-      /*
-       * Eine leere Version darf die bereits vom
-       * /version-Endpunkt geladene Version nicht löschen.
-       */
-      currentVersion:
-        payload.frontend.currentVersion ||
-        state.frontend.currentVersion,
-    };
-  }
-
-  if (payload.backend) {
-    state.backend = {
-      ...state.backend,
-      ...payload.backend,
-    };
-  }
-}
-
-/**
- * Lädt die tatsächlich installierte Web-App-Version.
- *
- * Verbindliche Quelle:
- * GET /api/version?type=WEBAPP
- */
 export const loadInstalledFrontendVersion =
   createAsyncThunk<
     InstalledFrontendVersion,
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/loadInstalledFrontendVersion",
     async (_, thunkAPI) => {
-      const state = thunkAPI.getState();
+      const api =
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
-      const baseUrl =
-        getApiBaseUrl(state);
-
-      const jwt = getJwt(state);
-
-      if (!baseUrl) {
-        throw new Error(
-          "Keine Server-Adresse vorhanden.",
-        );
-      }
-
-      const requestUrl =
-        `${baseUrl}/api/version?type=WEBAPP`;
-
-      const response = await fetch(
-        requestUrl,
-        {
-          method: "GET",
-          cache: "no-store",
-          credentials: "include",
-          signal: thunkAPI.signal,
-          headers: {
-            Accept: "application/json",
-
-            ...(jwt
-              ? {
-                  Authorization:
-                    `Bearer ${jwt}`,
-                }
-              : {}),
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Web-App-Version konnte nicht geladen werden: HTTP ${response.status}`,
-        );
-      }
-
-      let payload: any;
-
-      try {
-        payload = await response.json();
-      } catch {
-        throw new Error(
-          "Der Versions-Endpunkt hat kein gültiges JSON zurückgegeben.",
-        );
-      }
-
-      const components =
-        getSoftwareComponents(payload);
-
-      const webApp =
-        components.find(
-          (component) =>
-            getComponentType(component) ===
-            "WEBAPP",
-        );
-
-      if (!webApp) {
-        throw new Error(
-          "Im Versions-Endpunkt wurde keine WEBAPP-Komponente gefunden.",
-        );
-      }
-
-      const versionObject =
-        webApp.version ??
-        webApp.Version;
-
-      const currentVersion =
-        formatVersion(versionObject);
-
-      if (!currentVersion) {
-        throw new Error(
-          "Die WEBAPP-Version konnte nicht gelesen werden.",
-        );
-      }
-
-      updateCachedFrontendVersion(
-        currentVersion,
-      );
-
-      return {
-        id: String(
-          webApp.ID ??
-            webApp.id ??
-            webApp.Id ??
-            "",
-        ),
-
-        name: String(
-          webApp.name ??
-            webApp.Name ??
-            "",
-        ),
-
-        currentVersion,
-      };
+      return requestInstalledFrontendVersion(api);
     },
   );
 
 /**
- * Lädt alle Update-Einstellungen.
- *
- * Die drei Einstellungsanfragen und die Versionsanfrage
- * werden parallel ausgeführt. Es gibt keine künstliche
- * Verzögerung.
+ * Lädt nur die Update-Strategie.
+ */
+export const loadUpdateStrategy =
+  createAsyncThunk<
+    boolean,
+    void,
+    { state: UpdateThunkState }
+  >(
+    "update/loadUpdateStrategy",
+    async (_, thunkAPI) => {
+      const api =
+        thunkAPI.getState().api.awb_rest_api.infoApi;
+
+      const response =
+        await api.getAppSettings(
+          "UPDATE.STRATEGY",
+        );
+
+      return toBoolean(
+        findValue(
+          response.data.propertyEntries ?? [],
+          "isautoupdate",
+        ),
+      );
+    },
+  );
+
+/**
+ * Bestehende Sammelfunktion für Stellen, die wirklich alle Bereiche
+ * gleichzeitig benötigen. Die einzelnen Tabs und Watcher sollen
+ * bevorzugt die gezielten Thunks verwenden.
  */
 export const loadUpdateSettings =
   createAsyncThunk<
-    {
-      autoUpdate: boolean;
-
-      frontend: {
-        isPending: boolean;
-        isAvailable: boolean;
-        lastCheck: string;
-        version: string;
-        newVersion: string;
-        currentVersion: string;
-      };
-
-      backend: {
-        isPending: boolean;
-        isAvailable: boolean;
-        lastCheck: string;
-        status: string;
-        progress: number;
-      };
-    },
+    LoadedUpdateSettings,
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/loadUpdateSettings",
     async (_, thunkAPI) => {
       const state = thunkAPI.getState();
-
-      const api =
-        state.api.awb_rest_api.infoApi;
+      const api = state.api.awb_rest_api.infoApi;
 
       const [
-        strategyRes,
-        frontendRes,
-        backendRes,
-        installedVersionAction,
+        strategyResponse,
+        frontendResponse,
+        backendResponse,
+        installedFrontend,
       ] = await Promise.all([
-        api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.STRATEGY",
-          },
-        }),
+        api.getAppSettings("UPDATE.STRATEGY"),
+        api.getAppSettings("UPDATE.FRONTEND.CHECK"),
+        api.getAppSettings("UPDATE.BACKEND.CHECK"),
 
-        api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.FRONTEND.CHECK",
-          },
-        }),
+        requestInstalledFrontendVersion(api).catch(
+          (error) => {
+            console.warn(
+              "[UPDATE] Installed frontend version could not be loaded",
+              error,
+            );
 
-        api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.BACKEND.CHECK",
+            return {
+              id: "",
+              name: "",
+              currentVersion:
+                state.update.frontend.currentVersion,
+            } satisfies InstalledFrontendVersion;
           },
-        }),
-
-        thunkAPI.dispatch(
-          loadInstalledFrontendVersion(),
         ),
       ]);
 
       const strategyEntries =
-        strategyRes.data?.propertyEntries ??
-        [];
+        strategyResponse.data.propertyEntries ?? [];
 
       const frontendEntries =
-        frontendRes.data?.propertyEntries ??
-        [];
+        frontendResponse.data.propertyEntries ?? [];
 
       const backendEntries =
-        backendRes.data?.propertyEntries ??
-        [];
-
-      const currentVersion =
-        loadInstalledFrontendVersion.fulfilled.match(
-          installedVersionAction,
-        )
-          ? installedVersionAction.payload
-              .currentVersion
-          : state.update.frontend
-              .currentVersion;
+        backendResponse.data.propertyEntries ?? [];
 
       return {
         autoUpdate: toBoolean(
@@ -564,36 +402,22 @@ export const loadUpdateSettings =
             ),
           ),
 
-          lastCheck: String(
+          lastCheck:
             findValue(
               frontendEntries,
               "updatecheck.frontend.lastcheck",
             ) ?? "",
-          ),
 
-          /*
-           * version und newVersion stammen weiterhin
-           * aus dem Update-System.
-           */
-          version: String(
-            findValue(
-              frontendEntries,
-              "updatecheck.frontend.version",
-            ) ?? "",
-          ),
+          version: "",
 
-          newVersion: String(
+          newVersion:
             findValue(
               frontendEntries,
               "updatecheck.frontend.newversion",
             ) ?? "",
-          ),
 
-          /*
-           * currentVersion stammt ausschließlich aus:
-           * GET /api/version?type=WEBAPP
-           */
-          currentVersion,
+          currentVersion:
+            installedFrontend.currentVersion,
         },
 
         backend: {
@@ -611,26 +435,17 @@ export const loadUpdateSettings =
             ),
           ),
 
-          lastCheck: String(
+          lastCheck:
             findValue(
               backendEntries,
               "updatecheck.backend.lastcheck",
             ) ?? "",
-          ),
 
-          status: String(
-            findValue(
-              backendEntries,
-              "update.status",
-            ) ?? "",
-          ),
-
-          progress: toNumber(
-            findValue(
-              backendEntries,
-              "update.progress",
-            ),
-          ),
+          /*
+           * CHECK liefert keinen Installationsstatus.
+           */
+          status: state.update.backend.status,
+          progress: state.update.backend.progress,
         },
       };
     },
@@ -638,22 +453,14 @@ export const loadUpdateSettings =
 
 export const loadUpdateSettingsIfNeeded =
   createAsyncThunk<
-    any,
-    | {
-        force?: boolean;
-        maxAgeMs?: number;
-      }
-    | undefined,
-    {
-      state: RootState;
-    }
+    LoadedUpdateSettings | null,
+    LoadUpdateSettingsOptions | undefined,
+    { state: UpdateThunkState }
   >(
     "update/loadUpdateSettingsIfNeeded",
     async (options, thunkAPI) => {
       const state = thunkAPI.getState();
-
-      const updateState =
-        state.update;
+      const updateState = state.update;
 
       const force =
         options?.force === true;
@@ -678,61 +485,51 @@ export const loadUpdateSettingsIfNeeded =
         return null;
       }
 
-      if (
+      const cacheIsCurrent =
         !force &&
-        storedLastLoadedAt &&
+        Boolean(storedLastLoadedAt) &&
         Date.now() -
-          storedLastLoadedAt <
-          maxAgeMs
-      ) {
-        /*
-         * Auch bei gültigem Cache wird die installierte
-         * Web-App-Version erneut direkt vom Versions-Endpunkt
-         * abgefragt.
-         *
-         * Der übrige Update-Status darf aus dem Cache kommen.
-         */
+          Number(storedLastLoadedAt) <
+          maxAgeMs;
+
+      if (cacheIsCurrent) {
         void thunkAPI.dispatch(
           loadInstalledFrontendVersion(),
         );
 
-        if (
-          typeof window !== "undefined"
-        ) {
-          const cached =
-            localStorage.getItem(
-              UPDATE_SETTINGS_CACHE_KEY,
-            );
-
-          if (cached) {
-            try {
-              const parsed =
-                JSON.parse(cached);
-
-              /*
-               * Eine zwischengespeicherte Version darf
-               * niemals die aktuelle Antwort des
-               * /version-Endpunkts überschreiben.
-               */
-              if (parsed.frontend) {
-                delete parsed.frontend
-                  .currentVersion;
-              }
-
-              return parsed;
-            } catch (error) {
-              localStorage.removeItem(
-                UPDATE_SETTINGS_CACHE_KEY,
-              );
-
-              localStorage.removeItem(
-                UPDATE_LAST_LOADED_KEY,
-              );
-            }
-          }
+        if (typeof window === "undefined") {
+          return null;
         }
 
-        return null;
+        const cached = localStorage.getItem(
+          UPDATE_SETTINGS_CACHE_KEY,
+        );
+
+        if (!cached) {
+          return null;
+        }
+
+        try {
+          const parsed =
+            JSON.parse(
+              cached,
+            ) as LoadedUpdateSettings;
+
+          /*
+           * Die installierte Version wird separat frisch geladen.
+           */
+          parsed.frontend.currentVersion = "";
+
+          return parsed;
+        } catch (error) {
+          console.warn(
+            "[UPDATE] Invalid settings cache",
+            error,
+          );
+
+          clearUpdateSettingsCache();
+          return null;
+        }
       }
 
       const result =
@@ -741,169 +538,146 @@ export const loadUpdateSettingsIfNeeded =
         );
 
       if (
-        loadUpdateSettings.fulfilled.match(
+        !loadUpdateSettings.fulfilled.match(
           result,
         )
       ) {
-        const payload =
-          result.payload;
-
-        if (
-          hasValidUpdatePayload(payload)
-        ) {
-          if (
-            typeof window !== "undefined"
-          ) {
-            localStorage.setItem(
-              UPDATE_LAST_LOADED_KEY,
-              String(Date.now()),
-            );
-
-            localStorage.setItem(
-              UPDATE_SETTINGS_CACHE_KEY,
-              JSON.stringify(payload),
-            );
-          }
-
-          return payload;
-        }
+        return null;
       }
 
-      return null;
+      const payload = result.payload;
+
+      if (!hasValidUpdatePayload(payload)) {
+        return null;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          UPDATE_LAST_LOADED_KEY,
+          String(Date.now()),
+        );
+
+        localStorage.setItem(
+          UPDATE_SETTINGS_CACHE_KEY,
+          JSON.stringify(payload),
+        );
+      }
+
+      return payload;
     },
   );
 
-/**
- * Prüft, ob ein Web-App-Update vorhanden ist.
- *
- * Parallel dazu wird die installierte Version über
- * GET /api/version?type=WEBAPP geladen.
- */
 export const checkFrontendUpdate =
   createAsyncThunk<
-    any[],
+    PropertyEntry[],
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/checkFrontendUpdate",
     async (_, thunkAPI) => {
-      const state = thunkAPI.getState();
-
       const api =
-        state.api.awb_rest_api.infoApi;
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
       const [
         response,
+        installedFrontend,
       ] = await Promise.all([
-        api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.FRONTEND.CHECK",
-          },
-        }),
-
-        thunkAPI.dispatch(
-          loadInstalledFrontendVersion(),
+        api.getAppSettings(
+          "UPDATE.FRONTEND.CHECK",
         ),
+
+        requestInstalledFrontendVersion(
+          api,
+        ).catch((error) => {
+          console.warn(
+            "[UPDATE] Installed frontend version could not be refreshed",
+            error,
+          );
+
+          return null;
+        }),
       ]);
 
+      if (
+        installedFrontend?.currentVersion
+      ) {
+        thunkAPI.dispatch(
+          setInstalledFrontendVersion(
+            installedFrontend.currentVersion,
+          ),
+        );
+      }
+
       return (
-        response.data?.propertyEntries ??
-        []
+        response.data.propertyEntries ?? []
       );
     },
   );
 
 export const executeFrontendUpdate =
   createAsyncThunk<
-    any[],
+    PropertyEntry[],
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/executeFrontendUpdate",
     async (_, thunkAPI) => {
-      const state = thunkAPI.getState();
-
       const api =
-        state.api.awb_rest_api.infoApi;
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
       const response =
-        await api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.FRONTEND.EXECUTE",
-          },
-        });
+        await api.getAppSettings(
+          "UPDATE.FRONTEND.EXECUTE",
+        );
 
       clearUpdateSettingsCache();
 
       return (
-        response.data?.propertyEntries ??
-        []
+        response.data.propertyEntries ?? []
       );
     },
   );
 
 export const checkBackendUpdate =
   createAsyncThunk<
-    any[],
+    PropertyEntry[],
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/checkBackendUpdate",
     async (_, thunkAPI) => {
-      const state = thunkAPI.getState();
-
       const api =
-        state.api.awb_rest_api.infoApi;
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
       const response =
-        await api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.BACKEND.CHECK",
-          },
-        });
+        await api.getAppSettings(
+          "UPDATE.BACKEND.CHECK",
+        );
 
       return (
-        response.data?.propertyEntries ??
-        []
+        response.data.propertyEntries ?? []
       );
     },
   );
 
 export const executeBackendUpdate =
   createAsyncThunk<
-    any[],
+    PropertyEntry[],
     void,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/executeBackendUpdate",
     async (_, thunkAPI) => {
-      const state = thunkAPI.getState();
-
       const api =
-        state.api.awb_rest_api.infoApi;
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
       const response =
-        await api.getAppSettings({
-          headers: {
-            "X-Performative":
-              "UPDATE.BACKEND.EXECUTE",
-          },
-        });
+        await api.getAppSettings(
+          "UPDATE.BACKEND.EXECUTE",
+        );
 
       return (
-        response.data?.propertyEntries ??
-        []
+        response.data.propertyEntries ?? []
       );
     },
   );
@@ -912,16 +686,12 @@ export const saveAutoUpdate =
   createAsyncThunk<
     boolean,
     boolean,
-    {
-      state: RootState;
-    }
+    { state: UpdateThunkState }
   >(
     "update/saveAutoUpdate",
     async (next, thunkAPI) => {
-      const state = thunkAPI.getState();
-
       const api =
-        state.api.awb_rest_api.infoApi;
+        thunkAPI.getState().api.awb_rest_api.infoApi;
 
       await api.setAppSettings({
         performative:
@@ -931,14 +701,12 @@ export const saveAutoUpdate =
           {
             key: "isautoupdate",
             value: String(next),
-            valueType: "BOOLEAN",
+            valueType: ValueType.Boolean,
           },
         ],
-      } as any);
+      });
 
-      if (
-        typeof window !== "undefined"
-      ) {
+      if (typeof window !== "undefined") {
         try {
           const cached =
             localStorage.getItem(
@@ -947,7 +715,9 @@ export const saveAutoUpdate =
 
           if (cached) {
             const parsed =
-              JSON.parse(cached);
+              JSON.parse(
+                cached,
+              ) as LoadedUpdateSettings;
 
             parsed.autoUpdate = next;
 
@@ -970,7 +740,6 @@ export const saveAutoUpdate =
 
 const updateSlice = createSlice({
   name: "update",
-
   initialState,
 
   reducers: {
@@ -978,27 +747,28 @@ const updateSlice = createSlice({
       state,
       action: PayloadAction<boolean>,
     ) {
-      state.autoUpdate =
-        action.payload;
+      state.autoUpdate = action.payload;
     },
 
     setFrontendUpdateStatus(
       state,
-      action: PayloadAction<
-        UpdateState["frontend"]
-      >,
+      action: PayloadAction<FrontendUpdateState>,
     ) {
-      state.frontend =
-        action.payload;
+      state.frontend = action.payload;
     },
 
     setBackendUpdateStatus(
       state,
-      action: PayloadAction<
-        UpdateState["backend"]
-      >,
+      action: PayloadAction<BackendUpdateState>,
     ) {
-      state.backend =
+      state.backend = action.payload;
+    },
+
+    setInstalledFrontendVersion(
+      state,
+      action: PayloadAction<string>,
+    ) {
+      state.frontend.currentVersion =
         action.payload;
     },
 
@@ -1008,11 +778,6 @@ const updateSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // -------------------------------------------------------------------------
-    // INSTALLED FRONTEND VERSION
-    // GET /api/version?type=WEBAPP
-    // -------------------------------------------------------------------------
-
     builder.addCase(
       loadInstalledFrontendVersion.fulfilled,
       (state, action) => {
@@ -1021,9 +786,13 @@ const updateSlice = createSlice({
       },
     );
 
-    // -------------------------------------------------------------------------
-    // LOAD UPDATE SETTINGS
-    // -------------------------------------------------------------------------
+    builder.addCase(
+      loadUpdateStrategy.fulfilled,
+      (state, action) => {
+        state.autoUpdate =
+          action.payload;
+      },
+    );
 
     builder.addCase(
       loadUpdateSettings.pending,
@@ -1036,15 +805,6 @@ const updateSlice = createSlice({
       loadUpdateSettings.fulfilled,
       (state, action) => {
         state.loading = false;
-
-        if (
-          !hasValidUpdatePayload(
-            action.payload,
-          )
-        ) {
-          return;
-        }
-
         applyUpdatePayload(
           state,
           action.payload,
@@ -1062,24 +822,14 @@ const updateSlice = createSlice({
     builder.addCase(
       loadUpdateSettingsIfNeeded.fulfilled,
       (state, action) => {
-        if (
-          !hasValidUpdatePayload(
+        if (action.payload) {
+          applyUpdatePayload(
+            state,
             action.payload,
-          )
-        ) {
-          return;
+          );
         }
-
-        applyUpdatePayload(
-          state,
-          action.payload,
-        );
       },
     );
-
-    // -------------------------------------------------------------------------
-    // AUTO UPDATE
-    // -------------------------------------------------------------------------
 
     builder.addCase(
       saveAutoUpdate.fulfilled,
@@ -1089,326 +839,193 @@ const updateSlice = createSlice({
       },
     );
 
-    // -------------------------------------------------------------------------
-    // CHECK FRONTEND UPDATE
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------------
+    // FRONTEND CHECK
+    // ---------------------------------------------------------------------
+
+    builder.addCase(
+      checkFrontendUpdate.pending,
+      (state) => {
+        state.frontend.isPending = true;
+      },
+    );
 
     builder.addCase(
       checkFrontendUpdate.fulfilled,
       (state, action) => {
-        const entries =
-          Array.isArray(action.payload)
-            ? action.payload
-            : [];
+        const entries = action.payload;
 
-        const pendingValue =
-          findValue(
-            entries,
-            "updatecheck.frontend.ispending",
+        state.frontend.isPending =
+          toBoolean(
+            findValue(
+              entries,
+              "updatecheck.frontend.ispending",
+            ),
           );
 
-        const availableValue =
-          findValue(
-            entries,
-            "updatecheck.frontend.isavailable",
+        state.frontend.isAvailable =
+          toBoolean(
+            findValue(
+              entries,
+              "updatecheck.frontend.isavailable",
+            ),
           );
 
-        state.frontend = {
-          ...state.frontend,
+        state.frontend.lastCheck =
+          findValue(
+            entries,
+            "updatecheck.frontend.lastcheck",
+          ) ??
+          state.frontend.lastCheck;
 
-          isPending:
-            pendingValue === undefined
-              ? state.frontend.isPending
-              : toBoolean(
-                  pendingValue,
-                ),
-
-          isAvailable:
-            availableValue ===
-            undefined
-              ? state.frontend.isAvailable
-              : toBoolean(
-                  availableValue,
-                ),
-
-          lastCheck: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.lastcheck",
-            ) ??
-              state.frontend.lastCheck,
-          ),
-
-          version: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.version",
-            ) ??
-              state.frontend.version,
-          ),
-
-          newVersion: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.newversion",
-            ) ??
-              state.frontend.newVersion,
-          ),
-
-          /*
-           * currentVersion wird hier bewusst nicht gesetzt.
-           *
-           * Sie kommt ausschließlich aus:
-           * GET /api/version?type=WEBAPP
-           */
-        };
+        state.frontend.newVersion =
+          findValue(
+            entries,
+            "updatecheck.frontend.newversion",
+          ) ??
+          state.frontend.newVersion;
       },
     );
-
-    // -------------------------------------------------------------------------
-    // EXECUTE FRONTEND UPDATE
-    // -------------------------------------------------------------------------
 
     builder.addCase(
-      executeFrontendUpdate.pending,
+      checkFrontendUpdate.rejected,
       (state) => {
-        state.frontend.isPending =
-          true;
+        state.frontend.isPending = false;
       },
     );
+
+    // ---------------------------------------------------------------------
+    // FRONTEND EXECUTE
+    //
+    // WICHTIG:
+    // UPDATE.FRONTEND.EXECUTE liefert update.status/update.message.
+    // Es darf niemals frontend.isPending auf true setzen.
+    // ---------------------------------------------------------------------
 
     builder.addCase(
       executeFrontendUpdate.fulfilled,
       (state, action) => {
-        const entries =
-          Array.isArray(action.payload)
-            ? action.payload
-            : [];
+        const entries = action.payload;
 
-        const pendingValue =
-          findValue(
-            entries,
-            "updatecheck.frontend.ispending",
-          );
+        const status =
+          String(
+            findValue(
+              entries,
+              "update.status",
+            ) ?? "",
+          )
+            .trim()
+            .toLowerCase();
 
-        const availableValue =
-          findValue(
-            entries,
-            "updatecheck.frontend.isavailable",
-          );
+        const message =
+          String(
+            findValue(
+              entries,
+              "update.message",
+            ) ?? "",
+          )
+            .trim()
+            .toLowerCase();
 
         state.lastLoadedAt = null;
+        state.frontend.isPending = false;
 
-        state.frontend = {
-          ...state.frontend,
-
-          isPending:
-            pendingValue === undefined
-              ? true
-              : toBoolean(
-                  pendingValue,
-                ),
-
-          isAvailable:
-            availableValue ===
-            undefined
-              ? state.frontend.isAvailable
-              : toBoolean(
-                  availableValue,
-                ),
-
-          lastCheck: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.lastcheck",
-            ) ??
-              state.frontend.lastCheck,
-          ),
-
-          version: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.version",
-            ) ??
-              state.frontend.version,
-          ),
-
-          newVersion: String(
-            findValue(
-              entries,
-              "updatecheck.frontend.newversion",
-            ) ??
-              state.frontend.newVersion,
-          ),
-
-          /*
-           * currentVersion bleibt unverändert.
-           * Nach dem Reload wird sie erneut über
-           * /api/version?type=WEBAPP geladen.
-           */
-        };
+        if (
+          status === "done" ||
+          message === "update installed" ||
+          message === "nothing to update"
+        ) {
+          state.frontend.isAvailable = false;
+        }
       },
     );
+
+    // ---------------------------------------------------------------------
+    // BACKEND CHECK
+    // ---------------------------------------------------------------------
 
     builder.addCase(
-      executeFrontendUpdate.rejected,
+      checkBackendUpdate.pending,
       (state) => {
-        state.frontend.isPending =
-          false;
+        state.backend.isPending = true;
       },
     );
-
-    // -------------------------------------------------------------------------
-    // CHECK BACKEND UPDATE
-    // -------------------------------------------------------------------------
 
     builder.addCase(
       checkBackendUpdate.fulfilled,
       (state, action) => {
-        const entries =
-          Array.isArray(action.payload)
-            ? action.payload
-            : [];
+        const entries = action.payload;
 
-        const pendingValue =
-          findValue(
-            entries,
-            "updatecheck.backend.ispending",
+        state.backend.isPending =
+          toBoolean(
+            findValue(
+              entries,
+              "updatecheck.backend.ispending",
+            ),
           );
 
-        const availableValue =
-          findValue(
-            entries,
-            "updatecheck.backend.isavailable",
+        state.backend.isAvailable =
+          toBoolean(
+            findValue(
+              entries,
+              "updatecheck.backend.isavailable",
+            ),
           );
 
-        state.backend = {
-          ...state.backend,
-
-          isPending:
-            pendingValue === undefined
-              ? state.backend.isPending
-              : toBoolean(
-                  pendingValue,
-                ),
-
-          isAvailable:
-            availableValue ===
-            undefined
-              ? state.backend.isAvailable
-              : toBoolean(
-                  availableValue,
-                ),
-
-          lastCheck: String(
-            findValue(
-              entries,
-              "updatecheck.backend.lastcheck",
-            ) ??
-              state.backend.lastCheck,
-          ),
-
-          status: String(
-            findValue(
-              entries,
-              "update.status",
-            ) ??
-              state.backend.status,
-          ),
-
-          progress: toNumber(
-            findValue(
-              entries,
-              "update.progress",
-            ) ??
-              state.backend.progress,
-          ),
-        };
+        state.backend.lastCheck =
+          findValue(
+            entries,
+            "updatecheck.backend.lastcheck",
+          ) ??
+          state.backend.lastCheck;
       },
     );
 
-    // -------------------------------------------------------------------------
-    // EXECUTE BACKEND UPDATE
-    // -------------------------------------------------------------------------
+    builder.addCase(
+      checkBackendUpdate.rejected,
+      (state) => {
+        state.backend.isPending = false;
+      },
+    );
+
+    // ---------------------------------------------------------------------
+    // BACKEND EXECUTE
+    //
+    // WICHTIG:
+    // UPDATE.BACKEND.EXECUTE liefert update.status/update.progress.
+    // backend.isPending gehört nur zum CHECK.
+    // ---------------------------------------------------------------------
 
     builder.addCase(
       executeBackendUpdate.pending,
       (state) => {
-        state.backend.isPending =
-          true;
+        state.backend.status = "Pending";
+        state.backend.progress = 0;
       },
     );
 
     builder.addCase(
       executeBackendUpdate.fulfilled,
       (state, action) => {
-        const entries =
-          Array.isArray(action.payload)
-            ? action.payload
-            : [];
+        const entries = action.payload;
 
-        const pendingValue =
+        state.backend.isPending = false;
+
+        state.backend.status =
           findValue(
             entries,
-            "updatecheck.backend.ispending",
-          );
+            "update.status",
+          ) ??
+          state.backend.status;
 
-        const availableValue =
-          findValue(
-            entries,
-            "updatecheck.backend.isavailable",
-          );
-
-        state.backend = {
-          ...state.backend,
-
-          isPending:
-            pendingValue === undefined
-              ? true
-              : toBoolean(
-                  pendingValue,
-                ),
-
-          isAvailable:
-            availableValue ===
-            undefined
-              ? state.backend.isAvailable
-              : toBoolean(
-                  availableValue,
-                ),
-
-          lastCheck: String(
-            findValue(
-              entries,
-              "updatecheck.backend.lastcheck",
-            ) ??
-              state.backend.lastCheck,
-          ),
-
-          status: String(
-            findValue(
-              entries,
-              "update.status",
-            ) ??
-              state.backend.status,
-          ),
-
-          progress: toNumber(
+        state.backend.progress =
+          toNumber(
             findValue(
               entries,
               "update.progress",
             ) ??
-              state.backend.progress,
-          ),
-        };
-      },
-    );
-
-    builder.addCase(
-      executeBackendUpdate.rejected,
-      (state) => {
-        state.backend.isPending =
-          false;
+            state.backend.progress,
+          );
       },
     );
   },
@@ -1418,6 +1035,7 @@ export const {
   setAutoUpdate,
   setFrontendUpdateStatus,
   setBackendUpdateStatus,
+  setInstalledFrontendVersion,
   resetUpdateState,
 } = updateSlice.actions;
 

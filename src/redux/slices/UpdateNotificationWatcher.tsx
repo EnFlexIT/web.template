@@ -1,8 +1,18 @@
-// src/components/notifications/UpdateNotificationWatcher.tsx
-
 import { useUpdateNotifierWeb } from "../../hooks/useUpdateNotifierWeb";
 
-export function UpdateNotificationWatcher() {
-  useUpdateNotifierWeb();
+type Props = {
+  enabled: boolean;
+  intervalMs?: number;
+};
+
+export function UpdateNotificationWatcher({
+  enabled,
+  intervalMs,
+}: Props) {
+  useUpdateNotifierWeb({
+    enabled,
+    intervalMs,
+  });
+
   return null;
 }
