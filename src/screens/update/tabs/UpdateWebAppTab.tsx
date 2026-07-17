@@ -193,7 +193,7 @@ export function UpdateWebAppTab() {
 
   const waitForUpdatedWebApp =
     useCallback(async (): Promise<boolean> => {
-      const maxAttempts = 90;
+      const maxAttempts = 40;
       const minimumAttempts = 3;
 
       for (
@@ -274,7 +274,7 @@ export function UpdateWebAppTab() {
           );
         }
 
-        await sleep(2000);
+        await sleep(1000);
       }
 
       return false;
