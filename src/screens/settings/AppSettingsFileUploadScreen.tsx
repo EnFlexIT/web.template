@@ -11,7 +11,8 @@ import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H3 } from "../../components/stylistic/H3";
-import { BackendUpdateProgressDialog } from "../update/Dialog/UpdateProgressDialog";
+import {
+  UpdateProgressDialog,type UpdateProgressPhase,} from "../update/Dialog/UpdateProgressDialog";
 import { ConfirmDialog } from "../../components/ui-elements/ConfirmDialog";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
@@ -39,12 +40,6 @@ const Feather = withUnistyles(Feather_);
 const FILE_CONFIGURATION_PERFORMATIVE = "FILE.CONFIGURATION";
 const FALLBACK_CONFIGURATION_TYPE = "JettyConfiguration";
 const SERVERS_STORAGE_KEY = "servers";
-
-type ConfigDialogPhase =
-  | "installing"
-  | "restarting"
-  | "reconnecting"
-  | "logout";
 
 function getFilenameFromContentDisposition(
   contentDisposition: string | null,
@@ -329,8 +324,7 @@ export function AppSettingsFileUploadScreen() {
   );
 
   const [configDialogVisible, setConfigDialogVisible] = useState(false);
-  const [configDialogPhase, setConfigDialogPhase] =
-    useState<ConfigDialogPhase>("installing");
+  const [configDialogPhase, setConfigDialogPhase] = useState<UpdateProgressPhase>("installing");
   const [configDialogText, setConfigDialogText] = useState<string | undefined>();
 
   const fallbackConfigurationTypeOptions = useMemo<Record<string, string>>(
@@ -1070,8 +1064,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
             </ThemedText>
           ) : null}
         </View>
-
-        <BackendUpdateProgressDialog
+        <UpdateProgressDialog
           visible={configDialogVisible}
           phase={configDialogPhase}
           statusText={configDialogText}

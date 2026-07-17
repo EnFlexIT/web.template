@@ -1,21 +1,19 @@
-# Properties
+# SoftwareComponentList
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**performative** | **string** |  | [optional] [default to undefined]
-**propertyEntries** | [**Array&lt;PropertyEntry&gt;**](PropertyEntry.md) |  | [default to undefined]
+**SoftwareComponentList** | [**Array&lt;SoftwareComponent&gt;**](SoftwareComponent.md) |  | [optional] [default to undefined]
 
 ## Example
 
 ```typescript
-import { Properties } from './api';
+import { SoftwareComponentList } from './api';
 
-const instance: Properties = {
-    performative,
-    propertyEntries,
+const instance: SoftwareComponentList = {
+    SoftwareComponentList,
 };
 ```
 

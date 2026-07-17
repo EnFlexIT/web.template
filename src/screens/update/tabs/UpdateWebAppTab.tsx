@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { StyleSheet, View } from "react-native";
@@ -17,7 +18,6 @@ import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import {
   logoutAsync,
   selectApi,
-  selectAuthenticationMethod,
 } from "../../../redux/slices/apiSlice";
 
 import { setLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
@@ -26,41 +26,31 @@ import {
   checkFrontendUpdate,
   clearUpdateSettingsCache,
   executeFrontendUpdate,
-  loadUpdateSettingsIfNeeded,
 } from "../../../redux/slices/updateSlice";
-
-import { checkServerReachable } from "../../login/serverCheck";
 
 import {
   UpdateProgressDialog,
   UpdateProgressPhase,
 } from "../Dialog/UpdateProgressDialog";
 
-function sleep(milliseconds: number): Promise<void> {
+const MAX_CHECK_WAIT_MS = 1000;
+const MAX_EXECUTE_WAIT_MS = 1000;
+const MAX_LOGOUT_WAIT_MS = 1000;
+
+function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
 }
 
-function findEntryValue(
-  entries: unknown,
-  key: string,
-): unknown {
-  if (!Array.isArray(entries)) {
-    return undefined;
-  }
-
-  return entries.find(
-    (entry: any) => entry?.key === key,
-  )?.value;
-}
-
-function toBoolean(value: unknown): boolean {
-  return (
-    String(value ?? "")
-      .trim()
-      .toLowerCase() === "true"
-  );
+async function waitAtMost<T>(
+  promise: Promise<T>,
+  milliseconds: number,
+): Promise<T | undefined> {
+  return Promise.race([
+    promise,
+    wait(milliseconds).then(() => undefined),
+  ]);
 }
 
 export function UpdateWebAppTab() {
@@ -69,18 +59,19 @@ export function UpdateWebAppTab() {
 
   const api = useAppSelector(selectApi);
 
-  const authenticationMethod = useAppSelector(
-    selectAuthenticationMethod,
-  );
-
   const updateState = useAppSelector(
     (state) => state.update,
   );
 
   const ip = api.ip;
-  const jwt = api.jwt;
+
+  const checkRequestActiveRef = useRef(false);
+  const installRequestActiveRef = useRef(false);
 
   const [isChecking, setIsChecking] =
+    useState(false);
+
+  const [isInstalling, setIsInstalling] =
     useState(false);
 
   const [
@@ -94,54 +85,58 @@ export function UpdateWebAppTab() {
   const [updatePhase, setUpdatePhase] =
     useState<UpdateProgressPhase>("installing");
 
+  /*
+   * Beim Öffnen des Tabs wird nur der Frontend-Status geladen.
+   *
+   * loadUpdateSettingsIfNeeded wurde hier entfernt, weil diese
+   * Funktion zusätzlich Strategie- und Backend-Daten lädt.
+   */
   useEffect(() => {
-    dispatch(
-      loadUpdateSettingsIfNeeded({
-        force: false,
-        maxAgeMs: 30 * 60 * 1000,
-      }),
-    );
+    void dispatch(checkFrontendUpdate());
   }, [dispatch]);
 
   const checkNow = useCallback(async () => {
-    if (!ip || isChecking) {
+    if (
+      !ip ||
+      checkRequestActiveRef.current ||
+      installRequestActiveRef.current
+    ) {
       return;
     }
 
+    checkRequestActiveRef.current = true;
     setIsChecking(true);
 
-    try {
-      await dispatch(
-        checkFrontendUpdate(),
-      ).unwrap();
+    const request = dispatch(
+      checkFrontendUpdate(),
+    )
+      .unwrap()
+      .catch((error) => {
+        console.warn(
+          "[FRONTEND UPDATE] Update check failed",
+          error,
+        );
 
-      await dispatch(
-        loadUpdateSettingsIfNeeded({
-          force: true,
-        }),
-      ).unwrap();
-    } catch (error) {
-      console.error(
-        "[FRONTEND UPDATE] Update check failed",
-        error,
-      );
-    } finally {
-      setIsChecking(false);
-    }
-  }, [dispatch, ip, isChecking]);
+        return undefined;
+      })
+      .finally(() => {
+        checkRequestActiveRef.current = false;
+      });
 
-  const logoutAndReload = useCallback(async () => {
-    setUpdatePhase("success");
-
-    setStatusText(
-      t(
-        "serverWeb.updateDialog.steps.success",
-        "Das Update wurde installiert. Die Web-App wird neu geladen.",
-      ),
+    /*
+     * Die Benutzeroberfläche wartet maximal eine Sekunde.
+     * Die Anfrage darf im Hintergrund noch fertig werden und
+     * aktualisiert anschließend automatisch den Redux-State.
+     */
+    await waitAtMost(
+      request,
+      MAX_CHECK_WAIT_MS,
     );
 
-    await sleep(1000);
+    setIsChecking(false);
+  }, [dispatch, ip]);
 
+  const logoutAndOpenLogin = useCallback(async () => {
     setUpdatePhase("logout");
 
     setStatusText(
@@ -153,34 +148,47 @@ export function UpdateWebAppTab() {
 
     setLogoutFlowActive(true);
 
-    try {
-      await dispatch(logoutAsync()).unwrap();
-    } catch (error) {
-      /*
-       * Ein Logout kann während eines Server-Neustarts
-       * fehlschlagen. Die lokale Sitzung wird trotzdem
-       * beendet und die Login-Seite neu geladen.
-       */
-      console.warn(
-        "[FRONTEND UPDATE] Logout request failed",
-        error,
-      );
-    }
+    const logoutRequest = dispatch(
+      logoutAsync(),
+    )
+      .unwrap()
+      .catch((error) => {
+        /*
+         * Beim Update kann die Verbindung bereits unterbrochen
+         * sein. Der Browser wird trotzdem zur Anmeldung geleitet.
+         */
+        console.warn(
+          "[FRONTEND UPDATE] Logout request failed",
+          error,
+        );
+
+        return undefined;
+      });
+
+    await waitAtMost(
+      logoutRequest,
+      MAX_LOGOUT_WAIT_MS,
+    );
 
     clearUpdateSettingsCache();
 
     if (typeof window !== "undefined") {
+      const loginUrl = new URL(
+        "/login",
+        window.location.origin,
+      );
+
       /*
-       * Nicht window.location.reload() verwenden.
-       *
-       * Sonst würde beispielsweise eine bestehende
-       * /error?... URL erneut geladen werden.
-       *
-       * Der Zeitstempel verhindert zusätzlich, dass eine
-       * alte HTML-Datei aus dem Browser-Cache geladen wird.
+       * Der Zeitstempel verhindert, dass der Browser eine alte
+       * Web-App-Version aus dem Cache verwendet.
        */
+      loginUrl.searchParams.set(
+        "updated",
+        String(Date.now()),
+      );
+
       window.location.replace(
-        `/login?updated=${Date.now()}`,
+        loginUrl.toString(),
       );
 
       return;
@@ -188,170 +196,67 @@ export function UpdateWebAppTab() {
 
     setLogoutFlowActive(false);
     setShowUpdateDialog(false);
-    setIsChecking(false);
+    setIsInstalling(false);
   }, [dispatch, t]);
-
-  const waitForUpdatedWebApp =
-    useCallback(async (): Promise<boolean> => {
-      const maxAttempts = 40;
-      const minimumAttempts = 3;
-
-      for (
-        let attempt = 1;
-        attempt <= maxAttempts;
-        attempt += 1
-      ) {
-        try {
-          const reachable =
-            await checkServerReachable(
-              ip,
-              jwt,
-              authenticationMethod,
-              {
-                force: true,
-              },
-            );
-
-          if (!reachable.ok) {
-            setUpdatePhase("restarting");
-
-            setStatusText(
-              t(
-                "serverWeb.updateDialog.steps.restarting",
-                "Die Anwendung wird neu gestartet...",
-              ),
-            );
-          } else {
-            setUpdatePhase("reconnecting");
-
-            setStatusText(
-              t(
-                "serverWeb.updateDialog.steps.reconnecting",
-                "Die Verbindung wird wiederhergestellt...",
-              ),
-            );
-
-            if (attempt >= minimumAttempts) {
-              try {
-                const entries = await dispatch(
-                  checkFrontendUpdate(),
-                ).unwrap();
-
-                const isPending = toBoolean(
-                  findEntryValue(
-                    entries,
-                    "updatecheck.frontend.ispending",
-                  ),
-                );
-
-                const isAvailable = toBoolean(
-                  findEntryValue(
-                    entries,
-                    "updatecheck.frontend.isavailable",
-                  ),
-                );
-
-                if (!isPending && !isAvailable) {
-                  return true;
-                }
-              } catch {
-                /*
-                 * Der Server ist möglicherweise bereits
-                 * erreichbar, aber das Update-System noch
-                 * nicht vollständig gestartet.
-                 */
-              }
-            }
-          }
-        } catch {
-          setUpdatePhase("restarting");
-
-          setStatusText(
-            t(
-              "serverWeb.updateDialog.steps.restarting",
-              "Die Anwendung wird neu gestartet...",
-            ),
-          );
-        }
-
-        await sleep(1000);
-      }
-
-      return false;
-    }, [
-      authenticationMethod,
-      dispatch,
-      ip,
-      jwt,
-      t,
-    ]);
 
   const installFrontendUpdate =
     useCallback(async () => {
       if (
         !ip ||
-        isChecking ||
-        updateState.loading
+        installRequestActiveRef.current ||
+        checkRequestActiveRef.current
       ) {
         return;
       }
 
-      setIsChecking(true);
+      installRequestActiveRef.current = true;
+
+      setIsInstalling(true);
       setShowUpdateDialog(true);
       setUpdatePhase("installing");
 
       setStatusText(
         t(
           "serverWeb.updateDialog.steps.installing",
-          "Die neue Version der Web-App wird installiert...",
+          "Die neue Version der Web-App wird installiert…",
         ),
       );
 
       try {
         /*
-         * Die Anfrage kann während des Updates abbrechen,
-         * falls der Server oder die Web-App neu gestartet
-         * wird. Deshalb beginnt die Prüfung auch nach einem
-         * Request-Fehler.
+         * UPDATE.FRONTEND.EXECUTE wird nur einmal ausgelöst.
+         *
+         * Die Oberfläche wartet maximal eine Sekunde auf die
+         * Antwort. Ein möglicher Verbindungsabbruch beim Update
+         * blockiert den Benutzer dadurch nicht.
          */
-        try {
-          await dispatch(
-            executeFrontendUpdate(),
-          ).unwrap();
-        } catch (error) {
-          console.warn(
-            "[FRONTEND UPDATE] Execute request interrupted",
-            error,
-          );
-        }
+        const executeRequest = dispatch(
+          executeFrontendUpdate(),
+        )
+          .unwrap()
+          .catch((error) => {
+            /*
+             * Der Request kann abbrechen, wenn die aktualisierte
+             * Web-App oder der Server die Verbindung beendet.
+             * Der Ablauf wird trotzdem mit Logout und Reload
+             * fortgesetzt.
+             */
+            console.warn(
+              "[FRONTEND UPDATE] Execute request interrupted",
+              error,
+            );
 
-        setUpdatePhase("restarting");
+            return undefined;
+          });
 
-        setStatusText(
-          t(
-            "serverWeb.updateDialog.steps.restarting",
-            "Die Anwendung wird neu gestartet...",
-          ),
+        await waitAtMost(
+          executeRequest,
+          MAX_EXECUTE_WAIT_MS,
         );
 
-        const updateFinished =
-          await waitForUpdatedWebApp();
+        clearUpdateSettingsCache();
 
-        if (!updateFinished) {
-          setUpdatePhase("error");
-
-          setStatusText(
-            t(
-              "serverWeb.updateDialog.steps.failed",
-              "Das Update konnte nicht bestätigt werden. Bitte versuche es erneut.",
-            ),
-          );
-
-          setIsChecking(false);
-          return;
-        }
-
-        await logoutAndReload();
+        await logoutAndOpenLogin();
       } catch (error) {
         console.error(
           "[FRONTEND UPDATE] Update failed",
@@ -363,23 +268,33 @@ export function UpdateWebAppTab() {
         setStatusText(
           t(
             "serverWeb.updateDialog.steps.failed",
-            "Das Update konnte nicht abgeschlossen werden.",
+            "Das Update konnte nicht gestartet werden. Bitte versuche es erneut.",
           ),
         );
 
-        setIsChecking(false);
+        installRequestActiveRef.current = false;
+        setIsInstalling(false);
       }
     }, [
       dispatch,
       ip,
-      isChecking,
-      logoutAndReload,
+      logoutAndOpenLogin,
       t,
-      updateState.loading,
-      waitForUpdatedWebApp,
     ]);
 
+  const closeErrorDialog = useCallback(() => {
+    if (updatePhase !== "error") {
+      return;
+    }
+
+    installRequestActiveRef.current = false;
+
+    setShowUpdateDialog(false);
+    setIsInstalling(false);
+  }, [updatePhase]);
+
   const updateStatus =
+    isInstalling ||
     updateState.frontend.isPending
       ? t(
           "serverWeb.statusTexts.installing",
@@ -393,7 +308,8 @@ export function UpdateWebAppTab() {
                 updateState.frontend.newVersion ||
                 updateState.frontend.version ||
                 "-",
-              defaultValue: "Update verfügbar",
+              defaultValue:
+                "Neues Update verfügbar",
             },
           )
         : t(
@@ -416,20 +332,18 @@ export function UpdateWebAppTab() {
   const lastCheckedAt =
     updateState.frontend.lastCheck || "-";
 
+  const controlsDisabled =
+    isChecking ||
+    isInstalling ||
+    !ip;
+
   return (
     <Card>
       <UpdateProgressDialog
         visible={showUpdateDialog}
         statusText={statusText}
         phase={updatePhase}
-        onClose={() => {
-          if (updatePhase !== "error") {
-            return;
-          }
-
-          setShowUpdateDialog(false);
-          setIsChecking(false);
-        }}
+        onClose={closeErrorDialog}
       />
 
       <View style={s.container}>
@@ -440,7 +354,7 @@ export function UpdateWebAppTab() {
         <Row
           label={t(
             "serverWeb.fields.acceptedVersion",
-            "Aktuelle Version",
+            "Version",
           )}
           value={currentVersion}
         />
@@ -456,7 +370,7 @@ export function UpdateWebAppTab() {
         <Row
           label={t(
             "serverWeb.fields.status",
-            "Status",
+            "Update-Status",
           )}
           value={updateStatus}
         />
@@ -475,7 +389,7 @@ export function UpdateWebAppTab() {
               isChecking
                 ? t(
                     "serverWeb.actions.checking",
-                    "Suche nach Updates...",
+                    "Prüfe…",
                   )
                 : t(
                     "serverWeb.actions.checkNow",
@@ -485,27 +399,26 @@ export function UpdateWebAppTab() {
             variant="secondary"
             size="xs"
             onPress={checkNow}
-            disabled={
-              isChecking ||
-              !ip ||
-              updateState.loading
-            }
+            disabled={controlsDisabled}
           />
 
           {updateState.frontend.isAvailable ? (
             <ActionButton
-              label={t(
-                "serverWeb.actions.executeUpdate",
-                "Update installieren",
-              )}
+              label={
+                isInstalling
+                  ? t(
+                      "serverWeb.actions.installing",
+                      "Update wird installiert…",
+                    )
+                  : t(
+                      "serverWeb.actions.executeUpdate",
+                      "Update installieren",
+                    )
+              }
               variant="primary"
               size="xs"
               onPress={installFrontendUpdate}
-              disabled={
-                isChecking ||
-                updateState.loading ||
-                !ip
-              }
+              disabled={controlsDisabled}
             />
           ) : null}
         </View>
@@ -514,18 +427,21 @@ export function UpdateWebAppTab() {
   );
 }
 
-function Row(props: {
+function Row({
+  label,
+  value,
+}: {
   label: string;
   value: string;
 }) {
   return (
     <View style={s.rowLine}>
       <ThemedText style={s.label}>
-        {props.label}
+        {label}
       </ThemedText>
 
       <ThemedText style={s.value}>
-        {props.value || "-"}
+        {value || "-"}
       </ThemedText>
     </View>
   );

@@ -1,14 +1,12 @@
 # InfoApi
 
-All URIs are relative to *https://localhost:8080/api*
+All URIs are relative to *http://localhost:8080/api*
 
 |Method | HTTP request | Description|
 |------------- | ------------- | -------------|
-|[**aliveGet**](#aliveget) | **GET** /alive | Health check endpoint|
+|[**aliveGet**](#aliveget) | **GET** /alive | |
 |[**eventLogGet**](#eventlogget) | **GET** /eventLog | get logs of specific type|
 |[**getAppSettings**](#getappsettings) | **GET** /app/settings/get | Returns required base configuration settings for the curren web application|
-|[**installationDetailsGet**](#installationdetailsget) | **GET** /installationDetails | Get the details about an AWB Installation|
-|[**isUpdateAvailableGet**](#isupdateavailableget) | **GET** /isUpdateAvailable | Checks wether an update for the AWB is available or not|
 |[**setAppSettings**](#setappsettings) | **PUT** /app/settings/set | Enables to update or set the required base configuration settings for the curren web application|
 |[**versionGet**](#versionget) | **GET** /version | Return the current version number of Agent.Workbench|
 
@@ -51,7 +49,7 @@ This endpoint does not have any parameters.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Server is alive |  -  |
+|**200** | server system is allive |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -124,11 +122,18 @@ import {
 const configuration = new Configuration();
 const apiInstance = new InfoApi(configuration);
 
-const { status, data } = await apiInstance.getAppSettings();
+let xPerformative: string; // (optional) (default to undefined)
+
+const { status, data } = await apiInstance.getAppSettings(
+    xPerformative
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **xPerformative** | [**string**] |  | (optional) defaults to undefined|
 
 
 ### Return type
@@ -152,94 +157,8 @@ This endpoint does not have any parameters.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **installationDetailsGet**
-> Array<BundleInformation> installationDetailsGet()
-
-
-### Example
-
-```typescript
-import {
-    InfoApi,
-    Configuration
-} from './api';
-
-const configuration = new Configuration();
-const apiInstance = new InfoApi(configuration);
-
-const { status, data } = await apiInstance.installationDetailsGet();
-```
-
-### Parameters
-This endpoint does not have any parameters.
-
-
-### Return type
-
-**Array<BundleInformation>**
-
-### Authorization
-
-[bearerAuth](../README.md#bearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-|**200** | Return the Details about an AWB Installtion |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **isUpdateAvailableGet**
-> boolean isUpdateAvailableGet()
-
-
-### Example
-
-```typescript
-import {
-    InfoApi,
-    Configuration
-} from './api';
-
-const configuration = new Configuration();
-const apiInstance = new InfoApi(configuration);
-
-const { status, data } = await apiInstance.isUpdateAvailableGet();
-```
-
-### Parameters
-This endpoint does not have any parameters.
-
-
-### Return type
-
-**boolean**
-
-### Authorization
-
-[bearerAuth](../README.md#bearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-|**200** | request successful. boolean in response indicates wether update is available or not |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **setAppSettings**
-> setAppSettings()
+> Message setAppSettings()
 
 Enables to update or set the required base configuration settings for the curren web application
 
@@ -271,7 +190,7 @@ const { status, data } = await apiInstance.setAppSettings(
 
 ### Return type
 
-void (empty response body)
+**Message**
 
 ### Authorization
 
@@ -280,18 +199,18 @@ void (empty response body)
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: Not defined
+ - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Successfully changed base settings |  -  |
+|**200** | Successfully subbmited settings |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **versionGet**
-> Version versionGet()
+> SoftwareComponentList versionGet()
 
 
 ### Example
@@ -305,16 +224,29 @@ import {
 const configuration = new Configuration();
 const apiInstance = new InfoApi(configuration);
 
-const { status, data } = await apiInstance.versionGet();
+let type: SoftwareComponentType; // (optional) (default to undefined)
+let filter: string; // (optional) (default to undefined)
+let isShowSource: boolean; // (optional) (default to undefined)
+
+const { status, data } = await apiInstance.versionGet(
+    type,
+    filter,
+    isShowSource
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **type** | **SoftwareComponentType** |  | (optional) defaults to undefined|
+| **filter** | [**string**] |  | (optional) defaults to undefined|
+| **isShowSource** | [**boolean**] |  | (optional) defaults to undefined|
 
 
 ### Return type
 
-**Version**
+**SoftwareComponentList**
 
 ### Authorization
 

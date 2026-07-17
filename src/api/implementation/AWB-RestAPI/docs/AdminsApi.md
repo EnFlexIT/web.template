@@ -1,17 +1,17 @@
 # AdminsApi
 
-All URIs are relative to *https://localhost:8080/api*
+All URIs are relative to *http://localhost:8080/api*
 
 |Method | HTTP request | Description|
 |------------- | ------------- | -------------|
-|[**executionStateGet**](#executionstateget) | **GET** /executionState | Returns the current AWB state|
+|[**downloadAppSettingsFile**](#downloadappsettingsfile) | **GET** /app/settings/download | Download configuration file|
 |[**infoGet**](#infoget) | **GET** /info | Returns system information|
 |[**loadGet**](#loadget) | **GET** /load | Returns the current System load|
+|[**uploadAppSettingsFile**](#uploadappsettingsfile) | **POST** /app/settings/upload | Upload configuration file (binary)|
 
-# **executionStateGet**
-> ExecutionState executionStateGet()
+# **downloadAppSettingsFile**
+> File downloadAppSettingsFile()
 
-Returns the current state of Agent.Workbench consisiting information  about the execution mode, the currently open project and other. 
 
 ### Example
 
@@ -24,16 +24,23 @@ import {
 const configuration = new Configuration();
 const apiInstance = new AdminsApi(configuration);
 
-const { status, data } = await apiInstance.executionStateGet();
+let xPerformative: string; //Defines which configuration should be downloaded (optional) (default to undefined)
+
+const { status, data } = await apiInstance.downloadAppSettingsFile(
+    xPerformative
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **xPerformative** | [**string**] | Defines which configuration should be downloaded | (optional) defaults to undefined|
 
 
 ### Return type
 
-**ExecutionState**
+**File**
 
 ### Authorization
 
@@ -42,13 +49,13 @@ This endpoint does not have any parameters.
 ### HTTP request headers
 
  - **Content-Type**: Not defined
- - **Accept**: application/json
+ - **Accept**: application/octet-stream
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | AWB-State |  -  |
+|**200** | File download successful |  * Content-Disposition - attachment; filename&#x3D;\&quot;config.json\&quot; <br>  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -137,6 +144,60 @@ This endpoint does not have any parameters.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 |**200** | System Load |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **uploadAppSettingsFile**
+> Message uploadAppSettingsFile()
+
+Allows uploading configuration files via multipart/form-data. The X-Performative header defines the type of configuration file.
+
+### Example
+
+```typescript
+import {
+    AdminsApi,
+    Configuration
+} from './api';
+
+const configuration = new Configuration();
+const apiInstance = new AdminsApi(configuration);
+
+let file: File; //The configuration file to upload (default to undefined)
+let xPerformative: string; //Defines which configuration should be updated (optional) (default to undefined)
+
+const { status, data } = await apiInstance.uploadAppSettingsFile(
+    file,
+    xPerformative
+);
+```
+
+### Parameters
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **file** | [**File**] | The configuration file to upload | defaults to undefined|
+| **xPerformative** | [**string**] | Defines which configuration should be updated | (optional) defaults to undefined|
+
+
+### Return type
+
+**Message**
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: multipart/form-data
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+|**200** | Upload successful and configuration applied |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

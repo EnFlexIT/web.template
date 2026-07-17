@@ -24,43 +24,6 @@ import type { RequestArgs } from './base';
 import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError, operationServerMap } from './base';
 
 /**
- * Contains Information about one singular Bundle
- * @export
- * @interface BundleInformation
- */
-export interface BundleInformation {
-    /**
-     * 
-     * @type {string}
-     * @memberof BundleInformation
-     */
-    'FeatureName': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BundleInformation
-     */
-    'Provider': string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BundleInformation
-     */
-    'BundleName': string;
-    /**
-     * 
-     * @type {number}
-     * @memberof BundleInformation
-     */
-    'BundleID': number;
-    /**
-     * 
-     * @type {Version}
-     * @memberof BundleInformation
-     */
-    'Version': Version;
-}
-/**
  * An Event that occured and can be logged
  * @export
  * @interface Event
@@ -120,52 +83,46 @@ export type EventLogTypes = typeof EventLogTypes[keyof typeof EventLogTypes];
 
 
 /**
- * The Agent.Workbench execution state with its open project and the selected setup
+ * 
  * @export
- * @interface ExecutionState
+ * @interface Message
  */
-export interface ExecutionState {
+export interface Message {
     /**
-     * * \'APPLICATION\' - Runs as end user application in an desktop environment * \'SERVER\' - Runs as Background server-system * \'SERVER_MASTER\' - Runs as central \'server. master\' system and manages all \'server.slave\' systems * \'SERVER_SLAVE\' - Runs as central \'server. slave\' system and wait for start order from the \'server.master\' * \'DEVICE_SYSTEM\' - Runs as system that directly executes single agents or projects 
+     * 
      * @type {string}
-     * @memberof ExecutionState
+     * @memberof Message
      */
-    'executionMode'?: ExecutionStateExecutionModeEnum;
+    'dateTime': string;
     /**
-     * * \'SETUP\' - Runs the selected setup of an AWB projekt * \'AGENT\' - Runs one or more agents from an AWB project 
-     * @type {string}
-     * @memberof ExecutionState
+     * 
+     * @type {MessageType}
+     * @memberof Message
      */
-    'deviceSystemExecutionMode'?: ExecutionStateDeviceSystemExecutionModeEnum;
+    'messageType': MessageType;
     /**
-     * The currently open project
+     * 
      * @type {string}
-     * @memberof ExecutionState
+     * @memberof Message
      */
-    'project'?: string;
-    /**
-     * The currently open project-setup
-     * @type {string}
-     * @memberof ExecutionState
-     */
-    'setup'?: string;
+    'message': string;
 }
 
-export const ExecutionStateExecutionModeEnum = {
-    Application: 'APPLICATION',
-    Server: 'SERVER',
-    ServerMaster: 'SERVER_MASTER',
-    ServerSlave: 'SERVER_SLAVE',
-    DeviceSystem: 'DEVICE_SYSTEM'
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export const MessageType = {
+    Info: 'INFO',
+    Warning: 'WARNING',
+    Error: 'ERROR'
 } as const;
 
-export type ExecutionStateExecutionModeEnum = typeof ExecutionStateExecutionModeEnum[keyof typeof ExecutionStateExecutionModeEnum];
-export const ExecutionStateDeviceSystemExecutionModeEnum = {
-    Setup: 'SETUP',
-    Agent: 'AGENT'
-} as const;
+export type MessageType = typeof MessageType[keyof typeof MessageType];
 
-export type ExecutionStateDeviceSystemExecutionModeEnum = typeof ExecutionStateDeviceSystemExecutionModeEnum[keyof typeof ExecutionStateDeviceSystemExecutionModeEnum];
 
 /**
  * Describes a single network connection.
@@ -243,6 +200,12 @@ export interface PasswordChange {
 export interface Properties {
     /**
      * 
+     * @type {string}
+     * @memberof Properties
+     */
+    'performative'?: string;
+    /**
+     * 
      * @type {Array<PropertyEntry>}
      * @memberof Properties
      */
@@ -272,7 +235,112 @@ export interface PropertyEntry {
      * @memberof PropertyEntry
      */
     'valueType': ValueType;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof PropertyEntry
+     */
+    'valueOptions'?: Array<string>;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof PropertyEntry
+     */
+    'valueOptionsOnly'?: boolean;
 }
+
+
+/**
+ * 
+ * @export
+ * @interface SessionTimes
+ */
+export interface SessionTimes {
+    /**
+     * 
+     * @type {number}
+     * @memberof SessionTimes
+     */
+    'remainingTime': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SessionTimes
+     */
+    'expirationTime': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SessionTimes
+     */
+    'remainingTokenTime'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SessionTimes
+     */
+    'tokenExpirationTime'?: number;
+}
+/**
+ * 
+ * @export
+ * @interface SoftwareComponent
+ */
+export interface SoftwareComponent {
+    /**
+     * ID of the software component as for example symbolic bundle name or feature ID
+     * @type {string}
+     * @memberof SoftwareComponent
+     */
+    'ID'?: string;
+    /**
+     * human readable bundle or feature name
+     * @type {string}
+     * @memberof SoftwareComponent
+     */
+    'name'?: string;
+    /**
+     * 
+     * @type {SoftwareComponentType}
+     * @memberof SoftwareComponent
+     */
+    'componentType'?: SoftwareComponentType;
+    /**
+     * 
+     * @type {Version}
+     * @memberof SoftwareComponent
+     */
+    'version'?: Version;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface SoftwareComponentList
+ */
+export interface SoftwareComponentList {
+    /**
+     * 
+     * @type {Array<SoftwareComponent>}
+     * @memberof SoftwareComponentList
+     */
+    'SoftwareComponentList'?: Array<SoftwareComponent>;
+}
+/**
+ * the type of software component that is either webApp, feature or bundle
+ * @export
+ * @enum {string}
+ */
+
+export const SoftwareComponentType = {
+    Webapp: 'WEBAPP',
+    Feature: 'FEATURE',
+    Bundle: 'BUNDLE',
+    BundleOfFeature: 'BUNDLE_OF_FEATURE'
+} as const;
+
+export type SoftwareComponentType = typeof SoftwareComponentType[keyof typeof SoftwareComponentType];
 
 
 /**
@@ -435,13 +503,14 @@ export interface Version {
 export const AdminsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * Returns the current state of Agent.Workbench consisiting information  about the execution mode, the currently open project and other. 
-         * @summary Returns the current AWB state
+         * 
+         * @summary Download configuration file
+         * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        executionStateGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/executionState`;
+        downloadAppSettingsFile: async (xPerformative?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/app/settings/download`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -459,6 +528,9 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
 
 
     
+            if (xPerformative != null) {
+                localVarHeaderParameter['X-Performative'] = String(xPerformative);
+            }
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -536,6 +608,55 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * Allows uploading configuration files via multipart/form-data. The X-Performative header defines the type of configuration file.
+         * @summary Upload configuration file (binary)
+         * @param {File} file The configuration file to upload
+         * @param {string} [xPerformative] Defines which configuration should be updated
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadAppSettingsFile: async (file: File, xPerformative?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'file' is not null or undefined
+            assertParamExists('uploadAppSettingsFile', 'file', file)
+            const localVarPath = `/app/settings/upload`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+            const localVarFormParams = new ((configuration && configuration.formDataCtor) || FormData)();
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+            if (file !== undefined) { 
+                localVarFormParams.append('file', file as any);
+            }
+    
+    
+            localVarHeaderParameter['Content-Type'] = 'multipart/form-data';
+    
+            if (xPerformative != null) {
+                localVarHeaderParameter['X-Performative'] = String(xPerformative);
+            }
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = localVarFormParams;
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -547,15 +668,16 @@ export const AdminsApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = AdminsApiAxiosParamCreator(configuration)
     return {
         /**
-         * Returns the current state of Agent.Workbench consisiting information  about the execution mode, the currently open project and other. 
-         * @summary Returns the current AWB state
+         * 
+         * @summary Download configuration file
+         * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async executionStateGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ExecutionState>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.executionStateGet(options);
+        async downloadAppSettingsFile(xPerformative?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<File>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.downloadAppSettingsFile(xPerformative, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['AdminsApi.executionStateGet']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['AdminsApi.downloadAppSettingsFile']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -582,6 +704,20 @@ export const AdminsApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['AdminsApi.loadGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * Allows uploading configuration files via multipart/form-data. The X-Performative header defines the type of configuration file.
+         * @summary Upload configuration file (binary)
+         * @param {File} file The configuration file to upload
+         * @param {string} [xPerformative] Defines which configuration should be updated
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async uploadAppSettingsFile(file: File, xPerformative?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Message>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.uploadAppSettingsFile(file, xPerformative, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AdminsApi.uploadAppSettingsFile']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -593,13 +729,14 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
     const localVarFp = AdminsApiFp(configuration)
     return {
         /**
-         * Returns the current state of Agent.Workbench consisiting information  about the execution mode, the currently open project and other. 
-         * @summary Returns the current AWB state
+         * 
+         * @summary Download configuration file
+         * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        executionStateGet(options?: RawAxiosRequestConfig): AxiosPromise<ExecutionState> {
-            return localVarFp.executionStateGet(options).then((request) => request(axios, basePath));
+        downloadAppSettingsFile(xPerformative?: string, options?: RawAxiosRequestConfig): AxiosPromise<File> {
+            return localVarFp.downloadAppSettingsFile(xPerformative, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns Hardware and system  information. 
@@ -619,6 +756,17 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
         loadGet(options?: RawAxiosRequestConfig): AxiosPromise<SystemLoad> {
             return localVarFp.loadGet(options).then((request) => request(axios, basePath));
         },
+        /**
+         * Allows uploading configuration files via multipart/form-data. The X-Performative header defines the type of configuration file.
+         * @summary Upload configuration file (binary)
+         * @param {File} file The configuration file to upload
+         * @param {string} [xPerformative] Defines which configuration should be updated
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadAppSettingsFile(file: File, xPerformative?: string, options?: RawAxiosRequestConfig): AxiosPromise<Message> {
+            return localVarFp.uploadAppSettingsFile(file, xPerformative, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -630,14 +778,15 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
  */
 export class AdminsApi extends BaseAPI {
     /**
-     * Returns the current state of Agent.Workbench consisiting information  about the execution mode, the currently open project and other. 
-     * @summary Returns the current AWB state
+     * 
+     * @summary Download configuration file
+     * @param {string} [xPerformative] Defines which configuration should be downloaded
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof AdminsApi
      */
-    public executionStateGet(options?: RawAxiosRequestConfig) {
-        return AdminsApiFp(this.configuration).executionStateGet(options).then((request) => request(this.axios, this.basePath));
+    public downloadAppSettingsFile(xPerformative?: string, options?: RawAxiosRequestConfig) {
+        return AdminsApiFp(this.configuration).downloadAppSettingsFile(xPerformative, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -661,168 +810,18 @@ export class AdminsApi extends BaseAPI {
     public loadGet(options?: RawAxiosRequestConfig) {
         return AdminsApiFp(this.configuration).loadGet(options).then((request) => request(this.axios, this.basePath));
     }
-}
-
-
-
-/**
- * DoActionApi - axios parameter creator
- * @export
- */
-export const DoActionApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * tries to shedule restart
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        doRestartPost: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/doRestart`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * tries to initiate update of awb
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        doUpdatePost: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/doUpdate`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * DoActionApi - functional programming interface
- * @export
- */
-export const DoActionApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = DoActionApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * tries to shedule restart
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async doRestartPost(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.doRestartPost(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['DoActionApi.doRestartPost']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * tries to initiate update of awb
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async doUpdatePost(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.doUpdatePost(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['DoActionApi.doUpdatePost']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * DoActionApi - factory interface
- * @export
- */
-export const DoActionApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = DoActionApiFp(configuration)
-    return {
-        /**
-         * tries to shedule restart
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        doRestartPost(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.doRestartPost(options).then((request) => request(axios, basePath));
-        },
-        /**
-         * tries to initiate update of awb
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        doUpdatePost(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.doUpdatePost(options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * DoActionApi - object-oriented interface
- * @export
- * @class DoActionApi
- * @extends {BaseAPI}
- */
-export class DoActionApi extends BaseAPI {
-    /**
-     * tries to shedule restart
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof DoActionApi
-     */
-    public doRestartPost(options?: RawAxiosRequestConfig) {
-        return DoActionApiFp(this.configuration).doRestartPost(options).then((request) => request(this.axios, this.basePath));
-    }
 
     /**
-     * tries to initiate update of awb
+     * Allows uploading configuration files via multipart/form-data. The X-Performative header defines the type of configuration file.
+     * @summary Upload configuration file (binary)
+     * @param {File} file The configuration file to upload
+     * @param {string} [xPerformative] Defines which configuration should be updated
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
-     * @memberof DoActionApi
+     * @memberof AdminsApi
      */
-    public doUpdatePost(options?: RawAxiosRequestConfig) {
-        return DoActionApiFp(this.configuration).doUpdatePost(options).then((request) => request(this.axios, this.basePath));
+    public uploadAppSettingsFile(file: File, xPerformative?: string, options?: RawAxiosRequestConfig) {
+        return AdminsApiFp(this.configuration).uploadAppSettingsFile(file, xPerformative, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -836,7 +835,6 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
     return {
         /**
          * 
-         * @summary Health check endpoint
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -917,10 +915,11 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
+         * @param {string} [xPerformative] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAppSettings: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getAppSettings: async (xPerformative?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/app/settings/get`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -939,74 +938,9 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
 
 
     
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @summary Get the details about an AWB Installation
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        installationDetailsGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/installationDetails`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
+            if (xPerformative != null) {
+                localVarHeaderParameter['X-Performative'] = String(xPerformative);
             }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * 
-         * @summary Checks wether an update for the AWB is available or not
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        isUpdateAvailableGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/isUpdateAvailable`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1057,10 +991,13 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
         /**
          * 
          * @summary Return the current version number of Agent.Workbench
+         * @param {SoftwareComponentType} [type] 
+         * @param {string} [filter] 
+         * @param {boolean} [isShowSource] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        versionGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        versionGet: async (type?: SoftwareComponentType, filter?: string, isShowSource?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/version`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -1076,6 +1013,18 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             // authentication bearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (type !== undefined) {
+                localVarQueryParameter['type'] = type;
+            }
+
+            if (filter !== undefined) {
+                localVarQueryParameter['filter'] = filter;
+            }
+
+            if (isShowSource !== undefined) {
+                localVarQueryParameter['isShowSource'] = isShowSource;
+            }
 
 
     
@@ -1100,7 +1049,6 @@ export const InfoApiFp = function(configuration?: Configuration) {
     return {
         /**
          * 
-         * @summary Health check endpoint
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1127,37 +1075,14 @@ export const InfoApiFp = function(configuration?: Configuration) {
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
+         * @param {string} [xPerformative] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAppSettings(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Properties>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getAppSettings(options);
+        async getAppSettings(xPerformative?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Properties>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAppSettings(xPerformative, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['InfoApi.getAppSettings']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * 
-         * @summary Get the details about an AWB Installation
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async installationDetailsGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<BundleInformation>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.installationDetailsGet(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['InfoApi.installationDetailsGet']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * 
-         * @summary Checks wether an update for the AWB is available or not
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async isUpdateAvailableGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<boolean>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.isUpdateAvailableGet(options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['InfoApi.isUpdateAvailableGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -1167,7 +1092,7 @@ export const InfoApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async setAppSettings(properties?: Properties, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+        async setAppSettings(properties?: Properties, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Message>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.setAppSettings(properties, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['InfoApi.setAppSettings']?.[localVarOperationServerIndex]?.url;
@@ -1176,11 +1101,14 @@ export const InfoApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Return the current version number of Agent.Workbench
+         * @param {SoftwareComponentType} [type] 
+         * @param {string} [filter] 
+         * @param {boolean} [isShowSource] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async versionGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Version>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.versionGet(options);
+        async versionGet(type?: SoftwareComponentType, filter?: string, isShowSource?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SoftwareComponentList>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.versionGet(type, filter, isShowSource, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['InfoApi.versionGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -1197,7 +1125,6 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
     return {
         /**
          * 
-         * @summary Health check endpoint
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1218,29 +1145,12 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
+         * @param {string} [xPerformative] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAppSettings(options?: RawAxiosRequestConfig): AxiosPromise<Properties> {
-            return localVarFp.getAppSettings(options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @summary Get the details about an AWB Installation
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        installationDetailsGet(options?: RawAxiosRequestConfig): AxiosPromise<Array<BundleInformation>> {
-            return localVarFp.installationDetailsGet(options).then((request) => request(axios, basePath));
-        },
-        /**
-         * 
-         * @summary Checks wether an update for the AWB is available or not
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        isUpdateAvailableGet(options?: RawAxiosRequestConfig): AxiosPromise<boolean> {
-            return localVarFp.isUpdateAvailableGet(options).then((request) => request(axios, basePath));
+        getAppSettings(xPerformative?: string, options?: RawAxiosRequestConfig): AxiosPromise<Properties> {
+            return localVarFp.getAppSettings(xPerformative, options).then((request) => request(axios, basePath));
         },
         /**
          * Enables to update or set the required base configuration settings for the curren web application
@@ -1249,17 +1159,20 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        setAppSettings(properties?: Properties, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+        setAppSettings(properties?: Properties, options?: RawAxiosRequestConfig): AxiosPromise<Message> {
             return localVarFp.setAppSettings(properties, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary Return the current version number of Agent.Workbench
+         * @param {SoftwareComponentType} [type] 
+         * @param {string} [filter] 
+         * @param {boolean} [isShowSource] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        versionGet(options?: RawAxiosRequestConfig): AxiosPromise<Version> {
-            return localVarFp.versionGet(options).then((request) => request(axios, basePath));
+        versionGet(type?: SoftwareComponentType, filter?: string, isShowSource?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<SoftwareComponentList> {
+            return localVarFp.versionGet(type, filter, isShowSource, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1273,7 +1186,6 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
 export class InfoApi extends BaseAPI {
     /**
      * 
-     * @summary Health check endpoint
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
@@ -1298,34 +1210,13 @@ export class InfoApi extends BaseAPI {
     /**
      * Returns required base configuration settings for the curren web application
      * @summary Returns required base configuration settings for the curren web application
+     * @param {string} [xPerformative] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
      */
-    public getAppSettings(options?: RawAxiosRequestConfig) {
-        return InfoApiFp(this.configuration).getAppSettings(options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @summary Get the details about an AWB Installation
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof InfoApi
-     */
-    public installationDetailsGet(options?: RawAxiosRequestConfig) {
-        return InfoApiFp(this.configuration).installationDetailsGet(options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * 
-     * @summary Checks wether an update for the AWB is available or not
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof InfoApi
-     */
-    public isUpdateAvailableGet(options?: RawAxiosRequestConfig) {
-        return InfoApiFp(this.configuration).isUpdateAvailableGet(options).then((request) => request(this.axios, this.basePath));
+    public getAppSettings(xPerformative?: string, options?: RawAxiosRequestConfig) {
+        return InfoApiFp(this.configuration).getAppSettings(xPerformative, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -1343,12 +1234,15 @@ export class InfoApi extends BaseAPI {
     /**
      * 
      * @summary Return the current version number of Agent.Workbench
+     * @param {SoftwareComponentType} [type] 
+     * @param {string} [filter] 
+     * @param {boolean} [isShowSource] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
      */
-    public versionGet(options?: RawAxiosRequestConfig) {
-        return InfoApiFp(this.configuration).versionGet(options).then((request) => request(this.axios, this.basePath));
+    public versionGet(type?: SoftwareComponentType, filter?: string, isShowSource?: boolean, options?: RawAxiosRequestConfig) {
+        return InfoApiFp(this.configuration).versionGet(type, filter, isShowSource, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1399,8 +1293,76 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * Returns \"Bearer <token>\" if the current authentication is valid.
-         * @summary Returns (renews) the current bearer token
+         * Returns the remaining session time as well as the expiration time
+         * @summary Extends and returns the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        extendSessionTime: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user/sessionTime/extend`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns the remaining session time as well as the expiration time
+         * @summary Enables to read the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSessionTime: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user/sessionTime`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
+         * @summary Logs user into the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1417,9 +1379,9 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
 
 
     
@@ -1490,8 +1452,32 @@ export const UserApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Returns \"Bearer <token>\" if the current authentication is valid.
-         * @summary Returns (renews) the current bearer token
+         * Returns the remaining session time as well as the expiration time
+         * @summary Extends and returns the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async extendSessionTime(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SessionTimes>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.extendSessionTime(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.extendSessionTime']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns the remaining session time as well as the expiration time
+         * @summary Enables to read the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getSessionTime(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SessionTimes>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getSessionTime(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.getSessionTime']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
+         * @summary Logs user into the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1534,8 +1520,26 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.changePassword(passwordChange, options).then((request) => request(axios, basePath));
         },
         /**
-         * Returns \"Bearer <token>\" if the current authentication is valid.
-         * @summary Returns (renews) the current bearer token
+         * Returns the remaining session time as well as the expiration time
+         * @summary Extends and returns the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        extendSessionTime(options?: RawAxiosRequestConfig): AxiosPromise<SessionTimes> {
+            return localVarFp.extendSessionTime(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns the remaining session time as well as the expiration time
+         * @summary Enables to read the remaining and the expiration time of the current user session
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSessionTime(options?: RawAxiosRequestConfig): AxiosPromise<SessionTimes> {
+            return localVarFp.getSessionTime(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
+         * @summary Logs user into the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1574,8 +1578,30 @@ export class UserApi extends BaseAPI {
     }
 
     /**
-     * Returns \"Bearer <token>\" if the current authentication is valid.
-     * @summary Returns (renews) the current bearer token
+     * Returns the remaining session time as well as the expiration time
+     * @summary Extends and returns the remaining and the expiration time of the current user session
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public extendSessionTime(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).extendSessionTime(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns the remaining session time as well as the expiration time
+     * @summary Enables to read the remaining and the expiration time of the current user session
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getSessionTime(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).getSessionTime(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
+     * @summary Logs user into the system
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UserApi

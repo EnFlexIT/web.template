@@ -8,6 +8,8 @@ Name | Type | Description | Notes
 **key** | **string** |  | [default to undefined]
 **value** | **string** |  | [default to undefined]
 **valueType** | [**ValueType**](ValueType.md) |  | [default to undefined]
+**valueOptions** | **Array&lt;string&gt;** |  | [optional] [default to undefined]
+**valueOptionsOnly** | **boolean** |  | [optional] [default to undefined]
 
 ## Example
 
@@ -18,6 +20,8 @@ const instance: PropertyEntry = {
     key,
     value,
     valueType,
+    valueOptions,
+    valueOptionsOnly,
 };
 ```
 

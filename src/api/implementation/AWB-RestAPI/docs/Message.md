@@ -1,21 +1,23 @@
-# Properties
+# Message
 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**performative** | **string** |  | [optional] [default to undefined]
-**propertyEntries** | [**Array&lt;PropertyEntry&gt;**](PropertyEntry.md) |  | [default to undefined]
+**dateTime** | **string** |  | [default to undefined]
+**messageType** | [**MessageType**](MessageType.md) |  | [default to undefined]
+**message** | **string** |  | [default to undefined]
 
 ## Example
 
 ```typescript
-import { Properties } from './api';
+import { Message } from './api';
 
-const instance: Properties = {
-    performative,
-    propertyEntries,
+const instance: Message = {
+    dateTime,
+    messageType,
+    message,
 };
 ```
 
