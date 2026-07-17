@@ -1,7 +1,7 @@
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectApi, selectAuthenticationMethod, selectIp } from "../../redux/slices/apiSlice";
 import { selectLanguage } from "../../redux/slices/languageSlice";
-import { setTheme } from "../../redux/slices/themeSlice";
+import { selectThemeInfo } from "../../redux/slices/themeSlice";
 import { selectServers } from "../../redux/slices/serverSlice";
 
 export function useLoginState() {
@@ -10,7 +10,7 @@ export function useLoginState() {
   const ip = useAppSelector(selectIp);
 
   const language = useAppSelector(selectLanguage);
-  const themeState = useAppSelector(setTheme);
+  const themeState = useAppSelector(selectThemeInfo);
 
   const serversState = useAppSelector(selectServers);
   const servers = serversState?.servers ?? [];

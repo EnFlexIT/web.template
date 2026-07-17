@@ -405,9 +405,7 @@ export const fetchDbSettings = createAsyncThunk(
     let generalEntries: PropertyEntry[] = [];
 
     try {
-      const dbSystemsRes = await api.getAppSettings({
-        headers: { "X-Performative": "DB.SYSTEMS" },
-      });
+      const dbSystemsRes = await api.getAppSettings("DB.SYSTEMS");
       const data = ensureSuccessfulResponse(dbSystemsRes);
       dbEntries = data.propertyEntries ?? [];
     } catch (error) {
@@ -415,9 +413,7 @@ export const fetchDbSettings = createAsyncThunk(
     }
 
     try {
-      const dbSystemParametersRes = await api.getAppSettings({
-        headers: { "X-Performative": "DB.SYSTEMS.PARAMETER" },
-      });
+      const dbSystemParametersRes = await api.getAppSettings("DB.SYSTEMS.PARAMETER");
       const data = ensureSuccessfulResponse(dbSystemParametersRes);
       dbSystemParameterEntries = data.propertyEntries ?? [];
     } catch (error) {
@@ -425,9 +421,7 @@ export const fetchDbSettings = createAsyncThunk(
     }
 
     try {
-      const factoriesRes = await api.getAppSettings({
-        headers: { "X-Performative": "DB.FACTORIES" },
-      });
+      const factoriesRes = await api.getAppSettings("DB.FACTORIES");
       const data = ensureSuccessfulResponse(factoriesRes);
       factoryEntries = data.propertyEntries ?? [];
     } catch (error) {
@@ -435,9 +429,7 @@ export const fetchDbSettings = createAsyncThunk(
     }
 
     try {
-      const derbyRes = await api.getAppSettings({
-        headers: { "X-Performative": "DB.DERBY.NETWORKSERVER" },
-      });
+      const derbyRes = await api.getAppSettings("DB.DERBY.NETWORKSERVER");
       const data = ensureSuccessfulResponse(derbyRes);
       derbyEntries = data.propertyEntries ?? [];
     } catch (error) {
@@ -445,9 +437,7 @@ export const fetchDbSettings = createAsyncThunk(
     }
 
     try {
-      const generalRes = await api.getAppSettings({
-        headers: { "X-Performative": "DB.CONN.GENERAL" },
-      });
+      const generalRes = await api.getAppSettings("DB.CONN.GENERAL");
       const data = ensureSuccessfulResponse(generalRes);
       generalEntries = data.propertyEntries ?? [];
     } catch (error) {
@@ -474,9 +464,7 @@ export const fetchDbSystemParameters = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: { "X-Performative": "DB.SYSTEMS.PARAMETER" },
-      });
+      const response = await api.getAppSettings("DB.SYSTEMS.PARAMETER");
 
       const data = ensureSuccessfulResponse(response);
       return mapDbSystemParameters(data.propertyEntries ?? []);
@@ -497,9 +485,7 @@ export const fetchGeneralDbConnectionSettings = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: { "X-Performative": "DB.CONN.GENERAL" },
-      });
+      const response = await api.getAppSettings("DB.CONN.GENERAL");
 
       const data = ensureSuccessfulResponse(response);
       return mapGeneralConnection(data.propertyEntries ?? []);
@@ -573,12 +559,14 @@ export const fetchFactoryDbConnectionSettings = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: {
-          "X-Performative": "DB.CONN.FACTORY.GET",
-          "X-Factory-ID": factoryId,
+      const response = await api.getAppSettings(
+        "DB.CONN.FACTORY.GET",
+        {
+          headers: {
+            "X-Factory-ID": factoryId,
+          },
         },
-      });
+      );
 
       const data = ensureSuccessfulResponse(response);
       return mapFactoryConnection(data.propertyEntries ?? [], factoryId);

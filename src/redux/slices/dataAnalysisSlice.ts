@@ -303,11 +303,7 @@ export const fetchDataAnalysis = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: {
-          "X-Performative": DATA_ANALYZING_PERFORMATIVE,
-        },
-      });
+      const response = await api.getAppSettings(DATA_ANALYZING_PERFORMATIVE);
 
       const data = ensureSuccessfulResponse(response);
 

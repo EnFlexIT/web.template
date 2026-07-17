@@ -364,9 +364,7 @@ export const fetchExecSettings = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: { "X-Performative": "EXEC.MODE" },
-      });
+      const response = await api.getAppSettings("EXEC.MODE");
 
       const data = ensureSuccessfulResponse(response);
       const entries = data.propertyEntries ?? [];
@@ -392,9 +390,7 @@ export const fetchProjects = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: { "X-Performative": "PROJECTS" },
-      });
+      const response = await api.getAppSettings("PROJECTS");
 
       const data = ensureSuccessfulResponse(response);
       return mapProjects(data.propertyEntries ?? []);
@@ -417,11 +413,7 @@ export const fetchProjectSetups = createAsyncThunk(
     }
 
     try {
-      const response = await api.getAppSettings({
-        headers: {
-          "X-Performative": `PROJECT.SETUPS[${normalizedProjectName}]`,
-        },
-      });
+      const response = await api.getAppSettings(`PROJECT.SETUPS[${normalizedProjectName}]`);
 
       const data = ensureSuccessfulResponse(response);
       return mapProjectSetups(data.propertyEntries ?? []);
@@ -451,9 +443,7 @@ export const fetchAvailableExecAgents = createAsyncThunk(
     const api = getApi(thunkAPI);
 
     try {
-      const response = await api.getAppSettings({
-        headers: { "X-Performative": "awb.agents" },
-      });
+      const response = await api.getAppSettings("awb.agents");
 
       const data = ensureSuccessfulResponse(response);
       return mapAvailableExecAgents(data.propertyEntries ?? []);
