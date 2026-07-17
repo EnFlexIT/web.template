@@ -2,20 +2,36 @@ import React, { useEffect } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+
 import { Card } from "../../../components/ui-elements/Card";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { H3 } from "../../../components/stylistic/H3";
 import { TableSwitchCell } from "../../../components/ui-elements/TableSwitchCell";
+
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
-import {
-  loadUpdateSettingsIfNeeded,saveAutoUpdate,} from "../../../redux/slices/updateSlice";
 
-function Row({ label, value }: { label: string; value: string }) {
+import {
+  loadUpdateSettingsIfNeeded,
+  saveAutoUpdate,
+} from "../../../redux/slices/updateSlice";
+
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <View style={s.row}>
-      <ThemedText style={s.label}>{label}</ThemedText>
-      <ThemedText style={s.value}>{value || "-"}</ThemedText>
+      <ThemedText style={s.label}>
+        {label}
+      </ThemedText>
+
+      <ThemedText style={s.value}>
+        {value || "-"}
+      </ThemedText>
     </View>
   );
 }
@@ -31,8 +47,14 @@ function SwitchRow({
 }) {
   return (
     <View style={s.row}>
-      <ThemedText style={s.label}>{label}</ThemedText>
-      <TableSwitchCell value={value} onChange={onChange} />
+      <ThemedText style={s.label}>
+        {label}
+      </ThemedText>
+
+      <TableSwitchCell
+        value={value}
+        onChange={onChange}
+      />
     </View>
   );
 }
@@ -40,50 +62,117 @@ function SwitchRow({
 export function UpdateGeneralTab() {
   const { t } = useTranslation(["Update"]);
   const dispatch = useAppDispatch();
-  const updateState = useAppSelector((state) => state.update);
 
-  // Lädt die aktuellen Update-Informationen zentral aus dem Redux-Update-Slice.
-  useEffect(() => { dispatch(loadUpdateSettingsIfNeeded({force: false, maxAgeMs: 30 * 60 * 1000, }), );}, [dispatch]);
+  const updateState = useAppSelector(
+    (state) => state.update,
+  );
 
-  const webStatus = updateState.frontend.isAvailable ? t("serverWeb.statusTexts.updateAvailable", "Update available")
-    : t("serverWeb.statusTexts.upToDate", "Up to date");
+  useEffect(() => {
+    dispatch(
+      loadUpdateSettingsIfNeeded({
+        force: false,
+        maxAgeMs: 30 * 60 * 1000,
+      }),
+    );
+  }, [dispatch]);
 
-  const backendStatus = updateState.backend.isAvailable ? t("serverWeb.statusTexts.updateAvailable", "Update available")
-    : t("serverWeb.statusTexts.upToDate", "Up to date");
+  const webStatus =
+    updateState.frontend.isPending
+      ? t(
+          "serverWeb.statusTexts.installing",
+          "Update wird verarbeitet",
+        )
+      : updateState.frontend.isAvailable
+        ? t(
+            "serverWeb.statusTexts.updateAvailable",
+            "Update verfügbar",
+          )
+        : t(
+            "serverWeb.statusTexts.upToDate",
+            "Aktuell",
+          );
+
+  const backendStatus =
+    updateState.backend.isPending
+      ? t(
+          "backend.statusTexts.installing",
+          "Update wird verarbeitet",
+        )
+      : updateState.backend.isAvailable
+        ? t(
+            "serverWeb.statusTexts.updateAvailable",
+            "Update verfügbar",
+          )
+        : t(
+            "serverWeb.statusTexts.upToDate",
+            "Aktuell",
+          );
 
   return (
     <Card>
       <View style={s.container}>
-        <H3>{t("general.title", "General")}</H3>
+        <H3>
+          {t("general.title", "Allgemein")}
+        </H3>
 
         <View style={s.block}>
           <ThemedText style={s.blockTitle}>
-            {t("general.updateStrategy", "Update-Strategie")}
+            {t(
+              "general.updateStrategy",
+              "Update-Strategie",
+            )}
           </ThemedText>
 
-         <SwitchRow
-              label={t("general.autoUpdate", "Auto Update")}
-              value={updateState.autoUpdate}
-              onChange={async (next) => {
-                await dispatch(saveAutoUpdate(next));
-                dispatch( loadUpdateSettingsIfNeeded({force: true,  }), );}}/>
+          <SwitchRow
+            label={t(
+              "general.autoUpdate",
+              "Automatische Updates",
+            )}
+            value={updateState.autoUpdate}
+            onChange={async (next) => {
+              await dispatch(
+                saveAutoUpdate(next),
+              ).unwrap();
+
+              dispatch(
+                loadUpdateSettingsIfNeeded({
+                  force: true,
+                }),
+              );
+            }}
+          />
         </View>
 
         <View style={s.block}>
           <ThemedText style={s.blockTitle}>
-            {t("general.webApp", "Web-App")}
-          </ThemedText>
-
-          <Row label={t("general.webStatus", "Status")} value={webStatus} />
-        </View>
-
-        <View style={s.block}>
-          <ThemedText style={s.blockTitle}>
-            {t("general.backend", "Backend")}
+            {t(
+              "general.webApp",
+              "Web-App",
+            )}
           </ThemedText>
 
           <Row
-            label={t("general.backendStatus", "Status")}
+            label={t(
+              "general.webStatus",
+              "Status",
+            )}
+            value={webStatus}
+          />
+        </View>
+
+        <View style={s.block}>
+          <ThemedText style={s.blockTitle}>
+            {t(
+              "general.backend",
+              "Backend",
+            )}
+          </ThemedText>
+
+          <Row
+            label={t(
+              "general.backendStatus",
+              "Status",
+            )}
             value={backendStatus}
           />
         </View>

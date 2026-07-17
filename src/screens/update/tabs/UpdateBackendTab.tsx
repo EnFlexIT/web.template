@@ -28,8 +28,10 @@ import {
 
 import { checkServerReachable } from "../../login/serverCheck";
 
-import { BackendUpdateProgressDialog } from "../Dialog/BackendUpdateProgressDialog";
-
+import {
+  UpdateProgressDialog,
+  UpdateProgressPhase,
+} from "../Dialog/UpdateProgressDialog";
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../../components/themed/ThemedText";
@@ -61,11 +63,6 @@ type LoadOptions = {
   featureId?: string;
 };
 
-type BackendUpdatePhase =
-  | "installing"
-  | "restarting"
-  | "reconnecting"
-  | "logout";
 
 function normalizeBaseUrl(url: string) {
   return (url ?? "").trim().replace(/\/+$/, "");
@@ -258,8 +255,7 @@ export function UpdateBackendTab() {
 
   const [showBackendUpdateDialog, setShowBackendUpdateDialog] = useState(false);
   const [statusText, setStatusText] = useState("");
-  const [updatePhase, setUpdatePhase] =
-    useState<BackendUpdatePhase>("installing");
+  const [updatePhase, setUpdatePhase] = useState<UpdateProgressPhase>("installing");
 
   const clearUpdateTimers = useCallback(() => {
     if (reconnectTimerRef.current) {
@@ -661,11 +657,11 @@ export function UpdateBackendTab() {
 
   return (
     <Card>
-      <BackendUpdateProgressDialog
-        visible={showBackendUpdateDialog}
-        statusText={statusText}
-        phase={updatePhase}
-      />
+    <UpdateProgressDialog
+  visible={showBackendUpdateDialog}
+  statusText={statusText}
+  phase={updatePhase}
+/>
 
       <View style={{ backgroundColor: theme.colors.card, padding: 12, gap: 14 }}>
         <H3>{t("backend.title", "Backend")}</H3>

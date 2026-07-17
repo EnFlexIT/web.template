@@ -1,4 +1,14 @@
 {
+  "updateDialog": {
+    "installing": "Installing update",
+    "success": "Update installed successfully",
+    "restarting": "Restarting application",
+    "reconnecting": "Restoring connection",
+    "logout": "Preparing logout",
+    "error": "Update could not be completed",
+    "description": "Please wait while the application is being updated.",
+    "close": "Close"
+  },
   "serverWeb": {
     "title": "Web App",
     "fields": {
@@ -11,9 +21,10 @@
     "actions": {
       "checkNow": "Search for updates",
       "checking": "Checking…",
-      "reloadNow": "Reload now",
+      "reloadNow": "Reload Web App",
       "executeUpdate": "Install update",
-      "installing": "Installing update…"
+      "installing": "Installing update…",
+      "waiting": "Waiting for restart…"
     },
     "statusTexts": {
       "networkError": "Network error",
@@ -22,13 +33,27 @@
       "unexpectedFormat": "Unexpected format",
       "upToDate": "Up to date",
       "updateAvailable": "Update available",
-      "updateAcceptedNative": "Update accepted (native)"
+      "updateAcceptedNative": "Update accepted (native)",
+      "installing": "Processing update",
+      "restarting": "Restarting Web App",
+      "reconnecting": "Restoring connection",
+      "installed": "Update installed"
+    },
+    "updateDialog": {
+      "steps": {
+        "installing": "The new Web App version is being installed…",
+        "restarting": "The Web App is restarting…",
+        "reconnecting": "The connection is being restored…",
+        "success": "The update was installed successfully. The Web App will reload.",
+        "logout": "You will be logged out. The Web App will then reload.",
+        "failed": "The update could not be confirmed. Please try again."
+      }
     }
   },
   "general": {
     "title": "General",
     "updateStrategy": "Update strategy",
-    "autoUpdate": "Auto update",
+    "autoUpdate": "Automatic updates",
     "webApp": "Web App",
     "webStatus": "Status",
     "backend": "Backend",
@@ -36,29 +61,25 @@
   },
   "backend": {
     "title": "Backend",
-
     "fields": {
       "lastCheck": "Last check",
       "status": "Status",
+      "backendStatus": "Backend status",
       "progress": "Progress"
     },
-
     "actions": {
       "checkNow": "Search for updates",
-      "checking": "Searching for updates...",
+      "checking": "Searching for updates…",
       "executeUpdate": "Install update"
     },
-
     "sections": {
-      "features": "Installed Features",
+      "features": "Installed features",
       "bundles": "Bundles"
     },
-
     "empty": {
       "noFeatures": "No features available",
       "noBundles": "No bundles available"
     },
-
     "statusTexts": {
       "upToDate": "Up to date",
       "updateAvailable": "Update available",
@@ -69,18 +90,17 @@
       "completed": "Update completed successfully",
       "failed": "Update failed"
     },
-
     "updateDialog": {
       "title": "Installing backend update",
-      "description": "Please wait. The server is being updated.",
-
+      "description": "Please wait while the server is being updated.",
       "steps": {
-        "installing": "Installing backend update...",
-        "restarting": "Server is restarting...",
-        "reconnecting": "Restoring connection...",
-        "logout": "Resetting login..."
+        "installing": "Installing backend update…",
+        "restarting": "Server is restarting…",
+        "reconnecting": "Restoring connection…",
+        "logout": "Resetting login…",
+        "failedReconnect": "The server could not be reached again."
       }
     }
   },
-  "InstalledFeatures": "Installed Features"
+  "InstalledFeatures": "Installed features"
 }

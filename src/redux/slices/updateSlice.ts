@@ -47,7 +47,19 @@ const initialState: UpdateState = {
 
 const UPDATE_LAST_LOADED_KEY = "update:lastLoadedAt";
 const UPDATE_SETTINGS_CACHE_KEY = "update:settingsCache";
+export function clearUpdateSettingsCache() {
+  if (typeof window === "undefined") {
+    return;
+  }
 
+  localStorage.removeItem(
+    UPDATE_LAST_LOADED_KEY,
+  );
+
+  localStorage.removeItem(
+    UPDATE_SETTINGS_CACHE_KEY,
+  );
+}
 function hasValidUpdatePayload(payload: any) {
   return Boolean(
     payload?.frontend?.currentVersion ||
@@ -227,21 +239,36 @@ export const checkFrontendUpdate = createAsyncThunk(
     return response.data?.propertyEntries ?? [];
   },
 );
-export const executeFrontendUpdate = createAsyncThunk(
-  "update/executeFrontendUpdate",
-  async (_, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
-    const api = state.api.awb_rest_api.infoApi;
+export const executeFrontendUpdate =
+  createAsyncThunk(
+    "update/executeFrontendUpdate",
+    async (_, thunkAPI) => {
+      const state =
+        thunkAPI.getState() as RootState;
 
-    const response = await api.getAppSettings({
-      headers: {
-        "X-Performative": "UPDATE.FRONTEND.EXECUTE",
-      },
-    });
+      const api =
+        state.api.awb_rest_api.infoApi;
 
-    return response.data?.propertyEntries ?? [];
-  },
-);
+      const response =
+        await api.getAppSettings({
+          headers: {
+            "X-Performative":
+              "UPDATE.FRONTEND.EXECUTE",
+          },
+        });
+
+      /*
+       * Nach dem Start des Updates dürfen beim nächsten
+       * Seitenaufruf keine alten Update-Daten aus dem
+       * localStorage verwendet werden.
+       */
+      clearUpdateSettingsCache();
+
+      return (
+        response.data?.propertyEntries ?? []
+      );
+    },
+  );
   export const checkBackendUpdate = createAsyncThunk(
   "update/checkBackendUpdate",
   async (_, thunkAPI) => {
@@ -350,167 +377,246 @@ const updateSlice = createSlice({
     },
   },
 
-  extraReducers: (builder) => {
-    //************************************************************************** */
-//*********************** LOAD UPDATE SETTINGS ****************************** */
-    builder.addCase(loadUpdateSettings.pending, (state) => {
-      state.loading = true;
-    });
+extraReducers: (builder) => {
+  // ---------------------------------------------------------------------------
+  // LOAD UPDATE SETTINGS
+  // ---------------------------------------------------------------------------
 
-    builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
-      state.loading = false;
+  builder.addCase(loadUpdateSettings.pending, (state) => {
+    state.loading = true;
+  });
 
-      if (!hasValidUpdatePayload(action.payload)) return;
+  builder.addCase(loadUpdateSettings.fulfilled, (state, action) => {
+    state.loading = false;
+
+    if (!hasValidUpdatePayload(action.payload)) {
+      return;
+    }
+
+    applyUpdatePayload(state, action.payload);
+  });
+
+  builder.addCase(loadUpdateSettings.rejected, (state) => {
+    state.loading = false;
+  });
+
+  builder.addCase(
+    loadUpdateSettingsIfNeeded.fulfilled,
+    (state, action) => {
+      if (!hasValidUpdatePayload(action.payload)) {
+        return;
+      }
 
       applyUpdatePayload(state, action.payload);
-    });
+    },
+  );
 
-    builder.addCase(loadUpdateSettings.rejected, (state) => {
-      state.loading = false;
-    });
+  // ---------------------------------------------------------------------------
+  // AUTO UPDATE
+  // ---------------------------------------------------------------------------
 
-    builder.addCase(loadUpdateSettingsIfNeeded.fulfilled, (state, action) => {
-      if (!hasValidUpdatePayload(action.payload)) return;
+  builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
+    state.autoUpdate = action.payload;
+  });
 
-      applyUpdatePayload(state, action.payload);
-    });
+  // ---------------------------------------------------------------------------
+  // EXECUTE FRONTEND UPDATE
+  // ---------------------------------------------------------------------------
 
-    builder.addCase(saveAutoUpdate.fulfilled, (state, action) => {
-      state.autoUpdate = action.payload;
-    });
-//************************************************************************** */
-//*********************** CHECK & EXECUTE UPDATES ****************************** */
-    builder.addCase(executeFrontendUpdate.fulfilled, (state, action) => {
-      const entries = action.payload;
+  builder.addCase(executeFrontendUpdate.pending, (state) => {
+    state.frontend.isPending = true;
+  });
 
-      const findValue = (key: string) =>
-        entries.find((entry: any) => entry.key === key)?.value;
+  builder.addCase(executeFrontendUpdate.fulfilled, (state, action) => {
+    const entries = Array.isArray(action.payload)
+      ? action.payload
+      : [];
 
-      const toBoolean = (value: any) =>
-        String(value ?? "").trim().toLowerCase() === "true";
+    const findValue = (key: string) =>
+      entries.find((entry: any) => entry?.key === key)?.value;
 
-      state.frontend = {
-        ...state.frontend,
-        isPending: toBoolean(findValue("updatecheck.frontend.ispending")),
-        isAvailable: toBoolean(findValue("updatecheck.frontend.isavailable")),
-        lastCheck:
-          findValue("updatecheck.frontend.lastcheck") ?? state.frontend.lastCheck,
-        version:
-          findValue("updatecheck.frontend.version") ?? state.frontend.version,
-        newVersion:
-          findValue("updatecheck.frontend.newversion") ??
-          state.frontend.newVersion,
-        currentVersion:
-          findValue("updatecheck.frontend.currentversion") ??
-          state.frontend.currentVersion,
-      };
-    });
-//************************************************************************** */
-//*********************** CHECK & EXECUTE UPDATES ****************************** */
-    builder.addCase(executeBackendUpdate.fulfilled, (state, action) => {
-      const entries = action.payload;
+    const toBoolean = (value: unknown) =>
+      String(value ?? "").trim().toLowerCase() === "true";
 
-      const findValue = (key: string) =>
-        entries.find((entry: any) => entry.key === key)?.value;
+    const pendingValue = findValue(
+      "updatecheck.frontend.ispending",
+    );
 
-      const toBoolean = (value: any) =>
-        String(value ?? "").trim().toLowerCase() === "true";
+    const availableValue = findValue(
+      "updatecheck.frontend.isavailable",
+    );
 
-      const toNumber = (value: any) => {
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : 0;
-      };
+    state.lastLoadedAt = null;
 
-      state.backend = {
-        ...state.backend,
-        isPending: true,
-        isAvailable: toBoolean(findValue("updatecheck.backend.isavailable")),
-        lastCheck:
-          findValue("updatecheck.backend.lastcheck") ?? state.backend.lastCheck,
-        status: findValue("update.status") ?? state.backend.status,
-        progress: toNumber(findValue("update.progress")),
-      };
-    });
-    //************************************************************************** */
-//*********************** CHECK & EXECUTE UPDATES ****************************** */
-      builder.addCase(checkBackendUpdate.fulfilled, (state, action) => {
-        const entries = action.payload;
+    state.frontend = {
+      ...state.frontend,
 
-        const findValue = (key: string) =>
-          entries.find((entry: any) => entry.key === key)?.value;
+      isPending:
+        pendingValue === undefined
+          ? true
+          : toBoolean(pendingValue),
 
-        const toBoolean = (value: any) =>
-          String(value ?? "").trim().toLowerCase() === "true";
+      isAvailable:
+        availableValue === undefined
+          ? state.frontend.isAvailable
+          : toBoolean(availableValue),
 
-        const toNumber = (value: any) => {
-          const parsed = Number(value);
-          return Number.isFinite(parsed) ? parsed : 0;
-        };
+      lastCheck:
+        findValue("updatecheck.frontend.lastcheck") ??
+        state.frontend.lastCheck,
 
-        state.backend = {
-          ...state.backend,
+      version:
+        findValue("updatecheck.frontend.version") ??
+        state.frontend.version,
 
-          isPending: toBoolean(
-            findValue("updatecheck.backend.ispending")
-          ),
+      newVersion:
+        findValue("updatecheck.frontend.newversion") ??
+        state.frontend.newVersion,
 
-          isAvailable: toBoolean(
-            findValue("updatecheck.backend.isavailable")
-          ),
+      currentVersion:
+        findValue("updatecheck.frontend.currentversion") ??
+        state.frontend.currentVersion,
+    };
+  });
 
-          lastCheck:
-            findValue("updatecheck.backend.lastcheck") ??
-            state.backend.lastCheck,
+  builder.addCase(executeFrontendUpdate.rejected, (state) => {
+    state.frontend.isPending = false;
+  });
 
-          status:
-            findValue("update.status") ??
-            state.backend.status,
+  // ---------------------------------------------------------------------------
+  // CHECK FRONTEND UPDATE
+  // ---------------------------------------------------------------------------
 
-          progress:
-            toNumber(findValue("update.progress")),
-        };
-      });
+  builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {
+    const entries = Array.isArray(action.payload)
+      ? action.payload
+      : [];
 
-//************************************************************************** */
-//*********************** CHECK & EXECUTE UPDATES ****************************** */
-    builder.addCase(checkFrontendUpdate.fulfilled, (state, action) => {
-      const entries = action.payload;
+    const findValue = (key: string) =>
+      entries.find((entry: any) => entry?.key === key)?.value;
 
-      const findValue = (key: string) =>
-        entries.find((entry: any) => entry.key === key)?.value;
+    const toBoolean = (value: unknown) =>
+      String(value ?? "").trim().toLowerCase() === "true";
 
-      const toBoolean = (value: any) =>
-        String(value ?? "").trim().toLowerCase() === "true";
+    state.frontend = {
+      ...state.frontend,
 
-      state.frontend = {
-        ...state.frontend,
+      isPending: toBoolean(
+        findValue("updatecheck.frontend.ispending"),
+      ),
 
-        isPending: toBoolean(
-          findValue("updatecheck.frontend.ispending"),
-        ),
+      isAvailable: toBoolean(
+        findValue("updatecheck.frontend.isavailable"),
+      ),
 
-        isAvailable: toBoolean(
-          findValue("updatecheck.frontend.isavailable"),
-        ),
+      lastCheck:
+        findValue("updatecheck.frontend.lastcheck") ??
+        state.frontend.lastCheck,
 
-        lastCheck:
-          findValue("updatecheck.frontend.lastcheck") ??
-          state.frontend.lastCheck,
+      version:
+        findValue("updatecheck.frontend.version") ??
+        state.frontend.version,
 
-        version:
-          findValue("updatecheck.frontend.version") ??
-          state.frontend.version,
+      newVersion:
+        findValue("updatecheck.frontend.newversion") ??
+        state.frontend.newVersion,
 
-        newVersion:
-          findValue("updatecheck.frontend.newversion") ??
-          state.frontend.newVersion,
+      currentVersion:
+        findValue("updatecheck.frontend.currentversion") ??
+        state.frontend.currentVersion,
+    };
+  });
 
-        currentVersion:
-          findValue("updatecheck.frontend.currentversion") ??
-          state.frontend.currentVersion,
-      };
-    });
-  },
+  // ---------------------------------------------------------------------------
+  // EXECUTE BACKEND UPDATE
+  // ---------------------------------------------------------------------------
+
+  builder.addCase(executeBackendUpdate.fulfilled, (state, action) => {
+    const entries = Array.isArray(action.payload)
+      ? action.payload
+      : [];
+
+    const findValue = (key: string) =>
+      entries.find((entry: any) => entry?.key === key)?.value;
+
+    const toBoolean = (value: unknown) =>
+      String(value ?? "").trim().toLowerCase() === "true";
+
+    const toNumber = (value: unknown) => {
+      const parsed = Number(value);
+
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    state.backend = {
+      ...state.backend,
+
+      isPending: true,
+
+      isAvailable: toBoolean(
+        findValue("updatecheck.backend.isavailable"),
+      ),
+
+      lastCheck:
+        findValue("updatecheck.backend.lastcheck") ??
+        state.backend.lastCheck,
+
+      status:
+        findValue("update.status") ??
+        state.backend.status,
+
+      progress: toNumber(
+        findValue("update.progress"),
+      ),
+    };
+  });
+
+  // ---------------------------------------------------------------------------
+  // CHECK BACKEND UPDATE
+  // ---------------------------------------------------------------------------
+
+  builder.addCase(checkBackendUpdate.fulfilled, (state, action) => {
+    const entries = Array.isArray(action.payload)
+      ? action.payload
+      : [];
+
+    const findValue = (key: string) =>
+      entries.find((entry: any) => entry?.key === key)?.value;
+
+    const toBoolean = (value: unknown) =>
+      String(value ?? "").trim().toLowerCase() === "true";
+
+    const toNumber = (value: unknown) => {
+      const parsed = Number(value);
+
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    state.backend = {
+      ...state.backend,
+
+      isPending: toBoolean(
+        findValue("updatecheck.backend.ispending"),
+      ),
+
+      isAvailable: toBoolean(
+        findValue("updatecheck.backend.isavailable"),
+      ),
+
+      lastCheck:
+        findValue("updatecheck.backend.lastcheck") ??
+        state.backend.lastCheck,
+
+      status:
+        findValue("update.status") ??
+        state.backend.status,
+
+      progress: toNumber(
+        findValue("update.progress"),
+      ),
+    };
+  });
+},
 });
 
 export const {

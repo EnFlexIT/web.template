@@ -11,7 +11,7 @@ import { ActionButton } from "../../components/ui-elements/ActionButton";
 import { Dropdown } from "../../components/ui-elements/Dropdown";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { H3 } from "../../components/stylistic/H3";
-import { BackendUpdateProgressDialog } from "../../screens/update/Dialog/BackendUpdateProgressDialog";
+import { BackendUpdateProgressDialog } from "../update/Dialog/UpdateProgressDialog";
 import { ConfirmDialog } from "../../components/ui-elements/ConfirmDialog";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";

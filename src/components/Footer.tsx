@@ -509,7 +509,7 @@ const styles = StyleSheet.create((theme) => ({
   statusWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 15,
   },
 
   notificationButton: {
