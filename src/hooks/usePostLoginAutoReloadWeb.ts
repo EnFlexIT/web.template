@@ -17,6 +17,9 @@ import {
   loadUpdateStrategy,
 } from "../redux/slices/updateSlice";
 
+import {
+  reloadUpdatedFrontendWebApp,} from "../redux/slices/reloadUpdatedFrontendWebApp";
+
 type Params = {
   enabled: boolean;
 };
@@ -43,24 +46,6 @@ function toBoolean(value: unknown): boolean {
     .toLowerCase() === "true";
 }
 
-function reloadCurrentWebApp(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const targetUrl =
-    new URL(window.location.href);
-
-  targetUrl.searchParams.set(
-    "updated",
-    String(Date.now()),
-  );
-
-  window.location.replace(
-    targetUrl.toString(),
-  );
-}
-
 /**
  * Automatischer Ablauf direkt nach dem Login:
  *
@@ -68,6 +53,8 @@ function reloadCurrentWebApp(): void {
  * 2. Nur bei aktivierter Automatik Frontend und Backend prüfen.
  * 3. Frontend darf direkt nach Login automatisch installiert werden.
  * 4. Backend wird niemals automatisch installiert.
+ * 5. Nach erfolgreichem Frontend-Update werden Browser-Caches
+ *    bereinigt und index.html vollständig neu geladen.
  */
 export function usePostLoginAutoReloadWeb({
   enabled,
@@ -119,6 +106,7 @@ export function usePostLoginAutoReloadWeb({
     }
 
     let cancelled = false;
+
     let updateAttemptStorageKey:
       | string
       | null = null;
@@ -136,10 +124,6 @@ export function usePostLoginAutoReloadWeb({
           return;
         }
 
-        /*
-         * Bei manueller Strategie erfolgt keine automatische Suche.
-         * Dafür bleiben die Suchbuttons in den Tabs sichtbar.
-         */
         if (!autoUpdate) {
           window.sessionStorage.setItem(
             checkedStorageKey,
@@ -157,7 +141,8 @@ export function usePostLoginAutoReloadWeb({
           ).unwrap(),
 
           /*
-           * Nur prüfen. Niemals automatisch ausführen.
+           * Backend ausschließlich prüfen.
+           * Niemals automatisch installieren.
            */
           dispatch(
             checkBackendUpdate(),
@@ -189,6 +174,35 @@ export function usePostLoginAutoReloadWeb({
           "unknown";
 
         if (!updateAvailable) {
+          /*
+           * Eine frühere Update-Sperre ist nach einem
+           * erfolgreichen Versionswechsel nicht mehr relevant.
+           */
+          const attemptPrefix =
+            `frontendUpdateAttempt::${serverKey}::`;
+
+          for (
+            let index = 0;
+            index <
+            window.sessionStorage.length;
+            index += 1
+          ) {
+            const key =
+              window.sessionStorage.key(index);
+
+            if (
+              key?.startsWith(
+                attemptPrefix,
+              )
+            ) {
+              window.sessionStorage.removeItem(
+                key,
+              );
+
+              index -= 1;
+            }
+          }
+
           return;
         }
 
@@ -200,6 +214,14 @@ export function usePostLoginAutoReloadWeb({
             updateAttemptStorageKey,
           ) === "true"
         ) {
+          console.warn(
+            "[POST LOGIN UPDATE] This frontend version was already attempted",
+            {
+              serverKey,
+              newVersion,
+            },
+          );
+
           return;
         }
 
@@ -208,6 +230,9 @@ export function usePostLoginAutoReloadWeb({
           "true",
         );
 
+        /*
+         * Der Execute-Request wird vollständig abgewartet.
+         */
         await dispatch(
           executeFrontendUpdate(),
         ).unwrap();
@@ -217,7 +242,18 @@ export function usePostLoginAutoReloadWeb({
         }
 
         clearUpdateSettingsCache();
-        reloadCurrentWebApp();
+
+        const reloadStarted =
+          await reloadUpdatedFrontendWebApp({
+            baseUrl: api.ip,
+            version: newVersion,
+          });
+
+        if (!reloadStarted) {
+          throw new Error(
+            "Die aktualisierte Web-App konnte nicht neu geladen werden.",
+          );
+        }
       } catch (error) {
         console.error(
           "[POST LOGIN UPDATE] Automatic check/update failed",
