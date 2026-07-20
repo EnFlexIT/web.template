@@ -15,8 +15,13 @@ import {
   checkFrontendUpdate,
 } from "../redux/slices/updateSlice";
 
-import { selectApi } from "../redux/slices/apiSlice";
-import { normalizeServerKey } from "../redux/selectors/serverSelectors";
+import {
+  selectApi,
+} from "../redux/slices/apiSlice";
+
+import {
+  normalizeServerKey,
+} from "../redux/selectors/serverSelectors";
 
 const DEFAULT_UPDATE_CHECK_INTERVAL_MS =
   60 * 60 * 1000;
@@ -28,42 +33,63 @@ type UseUpdateNotifierOptions = {
   intervalMs?: number;
 };
 
+type AbortableRequest = {
+  abort?: () => void;
+  unwrap: () => Promise<unknown>;
+};
+
+/**
+ * Periodische Update-Suche während der Benutzung.
+ *
+ * Die Strategie "autoUpdate" steuert ausschließlich die Suche.
+ * Dieser Hook installiert weder Frontend noch Backend und löst
+ * keinen Reload aus.
+ */
 export function useUpdateNotifierWeb({
   enabled,
   intervalMs = DEFAULT_UPDATE_CHECK_INTERVAL_MS,
 }: UseUpdateNotifierOptions): void {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation(["Notifications"]);
+  const { t } = useTranslation([
+    "Notifications",
+  ]);
 
   const api = useAppSelector(selectApi);
+
   const updateState = useAppSelector(
     (state) => state.update,
   );
 
-  const notificationItems = useAppSelector(
-    (state) => state.notifications.items,
-  );
+  const notificationItems =
+    useAppSelector(
+      (state) =>
+        state.notifications.items,
+    );
 
-  const requestRunningRef = useRef(false);
-  const activeRequestsRef = useRef<any[]>([]);
-  const lastCheckStartedAtRef = useRef(0);
+  const requestRunningRef =
+    useRef(false);
 
-  const isWeb = Platform.OS === "web";
-  const serverKey = normalizeServerKey(api.ip);
+  const activeRequestsRef =
+    useRef<AbortableRequest[]>([]);
+
+  const lastCheckStartedAtRef =
+    useRef(Date.now());
+
+  const isWeb =
+    Platform.OS === "web";
+
+  const serverKey =
+    normalizeServerKey(api.ip);
 
   useEffect(() => {
-    lastCheckStartedAtRef.current = Date.now();
+    lastCheckStartedAtRef.current =
+      Date.now();
   }, [serverKey]);
 
-  /**
-   * Periodische automatische Suche während der Benutzung.
-   *
-   * Nur bei aktivierter automatischer Strategie.
-   * Frontend und Backend werden geprüft.
-   * Installiert wird hier niemals etwas.
-   */
   useEffect(() => {
-    if (!enabled || !isWeb) return;
+    if (!enabled || !isWeb) {
+      return;
+    }
 
     if (
       !updateState.autoUpdate ||
@@ -77,7 +103,9 @@ export function useUpdateNotifierWeb({
       return;
     }
 
-    if (typeof window === "undefined") {
+    if (
+      typeof window === "undefined"
+    ) {
       return;
     }
 
@@ -91,17 +119,21 @@ export function useUpdateNotifierWeb({
         return;
       }
 
-      requestRunningRef.current = true;
+      requestRunningRef.current =
+        true;
+
       lastCheckStartedAtRef.current =
         Date.now();
 
-      const frontendRequest = dispatch(
-        checkFrontendUpdate(),
-      );
+      const frontendRequest =
+        dispatch(
+          checkFrontendUpdate(),
+        ) as AbortableRequest;
 
-      const backendRequest = dispatch(
-        checkBackendUpdate(),
-      );
+      const backendRequest =
+        dispatch(
+          checkBackendUpdate(),
+        ) as AbortableRequest;
 
       activeRequestsRef.current = [
         frontendRequest,
@@ -115,20 +147,23 @@ export function useUpdateNotifierWeb({
         ]);
       } finally {
         activeRequestsRef.current = [];
-        requestRunningRef.current = false;
+        requestRunningRef.current =
+          false;
       }
     }
 
     /*
-     * Kein sofortiger Check:
-     * Direkt nach Login übernimmt der PostLoginUpdateWatcher.
+     * Kein sofortiger doppelter Check.
+     * Den ersten Check nach Login übernimmt
+     * usePostLoginAutoReloadWeb.
      */
-    const intervalId = window.setInterval(
-      () => {
-        void runUpdateChecks();
-      },
-      intervalMs,
-    );
+    const intervalId =
+      window.setInterval(
+        () => {
+          void runUpdateChecks();
+        },
+        intervalMs,
+      );
 
     function handleWindowFocus() {
       const age =
@@ -150,22 +185,24 @@ export function useUpdateNotifierWeb({
     return () => {
       disposed = true;
 
-      window.clearInterval(intervalId);
+      window.clearInterval(
+        intervalId,
+      );
 
       window.removeEventListener(
         "focus",
         handleWindowFocus,
       );
 
-      for (
-        const request of
-        activeRequestsRef.current
-      ) {
-        request?.abort?.();
-      }
+      activeRequestsRef.current.forEach(
+        (request) => {
+          request.abort?.();
+        },
+      );
 
       activeRequestsRef.current = [];
-      requestRunningRef.current = false;
+      requestRunningRef.current =
+        false;
     };
   }, [
     dispatch,
@@ -181,15 +218,14 @@ export function useUpdateNotifierWeb({
     updateState.autoUpdate,
   ]);
 
-  /**
+  /*
    * Frontend-Notification.
    */
   useEffect(() => {
-    if (!enabled || !isWeb || !serverKey) {
-      return;
-    }
-
     if (
+      !enabled ||
+      !isWeb ||
+      !serverKey ||
       !api.isLoggedIn ||
       api.isSwitchingServer ||
       api.isLoggingOut
@@ -232,19 +268,6 @@ export function useUpdateNotifierWeb({
     const notificationId =
       `${prefix}${version}`;
 
-    const automaticAttemptKey =
-      `frontendUpdateAttempt::${serverKey}::${version}`;
-
-    const automaticUpdateIsRunning =
-      typeof window !== "undefined" &&
-      window.sessionStorage.getItem(
-        automaticAttemptKey,
-      ) === "true";
-
-    if (automaticUpdateIsRunning) {
-      return;
-    }
-
     existing
       .filter(
         (item) =>
@@ -270,22 +293,27 @@ export function useUpdateNotifierWeb({
         id: notificationId,
         serverKey,
         type: "update",
+
         title: t(
           "frontend_update_available_title",
           "Web-App-Update verfügbar",
         ),
+
         message: t(
           "frontend_update_available_message",
           {
             version,
             defaultValue:
-              "Die Web-App-Version {{version}} ist verfügbar.",
+              "Die Web-App-Version {{version}} ist verfügbar. Die Installation muss manuell gestartet werden.",
           },
         ),
+
         createdAt:
           new Date().toISOString(),
+
         read: false,
         severity: "info",
+
         action: {
           type: "navigate",
           menuId: UPDATE_MENU_ID,
@@ -307,18 +335,14 @@ export function useUpdateNotifierWeb({
     t,
   ]);
 
-  /**
+  /*
    * Backend-Notification.
-   *
-   * Ein Backend-Update wird ausschließlich gemeldet,
-   * niemals automatisch installiert.
    */
   useEffect(() => {
-    if (!enabled || !isWeb || !serverKey) {
-      return;
-    }
-
     if (
+      !enabled ||
+      !isWeb ||
+      !serverKey ||
       !api.isLoggedIn ||
       api.isSwitchingServer ||
       api.isLoggingOut
@@ -350,7 +374,7 @@ export function useUpdateNotifierWeb({
       return;
     }
 
-    const checkToken =
+    const token =
       String(
         updateState.backend.lastCheck ||
           "available",
@@ -359,7 +383,7 @@ export function useUpdateNotifierWeb({
         .replace(/\s+/g, "_");
 
     const notificationId =
-      `${prefix}${checkToken}`;
+      `${prefix}${token}`;
 
     existing
       .filter(
@@ -386,18 +410,23 @@ export function useUpdateNotifierWeb({
         id: notificationId,
         serverKey,
         type: "update",
+
         title: t(
           "backend_update_available_title",
           "Backend-Update verfügbar",
         ),
+
         message: t(
           "backend_update_available_message",
           "Für das Backend ist ein Update verfügbar. Die Installation muss manuell gestartet werden.",
         ),
+
         createdAt:
           new Date().toISOString(),
+
         read: false,
         severity: "warning",
+
         action: {
           type: "navigate",
           menuId: UPDATE_MENU_ID,

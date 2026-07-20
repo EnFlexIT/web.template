@@ -4,49 +4,97 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { StyleSheet, View } from "react-native";
-import { useTranslation } from "react-i18next";
 
-import { Card } from "../../../components/ui-elements/Card";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { ThemedText } from "../../../components/themed/ThemedText";
-import { H3 } from "../../../components/stylistic/H3";
+import {
+  StyleSheet,
+  View,
+} from "react-native";
 
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import {
+  useTranslation,
+} from "react-i18next";
 
-import { selectApi } from "../../../redux/slices/apiSlice";
+import {
+  Card,
+} from "../../../components/ui-elements/Card";
+
+import {
+  ActionButton,
+} from "../../../components/ui-elements/ActionButton";
+
+import {
+  ThemedText,
+} from "../../../components/themed/ThemedText";
+
+import {
+  H3,
+} from "../../../components/stylistic/H3";
+
+import {
+  useAppSelector,
+} from "../../../hooks/useAppSelector";
+
+import {
+  useAppDispatch,
+} from "../../../hooks/useAppDispatch";
+
+import {
+  selectApi,
+} from "../../../redux/slices/apiSlice";
 
 import {
   checkFrontendUpdate,
   clearUpdateSettingsCache,
   executeFrontendUpdate,
+  loadInstalledFrontendVersion,
 } from "../../../redux/slices/updateSlice";
 
 import {
   reloadUpdatedFrontendWebApp,
-} from "../../../redux/slices/reloadUpdatedFrontendWebApp";
+} from "./././../../../util/reloadUpdatedFrontendWebApp";
 
 import {
   UpdateProgressDialog,
   type UpdateProgressPhase,
 } from "../Dialog/UpdateProgressDialog";
 
-function wait(milliseconds: number): Promise<void> {
+const VERSION_REFRESH_ATTEMPTS = 12;
+const VERSION_REFRESH_DELAY_MS = 500;
+
+function wait(
+  milliseconds: number,
+): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
+    setTimeout(
+      resolve,
+      milliseconds,
+    );
   });
 }
 
+function normalizeVersion(
+  value: string,
+): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^0-9a-z]+/g, ".");
+}
+
 export function UpdateWebAppTab() {
-  const { t } = useTranslation(["Update"]);
-  const dispatch = useAppDispatch();
+  const { t } =
+    useTranslation(["Update"]);
 
-  const api = useAppSelector(selectApi);
+  const dispatch =
+    useAppDispatch();
 
-  const updateState = useAppSelector(
-    (state) => state.update,
-  );
+  const api =
+    useAppSelector(selectApi);
+
+  const updateState =
+    useAppSelector(
+      (state) => state.update,
+    );
 
   const ip = api.ip;
 
@@ -56,51 +104,59 @@ export function UpdateWebAppTab() {
   const installRequestActiveRef =
     useRef(false);
 
-  const [isChecking, setIsChecking] =
-    useState(false);
+  const [
+    isChecking,
+    setIsChecking,
+  ] = useState(false);
 
-  const [isInstalling, setIsInstalling] =
-    useState(false);
+  const [
+    isInstalling,
+    setIsInstalling,
+  ] = useState(false);
 
   const [
     showUpdateDialog,
     setShowUpdateDialog,
   ] = useState(false);
 
-  const [statusText, setStatusText] =
-    useState("");
+  const [
+    statusText,
+    setStatusText,
+  ] = useState("");
 
-  const [updatePhase, setUpdatePhase] =
+  const [
+    updatePhase,
+    setUpdatePhase,
+  ] =
     useState<UpdateProgressPhase>(
       "installing",
     );
 
   /*
-   * Bei manueller Update-Strategie wird beim Öffnen des Tabs geprüft.
-   * Bei automatischer Strategie übernimmt der zentrale Watcher.
+   * Nur die installierte Version laden.
+   *
+   * Der Tab startet keinen versteckten Update-Check.
+   * Bei manueller Strategie entscheidet der Benutzer über den Button.
+   * Bei automatischer Strategie übernehmen die zentralen Watcher die Suche.
    */
   useEffect(() => {
-    if (
-      !ip ||
-      updateState.autoUpdate
-    ) {
+    if (!ip) {
       return;
     }
 
     void dispatch(
-      checkFrontendUpdate(),
+      loadInstalledFrontendVersion(),
     )
       .unwrap()
       .catch((error) => {
         console.warn(
-          "[FRONTEND UPDATE] Initial update check failed",
+          "[FRONTEND UPDATE] Installed version could not be loaded",
           error,
         );
       });
   }, [
     dispatch,
     ip,
-    updateState.autoUpdate,
   ]);
 
   const checkNow =
@@ -119,6 +175,12 @@ export function UpdateWebAppTab() {
       setIsChecking(true);
 
       try {
+        /*
+         * Nur suchen.
+         *
+         * Ein Suchergebnis löst niemals eine Installation
+         * und niemals einen Reload aus.
+         */
         await dispatch(
           checkFrontendUpdate(),
         ).unwrap();
@@ -133,12 +195,85 @@ export function UpdateWebAppTab() {
 
         setIsChecking(false);
       }
-    }, [dispatch, ip]);
+    }, [
+      dispatch,
+      ip,
+    ]);
 
   const availableVersion =
     updateState.frontend.newVersion ||
     updateState.frontend.version ||
     "-";
+
+  const waitForInstalledVersion =
+    useCallback(
+      async (
+        previousVersion: string,
+        expectedVersion: string,
+      ): Promise<string> => {
+        let latestVersion =
+          previousVersion;
+
+        for (
+          let attempt = 0;
+          attempt <
+          VERSION_REFRESH_ATTEMPTS;
+          attempt += 1
+        ) {
+          try {
+            const result =
+              await dispatch(
+                loadInstalledFrontendVersion(),
+              ).unwrap();
+
+            latestVersion =
+              result.currentVersion;
+
+            const installedChanged =
+              normalizeVersion(
+                latestVersion,
+              ) !==
+              normalizeVersion(
+                previousVersion,
+              );
+
+            const expectedInstalled =
+              expectedVersion &&
+              expectedVersion !== "-" &&
+              normalizeVersion(
+                latestVersion,
+              ) ===
+                normalizeVersion(
+                  expectedVersion,
+                );
+
+            if (
+              expectedInstalled ||
+              installedChanged
+            ) {
+              return latestVersion;
+            }
+          } catch (error) {
+            console.warn(
+              "[FRONTEND UPDATE] Version verification failed",
+              error,
+            );
+          }
+
+          await wait(
+            VERSION_REFRESH_DELAY_MS,
+          );
+        }
+
+        /*
+         * Der Execute-Request war erfolgreich.
+         * Auch wenn der Versions-Endpunkt etwas später aktualisiert wird,
+         * führen wir den vom Benutzer gewünschten Voll-Reload aus.
+         */
+        return latestVersion;
+      },
+      [dispatch],
+    );
 
   const installFrontendUpdate =
     useCallback(async () => {
@@ -164,44 +299,51 @@ export function UpdateWebAppTab() {
         ),
       );
 
+      const previousVersion =
+        updateState.frontend.currentVersion;
+
       try {
         /*
-         * UPDATE.FRONTEND.EXECUTE genau einmal ausführen
-         * und die echte Antwort vollständig abwarten.
+         * Installation ausschließlich nach Benutzerklick.
          */
         await dispatch(
           executeFrontendUpdate(),
         ).unwrap();
-
-        clearUpdateSettingsCache();
 
         setUpdatePhase("success");
 
         setStatusText(
           t(
             "serverWeb.updateDialog.steps.success",
-            "Das Frontend-Update wurde erfolgreich installiert.",
+            "Das Frontend-Update wurde erfolgreich ausgeführt.",
           ),
         );
 
-        await wait(300);
+        const installedVersion =
+          await waitForInstalledVersion(
+            previousVersion,
+            availableVersion,
+          );
+
+        clearUpdateSettingsCache();
 
         setUpdatePhase("restarting");
 
         setStatusText(
           t(
             "serverWeb.updateDialog.steps.restarting",
-            "Browser-Cache wird bereinigt und die neue Web-App wird geladen…",
+            "Die Web-App wird vollständig neu geladen. Deine Anmeldung bleibt erhalten.",
           ),
         );
+
+        await wait(250);
 
         const reloadStarted =
           await reloadUpdatedFrontendWebApp({
             baseUrl: ip,
             version:
-              availableVersion === "-"
-                ? undefined
-                : availableVersion,
+              installedVersion ||
+              availableVersion,
           });
 
         if (!reloadStarted) {
@@ -211,7 +353,7 @@ export function UpdateWebAppTab() {
         }
       } catch (error) {
         console.error(
-          "[FRONTEND UPDATE] Update failed",
+          "[FRONTEND UPDATE] Installation or reload failed",
           error,
         );
 
@@ -224,20 +366,24 @@ export function UpdateWebAppTab() {
         setStatusText(
           t(
             "serverWeb.updateDialog.steps.failed",
-            "Das Frontend-Update wurde installiert, aber die neue Web-App konnte nicht geladen werden. Bitte lade die Seite erneut.",
+            "Das Frontend-Update konnte nicht vollständig abgeschlossen werden. Bitte versuche es erneut.",
           ),
         );
       }
     }, [
       dispatch,
       ip,
+      updateState.frontend.currentVersion,
       availableVersion,
+      waitForInstalledVersion,
       t,
     ]);
 
   const closeErrorDialog =
     useCallback(() => {
-      if (updatePhase !== "error") {
+      if (
+        updatePhase !== "error"
+      ) {
         return;
       }
 
@@ -265,8 +411,9 @@ export function UpdateWebAppTab() {
               {
                 version:
                   availableVersion,
+
                 defaultValue:
-                  "Neues Update verfügbar",
+                  "Update verfügbar",
               },
             )
           : updateState.frontend.lastCheck
@@ -363,9 +510,7 @@ export function UpdateWebAppTab() {
               variant="secondary"
               size="xs"
               onPress={checkNow}
-              disabled={
-                controlsDisabled
-              }
+              disabled={controlsDisabled}
             />
           ) : null}
 

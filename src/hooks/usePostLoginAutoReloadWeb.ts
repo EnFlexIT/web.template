@@ -12,49 +12,26 @@ import {
 import {
   checkBackendUpdate,
   checkFrontendUpdate,
-  clearUpdateSettingsCache,
-  executeFrontendUpdate,
   loadUpdateStrategy,
 } from "../redux/slices/updateSlice";
-
-import {
-  reloadUpdatedFrontendWebApp,} from "../redux/slices/reloadUpdatedFrontendWebApp";
 
 type Params = {
   enabled: boolean;
 };
 
-type UpdateEntry = {
-  key?: string;
-  value?: string;
-};
-
-function findEntryValue(
-  entries: UpdateEntry[],
-  key: string,
-): string {
-  return String(
-    entries.find(
-      (entry) => entry.key === key,
-    )?.value ?? "",
-  ).trim();
-}
-
-function toBoolean(value: unknown): boolean {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase() === "true";
-}
-
 /**
- * Automatischer Ablauf direkt nach dem Login:
+ * Der Dateiname bleibt aus Kompatibilitätsgründen bestehen.
  *
- * 1. Strategie laden.
- * 2. Nur bei aktivierter Automatik Frontend und Backend prüfen.
- * 3. Frontend darf direkt nach Login automatisch installiert werden.
- * 4. Backend wird niemals automatisch installiert.
- * 5. Nach erfolgreichem Frontend-Update werden Browser-Caches
- *    bereinigt und index.html vollständig neu geladen.
+ * Die Funktion führt aber keinen automatischen Reload und keine
+ * automatische Installation mehr aus.
+ *
+ * "Automatische Updates" bedeutet:
+ * - Strategie nach Login laden
+ * - Frontend automatisch prüfen
+ * - Backend automatisch prüfen
+ * - Ergebnisse im Redux-State ablegen
+ *
+ * Installation und Reload bleiben immer eine Benutzerentscheidung.
  */
 export function usePostLoginAutoReloadWeb({
   enabled,
@@ -62,8 +39,31 @@ export function usePostLoginAutoReloadWeb({
   const dispatch = useAppDispatch();
   const api = useAppSelector(selectApi);
 
+  const checkedServerRef =
+    useRef<string | null>(null);
+
   const requestRunningRef =
     useRef(false);
+
+  /*
+   * Bei Logout oder deaktiviertem Watcher darf derselbe Server
+   * beim nächsten Login erneut geprüft werden.
+   */
+  useEffect(() => {
+    if (
+      !enabled ||
+      !api.isLoggedIn
+    ) {
+      checkedServerRef.current =
+        null;
+
+      requestRunningRef.current =
+        false;
+    }
+  }, [
+    enabled,
+    api.isLoggedIn,
+  ]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -79,10 +79,6 @@ export function usePostLoginAutoReloadWeb({
       return;
     }
 
-    if (typeof window === "undefined") {
-      return;
-    }
-
     const serverKey =
       normalizeBaseUrl(api.ip);
 
@@ -90,13 +86,14 @@ export function usePostLoginAutoReloadWeb({
       return;
     }
 
-    const checkedStorageKey =
-      `postLoginAutoReloadChecked::${serverKey}`;
-
+    /*
+     * Genau einmal pro geladenem Dokument und Server.
+     * Kein sessionStorage-Guard, damit nach einem echten Reload
+     * wieder ein frischer Check durchgeführt wird.
+     */
     if (
-      window.sessionStorage.getItem(
-        checkedStorageKey,
-      ) === "true"
+      checkedServerRef.current ===
+      serverKey
     ) {
       return;
     }
@@ -107,13 +104,13 @@ export function usePostLoginAutoReloadWeb({
 
     let cancelled = false;
 
-    let updateAttemptStorageKey:
-      | string
-      | null = null;
+    checkedServerRef.current =
+      serverKey;
 
-    requestRunningRef.current = true;
+    requestRunningRef.current =
+      true;
 
-    async function run() {
+    async function runAutomaticChecks() {
       try {
         const autoUpdate =
           await dispatch(
@@ -124,157 +121,45 @@ export function usePostLoginAutoReloadWeb({
           return;
         }
 
+        /*
+         * Bei manueller Strategie werden keine automatischen
+         * Update-Checks ausgeführt. Die Buttons bleiben sichtbar.
+         */
         if (!autoUpdate) {
-          window.sessionStorage.setItem(
-            checkedStorageKey,
-            "true",
-          );
-
           return;
         }
 
-        const [
-          frontendEntries,
-        ] = await Promise.all([
+        /*
+         * Nur prüfen.
+         *
+         * Kein executeFrontendUpdate()
+         * Kein executeBackendUpdate()
+         * Kein Reload
+         */
+        await Promise.allSettled([
           dispatch(
             checkFrontendUpdate(),
           ).unwrap(),
 
-          /*
-           * Backend ausschließlich prüfen.
-           * Niemals automatisch installieren.
-           */
           dispatch(
             checkBackendUpdate(),
           ).unwrap(),
         ]);
-
-        if (cancelled) {
-          return;
-        }
-
-        window.sessionStorage.setItem(
-          checkedStorageKey,
-          "true",
-        );
-
-        const updateAvailable =
-          toBoolean(
-            findEntryValue(
-              frontendEntries,
-              "updatecheck.frontend.isavailable",
-            ),
-          );
-
-        const newVersion =
-          findEntryValue(
-            frontendEntries,
-            "updatecheck.frontend.newversion",
-          ) ||
-          "unknown";
-
-        if (!updateAvailable) {
-          /*
-           * Eine frühere Update-Sperre ist nach einem
-           * erfolgreichen Versionswechsel nicht mehr relevant.
-           */
-          const attemptPrefix =
-            `frontendUpdateAttempt::${serverKey}::`;
-
-          for (
-            let index = 0;
-            index <
-            window.sessionStorage.length;
-            index += 1
-          ) {
-            const key =
-              window.sessionStorage.key(index);
-
-            if (
-              key?.startsWith(
-                attemptPrefix,
-              )
-            ) {
-              window.sessionStorage.removeItem(
-                key,
-              );
-
-              index -= 1;
-            }
-          }
-
-          return;
-        }
-
-        updateAttemptStorageKey =
-          `frontendUpdateAttempt::${serverKey}::${newVersion}`;
-
-        if (
-          window.sessionStorage.getItem(
-            updateAttemptStorageKey,
-          ) === "true"
-        ) {
-          console.warn(
-            "[POST LOGIN UPDATE] This frontend version was already attempted",
-            {
-              serverKey,
-              newVersion,
-            },
-          );
-
-          return;
-        }
-
-        window.sessionStorage.setItem(
-          updateAttemptStorageKey,
-          "true",
-        );
-
-        /*
-         * Der Execute-Request wird vollständig abgewartet.
-         */
-        await dispatch(
-          executeFrontendUpdate(),
-        ).unwrap();
-
-        if (cancelled) {
-          return;
-        }
-
-        clearUpdateSettingsCache();
-
-        const reloadStarted =
-          await reloadUpdatedFrontendWebApp({
-            baseUrl: api.ip,
-            version: newVersion,
-          });
-
-        if (!reloadStarted) {
-          throw new Error(
-            "Die aktualisierte Web-App konnte nicht neu geladen werden.",
-          );
-        }
       } catch (error) {
+        checkedServerRef.current =
+          null;
+
         console.error(
-          "[POST LOGIN UPDATE] Automatic check/update failed",
+          "[POST LOGIN UPDATE] Automatic update checks failed",
           error,
         );
-
-        window.sessionStorage.removeItem(
-          checkedStorageKey,
-        );
-
-        if (updateAttemptStorageKey) {
-          window.sessionStorage.removeItem(
-            updateAttemptStorageKey,
-          );
-        }
       } finally {
-        requestRunningRef.current = false;
+        requestRunningRef.current =
+          false;
       }
     }
 
-    void run();
+    void runAutomaticChecks();
 
     return () => {
       cancelled = true;
