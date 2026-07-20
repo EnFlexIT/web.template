@@ -2,58 +2,59 @@
   "updateDialog": {
     "installing": "Installing update",
     "success": "Update installed successfully",
-    "restarting": "Restarting application",
+    "restarting": "Reloading application",
     "reconnecting": "Restoring connection",
-    "logout": "Preparing logout",
-    "error": "Update could not be completed",
-    "description": "Please wait while the application is being updated.",
+    "logout": "Preparing sign-out",
+    "error": "The update could not be completed",
+    "description": "Please wait while the update is being applied.",
     "close": "Close"
   },
   "serverWeb": {
     "title": "Web App",
     "fields": {
       "releaseVersion": "Version (Release)",
-      "acceptedVersion": "Version",
-      "newVersion": "New version",
-      "lastCheck": "Last check",
+      "acceptedVersion": "Installed version",
+      "newVersion": "Available version",
+      "lastCheck": "Last checked",
       "status": "Update status"
     },
     "actions": {
-      "checkNow": "Search for updates",
-      "checking": "Checking…",
+      "checkNow": "Check for updates",
+      "checking": "Checking for updates…",
       "reloadNow": "Reload Web App",
       "executeUpdate": "Install update",
       "installing": "Installing update…",
-      "waiting": "Waiting for restart…"
+      "waiting": "Waiting for the new version…"
     },
     "statusTexts": {
       "networkError": "Network error",
       "unauthorized": "401 (Unauthorized)",
       "httpError": "HTTP {{status}}",
-      "unexpectedFormat": "Unexpected format",
+      "unexpectedFormat": "Unexpected response format",
+      "notChecked": "Not checked yet",
+      "checking": "Checking for updates…",
       "upToDate": "Up to date",
-      "updateAvailable": "Update available",
-      "updateAcceptedNative": "Update accepted (native)",
-      "installing": "Processing update",
-      "restarting": "Restarting Web App",
+      "updateAvailable": "New update available",
+      "updateAcceptedNative": "Update accepted",
+      "installing": "Installing update",
+      "restarting": "Reloading Web App",
       "reconnecting": "Restoring connection",
       "installed": "Update installed"
     },
     "updateDialog": {
       "steps": {
         "installing": "The new Web App version is being installed…",
-        "restarting": "The Web App is restarting…",
-        "reconnecting": "The connection is being restored…",
-        "success": "The update was installed successfully. The Web App will reload.",
-        "logout": "You will be logged out. The Web App will then reload.",
-        "failed": "The update could not be confirmed. Please try again."
+        "success": "The frontend update was installed successfully.",
+        "restarting": "The Web App will now reload completely. Your session will remain active.",
+        "reconnecting": "Restoring the connection to the Web App…",
+        "failed": "The frontend update could not be completed. Please try again."
       }
     }
   },
   "general": {
     "title": "General",
-    "updateStrategy": "Update strategy",
-    "autoUpdate": "Automatic updates",
+    "updateStrategy": "Update checks",
+    "autoUpdate": "Automatically check for updates",
     "webApp": "Web App",
     "webStatus": "Status",
     "backend": "Backend",
@@ -62,14 +63,14 @@
   "backend": {
     "title": "Backend",
     "fields": {
-      "lastCheck": "Last check",
-      "status": "Status",
+      "lastCheck": "Last checked",
+      "status": "Update status",
       "backendStatus": "Backend status",
       "progress": "Progress"
     },
     "actions": {
-      "checkNow": "Search for updates",
-      "checking": "Searching for updates…",
+      "checkNow": "Check for updates",
+      "checking": "Checking for updates…",
       "executeUpdate": "Install update"
     },
     "sections": {
@@ -81,24 +82,26 @@
       "noBundles": "No bundles available"
     },
     "statusTexts": {
+      "notChecked": "Not checked yet",
+      "checking": "Checking for updates…",
       "upToDate": "Up to date",
-      "updateAvailable": "Update available",
+      "updateAvailable": "New update available",
       "installing": "Installing backend update",
-      "restarting": "Server is restarting",
+      "restarting": "Restarting server",
       "reconnecting": "Restoring connection",
-      "logout": "Resetting login",
+      "logout": "Resetting session",
       "completed": "Update completed successfully",
       "failed": "Update failed"
     },
     "updateDialog": {
       "title": "Installing backend update",
-      "description": "Please wait while the server is being updated.",
+      "description": "Please wait. The backend is being updated and the server will restart afterwards.",
       "steps": {
         "installing": "Installing backend update…",
-        "restarting": "Server is restarting…",
-        "reconnecting": "Restoring connection…",
-        "logout": "Resetting login…",
-        "failedReconnect": "The server could not be reached again."
+        "restarting": "Restarting server…",
+        "reconnecting": "Restoring the connection to the server…",
+        "logout": "Your session will be reset. Please sign in again afterwards.",
+        "failedReconnect": "The server could not be reached again after the update."
       }
     }
   },

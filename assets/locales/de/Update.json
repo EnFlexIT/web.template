@@ -2,58 +2,59 @@
   "updateDialog": {
     "installing": "Update wird installiert",
     "success": "Update erfolgreich installiert",
-    "restarting": "Anwendung wird neu gestartet",
+    "restarting": "Anwendung wird neu geladen",
     "reconnecting": "Verbindung wird wiederhergestellt",
     "logout": "Abmeldung wird vorbereitet",
     "error": "Update konnte nicht abgeschlossen werden",
-    "description": "Bitte warten. Die Anwendung wird aktualisiert.",
+    "description": "Bitte warten. Die Aktualisierung wird durchgeführt.",
     "close": "Schließen"
   },
   "serverWeb": {
     "title": "Web-App",
     "fields": {
       "releaseVersion": "Version (Release)",
-      "acceptedVersion": "Version",
-      "newVersion": "Neue Version",
+      "acceptedVersion": "Installierte Version",
+      "newVersion": "Verfügbare Version",
       "lastCheck": "Letzte Prüfung",
       "status": "Update-Status"
     },
     "actions": {
       "checkNow": "Nach Updates suchen",
-      "checking": "Prüfe…",
+      "checking": "Suche nach Updates…",
       "reloadNow": "Web-App neu laden",
       "executeUpdate": "Update installieren",
       "installing": "Update wird installiert…",
-      "waiting": "Warte auf Neustart…"
+      "waiting": "Warte auf die neue Version…"
     },
     "statusTexts": {
       "networkError": "Netzwerkfehler",
       "unauthorized": "401 (Nicht autorisiert)",
       "httpError": "HTTP {{status}}",
-      "unexpectedFormat": "Unerwartetes Format",
+      "unexpectedFormat": "Unerwartetes Antwortformat",
+      "notChecked": "Noch nicht geprüft",
+      "checking": "Suche nach Updates…",
       "upToDate": "Aktuell",
       "updateAvailable": "Neues Update verfügbar",
-      "updateAcceptedNative": "Update akzeptiert (native)",
-      "installing": "Update wird verarbeitet",
-      "restarting": "Web-App wird neu gestartet",
+      "updateAcceptedNative": "Update wurde akzeptiert",
+      "installing": "Update wird installiert",
+      "restarting": "Web-App wird neu geladen",
       "reconnecting": "Verbindung wird wiederhergestellt",
-      "installed": "Update installiert"
+      "installed": "Update wurde installiert"
     },
     "updateDialog": {
       "steps": {
         "installing": "Die neue Version der Web-App wird installiert…",
-        "restarting": "Die Web-App wird neu gestartet…",
-        "reconnecting": "Die Verbindung wird wiederhergestellt…",
-        "success": "Das Update wurde erfolgreich installiert. Die Web-App wird neu geladen.",
-        "logout": "Du wirst abgemeldet. Anschließend wird die Web-App neu geladen.",
-        "failed": "Das Update konnte nicht bestätigt werden. Bitte versuche es erneut."
+        "success": "Das Frontend-Update wurde erfolgreich installiert.",
+        "restarting": "Die Web-App wird vollständig neu geladen. Deine Anmeldung bleibt erhalten.",
+        "reconnecting": "Die Verbindung zur Web-App wird wiederhergestellt…",
+        "failed": "Das Frontend-Update konnte nicht vollständig abgeschlossen werden. Bitte versuche es erneut."
       }
     }
   },
   "general": {
     "title": "Allgemein",
-    "updateStrategy": "Update-Strategie",
-    "autoUpdate": "Automatische Updates",
+    "updateStrategy": "Update-Suche",
+    "autoUpdate": "Automatisch nach Updates suchen",
     "webApp": "Web-App",
     "webStatus": "Status",
     "backend": "Backend",
@@ -63,7 +64,7 @@
     "title": "Backend",
     "fields": {
       "lastCheck": "Letzte Prüfung",
-      "status": "Status",
+      "status": "Update-Status",
       "backendStatus": "Backend-Status",
       "progress": "Fortschritt"
     },
@@ -81,6 +82,8 @@
       "noBundles": "Keine Bundles verfügbar"
     },
     "statusTexts": {
+      "notChecked": "Noch nicht geprüft",
+      "checking": "Suche nach Updates…",
       "upToDate": "Aktuell",
       "updateAvailable": "Neues Update verfügbar",
       "installing": "Backend-Update wird installiert",
@@ -92,13 +95,13 @@
     },
     "updateDialog": {
       "title": "Backend-Update wird installiert",
-      "description": "Bitte warten. Der Server wird aktualisiert.",
+      "description": "Bitte warten. Das Backend wird aktualisiert und anschließend neu gestartet.",
       "steps": {
         "installing": "Backend-Update wird installiert…",
         "restarting": "Server wird neu gestartet…",
-        "reconnecting": "Verbindung wird wiederhergestellt…",
-        "logout": "Anmeldung wird zurückgesetzt…",
-        "failedReconnect": "Der Server konnte nicht wieder erreicht werden."
+        "reconnecting": "Verbindung zum Server wird wiederhergestellt…",
+        "logout": "Die Anmeldung wird zurückgesetzt. Bitte melde dich anschließend erneut an.",
+        "failedReconnect": "Der Server konnte nach dem Update nicht wieder erreicht werden."
       }
     }
   },
