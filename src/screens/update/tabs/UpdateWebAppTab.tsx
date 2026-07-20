@@ -51,7 +51,7 @@ import {
 
 import {
   reloadUpdatedFrontendWebApp,
-} from "./././../../../util/reloadUpdatedFrontendWebApp";
+} from "../../../util/reloadUpdatedFrontendWebApp";
 
 import {
   UpdateProgressDialog,
@@ -72,13 +72,48 @@ function wait(
   });
 }
 
-function normalizeVersion(
-  value: string,
+function sanitizeVersionValue(
+  value: unknown,
 ): string {
-  return String(value ?? "")
-    .trim()
+  const normalized =
+    String(value ?? "").trim();
+
+  if (
+    !normalized ||
+    normalized === "-" ||
+    normalized.toLowerCase() === "null" ||
+    normalized.toLowerCase() === "undefined" ||
+    normalized.toLowerCase() === "n/a"
+  ) {
+    return "";
+  }
+
+  return normalized;
+}
+
+function normalizeVersion(
+  value: unknown,
+): string {
+  return sanitizeVersionValue(value)
     .toLowerCase()
     .replace(/[^0-9a-z]+/g, ".");
+}
+
+function versionsAreDifferent(
+  currentVersion: string,
+  newVersion: string,
+): boolean {
+  const current =
+    normalizeVersion(currentVersion);
+
+  const next =
+    normalizeVersion(newVersion);
+
+  return Boolean(
+    current &&
+      next &&
+      current !== next,
+  );
 }
 
 export function UpdateWebAppTab() {
@@ -140,7 +175,10 @@ export function UpdateWebAppTab() {
    * Bei automatischer Strategie übernehmen die zentralen Watcher die Suche.
    */
   useEffect(() => {
-    if (!ip) {
+    if (
+      !ip ||
+      updateState.frontend.currentVersion
+    ) {
       return;
     }
 
@@ -157,6 +195,7 @@ export function UpdateWebAppTab() {
   }, [
     dispatch,
     ip,
+    updateState.frontend.currentVersion,
   ]);
 
   const checkNow =
@@ -200,10 +239,34 @@ export function UpdateWebAppTab() {
       ip,
     ]);
 
+  const currentVersion =
+    sanitizeVersionValue(
+      updateState.frontend.currentVersion,
+    );
+
   const availableVersion =
-    updateState.frontend.newVersion ||
-    updateState.frontend.version ||
-    "-";
+    sanitizeVersionValue(
+      updateState.frontend.newVersion,
+    ) ||
+    sanitizeVersionValue(
+      updateState.frontend.version,
+    );
+
+  /*
+   * Ein "-" vom Server ist kein Versionswert.
+   *
+   * Der Button erscheint nur, wenn eine echte Zielversion
+   * vorliegt und sie von der aktuell geladenen Redux-Version
+   * abweicht.
+   */
+  const hasFrontendUpdate =
+    !updateState.frontend.isPending &&
+    updateState.frontend.isAvailable &&
+    Boolean(availableVersion) &&
+    versionsAreDifferent(
+      currentVersion,
+      availableVersion,
+    );
 
   const waitForInstalledVersion =
     useCallback(
@@ -238,8 +301,11 @@ export function UpdateWebAppTab() {
               );
 
             const expectedInstalled =
-              expectedVersion &&
-              expectedVersion !== "-" &&
+              Boolean(
+                sanitizeVersionValue(
+                  expectedVersion,
+                ),
+              ) &&
               normalizeVersion(
                 latestVersion,
               ) ===
@@ -300,7 +366,7 @@ export function UpdateWebAppTab() {
       );
 
       const previousVersion =
-        updateState.frontend.currentVersion;
+        currentVersion;
 
       try {
         /*
@@ -373,7 +439,7 @@ export function UpdateWebAppTab() {
     }, [
       dispatch,
       ip,
-      updateState.frontend.currentVersion,
+      currentVersion,
       availableVersion,
       waitForInstalledVersion,
       t,
@@ -405,7 +471,7 @@ export function UpdateWebAppTab() {
             "serverWeb.statusTexts.checking",
             "Suche nach Updates...",
           )
-        : updateState.frontend.isAvailable
+        : hasFrontendUpdate
           ? t(
               "serverWeb.statusTexts.updateAvailable",
               {
@@ -426,12 +492,11 @@ export function UpdateWebAppTab() {
                 "Noch nicht geprüft",
               );
 
-  const currentVersion =
-    updateState.frontend.currentVersion ||
-    "-";
+  const displayedCurrentVersion =
+    currentVersion || "-";
 
   const newVersion =
-    updateState.frontend.isAvailable
+    hasFrontendUpdate
       ? availableVersion
       : "-";
 
@@ -466,7 +531,7 @@ export function UpdateWebAppTab() {
             "serverWeb.fields.acceptedVersion",
             "Version",
           )}
-          value={currentVersion}
+          value={displayedCurrentVersion}
         />
 
         <Row
@@ -514,7 +579,7 @@ export function UpdateWebAppTab() {
             />
           ) : null}
 
-          {updateState.frontend.isAvailable ? (
+          {hasFrontendUpdate ? (
             <ActionButton
               label={
                 isInstalling

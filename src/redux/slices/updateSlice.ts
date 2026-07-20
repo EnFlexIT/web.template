@@ -30,11 +30,10 @@ export type FrontendUpdateState = {
   newVersion: string;
 
   /**
-   * Für die Update-Entscheidung stammt dieser Wert aus:
-   * UPDATE.FRONTEND.CHECK
+   * Version der aktuell geladenen Browser-App.
    *
-   * GET /api/version?type=WEBAPP darf nur noch gezielt nach
-   * einer manuellen Installation zur Verifikation verwendet werden.
+   * Sie wird innerhalb desselben Browser-Dokuments nicht durch
+   * spätere UPDATE.FRONTEND.CHECK-Antworten überschrieben.
    */
   currentVersion: string;
 };
@@ -169,9 +168,24 @@ function toNumber(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function sanitizeVersionValue(value: unknown): string {
+  const normalized = String(value ?? "").trim();
+
+  if (
+    !normalized ||
+    normalized === "-" ||
+    normalized.toLowerCase() === "null" ||
+    normalized.toLowerCase() === "undefined" ||
+    normalized.toLowerCase() === "n/a"
+  ) {
+    return "";
+  }
+
+  return normalized;
+}
+
 function normalizeVersionForCompare(value: unknown): string {
-  return String(value ?? "")
-    .trim()
+  return sanitizeVersionValue(value)
     .toLowerCase()
     .replace(/[^0-9a-z]+/g, ".");
 }
@@ -180,8 +194,11 @@ function versionsAreDifferent(
   currentVersion: string,
   newVersion: string,
 ): boolean {
-  const current = normalizeVersionForCompare(currentVersion);
-  const next = normalizeVersionForCompare(newVersion);
+  const current =
+    normalizeVersionForCompare(currentVersion);
+
+  const next =
+    normalizeVersionForCompare(newVersion);
 
   return Boolean(
     current &&
@@ -194,51 +211,130 @@ function getFrontendCheckValues(
   entries: PropertyEntry[] | undefined,
   fallback: FrontendUpdateState,
 ) {
-  const currentVersion =
-    findValue(
-      entries,
-      "updatecheck.frontend.currentversion",
-    ) ??
-    fallback.currentVersion;
-
-  const version =
-    findValue(
-      entries,
-      "updatecheck.frontend.version",
-    ) ??
-    fallback.version;
-
-  const newVersion =
-    findValue(
-      entries,
-      "updatecheck.frontend.newversion",
-    ) ??
-    version ??
-    fallback.newVersion;
-
-  const availableValue =
-    findValue(
-      entries,
-      "updatecheck.frontend.isavailable",
+  const pending =
+    toBoolean(
+      findValue(
+        entries,
+        "updatecheck.frontend.ispending",
+      ),
     );
 
-  const isAvailable =
-    (
-      availableValue === undefined
-        ? false
-        : toBoolean(availableValue)
+  const serverCurrentVersion =
+    sanitizeVersionValue(
+      findValue(
+        entries,
+        "updatecheck.frontend.currentversion",
+      ),
+    );
+
+  const targetVersion =
+    sanitizeVersionValue(
+      findValue(
+        entries,
+        "updatecheck.frontend.newversion",
+      ),
     ) ||
-    versionsAreDifferent(
-      currentVersion,
-      newVersion,
+    sanitizeVersionValue(
+      findValue(
+        entries,
+        "updatecheck.frontend.version",
+      ),
+    );
+
+  /*
+   * currentVersion beschreibt die Version der aktuell geladenen
+   * Browser-App. Sobald sie in diesem Dokument gesetzt wurde,
+   * wird sie durch spätere Server-Checks nicht überschrieben.
+   */
+  const currentVersion =
+    sanitizeVersionValue(
+      fallback.currentVersion,
+    ) ||
+    serverCurrentVersion;
+
+  const serverSaysAvailable =
+    toBoolean(
+      findValue(
+        entries,
+        "updatecheck.frontend.isavailable",
+      ),
+    );
+
+  /*
+   * "-" ist ausdrücklich keine Version.
+   *
+   * Ein Update gilt nur dann als verfügbar, wenn:
+   * - der Check abgeschlossen ist,
+   * - eine echte Zielversion vorhanden ist,
+   * - und der Server es meldet oder die Zielversion von der
+   *   aktuell geladenen Redux-Version abweicht.
+   */
+  const isAvailable =
+    !pending &&
+    Boolean(targetVersion) &&
+    (
+      serverSaysAvailable ||
+      versionsAreDifferent(
+        currentVersion,
+        targetVersion,
+      )
     );
 
   return {
+    pending,
     currentVersion,
-    version,
-    newVersion,
+    targetVersion,
     isAvailable,
   };
+}
+
+function wait(
+  milliseconds: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+async function requestFrontendCheckUntilFinished(
+  api: InfoApi,
+): Promise<PropertyEntry[]> {
+  const maxAttempts = 8;
+  const delayMs = 500;
+
+  let latestEntries: PropertyEntry[] = [];
+
+  for (
+    let attempt = 0;
+    attempt < maxAttempts;
+    attempt += 1
+  ) {
+    const response =
+      await api.getAppSettings(
+        "UPDATE.FRONTEND.CHECK",
+      );
+
+    latestEntries =
+      response.data.propertyEntries ?? [];
+
+    const isPending =
+      toBoolean(
+        findValue(
+          latestEntries,
+          "updatecheck.frontend.ispending",
+        ),
+      );
+
+    if (!isPending) {
+      return latestEntries;
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await wait(delayMs);
+    }
+  }
+
+  return latestEntries;
 }
 
 function hasValidUpdatePayload(
@@ -420,15 +516,15 @@ export const loadUpdateSettings =
 
       const [
         strategyResponse,
-        frontendResponse,
+        frontendEntries,
         backendResponse,
       ] = await Promise.all([
         api.getAppSettings(
           "UPDATE.STRATEGY",
         ),
 
-        api.getAppSettings(
-          "UPDATE.FRONTEND.CHECK",
+        requestFrontendCheckUntilFinished(
+          api,
         ),
 
         api.getAppSettings(
@@ -439,11 +535,14 @@ export const loadUpdateSettings =
       const strategyEntries =
         strategyResponse.data.propertyEntries ?? [];
 
-      const frontendEntries =
-        frontendResponse.data.propertyEntries ?? [];
-
       const backendEntries =
         backendResponse.data.propertyEntries ?? [];
+
+      const frontendCheck =
+        getFrontendCheckValues(
+          frontendEntries,
+          state.update.frontend,
+        );
 
       return {
         autoUpdate: toBoolean(
@@ -454,18 +553,11 @@ export const loadUpdateSettings =
         ),
 
         frontend: {
-          isPending: toBoolean(
-            findValue(
-              frontendEntries,
-              "updatecheck.frontend.ispending",
-            ),
-          ),
+          isPending:
+            frontendCheck.pending,
 
           isAvailable:
-            getFrontendCheckValues(
-              frontendEntries,
-              state.update.frontend,
-            ).isAvailable,
+            frontendCheck.isAvailable,
 
           lastCheck:
             findValue(
@@ -474,22 +566,13 @@ export const loadUpdateSettings =
             ) ?? "",
 
           version:
-            getFrontendCheckValues(
-              frontendEntries,
-              state.update.frontend,
-            ).version,
+            frontendCheck.targetVersion,
 
           newVersion:
-            getFrontendCheckValues(
-              frontendEntries,
-              state.update.frontend,
-            ).newVersion,
+            frontendCheck.targetVersion,
 
           currentVersion:
-            getFrontendCheckValues(
-              frontendEntries,
-              state.update.frontend,
-            ).currentVersion,
+            frontendCheck.currentVersion,
         },
 
         backend: {
@@ -642,20 +725,12 @@ export const checkFrontendUpdate =
         thunkAPI.getState().api.awb_rest_api.infoApi;
 
       /*
-       * Wichtig:
-       * Die Updatesuche darf die installierte Version nicht
-       * parallel über /version?type=WEBAPP überschreiben.
-       *
-       * UPDATE.FRONTEND.CHECK liefert den zusammengehörigen
-       * aktuellen und neuen Versionsstand.
+       * Der Server liefert zuerst häufig ispending=true.
+       * Deshalb wird kurz und begrenzt weiter abgefragt,
+       * bis das endgültige Ergebnis vorliegt.
        */
-      const response =
-        await api.getAppSettings(
-          "UPDATE.FRONTEND.CHECK",
-        );
-
-      return (
-        response.data.propertyEntries ?? []
+      return requestFrontendCheckUntilFinished(
+        api,
       );
     },
   );
@@ -827,8 +902,15 @@ const updateSlice = createSlice({
     builder.addCase(
       loadInstalledFrontendVersion.fulfilled,
       (state, action) => {
-        state.frontend.currentVersion =
-          action.payload.currentVersion;
+        /*
+         * Die lokal geladene Browser-Version wird pro Dokument
+         * nur einmal gesetzt und danach nicht von Server-Checks
+         * überschrieben.
+         */
+        if (!state.frontend.currentVersion) {
+          state.frontend.currentVersion =
+            action.payload.currentVersion;
+        }
       },
     );
 
@@ -893,13 +975,22 @@ const updateSlice = createSlice({
       checkFrontendUpdate.pending,
       (state) => {
         state.frontend.isPending = true;
+
+        /*
+         * Alte Suchergebnisse während einer neuen Prüfung
+         * nicht weiter als Update anzeigen.
+         */
+        state.frontend.isAvailable = false;
+        state.frontend.version = "";
+        state.frontend.newVersion = "";
       },
     );
 
     builder.addCase(
       checkFrontendUpdate.fulfilled,
       (state, action) => {
-        const entries = action.payload;
+        const entries =
+          action.payload;
 
         const frontendCheck =
           getFrontendCheckValues(
@@ -908,12 +999,7 @@ const updateSlice = createSlice({
           );
 
         state.frontend.isPending =
-          toBoolean(
-            findValue(
-              entries,
-              "updatecheck.frontend.ispending",
-            ),
-          );
+          frontendCheck.pending;
 
         state.frontend.isAvailable =
           frontendCheck.isAvailable;
@@ -929,10 +1015,10 @@ const updateSlice = createSlice({
           frontendCheck.currentVersion;
 
         state.frontend.version =
-          frontendCheck.version;
+          frontendCheck.targetVersion;
 
         state.frontend.newVersion =
-          frontendCheck.newVersion;
+          frontendCheck.targetVersion;
       },
     );
 
