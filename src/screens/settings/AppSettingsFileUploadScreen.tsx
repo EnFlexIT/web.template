@@ -76,6 +76,71 @@ function isRedirectStatus(status: number): boolean {
   );
 }
 
+async function readResponseMessage(
+  response: Response,
+): Promise<string | null> {
+  const contentType =
+    response.headers
+      .get("content-type")
+      ?.toLowerCase() ?? "";
+
+  try {
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+
+      const message = String(
+        data?.message ??
+          data?.detail ??
+          data?.error ??
+          data?.title ??
+          "",
+      ).trim();
+
+      return message || null;
+    }
+
+    const text = (await response.text()).trim();
+
+    /*
+     * HTML-Fehlerseiten sind für Benutzer nicht hilfreich und
+     * sollen nicht direkt in der Oberfläche angezeigt werden.
+     */
+    if (
+      !text ||
+      text.startsWith("<!DOCTYPE") ||
+      text.startsWith("<html")
+    ) {
+      return null;
+    }
+
+    return text;
+  } catch {
+    return null;
+  }
+}
+
+function getFallbackConfigurationFilename(
+  configurationType: string,
+): string {
+  const normalized =
+    configurationType
+      .trim()
+      .toLowerCase();
+
+  if (normalized === "jettyconfiguration") {
+    return "JettyConfiguration.xml";
+  }
+
+  if (
+    normalized === "awb.ini" ||
+    normalized === "awbini"
+  ) {
+    return "AWB.ini";
+  }
+
+  return `${configurationType}.config`;
+}
+
 function isExpoWebRuntime(): boolean {
   return (
     Platform.OS === "web" &&
@@ -830,15 +895,29 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
   }
 
   async function downloadCurrentConfiguration() {
-    const selectedPerformative = performative.trim();
+    const selectedPerformative =
+      performative.trim();
 
-    if (!api.ip || !selectedPerformative) {
-      setDownloadError(t("messageConfigurationPerformativeMissing"));
+    if (
+      !api.ip ||
+      !selectedPerformative
+    ) {
+      setDownloadError(
+        t(
+          "messageConfigurationPerformativeMissing",
+        ),
+      );
+
       return;
     }
 
     if (Platform.OS !== "web") {
-      setDownloadError(t("messageDownloadOnlyAvailableForWeb"));
+      setDownloadError(
+        t(
+          "messageDownloadOnlyAvailableForWeb",
+        ),
+      );
+
       return;
     }
 
@@ -849,17 +928,32 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
     dispatch(resetUploadState());
 
     try {
-      const headers: Record<string, string> = {
-        Accept: "application/octet-stream",
-        "X-Performative": selectedPerformative,
+      const headers: Record<
+        string,
+        string
+      > = {
+        Accept:
+          "application/octet-stream, application/json",
+
+        "X-Performative":
+          selectedPerformative,
       };
 
-      if (api.authenticationMethod === "jwt" && api.jwt) {
-        headers.Authorization = `Bearer ${api.jwt}`;
+      if (
+        api.authenticationMethod ===
+          "jwt" &&
+        api.jwt
+      ) {
+        headers.Authorization =
+          `Bearer ${api.jwt}`;
       }
 
+      const downloadUrl =
+        `${normalizeBaseUrl(api.ip)}` +
+        "/api/app/settings/download";
+
       const response = await fetch(
-        `${normalizeBaseUrl(api.ip)}/api/app/settings/download`,
+        downloadUrl,
         {
           method: "GET",
           cache: "no-store",
@@ -870,58 +964,193 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
       );
 
       if (
-        isRedirectStatus(response.status) ||
-        (response as any).type === "opaqueredirect"
+        isRedirectStatus(
+          response.status,
+        ) ||
+        (response as any).type ===
+          "opaqueredirect"
       ) {
-        throw new Error(t("messageSessionExpiredOrLoginRequired"));
+        throw new Error(
+          t(
+            "messageSessionExpiredOrLoginRequired",
+          ),
+        );
       }
-
-      const contentType = response.headers.get("content-type") ?? "";
 
       if (!response.ok) {
-        const text = await response.text();
+        const backendMessage =
+          await readResponseMessage(
+            response,
+          );
+
+        console.warn(
+          "[FILE CONFIG] Download request failed",
+          {
+            url: downloadUrl,
+            configurationType:
+              selectedPerformative,
+            status:
+              response.status,
+            statusText:
+              response.statusText,
+            backendMessage,
+          },
+        );
+
+        if (
+          response.status === 401 ||
+          response.status === 403
+        ) {
+          throw new Error(
+            t(
+              "messageDownloadPermissionDenied",
+            ),
+          );
+        }
+
+        if (response.status === 404) {
+          throw new Error(
+            backendMessage ||
+              t(
+                "messageDownloadConfigurationNotFound",
+                {
+                  configuration:
+                    selectedPerformative,
+                },
+              ),
+          );
+        }
+
+        if (
+          response.status >= 500
+        ) {
+          /*
+           * Eine verständliche Servermeldung hat Vorrang.
+           * Bei leerer oder technischer Antwort wird eine
+           * benutzerfreundliche Meldung verwendet.
+           */
+          throw new Error(
+            backendMessage ||
+              t(
+                "messageDownloadServerError",
+                {
+                  configuration:
+                    selectedPerformative,
+                },
+              ),
+          );
+        }
 
         throw new Error(
-          text ||
-            t("messageDownloadFailedWithStatus", {
-              status: response.status,
-            }),
+          backendMessage ||
+            t(
+              "messageDownloadRequestRejected",
+              {
+                configuration:
+                  selectedPerformative,
+              },
+            ),
         );
       }
 
-      if (contentType.toLowerCase().includes("application/json")) {
-        const data = await response.json();
+      const contentType =
+        response.headers
+          .get("content-type")
+          ?.toLowerCase() ?? "";
+
+      if (
+        contentType.includes(
+          "application/json",
+        )
+      ) {
+        const backendMessage =
+          await readResponseMessage(
+            response,
+          );
 
         throw new Error(
-          data?.message || t("messageDownloadCouldNotBeExecuted"),
+          backendMessage ||
+            t(
+              "messageDownloadCouldNotBeExecuted",
+            ),
         );
       }
 
-      const blob = await response.blob();
-      const contentDisposition = response.headers.get("content-disposition");
-      const fallbackFilename = `${selectedPerformative}.config`;
+      const blob =
+        await response.blob();
 
-      const filename = getFilenameFromContentDisposition(
-        contentDisposition,
-        fallbackFilename,
-      );
+      if (blob.size === 0) {
+        throw new Error(
+          t(
+            "messageDownloadEmptyFile",
+            {
+              configuration:
+                selectedPerformative,
+            },
+          ),
+        );
+      }
 
-      const objectUrl = window.URL.createObjectURL(blob);
+      const contentDisposition =
+        response.headers.get(
+          "content-disposition",
+        );
 
-      const link = document.createElement("a");
+      const fallbackFilename =
+        getFallbackConfigurationFilename(
+          selectedPerformative,
+        );
+
+      const filename =
+        getFilenameFromContentDisposition(
+          contentDisposition,
+          fallbackFilename,
+        );
+
+      const objectUrl =
+        window.URL.createObjectURL(
+          blob,
+        );
+
+      const link =
+        document.createElement("a");
+
       link.href = objectUrl;
       link.download = filename;
+      link.style.display = "none";
 
-      document.body.appendChild(link);
+      document.body.appendChild(
+        link,
+      );
+
       link.click();
-
       link.remove();
-      window.URL.revokeObjectURL(objectUrl);
-    } catch (error: any) {
-      console.warn("[FILE CONFIG] download failed", error);
+
+      /*
+       * Nicht direkt widerrufen, da einige Browser den Download
+       * sonst abbrechen können.
+       */
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(
+          objectUrl,
+        );
+      }, 1000);
+    } catch (error: unknown) {
+      console.warn(
+        "[FILE CONFIG] download failed",
+        error,
+      );
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : "";
 
       setDownloadError(
-        error?.message || t("messageDownloadCouldNotBeExecuted"),
+        message ||
+          t(
+            "messageDownloadCouldNotBeExecuted",
+          ),
       );
     } finally {
       setDownloadLoading(false);

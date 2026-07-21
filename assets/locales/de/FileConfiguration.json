@@ -16,7 +16,6 @@
   "messageConfigurationPerformativeMissing": "Konfiguration/Performative fehlt.",
   "messageDownloadOnlyAvailableForWeb": "Download ist aktuell nur für Web umgesetzt.",
   "messageDownloadFailedWithStatus": "Download fehlgeschlagen. Status: {{status}}",
-  "messageDownloadCouldNotBeExecuted": "Download konnte nicht ausgeführt werden.",
   "messageNoFileSelected": "Keine Datei ausgewählt",
   "messageUploadSuccessful": "Upload erfolgreich.",
  "messageDetectedNextServerUrl": "Die Datei ändert voraussichtlich die Server-Adresse auf {{url}}.",
@@ -34,5 +33,11 @@
   "messagePortChangeDialogTitle": "Server-Adresse ändern?",
   "messagePortChangeDialogDescription": "Die ausgewählte Konfiguration ändert die Server-Adresse von {{currentUrl}} auf {{nextUrl}}. Möchtest du nach dem Upload automatisch zur neuen Adresse wechseln?",
   "buttonKeepCurrentServer": "Aktuelle Adresse behalten",
-  "buttonSwitchToDetectedServer": "Zur neuen Adresse wechseln"
+  "buttonSwitchToDetectedServer": "Zur neuen Adresse wechseln",
+   "messageDownloadPermissionDenied": "Du bist nicht berechtigt, diese Konfiguration herunterzuladen. Bitte melde dich erneut an oder wende dich an einen Administrator.",
+  "messageDownloadConfigurationNotFound": "Die ausgewählte Konfiguration „{{configuration}}“ ist auf diesem Server nicht verfügbar.",
+  "messageDownloadServerError": "Die ausgewählte Konfiguration „{{configuration}}“ konnte vom Server nicht bereitgestellt werden. Bitte versuche es erneut. Tritt der Fehler weiterhin auf, prüfe die Serverprotokolle oder wende dich an einen Administrator.",
+  "messageDownloadRequestRejected": "Der Download der Konfiguration „{{configuration}}“ wurde vom Server abgelehnt.",
+  "messageDownloadEmptyFile": "Der Server hat für die Konfiguration „{{configuration}}“ eine leere Datei zurückgegeben.",
+  "messageDownloadCouldNotBeExecuted": "Die Konfiguration konnte nicht heruntergeladen werden. Bitte versuche es erneut."
 }

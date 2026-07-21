@@ -37,6 +37,11 @@
   "messagePortChangeDialogTitle": "Change server address?",
   "messagePortChangeDialogDescription": "The selected configuration changes the server address from {{currentUrl}} to {{nextUrl}}. Do you want to switch automatically to the new address after the upload?",
   "buttonKeepCurrentServer": "Keep current address",
-  "buttonSwitchToDetectedServer": "Switch to new address"
+  "buttonSwitchToDetectedServer": "Switch to new address",
+   "messageDownloadPermissionDenied": "You are not authorized to download this configuration. Please sign in again or contact an administrator.",
+  "messageDownloadConfigurationNotFound": "The selected configuration “{{configuration}}” is not available on this server.",
+  "messageDownloadServerError": "The selected configuration “{{configuration}}” could not be provided by the server. Please try again. If the problem persists, check the server logs or contact an administrator.",
+  "messageDownloadRequestRejected": "The server rejected the download of the configuration “{{configuration}}”.",
+  "messageDownloadEmptyFile": "The server returned an empty file for the configuration “{{configuration}}”."
 
 }
