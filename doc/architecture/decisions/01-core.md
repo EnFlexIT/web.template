@@ -288,13 +288,15 @@ Applications should extend the Core instead of modifying it.
 # Dependencies
 
 ```
-Application
-      │
-      ▼
 Core
-      │
-      ▼
-Infrastructure
+
+↓
+
+Base Template Modules
+
+↓
+
+Product Applications
 ```
 
 Dependencies always point downward.

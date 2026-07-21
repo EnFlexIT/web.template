@@ -116,6 +116,17 @@ The architecture follows these principles:
 6. Refactoring should be performed incrementally to minimize risk and preserve stability.
 
 ---
+## Core and Base Template
+
+The Core provides reusable technical platform capabilities.
+
+The Base Template is an installable reference application built on top of
+the Core. It contains standard AWB WebServer functionality such as
+application settings, database settings, data analysis and administrative
+tools.
+
+Product applications may reuse all or only selected Base Template modules.
+---
 
 # Long-Term Objective
 
