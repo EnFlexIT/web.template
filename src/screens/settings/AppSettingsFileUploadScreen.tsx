@@ -181,18 +181,18 @@ function setJettySetting(
   return false;
 }
 
-function getDisplayFilePath(file: File, inputValue?: string | null): string {
-  const fileWithExtraFields = file as File & {
-    path?: string;
-    webkitRelativePath?: string;
-  };
+function getDisplayFileName(file: File): string {
+  /*
+   * Browser liefern bei <input type="file"> aus Sicherheitsgründen
+   * häufig einen künstlichen Wert wie "C:\\fakepath\\datei.xml".
+   *
+   * Der echte lokale Dateipfad ist im Browser absichtlich nicht
+   * verfügbar. Für die Anzeige verwenden wir deshalb ausschließlich
+   * den sicheren Dateinamen aus File.name.
+   */
+  const fileName = String(file.name ?? "").trim();
 
-  return (
-    fileWithExtraFields.path ||
-    fileWithExtraFields.webkitRelativePath ||
-    inputValue ||
-    file.name
-  );
+  return fileName || "Unbekannte Datei";
 }
 
 function shouldHandleAsJettyConfiguration(params: {
@@ -342,7 +342,7 @@ export function AppSettingsFileUploadScreen() {
     useState(false);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
   const [nextBaseUrlAfterUpload, setNextBaseUrlAfterUpload] =
     useState<string | null>(null);
@@ -372,9 +372,13 @@ export function AppSettingsFileUploadScreen() {
     dispatch(resetUploadState());
   }
 
-  function setFile(file: File | null, inputValue?: string | null) {
+  function setFile(file: File | null) {
     setSelectedFile(file);
-    setSelectedFilePath(file ? getDisplayFilePath(file, inputValue) : null);
+    setSelectedFileName(
+      file
+        ? getDisplayFileName(file)
+        : null,
+    );
     resetMessages();
   }
  
@@ -684,7 +688,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
 
       input.onchange = () => {
         const file = input.files?.[0] ?? null;
-        setFile(file, input.value);
+        setFile(file);
       };
 
       document.body.appendChild(input);
@@ -1023,11 +1027,11 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
             <View style={s.fileFooter}>
               <View style={s.fileNameBox}>
                 <ThemedText style={s.fileNameLabel}>
-                  {t("labelFilePath", "Dateipfad:")}
+                  {t("labelFileName", "Dateiname:")}
                 </ThemedText>
 
                 <ThemedText style={s.fileName} numberOfLines={1}>
-                  {selectedFilePath || t("messageNoFileSelected")}
+                  {selectedFileName || t("messageNoFileSelected")}
                 </ThemedText>
               </View>
 
