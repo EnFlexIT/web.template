@@ -22,6 +22,7 @@
     - [unistyles vs legacy](#UnistylesVSLegacy)
 - [Api](#api)
 - [Data Management](#redux)
+- [Additional Documentation](#Additional-Documentation)
 
 ## <a id="About">About</a>
 
@@ -265,6 +266,25 @@ export const lightTheme = {
     // ....
 } as const
 ```
+# Components
+
+This document describes reusable frontend components used in the web.template project.
+
+The goal is to make common UI building blocks easier to understand, reuse and extend.
+
+## UI Elements
+
+The `ui-elements` folder contains reusable UI primitives that should be used across screens, dialogs and feature modules.
+
+### Overview
+
+- [ActionButton](#actionbutton)
+- [Card](#card)
+- [InfoBox](#infobox)
+- [ConfirmDialog](#confirmdialog)
+- [Dropdown](#dropdown)
+- [Table](#table)
+- [ToolBox](#toolbox)
 
 ### <a id="HowItIsActuallyImplemented">How it is actually implemented</a>
 
@@ -314,3 +334,18 @@ So the usual workflow would go something like this:
 This way, the need to write boilerplate to interface with apis is eliminated and the generated boilerplate 100% fullfills our agreement (assuming the generator is correctly implemented)
 
 `package.json` already provided two scripts: `AWB-RestAPI` and `AWB-RestAPI` which build their respective api as well as `api` which just calls the two scripts consecutevly.
+## <a id="Additional-Documentation">Additional Documentation</a>
+
+The template contains additional application infrastructure that is documented in the `doc` folder.
+
+- [Project Structure](doc/project-structure.md)
+- [Release Workflow](doc/release-workflow.md)
+- [Test Release](doc/test-release.md)
+- [Authentication](doc/authentication.md)
+- [Server Check and Server Switching](doc/server-check-and-switching.md)
+- [Update System](doc/update-system.md)
+- [File Configuration Upload](doc/file-configuration-upload.md)
+- [Redux State Management](doc/redux-state-management.md)
+- [Components](doc/components.md)
+- [Review Notes](doc/review-notes.md)
+- [AI Context](doc/ai-context.md)
