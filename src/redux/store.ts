@@ -1,57 +1,22 @@
-import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
-import languageReducer from "./slices/languageSlice";
-import themeReducer from "./slices/themeSlice";
-import apiReducer from "./slices/apiSlice";
-import dataPermissionsReducer from "./slices/dataPermissionsSlice";
-import menuReducer from "./slices/menuSlice";
-import readySlice from "./slices/readySlice";
-import { OrganizationsData } from "./slices/organizationsSlice";
-import baseModeReducer from "./slices/baseModeSlice";
-import serversReducer from "./slices/serverSlice";
-import connectivityReducer from "./slices/connectivitySlice";
-import dbSettingsReducer from "./slices/dbSettingsSlice";
-import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
-import notificationsReducer from "./slices/notificationSlice";
-import execSettingsReducer from "./slices/execSettingsSlice";
-import dataAnalysisSlice from "./slices/dataAnalysisSlice";
-import updateReducer from "./slices/updateSlice";
-import sessionTimeReducer from "./slices/sessionTimeSlice";
-import seversStatusReducer from "./slices/serverStatusSlice";
-import appSettingsFileUploadReducer from "./slices/appSettingsFileUploadSlice";
-import appReleaseReducer from "./slices/appReleaseSlice";
-import userProfileReducer from "./slices/userProfileSlice";
-import liveConsole from "./slices/liveConsoleSlice";
-import developerConsoleReducer from "./slices/developerConsoleSlice";
+import {
+  configureStore,
+  type Action,
+  type ThunkAction,
+} from "@reduxjs/toolkit";
+
+import {
+  rootReducer,
+  type RootState,
+} from "./rootReducer";
+
 export const store = configureStore({
-  reducer: {
-    language: languageReducer,
-    theme: themeReducer,
-    api: apiReducer,
-    dataPermissions: dataPermissionsReducer,
-    menu: menuReducer,
-    organizations: OrganizationsData.slice.reducer,
-    ready: readySlice,
-    baseMode: baseModeReducer,
-    servers: serversReducer,
-    connectivity: connectivityReducer,
-    dbSettings: dbSettingsReducer,
-    passwordChangePrompt: passwordChangePromptReducer,
-    notifications: notificationsReducer,
-    execSettings: execSettingsReducer,
-    dataAnalysis: dataAnalysisSlice,
-    update: updateReducer,
-    sessionTime: sessionTimeReducer,
-    serverStatus: seversStatusReducer,
-    appSettingsFileUpload: appSettingsFileUploadReducer,
-    appRelease: appReleaseReducer,
-    userProfile: userProfileReducer,
-    liveConsole: liveConsole,
-    developerConsole: developerConsoleReducer,
-  },
+  reducer: rootReducer,
 });
 
 export type AppDispatch = typeof store.dispatch;
-export type RootState = ReturnType<typeof store.getState>;
+
+export type { RootState };
+
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   RootState,
