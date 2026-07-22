@@ -9,12 +9,12 @@ import {
 } from "react";
 import { Platform } from "react-native";
 
-import { useAppDispatch } from "./useAppDispatch";
-import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
   loadSessionTime,
   selectSessionTime,
-} from "../redux/slices/sessionTimeSlice";
+} from "../../../redux/slices/sessionTimeSlice";
 
 type Options = {
   enabled: boolean;

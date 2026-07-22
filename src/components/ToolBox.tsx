@@ -25,7 +25,7 @@ import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
 import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 
 import { useJwtSessionTimerWeb } from "../hooks/useJwtSessionTimerWeb";
-import { useOidcSessionTimerWeb } from "../hooks/useOidcSessionTimerWeb";
+import { useOidcSessionTimerWeb} from "../core/authentication/session/useOidcSessionTimerWeb";
 
 import {
   extendSessionTime,
