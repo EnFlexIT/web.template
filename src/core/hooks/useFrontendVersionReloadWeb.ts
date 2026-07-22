@@ -1,19 +1,19 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppSelector } from "./useAppSelector";
+import { useAppSelector } from "../../hooks/useAppSelector";
 
 import {
   normalizeBaseUrl,
   selectApi,
-} from "../redux/slices/apiSlice";
+} from "../../redux/slices/apiSlice";
 
 import {
   clearUpdateSettingsCache,
-} from "../redux/slices/updateSlice";
+} from "../../redux/slices/updateSlice";
 
 import {
-  reloadUpdatedFrontendWebApp,} from "../redux/slices/reloadUpdatedFrontendWebApp";
+  reloadUpdatedFrontendWebApp,} from "../../redux/slices/reloadUpdatedFrontendWebApp";
 
 type Params = {
   enabled: boolean;
