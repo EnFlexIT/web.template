@@ -18,7 +18,7 @@ import {
   selectAuthenticationMethod,
 } from "../../../redux/slices/apiSlice";
 
-import { setLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
+import { setLogoutFlowActive } from "../../../core/authentication/logout/logoutFlowGuard";
 
 import {
   checkBackendUpdate,

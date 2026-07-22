@@ -10,7 +10,7 @@ import {
 } from "../../../redux/slices/apiSlice";
 
 import { loadSessionTime } from "../../../redux/slices/sessionTimeSlice";
-import { isLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
+import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
 
 const SESSION_CHECK_INTERVAL_MS = 60_000;
 const LOGIN_GRACE_PERIOD_MS = 12_000;

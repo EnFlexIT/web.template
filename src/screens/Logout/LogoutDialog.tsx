@@ -23,7 +23,7 @@ import {
   type AuthMethod,
 } from "../../redux/slices/apiSlice";
 
-import { setLogoutFlowActive } from "../../redux/slices/logoutFlowGuard";
+import { setLogoutFlowActive } from "../../core/authentication/logout/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
 import { setServerStatus } from "../../redux/slices/serverStatusSlice";
 

@@ -15,7 +15,7 @@ import {
   loginWithBasic,
 } from "./apiSlice";
 
-import { isLogoutFlowActive } from "./logoutFlowGuard";
+import { isLogoutFlowActive } from "../../core/authentication/logout/logoutFlowGuard";
 
 const JWT_KEY = "jwt";
 
