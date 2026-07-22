@@ -4,7 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Buffer } from "buffer";
 
-import type { RootState } from "../store";
+import type { RootState } from "../../../redux/store";
 
 import {
   setJwtLocal,
@@ -13,9 +13,9 @@ import {
   getJwtForServer,
   normalizeBaseUrl,
   loginWithBasic,
-} from "./apiSlice";
+} from "../../../redux/slices/apiSlice";
 
-import { isLogoutFlowActive } from "../../core/authentication/logout/logoutFlowGuard";
+import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
 
 const JWT_KEY = "jwt";
 
