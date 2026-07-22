@@ -33,7 +33,7 @@ import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 
 import { NotificationPopup } from "./components/NotificationPopup";
-import { AppSessionGuard } from "./redux/slices/AppSessionGuard";
+import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
 import { LoginScreen } from "./screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import { NotAvailableScreen } from "./screens/NotAvailableScreen";

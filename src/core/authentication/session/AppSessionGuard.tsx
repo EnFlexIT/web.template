@@ -1,16 +1,16 @@
 import { useEffect, useRef } from "react";
 
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   logoutAsync,
   selectAuthenticationMethod,
   selectIsLoggedIn,
-} from "../../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
-import { loadSessionTime } from "../../redux/slices/sessionTimeSlice";
-import { isLogoutFlowActive } from "./logoutFlowGuard";
+import { loadSessionTime } from "../../../redux/slices/sessionTimeSlice";
+import { isLogoutFlowActive } from "../../../redux/slices/logoutFlowGuard";
 
 const SESSION_CHECK_INTERVAL_MS = 60_000;
 const LOGIN_GRACE_PERIOD_MS = 12_000;
