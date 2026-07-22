@@ -1,19 +1,19 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppDispatch } from "./useAppDispatch";
-import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { useAppSelector } from "../../hooks/useAppSelector";
 
 import {
   normalizeBaseUrl,
   selectApi,
-} from "../redux/slices/apiSlice";
+} from "../../redux/slices/apiSlice";
 
 import {
   checkBackendUpdate,
   checkFrontendUpdate,
   loadUpdateStrategy,
-} from "../redux/slices/updateSlice";
+} from "../../redux/slices/updateSlice";
 
 type Params = {
   enabled: boolean;
