@@ -13,7 +13,7 @@ import {
   checkBackendUpdate,
   checkFrontendUpdate,
   loadUpdateStrategy,
-} from "../../redux/slices/updateSlice";
+} from "../redux/updateSlice";
 
 type Params = {
   enabled: boolean;

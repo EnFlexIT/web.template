@@ -10,7 +10,7 @@ import {
 
 import {
   clearUpdateSettingsCache,
-} from "../../redux/slices/updateSlice";
+} from "../redux/updateSlice";
 
 import {
   reloadUpdatedFrontendWebApp,} from "../../redux/slices/reloadUpdatedFrontendWebApp";

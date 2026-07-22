@@ -47,7 +47,7 @@ import {
   clearUpdateSettingsCache,
   executeFrontendUpdate,
   loadInstalledFrontendVersion,
-} from "../../../redux/slices/updateSlice";
+} from "../../../core/redux/updateSlice";
 
 import {
   reloadUpdatedFrontendWebApp,

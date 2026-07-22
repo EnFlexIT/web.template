@@ -13,7 +13,7 @@ import {
 import {
   checkBackendUpdate,
   checkFrontendUpdate,
-} from "../redux/slices/updateSlice";
+} from "../core/redux/updateSlice";
 
 import {
   selectApi,
