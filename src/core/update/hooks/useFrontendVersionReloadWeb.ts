@@ -1,23 +1,23 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppSelector } from "../../hooks/useAppSelector";
-
-import {
-  normalizeBaseUrl,
-  selectApi,
-} from "../../redux/slices/apiSlice";
-
-import {
-  clearUpdateSettingsCache,
-} from "../redux/updateSlice";
-
-import {
-  reloadUpdatedFrontendWebApp,} from "../../redux/slices/reloadUpdatedFrontendWebApp";
+import { clearUpdateSettingsCache } from "../redux/updateSlice";
+import { reloadUpdatedFrontendWebApp } from "../reloadUpdatedFrontendWebApp";
 
 type Params = {
   enabled: boolean;
+  baseUrl?: string | null;
+  isLoggedIn: boolean;
+  isSwitchingServer?: boolean;
+  isLoggingOut?: boolean;
+  currentVersion?: string | null;
 };
+
+function normalizeBaseUrl(url?: string | null): string {
+  return String(url ?? "")
+    .trim()
+    .replace(/\/+$/, "");
+}
 
 /**
  * Beobachtet die tatsächlich installierte WEBAPP-Version.
@@ -28,16 +28,13 @@ type Params = {
  */
 export function useFrontendVersionReloadWeb({
   enabled,
+  baseUrl,
+  isLoggedIn,
+  isSwitchingServer = false,
+  isLoggingOut = false,
+  currentVersion,
 }: Params): void {
-  const api = useAppSelector(selectApi);
-
-  const currentVersion = useAppSelector(
-    (state) =>
-      state.update.frontend.currentVersion,
-  );
-
-  const reloadRunningRef =
-    useRef(false);
+  const reloadRunningRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -45,19 +42,16 @@ export function useFrontendVersionReloadWeb({
 
     if (
       typeof window === "undefined" ||
-      !api.ip ||
-      !api.isLoggedIn ||
-      api.isSwitchingServer ||
-      api.isLoggingOut
+      !baseUrl ||
+      !isLoggedIn ||
+      isSwitchingServer ||
+      isLoggingOut
     ) {
       return;
     }
 
-    const serverKey =
-      normalizeBaseUrl(api.ip);
-
-    const normalizedVersion =
-      String(currentVersion ?? "").trim();
+    const serverKey = normalizeBaseUrl(baseUrl);
+    const normalizedVersion = String(currentVersion ?? "").trim();
 
     if (
       !serverKey ||
@@ -71,9 +65,7 @@ export function useFrontendVersionReloadWeb({
       `loadedFrontendVersion::${serverKey}`;
 
     const previousVersion =
-      window.sessionStorage.getItem(
-        loadedVersionKey,
-      );
+      window.sessionStorage.getItem(loadedVersionKey);
 
     /*
      * Beim ersten Versionsabruf nur den Ausgangswert setzen.
@@ -87,10 +79,7 @@ export function useFrontendVersionReloadWeb({
       return;
     }
 
-    if (
-      previousVersion ===
-      normalizedVersion
-    ) {
+    if (previousVersion === normalizedVersion) {
       return;
     }
 
@@ -107,9 +96,7 @@ export function useFrontendVersionReloadWeb({
     );
 
     if (
-      window.sessionStorage.getItem(
-        reloadGuardKey,
-      ) === "true"
+      window.sessionStorage.getItem(reloadGuardKey) === "true"
     ) {
       return;
     }
@@ -132,20 +119,17 @@ export function useFrontendVersionReloadWeb({
       {
         serverKey,
         previousVersion,
-        currentVersion:
-          normalizedVersion,
+        currentVersion: normalizedVersion,
       },
     );
 
     void reloadUpdatedFrontendWebApp({
-      baseUrl: api.ip,
+      baseUrl,
       version: normalizedVersion,
     }).catch((error) => {
       reloadRunningRef.current = false;
 
-      window.sessionStorage.removeItem(
-        reloadGuardKey,
-      );
+      window.sessionStorage.removeItem(reloadGuardKey);
 
       console.error(
         "[FRONTEND VERSION] Full reload failed",
@@ -154,10 +138,10 @@ export function useFrontendVersionReloadWeb({
     });
   }, [
     enabled,
-    api.ip,
-    api.isLoggedIn,
-    api.isSwitchingServer,
-    api.isLoggingOut,
+    baseUrl,
+    isLoggedIn,
+    isSwitchingServer,
+    isLoggingOut,
     currentVersion,
   ]);
 }

@@ -10,7 +10,7 @@ import {
   type InfoApi,
   type PropertyEntry,
   type Version as ApiVersion,
-} from "../../api/implementation/AWB-RestAPI/api";
+} from "../../../api/implementation/AWB-RestAPI/api";
 
 type InstalledFrontendVersion = {
   id: string;

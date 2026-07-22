@@ -15,7 +15,7 @@ import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
 import notificationsReducer from "./slices/notificationSlice";
 import execSettingsReducer from "./slices/execSettingsSlice";
 import dataAnalysisReducer from "./slices/dataAnalysisSlice";
-import updateReducer from "../core/redux/updateSlice";
+import updateReducer from "../core/update/redux/updateSlice";
 import sessionTimeReducer from "./slices/sessionTimeSlice";
 import serverStatusReducer from "./slices/serverStatusSlice";
 import appSettingsFileUploadReducer from "./slices/appSettingsFileUploadSlice";

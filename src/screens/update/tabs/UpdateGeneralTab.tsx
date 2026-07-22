@@ -16,7 +16,7 @@ import {
   checkFrontendUpdate,
   loadUpdateStrategy,
   saveAutoUpdate,
-} from "../../../core/redux/updateSlice";
+} from "../../../core/update/redux/updateSlice";
 
 function Row({
   label,
