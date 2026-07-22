@@ -51,7 +51,7 @@ import {
 
 import {
   reloadUpdatedFrontendWebApp,
-} from "../../../util/reloadUpdatedFrontendWebApp";
+} from "../../../core/update/reloadUpdatedFrontendWebApp";
 
 import {
   UpdateProgressDialog,
