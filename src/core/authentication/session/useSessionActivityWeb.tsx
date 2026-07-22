@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppDispatch } from "./useAppDispatch";
-import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   extendSessionTime,
   selectSessionTime,
-} from "../redux/slices/sessionTimeSlice";
+} from "../../../redux/slices/sessionTimeSlice";
 
-import { selectInitialPasswordChangeDialogOpen } from "../redux/slices/passwordChangePromptSlice";
 
 type Options = {
   enabled: boolean;
+  blocked?: boolean;
 };
 
 const SESSION_ACTIVITY_COOLDOWN_MS = 30_000;
@@ -167,7 +167,7 @@ function isSessionExpired(params: {
   return true;
 }
 
-export function useSessionActivityWeb({ enabled }: Options) {
+export function useSessionActivityWeb({ enabled,  blocked = false, }: Options) {
   const dispatch = useAppDispatch();
 
   const isOffline = useAppSelector((state) => state.connectivity.isOffline);
@@ -176,10 +176,7 @@ export function useSessionActivityWeb({ enabled }: Options) {
     (state) => state.api.isLogoutDialogOpen,
   );
 
-  const isInitialPasswordChangeDialogOpen = useAppSelector(
-    selectInitialPasswordChangeDialogOpen,
-  );
-
+  
   const sessionTime = useAppSelector(selectSessionTime);
 
   const lastExtendAtRef = useRef(0);
@@ -193,7 +190,6 @@ export function useSessionActivityWeb({ enabled }: Options) {
     if (isOffline) return false;
     if (isLoggingOut) return false;
     if (isLogoutDialogOpen) return false;
-    if (isInitialPasswordChangeDialogOpen) return false;
     if (sessionTime.extending) return false;
 
     if (
@@ -222,7 +218,6 @@ export function useSessionActivityWeb({ enabled }: Options) {
     isOffline,
     isLoggingOut,
     isLogoutDialogOpen,
-    isInitialPasswordChangeDialogOpen,
     sessionTime.extending,
     sessionTime.expirationTime,
     sessionTime.remainingTime,

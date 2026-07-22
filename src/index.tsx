@@ -8,7 +8,7 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Provider } from "react-redux";
 import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
 import { PostLoginUpdateWatcher } from "./redux/slices/PostLoginUpdateWatcher";
-import { useSessionActivityWeb } from "./hooks/useSessionActivityWeb";
+import { useSessionActivityWeb } from "./core/authentication/session/useSessionActivityWeb";
 import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
 import { Navigation } from "./components/Navigation";
 import { Header } from "./components/Header";
