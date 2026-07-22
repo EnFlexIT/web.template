@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
-import { getJwtRemainingMs } from "../util/jwtTime";
-import { renewJwtIfNeeded } from "../redux/slices/jwtRenewSlice";
-import { useAppDispatch } from "./useAppDispatch";
+import { getJwtRemainingMs } from "../../../util/jwtTime";
+import { renewJwtIfNeeded } from "../../../redux/slices/jwtRenewSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
 
 type Options = {
   enabled: boolean;
