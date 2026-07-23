@@ -1,15 +1,9 @@
 // src/screens/login/ServerModal.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  View,
-  Platform,
-} from "react-native";
+import {ActivityIndicator,Modal,Pressable,View,Platform,} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
-
+import { detectServerEnvironment } from "../../core/server/detectServerEnvironment";
 import { ThemedText } from "../../components/themed/ThemedText";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
@@ -91,11 +85,6 @@ export function ServerModal({
 
   const firstError = urlError || nameError || generalError;
 
-  function detectEnvironment(url: string): ServerEnvironment {
-    if (url.includes("localhost") || url.includes("dev")) return "DEV";
-    if (url.includes("test") || url.includes("staging")) return "TEST";
-    return "PROD";
-  }
 
   function resetErrors() {
     setNameError(null);
@@ -219,7 +208,7 @@ export function ServerModal({
         id,
         name,
         baseUrl,
-        environment: detectEnvironment(baseUrl),
+        environment: detectServerEnvironment(baseUrl),
       }),
     );
     dispatch(selectServer(id));
@@ -272,7 +261,7 @@ export function ServerModal({
         id,
         name,
         baseUrl,
-        environment: detectEnvironment(baseUrl),
+        environment: detectServerEnvironment(baseUrl),
       }),
     );
     dispatch(selectServer(id));
