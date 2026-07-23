@@ -1,7 +1,10 @@
-// src/screens/Logout/LogoutDialog.tsx
-
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, View } from "react-native";
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  View,
+} from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
@@ -18,10 +21,13 @@ import {
   selectAuthenticationMethod,
   setJwtForServer,
   normalizeBaseUrl,
-  getJwtForServer,
   setIsLogoutDialogOpen,
-  type AuthMethod,
 } from "../../redux/slices/apiSlice";
+
+import {
+  getLoggedInServers,
+  type LogoutServerItem,
+} from "../../core/authentication/logout/logoutServers";
 
 import { setLogoutFlowActive } from "../../core/authentication/logout/logoutFlowGuard";
 import { selectServers } from "../../redux/slices/serverSlice";
@@ -32,34 +38,41 @@ type Props = {
   onClose: () => void;
 };
 
-type LogoutServerItem = {
-  id: string;
-  name: string;
-  baseUrl: string;
-  normalizedBaseUrl: string;
-  isCurrent: boolean;
-  authenticationMethod: AuthMethod;
-};
-
-export function LogoutDialog({ visible, onClose }: Props) {
+export function LogoutDialog({
+  visible,
+  onClose,
+}: Props) {
   const dispatch = useAppDispatch();
 
   const currentIp = useAppSelector(selectIp);
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+  const authenticationMethod = useAppSelector(
+    selectAuthenticationMethod,
+  );
   const serversState = useAppSelector(selectServers);
 
   const { t } = useTranslation(["Login"]);
 
   const [loading, setLoading] = useState(false);
-  const [selectedServerIds, setSelectedServerIds] = useState<string[]>([]);
-  const [loggedInServers, setLoggedInServers] = useState<LogoutServerItem[]>([]);
-  const [serversLoaded, setServersLoaded] = useState(false);
+
+  const [selectedServerIds, setSelectedServerIds] =
+    useState<string[]>([]);
+
+  const [loggedInServers, setLoggedInServers] = useState<
+    LogoutServerItem[]
+  >([]);
+
+  const [serversLoaded, setServersLoaded] =
+    useState(false);
 
   const servers = serversState?.servers ?? [];
-  const currentNormalizedIp = normalizeBaseUrl(currentIp);
 
-  function markServerLoggedOut(serverId: string | null | undefined) {
+  const currentNormalizedIp =
+    normalizeBaseUrl(currentIp);
+
+  function markServerLoggedOut(
+    serverId: string | null | undefined,
+  ): void {
     if (!serverId) return;
 
     dispatch(
@@ -95,70 +108,39 @@ export function LogoutDialog({ visible, onClose }: Props) {
 
     setServersLoaded(false);
 
-    (async () => {
-      const currentServer = servers.find(
-        (server) => normalizeBaseUrl(server.baseUrl) === currentNormalizedIp,
-      );
+    void getLoggedInServers({
+      servers,
+      currentIp,
+      isLoggedIn,
+      authenticationMethod,
+    })
+      .then((result) => {
+        if (!mounted) return;
 
-      const result: LogoutServerItem[] = [];
+        setLoggedInServers(result);
 
-      if (isLoggedIn && currentNormalizedIp) {
-        result.push({
-          id: currentServer?.id ?? "local",
-          name: currentServer?.name?.trim() || currentServer?.baseUrl || currentIp,
-          baseUrl: currentServer?.baseUrl ?? currentIp,
-          normalizedBaseUrl: currentNormalizedIp,
-          isCurrent: true,
-          authenticationMethod,
-        });
-      }
+        const currentItem = result.find(
+          (server) => server.isCurrent,
+        );
 
-      const otherServers = await Promise.all(
-        servers.map(async (server): Promise<LogoutServerItem | null> => {
-          const normalized = normalizeBaseUrl(server.baseUrl);
+        setSelectedServerIds(
+          currentItem ? [currentItem.id] : [],
+        );
 
-          if (normalized === currentNormalizedIp) {
-            return null;
-          }
+        setServersLoaded(true);
+      })
+      .catch((error) => {
+        if (!mounted) return;
 
-          const jwt = await getJwtForServer(server.baseUrl);
+        console.error(
+          "[LOGOUT] Could not determine logged-in servers",
+          error,
+        );
 
-          if (!jwt) {
-            return null;
-          }
-
-          return {
-            id: server.id,
-            name: server.name?.trim() || server.baseUrl,
-            baseUrl: server.baseUrl,
-            normalizedBaseUrl: normalized,
-            isCurrent: false,
-            authenticationMethod: "jwt",
-          };
-        }),
-      );
-
-      result.push(
-        ...otherServers.filter(
-          (server): server is LogoutServerItem => server !== null,
-        ),
-      );
-
-      result.sort((a, b) => {
-        if (a.isCurrent) return -1;
-        if (b.isCurrent) return 1;
-        return a.name.localeCompare(b.name);
+        setLoggedInServers([]);
+        setSelectedServerIds([]);
+        setServersLoaded(true);
       });
-
-      if (!mounted) return;
-
-      setLoggedInServers(result);
-
-      const currentItem = result.find((server) => server.isCurrent);
-      setSelectedServerIds(currentItem ? [currentItem.id] : []);
-
-      setServersLoaded(true);
-    })();
 
     return () => {
       mounted = false;
@@ -167,26 +149,36 @@ export function LogoutDialog({ visible, onClose }: Props) {
     visible,
     servers,
     currentIp,
-    currentNormalizedIp,
     isLoggedIn,
     authenticationMethod,
   ]);
 
-  const hasMultipleLoggedInServers = loggedInServers.length > 1;
+  const hasMultipleLoggedInServers =
+    loggedInServers.length > 1;
 
-  const serversToRender = useMemo<LogoutServerItem[]>(() => {
-    if (!hasMultipleLoggedInServers) return [];
+  const serversToRender =
+    useMemo<LogoutServerItem[]>(() => {
+      if (!hasMultipleLoggedInServers) {
+        return [];
+      }
 
-    return loggedInServers;
-  }, [hasMultipleLoggedInServers, loggedInServers]);
+      return loggedInServers;
+    }, [
+      hasMultipleLoggedInServers,
+      loggedInServers,
+    ]);
 
   const allSelected =
     serversToRender.length > 0 &&
-    serversToRender.every((server) => selectedServerIds.includes(server.id));
+    serversToRender.every((server) =>
+      selectedServerIds.includes(server.id),
+    );
 
-  const someSelected = selectedServerIds.length > 0 && !allSelected;
+  const someSelected =
+    selectedServerIds.length > 0 &&
+    !allSelected;
 
-  function handleClose() {
+  function handleClose(): void {
     if (loading) return;
 
     setLogoutFlowActive(false);
@@ -194,7 +186,7 @@ export function LogoutDialog({ visible, onClose }: Props) {
     onClose();
   }
 
-  function toggleSelectAll() {
+  function toggleSelectAll(): void {
     if (loading) return;
 
     setLogoutFlowActive(true);
@@ -204,22 +196,26 @@ export function LogoutDialog({ visible, onClose }: Props) {
       return;
     }
 
-    setSelectedServerIds(serversToRender.map((server) => server.id));
+    setSelectedServerIds(
+      serversToRender.map((server) => server.id),
+    );
   }
 
-  function toggleServer(serverId: string) {
+  function toggleServer(serverId: string): void {
     if (loading) return;
 
     setLogoutFlowActive(true);
 
-    setSelectedServerIds((prev) =>
-      prev.includes(serverId)
-        ? prev.filter((id) => id !== serverId)
-        : [...prev, serverId],
+    setSelectedServerIds((previousIds) =>
+      previousIds.includes(serverId)
+        ? previousIds.filter(
+            (id) => id !== serverId,
+          )
+        : [...previousIds, serverId],
     );
   }
 
-  async function handleLogout() {
+  async function handleLogout(): Promise<void> {
     if (loading) return;
 
     setLogoutFlowActive(true);
@@ -229,60 +225,90 @@ export function LogoutDialog({ visible, onClose }: Props) {
     try {
       if (!hasMultipleLoggedInServers) {
         const currentServer =
-          loggedInServers.find((server) => server.isCurrent) ??
+          loggedInServers.find(
+            (server) => server.isCurrent,
+          ) ??
           servers.find(
-            (server) => normalizeBaseUrl(server.baseUrl) === currentNormalizedIp,
+            (server) =>
+              normalizeBaseUrl(server.baseUrl) ===
+              currentNormalizedIp,
           );
 
         await dispatch(logoutAsync()).unwrap();
 
-        markServerLoggedOut(currentServer?.id ?? "local");
+        markServerLoggedOut(
+          currentServer?.id ?? "local",
+        );
 
         handleClose();
         return;
       }
 
-      const selectedServers = loggedInServers.filter((server) =>
-        selectedServerIds.includes(server.id),
-      );
+      const selectedServers =
+        loggedInServers.filter((server) =>
+          selectedServerIds.includes(server.id),
+        );
 
       if (selectedServers.length === 0) {
         return;
       }
 
-      const selectedCurrentServer = selectedServers.find(
-        (server) => server.isCurrent,
-      );
-      const selectedOtherServers = selectedServers.filter(
-        (server) => !server.isCurrent,
-      );
+      const selectedCurrentServer =
+        selectedServers.find(
+          (server) => server.isCurrent,
+        );
+
+      const selectedOtherServers =
+        selectedServers.filter(
+          (server) => !server.isCurrent,
+        );
 
       for (const server of selectedOtherServers) {
-        await setJwtForServer(server.baseUrl, null);
+        await setJwtForServer(
+          server.baseUrl,
+          null,
+        );
+
         markServerLoggedOut(server.id);
       }
 
       if (selectedCurrentServer) {
         await dispatch(logoutAsync()).unwrap();
-        markServerLoggedOut(selectedCurrentServer.id);
+
+        markServerLoggedOut(
+          selectedCurrentServer.id,
+        );
       } else {
         dispatch(setIsLogoutDialogOpen(false));
       }
 
       handleClose();
+    } catch (error) {
+      console.error(
+        "[LOGOUT] Logout failed",
+        error,
+      );
     } finally {
       setLoading(false);
     }
   }
 
   const canSubmit = hasMultipleLoggedInServers
-    ? serversLoaded && !loading && selectedServerIds.length > 0
+    ? serversLoaded &&
+      !loading &&
+      selectedServerIds.length > 0
     : serversLoaded && !loading;
 
-  const logoutLabel = loading ? t("Abmelden...") : t("Abmelden");
+  const logoutLabel = loading
+    ? t("Abmelden...")
+    : t("Abmelden");
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+    >
       <Pressable
         nativeID="no-session-extend-logout-backdrop"
         style={styles.backdrop}
@@ -293,17 +319,26 @@ export function LogoutDialog({ visible, onClose }: Props) {
           style={styles.card}
           onPress={() => {}}
         >
-          <ThemedText style={styles.title}>{t("Abmelden")}</ThemedText>
+          <ThemedText style={styles.title}>
+            {t("Abmelden")}
+          </ThemedText>
 
           <ThemedText style={styles.body}>
             {hasMultipleLoggedInServers
-              ? t("Wählen Sie aus, von welchen Servern Sie sich abmelden möchten.")
-              : t("Möchten Sie sich vom aktuellen Server abmelden?")}
+              ? t(
+                  "Wählen Sie aus, von welchen Servern Sie sich abmelden möchten.",
+                )
+              : t(
+                  "Möchten Sie sich vom aktuellen Server abmelden?",
+                )}
           </ThemedText>
 
           {hasMultipleLoggedInServers ? (
             <View style={styles.section}>
-              <Card style={styles.listCard} padding="sm">
+              <Card
+                style={styles.listCard}
+                padding="sm"
+              >
                 <Pressable
                   nativeID="no-session-extend-logout-select-all"
                   style={styles.selectAllRow}
@@ -312,17 +347,27 @@ export function LogoutDialog({ visible, onClose }: Props) {
                   <View
                     style={[
                       styles.checkbox,
-                      (allSelected || someSelected) && styles.checkboxChecked,
+                      (allSelected ||
+                        someSelected) &&
+                        styles.checkboxChecked,
                     ]}
                   >
                     {allSelected ? (
-                      <ThemedText style={styles.checkmark}>✓</ThemedText>
+                      <ThemedText
+                        style={styles.checkmark}
+                      >
+                        ✓
+                      </ThemedText>
                     ) : someSelected ? (
-                      <View style={styles.partialMark} />
+                      <View
+                        style={styles.partialMark}
+                      />
                     ) : null}
                   </View>
 
-                  <ThemedText style={styles.selectAllText}>
+                  <ThemedText
+                    style={styles.selectAllText}
+                  >
                     {t("Alle auswählen")}
                   </ThemedText>
                 </Pressable>
@@ -333,40 +378,67 @@ export function LogoutDialog({ visible, onClose }: Props) {
                   data={serversToRender}
                   keyExtractor={(item) => item.id}
                   style={styles.scroll}
-                  contentContainerStyle={styles.scrollContent}
+                  contentContainerStyle={
+                    styles.scrollContent
+                  }
                   showsVerticalScrollIndicator
                   nestedScrollEnabled
-                  renderItem={({ item: server }) => {
-                    const checked = selectedServerIds.includes(server.id);
+                  renderItem={({
+                    item: server,
+                  }) => {
+                    const checked =
+                      selectedServerIds.includes(
+                        server.id,
+                      );
 
                     return (
                       <Pressable
                         nativeID={`no-session-extend-logout-server-${server.id}`}
                         style={styles.row}
-                        onPress={() => toggleServer(server.id)}
+                        onPress={() =>
+                          toggleServer(server.id)
+                        }
                       >
                         <View
                           style={[
                             styles.checkbox,
-                            checked && styles.checkboxChecked,
+                            checked &&
+                              styles.checkboxChecked,
                           ]}
                         >
                           {checked ? (
-                            <ThemedText style={styles.checkmark}>✓</ThemedText>
+                            <ThemedText
+                              style={
+                                styles.checkmark
+                              }
+                            >
+                              ✓
+                            </ThemedText>
                           ) : null}
                         </View>
 
-                        <View style={styles.serverTextWrap}>
-                          <ThemedText style={styles.serverName}>
+                        <View
+                          style={
+                            styles.serverTextWrap
+                          }
+                        >
+                          <ThemedText
+                            style={styles.serverName}
+                          >
                             {server.name}
                           </ThemedText>
 
-                          <ThemedText style={styles.serverUrl}>
+                          <ThemedText
+                            style={styles.serverUrl}
+                          >
                             ({server.baseUrl})
                           </ThemedText>
 
-                          <ThemedText style={styles.serverAuth}>
-                            {server.authenticationMethod === "oidc"
+                          <ThemedText
+                            style={styles.serverAuth}
+                          >
+                            {server.authenticationMethod ===
+                            "oidc"
                               ? "OIDC"
                               : "JWT"}
                           </ThemedText>
