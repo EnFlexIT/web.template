@@ -1,39 +1,49 @@
 // src/screens/login/ServerModal.tsx
+
 import React, { useEffect, useMemo, useState } from "react";
-import {ActivityIndicator,Modal,Pressable,View,Platform,} from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  View,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
-import { detectServerEnvironment } from "../../core/server/detectServerEnvironment";
-import { ThemedText } from "../../components/themed/ThemedText";
+
+import { H1 } from "../../components/stylistic/H1";
+import { H4 } from "../../components/stylistic/H4";
 import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
+import { ThemedText } from "../../components/themed/ThemedText";
 import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { Icon } from "../../components/ui-elements/Icon/Icon";
 import { ConfirmModal } from "../../components/ui-elements/ConfirmModal";
+import { Icon } from "../../components/ui-elements/Icon/Icon";
 import {
-  SelectableList,
   SelectableItem,
+  SelectableList,
 } from "../../components/ui-elements/SelectableList";
-import { getApplicationMode } from "../../util/applicationMode";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { switchServer } from "../../redux/slices/apiSlice";
-import {
-  addServer,
-  selectServer,
-  updateServer,
-  removeServer,
-  ServerEnvironment,
-} from "../../redux/slices/serverSlice";
+
+import { detectServerEnvironment } from "../../core/server/detectServerEnvironment";
 import { normalizeServerInputs } from "../../core/server/normalizeServerInputs";
 import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
 } from "../../core/server/serverCheck";
+import {
+  ServerValidationResult,
+  validateServerInput,
+} from "../../core/server/serverValidation";
+
+import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { switchServer } from "../../redux/slices/apiSlice";
+import {
+  addServer,
+  removeServer,
+  selectServer,
+  updateServer,
+} from "../../redux/slices/serverSlice";
 
 import { modalStyles } from "./styles";
-
-import { H1 } from "../../components/stylistic/H1";
-import { H4 } from "../../components/stylistic/H4";
 
 type Server = {
   id: string;
@@ -49,6 +59,19 @@ type Props = {
   selectedBaseUrl: string;
 };
 
+type SaveServerResult = {
+  ok: boolean;
+  baseUrl?: string;
+  serverLabel?: string;
+};
+
+const validationTranslationKeys = {
+  urlRequired: "errors.serverUrlRequired",
+  urlInvalid: "errors.serverUrlInvalid",
+  nameExists: "errors.serverNameExists",
+  urlExists: "errors.serverUrlExists",
+} as const;
+
 export function ServerModal({
   visible,
   onClose,
@@ -60,9 +83,12 @@ export function ServerModal({
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
 
-  const selectedServer = servers.find((s) => s.id === selectedServerId);
+  const selectedServer = servers.find(
+    (server) => server.id === selectedServerId,
+  );
 
   const [busy, setBusy] = useState(false);
+
   const [nameError, setNameError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -76,15 +102,14 @@ export function ServerModal({
   const [showUseSaveConfirm, setShowUseSaveConfirm] = useState(false);
 
   const serverItems = useMemo<SelectableItem<string>[]>(() => {
-    return servers.map((s) => ({
-      id: s.id,
-      label: s.name,
-      subtitle: s.baseUrl,
+    return servers.map((server) => ({
+      id: server.id,
+      label: server.name,
+      subtitle: server.baseUrl,
     }));
   }, [servers]);
 
   const firstError = urlError || nameError || generalError;
-
 
   function resetErrors() {
     setNameError(null);
@@ -99,26 +124,49 @@ export function ServerModal({
     setUrlInput("");
   }
 
-function getCurrentInputsNormalized() {
-  return normalizeServerInputs(nameInput, urlInput);
-}
+  function getCurrentInputsNormalized() {
+    return normalizeServerInputs(nameInput, urlInput);
+  }
 
   function hasUnsavedChanges(): boolean {
     const { name, baseUrl } = getCurrentInputsNormalized();
 
-    if (!normalizeName(nameInput) && !normalizeBaseUrl(urlInput)) return false;
+    const normalizedNameInput = normalizeName(nameInput);
+    const normalizedUrlInput = normalizeBaseUrl(urlInput);
+
+    if (!normalizedNameInput && !normalizedUrlInput) {
+      return false;
+    }
 
     if (editMode && selectedServer) {
       const currentName = normalizeName(selectedServer.name ?? "") || "";
       const currentUrl = normalizeBaseUrl(selectedServer.baseUrl ?? "");
+
       return currentName !== name || currentUrl !== baseUrl;
     }
 
-    return !!nameInput.trim() || !!urlInput.trim();
+    return Boolean(nameInput.trim() || urlInput.trim());
+  }
+
+  function showValidationError(validation: ServerValidationResult) {
+    if (validation.ok) {
+      return;
+    }
+
+    const message = t(validationTranslationKeys[validation.reason]);
+
+    if (validation.field === "name") {
+      setNameError(message);
+      return;
+    }
+
+    setUrlError(message);
   }
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
 
     if (selectedServer) {
       setEditMode(true);
@@ -133,72 +181,80 @@ function getCurrentInputsNormalized() {
     setShowSaveConfirm(false);
     setShowDeleteConfirm(false);
     setShowUseSaveConfirm(false);
+
     resetErrors();
-  }, [visible, selectedServerId, selectedServer, selectedBaseUrl]);
+  }, [
+    visible,
+    selectedServerId,
+    selectedServer,
+    selectedBaseUrl,
+  ]);
 
-  async function ensureSelectedServerOnline(url: string): Promise<boolean> {
+  async function ensureSelectedServerOnline(
+    url: string,
+  ): Promise<boolean> {
     setBusy(true);
-    const check = await checkServerReachable(url);
-    setBusy(false);
 
-    if (check.ok) return true;
+    try {
+      const check = await checkServerReachable(url);
 
-    setGeneralError(t("errors.serverNotReachable"));
-    return false;
+      if (check.ok) {
+        return true;
+      }
+
+      setGeneralError(t("errors.serverNotReachable"));
+      return false;
+    } finally {
+      setBusy(false);
+    }
   }
 
-  async function validateAndSaveOnly(): Promise<{
-    ok: boolean;
-    baseUrl?: string;
-    serverLabel?: string;
-  }> {
+  async function validateAndSaveOnly(): Promise<SaveServerResult> {
     resetErrors();
 
     const { name, baseUrl } = getCurrentInputsNormalized();
 
-    if (!baseUrl) {
-      setUrlError(t("errors.serverUrlRequired"));
-      return { ok: false };
-    }
-
-    if (!/^https?:\/\//i.test(baseUrl)) {
-      setUrlError(t("errors.serverUrlInvalid"));
-      return { ok: false };
-    }
-
-    const isSameId = (id: string) => (selectedServer?.id ?? "") === id;
-
-    const nameExists = servers.some((s) => {
-      if (editMode && isSameId(s.id)) return false;
-      return (s.name ?? "").toLowerCase() === name.toLowerCase();
+    const validation = validateServerInput({
+      servers,
+      name,
+      baseUrl,
+      selectedServerId:
+        editMode && selectedServer
+          ? selectedServer.id
+          : undefined,
     });
-    if (nameExists) {
-      setNameError(t("errors.serverNameExists"));
-      return { ok: false };
-    }
 
-    const urlExists = servers.some((s) => {
-      if (editMode && isSameId(s.id)) return false;
-      return normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase();
-    });
-    if (urlExists) {
-      setUrlError(t("errors.serverUrlExists"));
+    if (!validation.ok) {
+      showValidationError(validation);
       return { ok: false };
     }
 
     const online = await ensureSelectedServerOnline(baseUrl);
+
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return { ok: false };
     }
 
     if (editMode && selectedServer) {
-      dispatch(updateServer({ id: selectedServer.id, name, baseUrl }));
-      return { ok: true, baseUrl, serverLabel: name };
+      dispatch(
+        updateServer({
+          id: selectedServer.id,
+          name,
+          baseUrl,
+        }),
+      );
+
+      return {
+        ok: true,
+        baseUrl,
+        serverLabel: name,
+      };
     }
 
-    const id =
-      normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    const id = `${normalizeName(name)
+      .toLowerCase()
+      .replace(/\s+/g, "-")}-${Date.now()}`;
 
     dispatch(
       addServer({
@@ -208,9 +264,14 @@ function getCurrentInputsNormalized() {
         environment: detectServerEnvironment(baseUrl),
       }),
     );
+
     dispatch(selectServer(id));
 
-    return { ok: true, baseUrl, serverLabel: name };
+    return {
+      ok: true,
+      baseUrl,
+      serverLabel: name,
+    };
   }
 
   async function handleAddByPlus() {
@@ -218,40 +279,27 @@ function getCurrentInputsNormalized() {
 
     const { name, baseUrl } = getCurrentInputsNormalized();
 
-    if (!baseUrl) {
-      setUrlError(t("errors.serverUrlRequired"));
-      return;
-    }
+    const validation = validateServerInput({
+      servers,
+      name,
+      baseUrl,
+    });
 
-    if (!/^https?:\/\//i.test(baseUrl)) {
-      setUrlError(t("errors.serverUrlInvalid"));
-      return;
-    }
-
-    const nameExists = servers.some(
-      (s) => (s.name ?? "").toLowerCase() === name.toLowerCase(),
-    );
-    if (nameExists) {
-      setNameError(t("errors.serverNameExists"));
-      return;
-    }
-
-    const urlExists = servers.some(
-      (s) => normalizeBaseUrl(s.baseUrl).toLowerCase() === baseUrl.toLowerCase(),
-    );
-    if (urlExists) {
-      setUrlError(t("errors.serverUrlExists"));
+    if (!validation.ok) {
+      showValidationError(validation);
       return;
     }
 
     const online = await ensureSelectedServerOnline(baseUrl);
+
     if (!online) {
       setUrlError(t("errors.serverNotReachable"));
       return;
     }
 
-    const id =
-      normalizeName(name).toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    const id = `${normalizeName(name)
+      .toLowerCase()
+      .replace(/\s+/g, "-")}-${Date.now()}`;
 
     dispatch(
       addServer({
@@ -261,6 +309,7 @@ function getCurrentInputsNormalized() {
         environment: detectServerEnvironment(baseUrl),
       }),
     );
+
     dispatch(selectServer(id));
 
     setEditMode(true);
@@ -269,60 +318,81 @@ function getCurrentInputsNormalized() {
   }
 
   function handleSaveSide() {
-    if (!hasUnsavedChanges()) return;
+    if (!hasUnsavedChanges()) {
+      return;
+    }
+
     setShowSaveConfirm(true);
   }
 
-async function confirmSaveSide() {
-  setShowSaveConfirm(false);
+  async function confirmSaveSide() {
+    setShowSaveConfirm(false);
 
-  const res = await validateAndSaveOnly();
-  if (!res.ok || !res.baseUrl) return;
+    const result = await validateAndSaveOnly();
 
-  const nextUrl = normalizeBaseUrl(res.baseUrl);
+    if (!result.ok || !result.baseUrl) {
+      return;
+    }
 
-  setEditMode(true);
+    const nextUrl = normalizeBaseUrl(result.baseUrl);
 
-  const online = await ensureSelectedServerOnline(nextUrl);
-  if (!online) return;
+    setEditMode(true);
 
-  await dispatch(switchServer(nextUrl));
+    await dispatch(switchServer(nextUrl));
 
-  onClose();
-}
+    onClose();
+  }
+
   function handleDeleteSelected() {
-    if (!selectedServer) return;
+    if (!selectedServer) {
+      return;
+    }
+
     setShowDeleteConfirm(true);
   }
 
   function confirmDeleteSelected() {
-    if (!selectedServer) return;
+    if (!selectedServer) {
+      return;
+    }
 
     dispatch(removeServer(selectedServer.id));
     setShowDeleteConfirm(false);
   }
 
- async function proceedUseServerAfterOptionalSave(skipSave = false) {
-  let url = "";
+  async function proceedUseServerAfterOptionalSave(
+    skipSave = false,
+  ) {
+    let url = "";
 
-  if (hasUnsavedChanges() && !skipSave) {
-    const saved = await validateAndSaveOnly();
-    if (!saved.ok || !saved.baseUrl) return;
+    if (hasUnsavedChanges() && !skipSave) {
+      const saved = await validateAndSaveOnly();
 
-    url = normalizeBaseUrl(saved.baseUrl);
-  } else {
-    const currentSelected = servers.find((s) => s.id === selectedServerId);
-    url = normalizeBaseUrl(currentSelected?.baseUrl ?? selectedBaseUrl);
+      if (!saved.ok || !saved.baseUrl) {
+        return;
+      }
+
+      url = normalizeBaseUrl(saved.baseUrl);
+    } else {
+      const currentSelected = servers.find(
+        (server) => server.id === selectedServerId,
+      );
+
+      url = normalizeBaseUrl(
+        currentSelected?.baseUrl ?? selectedBaseUrl,
+      );
+    }
+
+    const online = await ensureSelectedServerOnline(url);
+
+    if (!online) {
+      return;
+    }
+
+    await dispatch(switchServer(url));
+
+    onClose();
   }
-
-  const online = await ensureSelectedServerOnline(url);
-  if (!online) return;
-
-  await dispatch(switchServer(url));
-
-
-  onClose();
-}
 
   function handleUseServer() {
     if (hasUnsavedChanges()) {
@@ -330,7 +400,7 @@ async function confirmSaveSide() {
       return;
     }
 
-    proceedUseServerAfterOptionalSave(true);
+    void proceedUseServerAfterOptionalSave(true);
   }
 
   async function confirmUseWithSave() {
@@ -340,10 +410,17 @@ async function confirmSaveSide() {
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="fade">
-        <Pressable style={modalStyles.backdrop} onPress={onClose}>
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+      >
+        <Pressable
+          style={modalStyles.backdrop}
+          onPress={onClose}
+        >
           <Pressable
-            onPress={() => {}}
+            onPress={() => undefined}
             style={{
               width: 500,
               maxWidth: "100%",
@@ -363,30 +440,46 @@ async function confirmSaveSide() {
             >
               <H1>{t("changeOrganization")}</H1>
 
-              <Pressable onPress={onClose} hitSlop={10}>
-                <Icon name="close" size={20} color={theme.colors.text} />
+              <Pressable
+                onPress={onClose}
+                hitSlop={10}
+              >
+                <Icon
+                  name="close"
+                  size={20}
+                  color={theme.colors.text}
+                />
               </Pressable>
             </View>
 
             <View style={{ gap: 12 }}>
               <H4>{t("addServer")}</H4>
 
-              <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
                 <StylisticTextInput
                   style={{
                     flex: 1,
                     padding: 5,
                     borderWidth: 1,
-                    borderColor: nameError ? "red" : theme.colors.border,
+                    borderColor: nameError
+                      ? "red"
+                      : theme.colors.border,
                   }}
                   placeholder={t("serverLabel")}
                   value={nameInput}
-                  onChangeText={(v) => {
-                    setNameInput(v);
+                  onChangeText={(value) => {
+                    setNameInput(value);
                     setNameError(null);
                     setGeneralError(null);
                   }}
                 />
+
                 <ActionButton
                   variant="secondary"
                   icon="plus"
@@ -396,22 +489,31 @@ async function confirmSaveSide() {
                 />
               </View>
 
-              <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
                 <StylisticTextInput
                   style={{
                     flex: 1,
                     padding: 5,
                     borderWidth: 1,
-                    borderColor: urlError ? "red" : theme.colors.border,
+                    borderColor: urlError
+                      ? "red"
+                      : theme.colors.border,
                   }}
                   placeholder={t("serverUrl")}
                   value={urlInput}
-                  onChangeText={(v) => {
-                    setUrlInput(v);
+                  onChangeText={(value) => {
+                    setUrlInput(value);
                     setUrlError(null);
                     setGeneralError(null);
                   }}
                 />
+
                 <ActionButton
                   variant="secondary"
                   icon="save"
@@ -434,19 +536,35 @@ async function confirmSaveSide() {
 
               {firstError ? (
                 <ThemedText
-                  style={{ color: "red", fontSize: 12, lineHeight: 16, flex: 1 }}
+                  style={{
+                    color: "red",
+                    fontSize: 12,
+                    lineHeight: 16,
+                    flex: 1,
+                  }}
                   numberOfLines={2}
                 >
                   {firstError}
                 </ThemedText>
               ) : (
-                <ThemedText style={{ fontSize: 12, opacity: 0, flex: 1 }}>
-                  Platzhalter
+                <ThemedText
+                  style={{
+                    fontSize: 12,
+                    opacity: 0,
+                    flex: 1,
+                  }}
+                >
+                  Placeholder
                 </ThemedText>
               )}
             </View>
 
-            <View style={{ gap: 10, marginTop: -10 }}>
+            <View
+              style={{
+                gap: 10,
+                marginTop: -10,
+              }}
+            >
               <View
                 style={{
                   flexDirection: "row",
@@ -473,11 +591,14 @@ async function confirmSaveSide() {
                 onChange={(id) => {
                   dispatch(selectServer(id));
 
-                  const s = servers.find((x) => x.id === id);
-                  if (s) {
+                  const server = servers.find(
+                    (item) => item.id === id,
+                  );
+
+                  if (server) {
                     setEditMode(true);
-                    setNameInput(s.name ?? "");
-                    setUrlInput(s.baseUrl ?? "");
+                    setNameInput(server.name ?? "");
+                    setUrlInput(server.baseUrl ?? "");
                   } else {
                     startAddNew();
                   }
@@ -486,8 +607,12 @@ async function confirmSaveSide() {
                 }}
                 maxHeight={260}
                 showSearch={false}
-                searchPlaceholder={t("search") ?? "Server suchen…"}
-                emptyText={t("noServers") ?? "Keine Server gefunden"}
+                searchPlaceholder={
+                  t("search") ?? "Search server..."
+                }
+                emptyText={
+                  t("noServers") ?? "No servers found"
+                }
               />
 
               <ActionButton
@@ -533,7 +658,6 @@ async function confirmSaveSide() {
         message={t("confirmSaveChangesMessage")}
         confirmLabel={t("yes")}
         cancelLabel={t("cancel")}
-     
         onConfirm={confirmUseWithSave}
         onCancel={() => setShowUseSaveConfirm(false)}
       />
