@@ -5,27 +5,44 @@ The template supports two authentication modes against an Agent.Workbench backen
 - JWT / basic-login based authentication
 - OIDC / browser-cookie based authentication
 
-The active mode is detected from backend settings and stored in Redux.
+The active authentication method is detected from the backend settings and
+stored in Redux.
 
-## Central files
+The reusable authentication infrastructure is being migrated incrementally into
+the dedicated `src/core` directory. Authentication screens remain responsible
+for presentation and user interaction, while reusable authentication logic is
+implemented inside the Core.
+
+---
+
+# Central files
 
 | File | Purpose |
 | --- | --- |
-| `src/redux/slices/apiSlice.tsx` | Main authentication state, API clients, login/logout, server switching. |
-| `src/screens/login/Login.tsx` | Login screen for JWT and OIDC flows. |
-| `src/screens/login/serverCheck.ts` | Reachability/authentication detection and settings parsing. |
-| `src/redux/slices/jwtRenewSlice.tsx` | JWT renewal for JWT based sessions. |
-| `src/redux/slices/sessionTimeSlice.tsx` | OIDC session time loading and extension. |
-| `src/hooks/useSessionActivityWeb.tsx` | Extends OIDC session on meaningful user activity. |
-| `src/hooks/useOidcSessionTimerWeb.ts` | OIDC session timer display and expiry behavior. |
-| `src/hooks/useJwtSessionTimerWeb.ts` | JWT timer and renewal behavior. |
-| `src/redux/slices/logoutFlowGuard.ts` | Prevents unwanted renewal/logout side effects during logout flows. |
+| `src/redux/slices/apiSlice.tsx` | Main authentication state, API clients, login/logout and server switching. |
+| `src/screens/login/Login.tsx` | Login screen for JWT and OIDC authentication. |
+| `src/core/server/serverCheck.ts` | Server reachability, authentication detection and backend settings parsing. |
+| `src/core/server/types.ts` | Shared server check result types. |
+| `src/core/authentication/http/attachAuthInterceptors.tsx` | Registers authentication interceptors for API communication. |
+| `src/core/authentication/jwt/jwtRenewSlice.tsx` | JWT renewal for JWT based sessions. |
+| `src/core/authentication/session/useSessionActivityWeb.tsx` | Extends OIDC sessions after meaningful user activity. |
+| `src/core/authentication/session/useOidcSessionTimerWeb.ts` | OIDC session timer and expiration handling. |
+| `src/core/authentication/session/useJwtSessionTimerWeb.ts` | JWT session timer and automatic renewal handling. |
+| `src/core/authentication/session/AppSessionGuard.tsx` | Guards the application against invalid sessions. |
+| `src/core/authentication/logout/logoutFlowGuard.ts` | Prevents unwanted renewal and logout side effects during logout flows. |
+| `src/core/authentication/logout/logoutServers.ts` | Shared multi-server logout orchestration. |
 
-## Authentication method detection
+---
 
-`apiSlice` and `serverCheck` inspect `/api/app/settings/get`.
+# Authentication method detection
 
-Relevant backend keys include:
+`apiSlice` together with the reusable Core server module inspects
+
+```text
+/api/app/settings/get
+```
+
+Relevant backend settings include:
 
 ```text
 _AuthenticationMethod
@@ -38,68 +55,137 @@ _oidc.bearer
 _oidc.access_token
 ```
 
-The frontend normalizes the backend result to:
+The frontend normalizes the backend response to:
 
 ```ts
 "jwt" | "oidc" | "unknown"
 ```
 
-## JWT login
+---
 
-JWT login uses:
+# JWT Login
+
+JWT authentication uses:
 
 ```text
 GET /api/user/login
 Authorization: Basic <base64(username:password)>
 ```
 
-A bearer token can be returned either in a response header or in the response body. The frontend extracts `Bearer ...` and stores the token per server.
+A bearer token can be returned either through a response header or inside the
+response body.
 
-JWT tokens are stored by server base URL using the `jwtByServer` map. This allows the user to switch between configured servers without losing an already valid token for another server.
+The frontend extracts the returned `Bearer ...` token and stores it per server.
 
-## OIDC login
+JWT tokens are managed through the `jwtByServer` map. This allows switching
+between configured servers without losing already authenticated JWT sessions on
+other servers.
 
-OIDC login starts through:
+---
+
+# OIDC Login
+
+OIDC authentication starts via:
 
 ```text
 <server-base-url>/login
 ```
 
-For same-origin deployments, the browser navigates directly to the server login URL. For Expo Web development, the login flow opens a popup and polls the server until the backend reports that the OIDC session is authenticated.
+For same-origin deployments the browser navigates directly to the server login.
 
-OIDC uses browser cookies and does not store a frontend JWT. For OIDC, the frontend clears JWT state for the selected server.
+For Expo Web development a popup window is opened while the frontend polls the
+backend until the OIDC session becomes authenticated.
 
-## Logout behavior
+OIDC authentication uses browser cookies instead of frontend-managed JWT
+tokens. Whenever OIDC is active the frontend clears any JWT information for the
+selected server.
 
-JWT logout uses the backend logout endpoint and then clears local frontend state.
+---
 
-OIDC logout is handled through real browser navigation to:
+# Logout behavior
+
+JWT logout calls the backend logout endpoint and then clears the local frontend
+authentication state.
+
+OIDC logout is handled through browser navigation to:
 
 ```text
 <server-base-url>/api/user/logout
 ```
 
-This is important because OIDC logout may need visible browser redirects to the identity provider. The frontend intentionally avoids showing a local login screen during this redirect flow.
+This allows the identity provider to complete its logout flow including
+possible browser redirects.
 
-## Session handling
+The reusable logout orchestration has been extracted into the Core
+Authentication module.
 
-OIDC session time is loaded from:
+The Logout UI is responsible only for user interaction. Server selection,
+logout execution and multi-server logout handling are implemented as reusable
+Core functionality.
+
+---
+
+# Session handling
+
+OIDC session information is loaded from:
 
 ```text
 GET /api/user/sessionTime
 ```
 
-The session can be extended through:
+The session can be extended using:
 
 ```text
 GET /api/user/sessionTime/extend
 ```
 
-`useSessionActivityWeb` extends the session only for meaningful user interaction, such as clicks on interactive elements or relevant keyboard input. Logout controls and dialogs can be excluded from automatic extension.
+`useSessionActivityWeb` extends the session only after meaningful user
+interaction such as:
 
-## Important behavior
+- button clicks
+- navigation
+- keyboard input
 
-- Connectivity checks do not perform logout.
-- OIDC redirects are treated as authentication signals, not as general server-offline errors.
-- JWT renewal is disabled for the active server when that server is detected as OIDC.
-- Server switching rebuilds the generated API clients with the selected base URL and the correct authentication headers.
+Logout dialogs and logout controls can intentionally be excluded from automatic
+session extension.
+
+---
+
+# Important behavior
+
+- Connectivity checks never perform logout.
+- OIDC redirects are treated as authentication events rather than connectivity failures.
+- JWT renewal is disabled whenever the active server uses OIDC authentication.
+- Server switching rebuilds the generated API clients using the selected server and the correct authentication headers.
+- Authentication infrastructure is separated from UI components whenever reusable functionality is identified.
+- Shared authentication logic is implemented inside `src/core/authentication`.
+
+---
+
+# Current Architecture
+
+The current reusable Authentication Core consists of:
+
+```text
+src/core/authentication
+├── http
+│   └── attachAuthInterceptors.tsx
+├── jwt
+│   └── jwtRenewSlice.tsx
+├── logout
+│   ├── logoutFlowGuard.ts
+│   └── logoutServers.ts
+└── session
+    ├── AppSessionGuard.tsx
+    ├── useJwtSessionTimerWeb.ts
+    ├── useOidcSessionTimerWeb.ts
+    └── useSessionActivityWeb.tsx
+```
+
+The authentication architecture follows a clear separation of
+responsibilities:
+
+- UI components handle presentation and user interaction.
+- Core modules implement reusable authentication infrastructure.
+- Authentication functionality is migrated incrementally while preserving
+  application behavior.

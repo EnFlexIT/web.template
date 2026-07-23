@@ -39,6 +39,7 @@ src
 ├── api
 ├── bootstrap
 ├── components
+├── core
 ├── hooks
 ├── permissions
 ├── redux
@@ -82,7 +83,50 @@ npm run AWB-RestAPI
 npm run Dynamic-Content-Api
 npm run api
 ```
+## Core structure
 
+The reusable platform functionality is gradually being extracted into the
+dedicated `src/core` directory.
+
+Current structure:
+
+```text
+src/core
+├── authentication
+│   ├── http
+│   ├── jwt
+│   ├── logout
+│   └── session
+├── server
+└── update
+```
+
+### authentication
+
+Provides reusable authentication infrastructure including:
+
+- authentication interceptors
+- JWT renewal
+- session management
+- logout handling
+- session guards
+
+### server
+
+Provides reusable server functionality including:
+
+- server validation
+- server reachability
+- authentication detection
+- shared server types
+
+### update
+
+Provides reusable update functionality including:
+
+- frontend version monitoring
+- reload handling
+- shared update state
 ## Components structure
 
 ```text
