@@ -23,7 +23,7 @@ import {
   removeServer,
   ServerEnvironment,
 } from "../../redux/slices/serverSlice";
-
+import { normalizeServerInputs } from "../../core/server/normalizeServerInputs";
 import {
   checkServerReachable,
   normalizeBaseUrl,
@@ -99,12 +99,9 @@ export function ServerModal({
     setUrlInput("");
   }
 
-  function getCurrentInputsNormalized() {
-    return {
-      name: normalizeName(nameInput) || "Custom",
-      baseUrl: normalizeBaseUrl(urlInput),
-    };
-  }
+function getCurrentInputsNormalized() {
+  return normalizeServerInputs(nameInput, urlInput);
+}
 
   function hasUnsavedChanges(): boolean {
     const { name, baseUrl } = getCurrentInputsNormalized();
