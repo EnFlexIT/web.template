@@ -16,7 +16,7 @@ import { useAppDispatch } from "../hooks/useAppDispatch";
 import {
   checkServerAuthenticated,
   normalizeBaseUrl,
-} from "../screens/login/serverCheck";
+} from "../core/server/serverCheck";
 
 import {
   selectIsSwitchingServer,

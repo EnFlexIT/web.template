@@ -1,5 +1,5 @@
 import type { AuthMethod } from "../../redux/slices/apiSlice";
-import type { ServerCheckResult } from "./types";
+import type { ServerCheckResult } from "../../screens/login/types";
 
 const REACHABLE_CACHE_MS = 10_000;
 const AUTH_CACHE_MS = 10_000;

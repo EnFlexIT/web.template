@@ -34,7 +34,7 @@ import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-} from "./serverCheck";
+} from "../../core/server/serverCheck";
 
 import { modalStyles } from "./styles";
 

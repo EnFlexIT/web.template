@@ -25,7 +25,7 @@ import {
   executeBackendUpdate,
 } from "../../../core/update/redux/updateSlice";
 
-import { checkServerReachable } from "../../login/serverCheck";
+import { checkServerReachable } from "../../../core/server/serverCheck";
 
 import {
   UpdateProgressDialog,
