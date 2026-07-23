@@ -19,13 +19,13 @@ import {
   selectIp,
   selectIsLoggedIn,
   selectAuthenticationMethod,
-  setJwtForServer,
   normalizeBaseUrl,
   setIsLogoutDialogOpen,
 } from "../../redux/slices/apiSlice";
 
 import {
   getLoggedInServers,
+  logoutSelectedServers,
   type LogoutServerItem,
 } from "../../core/authentication/logout/logoutServers";
 
@@ -54,21 +54,16 @@ export function LogoutDialog({
   const { t } = useTranslation(["Login"]);
 
   const [loading, setLoading] = useState(false);
-
   const [selectedServerIds, setSelectedServerIds] =
     useState<string[]>([]);
-
   const [loggedInServers, setLoggedInServers] = useState<
     LogoutServerItem[]
   >([]);
-
   const [serversLoaded, setServersLoaded] =
     useState(false);
 
   const servers = serversState?.servers ?? [];
-
-  const currentNormalizedIp =
-    normalizeBaseUrl(currentIp);
+  const currentNormalizedIp = normalizeBaseUrl(currentIp);
 
   function markServerLoggedOut(
     serverId: string | null | undefined,
@@ -175,8 +170,7 @@ export function LogoutDialog({
     );
 
   const someSelected =
-    selectedServerIds.length > 0 &&
-    !allSelected;
+    selectedServerIds.length > 0 && !allSelected;
 
   function handleClose(): void {
     if (loading) return;
@@ -208,9 +202,7 @@ export function LogoutDialog({
 
     setSelectedServerIds((previousIds) =>
       previousIds.includes(serverId)
-        ? previousIds.filter(
-            (id) => id !== serverId,
-          )
+        ? previousIds.filter((id) => id !== serverId)
         : [...previousIds, serverId],
     );
   }
@@ -244,31 +236,22 @@ export function LogoutDialog({
         return;
       }
 
-      const selectedServers =
-        loggedInServers.filter((server) =>
-          selectedServerIds.includes(server.id),
-        );
+      const {
+        selectedCurrentServer,
+        loggedOutOtherServers,
+      } = await logoutSelectedServers({
+        loggedInServers,
+        selectedServerIds,
+      });
 
-      if (selectedServers.length === 0) {
+      if (
+        !selectedCurrentServer &&
+        loggedOutOtherServers.length === 0
+      ) {
         return;
       }
 
-      const selectedCurrentServer =
-        selectedServers.find(
-          (server) => server.isCurrent,
-        );
-
-      const selectedOtherServers =
-        selectedServers.filter(
-          (server) => !server.isCurrent,
-        );
-
-      for (const server of selectedOtherServers) {
-        await setJwtForServer(
-          server.baseUrl,
-          null,
-        );
-
+      for (const server of loggedOutOtherServers) {
         markServerLoggedOut(server.id);
       }
 
@@ -284,10 +267,7 @@ export function LogoutDialog({
 
       handleClose();
     } catch (error) {
-      console.error(
-        "[LOGOUT] Logout failed",
-        error,
-      );
+      console.error("[LOGOUT] Logout failed", error);
     } finally {
       setLoading(false);
     }
@@ -347,8 +327,7 @@ export function LogoutDialog({
                   <View
                     style={[
                       styles.checkbox,
-                      (allSelected ||
-                        someSelected) &&
+                      (allSelected || someSelected) &&
                         styles.checkboxChecked,
                     ]}
                   >
@@ -359,9 +338,7 @@ export function LogoutDialog({
                         ✓
                       </ThemedText>
                     ) : someSelected ? (
-                      <View
-                        style={styles.partialMark}
-                      />
+                      <View style={styles.partialMark} />
                     ) : null}
                   </View>
 
@@ -383,9 +360,7 @@ export function LogoutDialog({
                   }
                   showsVerticalScrollIndicator
                   nestedScrollEnabled
-                  renderItem={({
-                    item: server,
-                  }) => {
+                  renderItem={({ item: server }) => {
                     const checked =
                       selectedServerIds.includes(
                         server.id,
@@ -408,9 +383,7 @@ export function LogoutDialog({
                         >
                           {checked ? (
                             <ThemedText
-                              style={
-                                styles.checkmark
-                              }
+                              style={styles.checkmark}
                             >
                               ✓
                             </ThemedText>

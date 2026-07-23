@@ -1,6 +1,7 @@
 import {
   getJwtForServer,
   normalizeBaseUrl,
+  setJwtForServer,
   type AuthMethod,
 } from "../../../redux/slices/apiSlice";
 
@@ -24,6 +25,16 @@ type GetLoggedInServersParams = {
   currentIp: string;
   isLoggedIn: boolean;
   authenticationMethod: AuthMethod;
+};
+
+export type LogoutSelectedServersResult = {
+  selectedCurrentServer?: LogoutServerItem;
+  loggedOutOtherServers: LogoutServerItem[];
+};
+
+type LogoutSelectedServersParams = {
+  loggedInServers: LogoutServerItem[];
+  selectedServerIds: string[];
 };
 
 export async function getLoggedInServers({
@@ -60,8 +71,9 @@ export async function getLoggedInServers({
       async (
         server,
       ): Promise<LogoutServerItem | null> => {
-        const normalizedBaseUrl =
-          normalizeBaseUrl(server.baseUrl);
+        const normalizedBaseUrl = normalizeBaseUrl(
+          server.baseUrl,
+        );
 
         if (normalizedBaseUrl === currentNormalizedIp) {
           return null;
@@ -101,4 +113,30 @@ export async function getLoggedInServers({
   });
 
   return result;
+}
+
+export async function logoutSelectedServers({
+  loggedInServers,
+  selectedServerIds,
+}: LogoutSelectedServersParams): Promise<LogoutSelectedServersResult> {
+  const selectedServers = loggedInServers.filter(
+    (server) => selectedServerIds.includes(server.id),
+  );
+
+  const selectedCurrentServer = selectedServers.find(
+    (server) => server.isCurrent,
+  );
+
+  const selectedOtherServers = selectedServers.filter(
+    (server) => !server.isCurrent,
+  );
+
+  for (const server of selectedOtherServers) {
+    await setJwtForServer(server.baseUrl, null);
+  }
+
+  return {
+    selectedCurrentServer,
+    loggedOutOtherServers: selectedOtherServers,
+  };
 }
