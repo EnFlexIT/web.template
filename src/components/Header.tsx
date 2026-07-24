@@ -4,7 +4,7 @@ import { Text } from "./stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 
 import { useIsWide } from "../hooks/useIsWide";
-import { ToolBox } from "./ToolBox";
+import { ToolBox } from "../template/components/layout/ToolBox";
 
 import {
   getIdPath,

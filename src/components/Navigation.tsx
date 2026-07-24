@@ -5,7 +5,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { useLinkTo } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
-import { ToolBox } from "./ToolBox";
+import { ToolBox } from "../template/components/layout/ToolBox";
 import { Logo } from "./Logo";
 import { Text } from "./stylistic/Text";
 import {

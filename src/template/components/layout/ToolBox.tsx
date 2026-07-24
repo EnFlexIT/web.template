@@ -12,28 +12,28 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   logoutAsync,
   selectAuthenticationMethod,
   selectJwt,
-} from "../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
-import { logoutBaseMode, selectBaseMode } from "../redux/slices/baseModeSlice";
-import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
+import { logoutBaseMode, selectBaseMode } from "../../../redux/slices/baseModeSlice";
+import { selectThemeInfo, setTheme } from "../../../redux/slices/themeSlice";
 
-import { useJwtSessionTimerWeb } from "../core/authentication/session/useJwtSessionTimerWeb";
-import { useOidcSessionTimerWeb} from "../core/authentication/session/useOidcSessionTimerWeb";
-import { ConfirmModal } from "./ui-elements/ConfirmModal";
+import { useJwtSessionTimerWeb } from "../../../core/authentication/session/useJwtSessionTimerWeb";
+import { useOidcSessionTimerWeb} from "../../../core/authentication/session/useOidcSessionTimerWeb";
+import { ConfirmModal } from "../../../components/ui-elements/ConfirmModal";
 import {
   extendSessionTime,
   selectSessionTime,
-} from "../redux/slices/sessionTimeSlice";
-import { LogoutDialog } from "../template/screens/Logout/LogoutDialog";
-import { Text } from "./stylistic/Text";
-import { ActionButton } from "./ui-elements/ActionButton";
+} from "../../../redux/slices/sessionTimeSlice";
+import { LogoutDialog } from "../../screens/Logout/LogoutDialog";
+import { Text } from "../../../components/stylistic/Text";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
 
 type LogoutDialogProps = {
   visible: boolean;
