@@ -6,7 +6,7 @@ import { UnauthenticatedSettings } from "../../template/screens/settings/Unauthe
 import { PrivacySettings } from "../../template/screens/settings/PrivacySettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
-import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
+import { ChangePasswordScreen } from "../../template/screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
 import { UserProfileScreen } from "../../screens/UserProfile/UserProfileScreen";
@@ -14,7 +14,7 @@ import type { AuthMethod } from "../../redux/slices/apiSlice";
 
 // Hub
 import { MenuHubScreen } from "../../screens/MenuHubScreen";
-import { AppSettingsFileUploadScreen } from "../../screens/settings/AppSettingsFileUploadScreen";
+import { AppSettingsFileUploadScreen } from "../../template/screens/settings/AppSettingsFileUploadScreen";
 
 // Agent Workbench Options
 import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";

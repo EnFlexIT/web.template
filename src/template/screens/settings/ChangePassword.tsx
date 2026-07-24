@@ -3,19 +3,19 @@ import React, { useMemo, useState } from "react";
 import { Platform, View, StyleSheet as NativeStyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { Logo } from "../../components/Logo";
-import { Screen } from "../../components/Screen";
-import { Card } from "../../components/ui-elements/Card";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { H1 } from "../../components/stylistic/H1";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { TextInput } from "../../components/ui-elements/TextInput";
+import { Logo } from "../../../components/Logo";
+import { Screen } from "../../../components/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { H1 } from "../../../components/stylistic/H1";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { TextInput } from "../../../components/ui-elements/TextInput";
 
-import { useAppSelector } from "../../hooks/useAppSelector";
-import { selectApi } from "../../redux/slices/apiSlice";
-import { styles } from "../../template/screens/login/styles";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectApi } from "../../../redux/slices/apiSlice";
+import { styles } from "../login/styles";
 
-import { Infobox } from "../../components/ui-elements/Infobox";
+import { Infobox } from "../../../components/ui-elements/Infobox";
 
 type PasswordChangePayload = {
   password_old: string;
