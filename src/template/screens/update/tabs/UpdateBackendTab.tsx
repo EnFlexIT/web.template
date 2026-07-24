@@ -9,36 +9,36 @@ import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "../../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../../hooks/useAppSelector";
 
 import {
   logoutAsync,
   selectApi,
   selectAuthenticationMethod,
-} from "../../../redux/slices/apiSlice";
+} from "../../../../redux/slices/apiSlice";
 
-import { setLogoutFlowActive } from "../../../core/authentication/logout/logoutFlowGuard";
+import { setLogoutFlowActive } from "../../../../core/authentication/logout/logoutFlowGuard";
 
 import {
   checkBackendUpdate,
   executeBackendUpdate,
-} from "../../../core/update/redux/updateSlice";
+} from "../../../../core/update/redux/updateSlice";
 
-import { checkServerReachable } from "../../../core/server/serverCheck";
+import { checkServerReachable } from "../../../../core/server/serverCheck";
 
 import {
   UpdateProgressDialog,
   UpdateProgressPhase,
-} from "../../../components/ui-elements/UpdateProgressDialog";
-import { Card } from "../../../components/ui-elements/Card";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { ThemedText } from "../../../components/themed/ThemedText";
+} from "../../../../components/ui-elements/UpdateProgressDialog";
+import { Card } from "../../../../components/ui-elements/Card";
+import { ActionButton } from "../../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../../components/themed/ThemedText";
 import {
   SelectableItem,
   SelectableList,
-} from "../../../components/ui-elements/SelectableList";
-import { H3 } from "../../../components/stylistic/H3";
+} from "../../../../components/ui-elements/SelectableList";
+import { H3 } from "../../../../components/stylistic/H3";
 
 const API_PREFIX = "/api";
 const MAX_FEATURES_DRAWN = 5;

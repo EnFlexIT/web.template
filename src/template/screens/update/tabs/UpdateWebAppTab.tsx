@@ -16,47 +16,47 @@ import {
 
 import {
   Card,
-} from "../../../components/ui-elements/Card";
+} from "../../../../components/ui-elements/Card";
 
 import {
   ActionButton,
-} from "../../../components/ui-elements/ActionButton";
+} from "../../../../components/ui-elements/ActionButton";
 
 import {
   ThemedText,
-} from "../../../components/themed/ThemedText";
+} from "../../../../components/themed/ThemedText";
 
 import {
   H3,
-} from "../../../components/stylistic/H3";
+} from "../../../../components/stylistic/H3";
 
 import {
   useAppSelector,
-} from "../../../hooks/useAppSelector";
+} from "../../../../hooks/useAppSelector";
 
 import {
   useAppDispatch,
-} from "../../../hooks/useAppDispatch";
+} from "../../../../hooks/useAppDispatch";
 
 import {
   selectApi,
-} from "../../../redux/slices/apiSlice";
+} from "../../../../redux/slices/apiSlice";
 
 import {
   checkFrontendUpdate,
   clearUpdateSettingsCache,
   executeFrontendUpdate,
   loadInstalledFrontendVersion,
-} from "../../../core/update/redux/updateSlice";
+} from "../../../../core/update/redux/updateSlice";
 
 import {
   reloadUpdatedFrontendWebApp,
-} from "../../../core/update/reloadUpdatedFrontendWebApp";
+} from "../../../../core/update/reloadUpdatedFrontendWebApp";
 
 import {
   UpdateProgressDialog,
   type UpdateProgressPhase,
-} from "../../../components/ui-elements/UpdateProgressDialog";
+} from "../../../../components/ui-elements/UpdateProgressDialog";
 
 const VERSION_REFRESH_ATTEMPTS = 12;
 const VERSION_REFRESH_DELAY_MS = 500;

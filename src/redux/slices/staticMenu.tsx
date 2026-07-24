@@ -7,7 +7,7 @@ import { PrivacySettings } from "../../screens/settings/PrivacySettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
-import { UpdateWebAppTab } from "../../screens/update/tabs/UpdateWebAppTab";
+import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
 import { UserProfileScreen } from "../../screens/UserProfile/UserProfileScreen";
 import type { AuthMethod } from "../../redux/slices/apiSlice";
