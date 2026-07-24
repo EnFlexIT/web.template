@@ -9,7 +9,7 @@ import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../template/screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
-import { UserProfileScreen } from "../../screens/UserProfile/UserProfileScreen";
+import { UserProfileScreen } from "../../template/screens/UserProfile/UserProfileScreen";
 import type { AuthMethod } from "../../redux/slices/apiSlice";
 
 // Hub

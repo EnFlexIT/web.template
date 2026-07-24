@@ -6,14 +6,14 @@ import { StyleSheet } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 
-import { Screen } from "../../components/Screen";
-import { Card } from "../../components/ui-elements/Card";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
-import { selectAuthenticationMethod } from "../../redux/slices/apiSlice";
-import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "../../redux/slices/userProfileSlice";
+import { Screen } from "../../../components/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectAuthenticationMethod } from "../../../redux/slices/apiSlice";
+import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "../../../redux/slices/userProfileSlice";
 
 export function UserProfileScreen() {
   const dispatch = useAppDispatch();
