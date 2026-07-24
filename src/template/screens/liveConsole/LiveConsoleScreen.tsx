@@ -19,27 +19,27 @@ import {
 
 import {
   Card,
-} from "../../components/ui-elements/Card";
+} from "../../../components/ui-elements/Card";
 
 import {
   ActionButton,
-} from "../../components/ui-elements/ActionButton";
+} from "../../../components/ui-elements/ActionButton";
 
 import {
   ThemedText,
-} from "../../components/themed/ThemedText";
+} from "../../../components/themed/ThemedText";
 
 import {
   useAppDispatch,
-} from "../../hooks/useAppDispatch";
+} from "../../../hooks/useAppDispatch";
 
 import {
   useAppSelector,
-} from "../../hooks/useAppSelector";
+} from "../../../hooks/useAppSelector";
 
 import {
   useThemedScrollbarWeb,
-} from "../../hooks/useThemedScrollbarWeb";
+} from "../../../hooks/useThemedScrollbarWeb";
 
 import {
   clearLines,
@@ -47,11 +47,11 @@ import {
   selectLiveConsole,
   setFollowOutput,
   type LiveConsoleStatus,
-} from "../../redux/slices/liveConsoleSlice";
+} from "../../../redux/slices/liveConsoleSlice";
 
 import {
   dockDeveloperConsole,
-} from "../../redux/slices/developerConsoleSlice";
+} from "../../../redux/slices/developerConsoleSlice";
 
 type LiveConsoleScreenProps = {
   embedded?: boolean;

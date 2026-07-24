@@ -18,8 +18,7 @@ import { AppSettingsFileUploadScreen } from "../../template/screens/settings/App
 
 // Agent Workbench Options
 import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
-import { LiveConsoleScreen} from "./../../screens/liveConsole/LiveConsoleScreen";
-
+import { LiveConsoleScreen} from "../../template/screens/liveConsole/LiveConsoleScreen";
 // Logic
 import { isMenuEnabled } from "./featureFlags";
 import { withAutoTabs } from "../../components/config/tabAuto";
