@@ -5,9 +5,9 @@ import { useUnistyles } from "react-native-unistyles";
 import { GeneralSettingsTab } from "./database/GeneralSettingsTab";
 import { FactorySettingsTab } from "./database/FactorySettingsTab";
 import { DerbyNetworkServerTab } from "./database/DerbyNetworkServerTab";
-import { H4 } from "../../components/stylistic/H4";
-import { H2 } from "../../components/stylistic/H2";
-import { Screen } from "../../components/Screen";
+import { H4 } from "../../../components/stylistic/H4";
+import { H2 } from "../../../components/stylistic/H2";
+import { Screen } from "../../../components/Screen";
 type TabKey = "general" | "factory" | "derby";
 
 export function DatabaseConnectionsSettings() {

@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { Card } from "../../../components/ui-elements/Card";
-import { Checkbox } from "../../../components/ui-elements/Checkbox";
-import { Dropdown } from "../../../components/ui-elements/Dropdown";
-import { TextInput } from "../../../components/ui-elements/TextInput";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { H2 } from "../../../components/stylistic/H2";
-import { H4 } from "../../../components/stylistic/H4";
-import { ThemedText } from "../../../components/themed/ThemedText";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "../../../redux/slices/dbSettingsSlice";
+import { Card } from "../../../../components/ui-elements/Card";
+import { Checkbox } from "../../../../components/ui-elements/Checkbox";
+import { Dropdown } from "../../../../components/ui-elements/Dropdown";
+import { TextInput } from "../../../../components/ui-elements/TextInput";
+import { ActionButton } from "../../../../components/ui-elements/ActionButton";
+import { H2 } from "../../../../components/stylistic/H2";
+import { H4 } from "../../../../components/stylistic/H4";
+import { ThemedText } from "../../../../components/themed/ThemedText";
+import { useAppDispatch } from "../../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../../hooks/useAppSelector";
+import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "../../../../redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
-import { Icon } from "../../../components/ui-elements/Icon/Icon";
+import { Icon } from "../../../../components/ui-elements/Icon/Icon";
 import Feather from "@expo/vector-icons/Feather";
 
 // Local type for messages displayed in the feedback area, can be an info, success, or error message, or null if no message should be displayed

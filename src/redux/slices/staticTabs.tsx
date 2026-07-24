@@ -6,9 +6,9 @@ import { ComponentType } from "react";
 import { isTabEnabled } from "./tabFeatureFlags";
 import type { RootState } from "../../redux/store";
 // Tabs (deine Imports)
-import { DerbyNetworkServerTab } from "../../screens/settings/database/DerbyNetworkServerTab";
-import { FactorySettingsTab } from "../../screens/settings/database/FactorySettingsTab";
-import { GeneralSettingsTab } from "../../screens/settings/database/GeneralSettingsTab";
+import { DerbyNetworkServerTab } from "../../template/screens/settings/database/DerbyNetworkServerTab";
+import { FactorySettingsTab } from "../../template/screens/settings/database/FactorySettingsTab";
+import { GeneralSettingsTab } from "../../template/screens/settings/database/GeneralSettingsTab";
 import { UpdateGeneralTab } from "../../template/screens/update/tabs/UpdateGeneralTab";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
 import { UpdateBackendTab } from "../../template/screens/update/tabs/UpdateBackendTab";
