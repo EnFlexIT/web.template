@@ -8,11 +8,11 @@ import {
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { ThemedText } from "../../components/themed/ThemedText";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { Card } from "../../components/ui-elements/Card";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { Card } from "../../../components/ui-elements/Card";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   logoutAsync,
@@ -21,17 +21,17 @@ import {
   selectAuthenticationMethod,
   normalizeBaseUrl,
   setIsLogoutDialogOpen,
-} from "../../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
 import {
   getLoggedInServers,
   logoutSelectedServers,
   type LogoutServerItem,
-} from "../../core/authentication/logout/logoutServers";
+} from "../../../core/authentication/logout/logoutServers";
 
-import { setLogoutFlowActive } from "../../core/authentication/logout/logoutFlowGuard";
-import { selectServers } from "../../redux/slices/serverSlice";
-import { setServerStatus } from "../../redux/slices/serverStatusSlice";
+import { setLogoutFlowActive } from "../../../core/authentication/logout/logoutFlowGuard";
+import { selectServers } from "../../../redux/slices/serverSlice";
+import { setServerStatus } from "../../../redux/slices/serverStatusSlice";
 
 type Props = {
   visible: boolean;

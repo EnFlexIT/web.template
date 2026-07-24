@@ -15,12 +15,9 @@ import { StyleSheet } from "react-native-unistyles";
 import { ThemedText } from "../themed/ThemedText";
 
 import { isMobileShellRuntime } from "../../util/runtime";
-
+import { LiveConsoleScreen } from "../../template/screens/liveConsole/LiveConsoleScreen";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-
-import { LiveConsoleScreen } from "../../screens/liveConsole/LiveConsoleScreen";
-
 import {
   selectIp,
   selectIsLoggedIn,

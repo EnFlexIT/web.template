@@ -26,15 +26,21 @@ import { selectThemeInfo, setTheme } from "../redux/slices/themeSlice";
 
 import { useJwtSessionTimerWeb } from "../core/authentication/session/useJwtSessionTimerWeb";
 import { useOidcSessionTimerWeb} from "../core/authentication/session/useOidcSessionTimerWeb";
-
+import { ConfirmModal } from "./ui-elements/ConfirmModal";
 import {
   extendSessionTime,
   selectSessionTime,
 } from "../redux/slices/sessionTimeSlice";
-
+import { LogoutDialog } from "../template/screens/Logout/LogoutDialog";
 import { Text } from "./stylistic/Text";
 import { ActionButton } from "./ui-elements/ActionButton";
-import { LogoutDialog } from "../screens/Logout/LogoutDialog";
+
+type LogoutDialogProps = {
+  visible: boolean;
+  onClose: () => void;
+};
+
+
 
 const Feather = withUnistyles(Feather_);
 const AntDesign = withUnistyles(AntDesign_);
