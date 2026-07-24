@@ -1,4 +1,4 @@
-// src/components/DataPermissionsDialog.tsx
+// src/template/components/ui-elements/DataPermissionsDialog.tsx
 import React, { useMemo } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { BlurView as BlurView_ } from "expo-blur";
@@ -6,23 +6,23 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { ThemedText } from "./themed/ThemedText";
-import { ThemedView } from "./themed/ThemedView";
-import { Dropdown } from "./ui-elements/Dropdown";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedView } from "../../../components/themed/ThemedView";
+import { Dropdown } from "../../../components/ui-elements/Dropdown";
 
-import { useAppSelector } from "../hooks/useAppSelector";
-import { useAppDispatch } from "../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
 
-import { PERMISSIONS } from "../permissions/PermiossionGroup";
+import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
 import {
   selectPermissionValues,
   setPermissionValue,
   acceptAll,
   rejectOptional,
   setHasSeenDialog,
-} from "../redux/slices/dataPermissionsSlice";
+} from "../../../redux/slices/dataPermissionsSlice";
 
-import { selectLanguage, setLanguage } from "../redux/slices/languageSlice";
+import { selectLanguage, setLanguage } from "../../../redux/slices/languageSlice";
 
 const BlurView = withUnistyles(BlurView_);
 
