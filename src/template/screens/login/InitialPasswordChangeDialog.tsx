@@ -1,21 +1,21 @@
 import React from "react";
 import { Modal, View, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { addNotification } from "../../redux/slices/notificationSlice";
-import { Card } from "../../components/ui-elements/Card";
-import { H4 } from "../../components/stylistic/H4";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
+import { addNotification } from "../../../redux/slices/notificationSlice";
+import { Card } from "../../../components/ui-elements/Card";
+import { H4 } from "../../../components/stylistic/H4";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";
-import { selectApi } from "../../redux/slices/apiSlice";
-import { normalizeServerKey } from "../../redux/selectors/serverSelectors";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
+import { selectApi } from "../../../redux/slices/apiSlice";
+import { normalizeServerKey } from "../../../redux/selectors/serverSelectors";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 import {
   closeInitialPasswordChangeDialog,
   selectInitialPasswordChangeDialogOpen,
-} from "../../redux/slices/passwordChangePromptSlice";
-import { setActiveMenuId } from "../../redux/slices/menuSlice";
+} from "../../../redux/slices/passwordChangePromptSlice";
+import { setActiveMenuId } from "../../../redux/slices/menuSlice";
 
 const CHANGE_PASSWORD_MENU_ID = 3013;
 

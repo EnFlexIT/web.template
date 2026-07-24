@@ -19,7 +19,7 @@ import {
   SelectableItem,
 } from "../components/ui-elements/SelectableList";
 
-import { ServerLoginModal } from "../screens/login/ServerLoginModal";
+import { ServerLoginModal } from "../template/screens/login/ServerLoginModal";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
 

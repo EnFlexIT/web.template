@@ -34,10 +34,10 @@ import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 
 import { NotificationPopup } from "./components/NotificationPopup";
 import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
-import { LoginScreen } from "./screens/login/Login";
+import { LoginScreen } from "./template/screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
 import { NotAvailableScreen } from "./screens/NotAvailableScreen";
-import { InitialPasswordChangeDialog } from "./screens/login/InitialPasswordChangeDialog";
+import { InitialPasswordChangeDialog } from "./template/screens/login/InitialPasswordChangeDialog";
 
 import {
   hasId,

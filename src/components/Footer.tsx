@@ -50,7 +50,7 @@ import {
   setWebAppReleaseType,
 } from "../redux/slices/appReleaseSlice";
 
-import { ServerLoginModal } from "../screens/login/ServerLoginModal";
+import { ServerLoginModal } from "../template/screens/login/ServerLoginModal";
 
 const Feather = withUnistyles(Feather_);
 

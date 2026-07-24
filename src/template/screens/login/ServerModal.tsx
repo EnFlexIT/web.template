@@ -10,38 +10,38 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 
-import { H1 } from "../../components/stylistic/H1";
-import { H4 } from "../../components/stylistic/H4";
-import { StylisticTextInput } from "../../components/stylistic/StylisticTextInput";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { ConfirmModal } from "../../components/ui-elements/ConfirmModal";
-import { Icon } from "../../components/ui-elements/Icon/Icon";
+import { H1 } from "../../../components/stylistic/H1";
+import { H4 } from "../../../components/stylistic/H4";
+import { StylisticTextInput } from "../../../components/stylistic/StylisticTextInput";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ConfirmModal } from "../../../components/ui-elements/ConfirmModal";
+import { Icon } from "../../../components/ui-elements/Icon/Icon";
 import {
   SelectableItem,
   SelectableList,
-} from "../../components/ui-elements/SelectableList";
+} from "../../../components/ui-elements/SelectableList";
 
-import { detectServerEnvironment } from "../../core/server/detectServerEnvironment";
-import { normalizeServerInputs } from "../../core/server/normalizeServerInputs";
+import { detectServerEnvironment } from "../../../core/server/detectServerEnvironment";
+import { normalizeServerInputs } from "../../../core/server/normalizeServerInputs";
 import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-} from "../../core/server/serverCheck";
+} from "../../../core/server/serverCheck";
 import {
   ServerValidationResult,
   validateServerInput,
-} from "../../core/server/serverValidation";
+} from "../../../core/server/serverValidation";
 
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { switchServer } from "../../redux/slices/apiSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { switchServer } from "../../../redux/slices/apiSlice";
 import {
   addServer,
   removeServer,
   selectServer,
   updateServer,
-} from "../../redux/slices/serverSlice";
+} from "../../../redux/slices/serverSlice";
 
 import { modalStyles } from "./styles";
 

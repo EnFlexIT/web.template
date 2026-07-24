@@ -2,14 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Modal,Pressable, View, StyleSheet as NativeStyleSheet, } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
-import { Logo } from "../../components/Logo";
-import { H1 } from "../../components/stylistic/H1";
-import { TextInput } from "../../components/ui-elements/TextInput";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { ThemedText } from "../../components/themed/ThemedText";
-import type { AuthMethod } from "../../redux/slices/apiSlice";
-import { openInitialPasswordChangeDialog } from "../../redux/slices/passwordChangePromptSlice";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
+import { Logo } from "../../../components/Logo";
+import { H1 } from "../../../components/stylistic/H1";
+import { TextInput } from "../../../components/ui-elements/TextInput";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import type { AuthMethod } from "../../../redux/slices/apiSlice";
+import { openInitialPasswordChangeDialog } from "../../../redux/slices/passwordChangePromptSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
 
 type Props = {
   visible: boolean;

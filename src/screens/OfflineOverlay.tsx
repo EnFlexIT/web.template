@@ -26,7 +26,7 @@ import {
 import { Infobox } from "../components/ui-elements/Infobox";
 import { ActionButton } from "../components/ui-elements/ActionButton";
 import { ThemedText } from "../components/themed/ThemedText";
-import { ServerModal } from "../screens/login/ServerModal";
+import { ServerModal } from "../template/screens/login/ServerModal";
 
 export function OfflineOverlay() {
   const dispatch = useAppDispatch();
