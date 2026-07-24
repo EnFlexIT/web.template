@@ -2,23 +2,23 @@ import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
-import { Screen } from "../../components/Screen";
-import { Table } from "../../components/Table";
-import { TableSwitchCell } from "../../components/ui-elements/TableSwitchCell";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { H4 } from "../../components/stylistic/H4";
+import { Screen } from "../../../components/Screen";
+import { Table } from "../../../components/Table";
+import { TableSwitchCell } from "../../../components/ui-elements/TableSwitchCell";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { H4 } from "../../../components/stylistic/H4";
 
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
-import { PERMISSIONS } from "../../permissions/PermiossionGroup";
+import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
 import {
   selectPermissionValues,
   setPermissionValue,
   acceptAll,
   rejectOptional,
-} from "../../redux/slices/dataPermissionsSlice";
-import { Card } from "../../components/ui-elements/Card";
+} from "../../../redux/slices/dataPermissionsSlice";
+import { Card } from "../../../components/ui-elements/Card";
 
 export function PrivacySettings() {
   const dispatch = useAppDispatch();

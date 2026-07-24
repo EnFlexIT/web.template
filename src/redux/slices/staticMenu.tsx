@@ -3,7 +3,7 @@ import { ComponentClass, FunctionComponent } from "react";
 // Screens
 import { SettingsScreen } from "../../screens/Settings";
 import { UnauthenticatedSettings } from "../../template/screens/settings/Unauthenticated-Settings";
-import { PrivacySettings } from "../../screens/settings/PrivacySettings";
+import { PrivacySettings } from "../../template/screens/settings/PrivacySettings";
 import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../screens/settings/ChangePassword";
