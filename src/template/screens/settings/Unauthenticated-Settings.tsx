@@ -2,14 +2,14 @@ import { Picker } from "@react-native-picker/picker";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet, UnistylesRuntime } from "react-native-unistyles";
-import { Screen } from "../../components/Screen";
-import { useAppSelector } from "../../hooks/useAppSelector";
-import { selectLanguage, setLanguage } from "../../redux/slices/languageSlice";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { selectThemeInfo, setTheme } from "../../redux/slices/themeSlice";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { Dropdown } from "../../components/ui-elements/Dropdown";
-import { Card } from "../../components/ui-elements/Card";
+import { Screen } from "../../../components/Screen";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectLanguage, setLanguage } from "../../../redux/slices/languageSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { selectThemeInfo, setTheme } from "../../../redux/slices/themeSlice";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { Dropdown } from "../../../components/ui-elements/Dropdown";
+import { Card } from "../../../components/ui-elements/Card";
 
 
 export function UnauthenticatedSettings() {
