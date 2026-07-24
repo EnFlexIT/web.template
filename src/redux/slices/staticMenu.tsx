@@ -8,7 +8,7 @@ import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../template/screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
-import { NotificationsScreen } from "../../screens/Notification/NotificationsScreen";
+import { NotificationsScreen } from "../../template/screens/Notification/NotificationsScreen";
 import { UserProfileScreen } from "../../template/screens/UserProfile/UserProfileScreen";
 import type { AuthMethod } from "../../redux/slices/apiSlice";
 

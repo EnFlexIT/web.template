@@ -4,16 +4,16 @@ import { StyleSheet } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { Screen } from "../../components/Screen";
-import { Card } from "../../components/ui-elements/Card";
-import { ActionButton } from "../../components/ui-elements/ActionButton";
-import { ThemedText } from "../../components/themed/ThemedText";
-import { H1 } from "../../components/stylistic/H1";
-import { useAppDispatch } from "../../hooks/useAppDispatch";
-import { useAppSelector } from "../../hooks/useAppSelector";
-import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "../../redux/slices/notificationSlice";
-import { setActiveMenuId } from "../../redux/slices/menuSlice";
-import { selectActiveServerKey } from "../../redux/selectors/serverSelectors";
+import { Screen } from "../../../components/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { H1 } from "../../../components/stylistic/H1";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "../../../redux/slices/notificationSlice";
+import { setActiveMenuId } from "../../../redux/slices/menuSlice";
+import { selectActiveServerKey } from "../../../redux/selectors/serverSelectors";
 
 function formatTime(value: string) {
   try {
