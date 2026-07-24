@@ -30,7 +30,7 @@ import { checkServerReachable } from "../../../core/server/serverCheck";
 import {
   UpdateProgressDialog,
   UpdateProgressPhase,
-} from "../Dialog/UpdateProgressDialog";
+} from "../../../components/ui-elements/UpdateProgressDialog";
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../../components/themed/ThemedText";

@@ -8,8 +8,8 @@ import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import Feather from "@expo/vector-icons/Feather";
 
-import { ThemedText } from "../../../components/themed/ThemedText";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../components/themed/ThemedText";
+import { ActionButton } from "../../components/ui-elements/ActionButton";
 
 export type UpdateProgressPhase =
   | "installing"

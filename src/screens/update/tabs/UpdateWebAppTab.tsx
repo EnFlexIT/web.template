@@ -56,7 +56,7 @@ import {
 import {
   UpdateProgressDialog,
   type UpdateProgressPhase,
-} from "../Dialog/UpdateProgressDialog";
+} from "../../../components/ui-elements/UpdateProgressDialog";
 
 const VERSION_REFRESH_ATTEMPTS = 12;
 const VERSION_REFRESH_DELAY_MS = 500;
