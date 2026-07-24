@@ -50,7 +50,7 @@ import {
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "./redux/slices/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
-import { Footer } from "./components/Footer";
+import { Footer } from "./template/components/layout/Footer";
 import { checkAlive } from "./redux/slices/connectivitySlice";
 
 UnistylesRuntime.setAdaptiveThemes(false);
