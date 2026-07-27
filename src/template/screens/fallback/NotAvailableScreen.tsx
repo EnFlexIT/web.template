@@ -1,9 +1,9 @@
 import React from "react";
 import { View } from "react-native";
-import { Screen } from "../template/components/layout/Screen";
-import { Card } from "../components/ui-elements/Card";
-import { H1 } from "../components/stylistic/H1";
-import { ThemedText } from "../components/themed/ThemedText";
+import { Screen } from "../../components/layout/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { H1 } from "../../../components/stylistic/H1";
+import { ThemedText } from "../../../components/themed/ThemedText";
 import { useUnistyles } from "react-native-unistyles";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTranslation } from "react-i18next";

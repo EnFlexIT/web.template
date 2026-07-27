@@ -36,7 +36,7 @@ import { NotificationPopup } from "./template/components/notifications/Notificat
 import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
 import { LoginScreen } from "./template/screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";
-import { NotAvailableScreen } from "./screens/NotAvailableScreen";
+import { NotAvailableScreen } from "./template/screens/fallback/NotAvailableScreen";
 import { InitialPasswordChangeDialog } from "./template/screens/login/InitialPasswordChangeDialog";
 
 import {
