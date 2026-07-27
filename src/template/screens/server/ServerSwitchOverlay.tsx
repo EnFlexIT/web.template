@@ -2,9 +2,9 @@
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { ThemedText } from "../components/themed/ThemedText";
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectIsSwitchingServer } from "../redux/slices/apiSlice";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectIsSwitchingServer } from "../../../redux/slices/apiSlice";
 
 export function ServerSwitchOverlay() {
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);

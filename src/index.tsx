@@ -20,7 +20,7 @@ import {
   selectAuthenticationMethod,
 } from "./redux/slices/apiSlice";
 
-import { ServerSwitchOverlay } from "./screens/ServerSwitchOverlay";
+import { ServerSwitchOverlay } from "./template/screens/server/ServerSwitchOverlay";
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
 import { useIsWide } from "./hooks/useIsWide";
