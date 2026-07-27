@@ -4,20 +4,20 @@ import { Platform, Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-import { Screen } from "../template/components/layout/Screen";
-import { Card } from "../components/ui-elements/Card";
-import { ThemedText } from "../components/themed/ThemedText";
-import { H3 } from "../components/stylistic/H3";
-import { H4 } from "../components/stylistic/H4";
+import { Screen } from "../../components/layout/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { H3 } from "../../../components/stylistic/H3";
+import { H4 } from "../../../components/stylistic/H4";
 
-import { getStaticMenu, StaticMenuItem } from "../redux/slices/staticMenu";
-import { isMenuEnabled } from "../redux/slices/featureFlags";
-import { selectMenu, setActiveMenuId } from "../redux/slices/menuSlice";
+import { getStaticMenu, StaticMenuItem } from "../../../redux/slices/staticMenu";
+import { isMenuEnabled } from "../../../redux/slices/featureFlags";
+import { selectMenu, setActiveMenuId } from "../../../redux/slices/menuSlice";
 
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectAuthenticationMethod } from "../redux/slices/apiSlice";
-import { useMenuNavigation } from "../components/routing/useMenuNavigation";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectAuthenticationMethod } from "../../../redux/slices/apiSlice";
+import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
 
 type ChildItem = StaticMenuItem;
 

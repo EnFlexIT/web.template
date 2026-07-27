@@ -13,7 +13,7 @@ import { UserProfileScreen } from "../../template/screens/UserProfile/UserProfil
 import type { AuthMethod } from "../../redux/slices/apiSlice";
 
 // Hub
-import { MenuHubScreen } from "../../screens/MenuHubScreen";
+import { MenuHubScreen } from "../../template/screens/menu/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "../../template/screens/settings/AppSettingsFileUploadScreen";
 
 // Agent Workbench Options

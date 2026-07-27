@@ -1,7 +1,7 @@
 import React from "react";
 import { ComponentClass, FunctionComponent } from "react";
 import { hasTabsForMenu } from "../../redux/slices/staticTabs";
-import { MenuHubScreen } from "../../screens/MenuHubScreen";
+import { MenuHubScreen } from "../../template/screens/menu/MenuHubScreen";
 import { TabScreen } from "../../screens/TabScreen";
 
 export type StaticMenuItem = {
