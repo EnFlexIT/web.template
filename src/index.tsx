@@ -35,7 +35,7 @@ import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 import { NotificationPopup } from "./template/components/notifications/NotificationPopup";
 import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
 import { LoginScreen } from "./template/screens/login/Login";
-import { DynamicScreen } from "./screens/DynamicScreen";
+import { DynamicScreen } from "./template/screens/dynamicScreen/DynamicScreen";
 import { NotAvailableScreen } from "./template/screens/fallback/NotAvailableScreen";
 import { InitialPasswordChangeDialog } from "./template/screens/login/InitialPasswordChangeDialog";
 
