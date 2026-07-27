@@ -17,7 +17,7 @@ import { MenuHubScreen } from "../../template/screens/menu/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "../../template/screens/settings/AppSettingsFileUploadScreen";
 
 // Agent Workbench Options
-import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
+import { ProgramStartTab } from "../../template/screens/AgentWorkbenchOptions/ProgramStartTab";
 import { LiveConsoleScreen} from "../../template/screens/liveConsole/LiveConsoleScreen";
 // Logic
 import { isMenuEnabled } from "./featureFlags";

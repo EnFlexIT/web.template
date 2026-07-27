@@ -12,8 +12,8 @@ import { GeneralSettingsTab } from "../../template/screens/settings/database/Gen
 import { UpdateGeneralTab } from "../../template/screens/update/tabs/UpdateGeneralTab";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
 import { UpdateBackendTab } from "../../template/screens/update/tabs/UpdateBackendTab";
-import { ProgramStartTab } from "../../screens/AgentWorkbenchOptions/ProgramStartTab";
-import { DataAnalyzingTab } from "../../screens/AgentWorkbenchOptions/DataAnalyzingTab";
+import { ProgramStartTab } from "../../template/screens/AgentWorkbenchOptions/ProgramStartTab";
+import { DataAnalyzingTab } from "../../template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 

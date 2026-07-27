@@ -3,10 +3,10 @@ import { ScrollView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
-import { Table } from "../../../components/Table";
-import { H4 } from "../../../components/stylistic/H4";
-import { ThemedText } from "../../../components/themed/ThemedText";
-import type { BackgroundPlatform } from "../../../redux/slices/dataAnalysisSlice";
+import { Table } from "../../../../components/Table";
+import { H4 } from "../../../../components/stylistic/H4";
+import { ThemedText } from "../../../../components/themed/ThemedText";
+import type { BackgroundPlatform } from "../../../../redux/slices/dataAnalysisSlice";
 
 type Props = {
   platforms: BackgroundPlatform[];
