@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Screen } from "../template/components/layout/Screen";
+import { Screen } from "../../components/layout/Screen";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-import { TabsBar } from "../components/ui-elements/TabsBar";
+import { TabsBar } from "../../../components/ui-elements/TabsBar";
 
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectMenu } from "../redux/slices/menuSlice";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectMenu } from "../../../redux/slices/menuSlice";
 
-import { getTabsForMenu, TabContent } from "../redux/slices/staticTabs";
+import { getTabsForMenu, TabContent } from "../../../redux/slices/staticTabs";
 
 type TabScreenProps = {
   menuID?: number;
