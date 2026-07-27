@@ -5,28 +5,28 @@ import { StyleSheet } from "react-native-unistyles";
 import { useLinkTo } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
-import { ToolBox } from "../template/components/layout/ToolBox";
-import { Logo } from "../template/components/layout/Logo";
-import { Text } from "./stylistic/Text";
+import { ToolBox } from "./ToolBox";
+import { Logo } from "./Logo";
+import { Text } from "../../../components/stylistic/Text";
 import {
   selectAuthenticationMethod,
-} from "../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
-import { isMenuEnabled } from "../redux/slices/featureFlags";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { isMenuEnabled } from "../../../redux/slices/featureFlags";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 import { useEffect } from "react";
-import { getIdPath } from "../redux/slices/menuSlice";
+import { getIdPath } from "../../../redux/slices/menuSlice";
 
 import {
   isDynamicMenuItem,
   MenuTree,
   selectMenu,
   setActiveMenuId,
-} from "../redux/slices/menuSlice";
-import { selectApi } from "../redux/slices/apiSlice";
+} from "../../../redux/slices/menuSlice";
+import { selectApi } from "../../../redux/slices/apiSlice";
 
-import { buildMenuPaths } from "./routing/menuPaths";
+import { buildMenuPaths } from "../../../components/routing/menuPaths";
 
 /* =========================
    Drawer Item

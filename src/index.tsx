@@ -10,7 +10,7 @@ import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
 import { PostLoginUpdateWatcher } from "./redux/slices/PostLoginUpdateWatcher";
 import { useSessionActivityWeb } from "./core/authentication/session/useSessionActivityWeb";
 import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
-import { Navigation } from "./components/Navigation";
+import { Navigation } from "./template/components/layout/Navigation";
 import { Header } from "./template/components/layout/Header";
 import { DataPermissionsDialog } from "./template/components/ui-elements/DataPermissionsDialog";
 
