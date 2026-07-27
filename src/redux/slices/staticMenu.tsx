@@ -4,7 +4,7 @@ import { ComponentClass, FunctionComponent } from "react";
 import { SettingsScreen } from "../../screens/Settings";
 import { UnauthenticatedSettings } from "../../template/screens/settings/Unauthenticated-Settings";
 import { PrivacySettings } from "../../template/screens/settings/PrivacySettings";
-import { DevHomeScreen } from "../../screens/dev/Dev-Home-Screen";
+import { DevHomeScreen } from "../../template/screens/dev/Dev-Home-Screen";
 import { ServerSettingsScreen } from "../../screens/ServerSettings";
 import { ChangePasswordScreen } from "../../template/screens/settings/ChangePassword";
 import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";

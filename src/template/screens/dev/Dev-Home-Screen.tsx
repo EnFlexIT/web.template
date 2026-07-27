@@ -9,19 +9,19 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import type { SiteContentTimeSeriesChart } from "../../api/implementation/Dynamic-Content-Api";
+import type { SiteContentTimeSeriesChart } from "../../../api/implementation/Dynamic-Content-Api";
 // UI Components
-import { Card } from "../../components/ui-elements/Card";
-import { MetricCard } from "../../components/ui-elements/MetricCard";
-import { SmallStat } from "../../components/ui-elements/SmallStat";
-import { HeroCard } from "../../components/ui-elements/HeroCard";
-import { ChartCard, BarChartWidget } from "../../components/ui-elements/charts";
-import { Screen } from "../../template/components/layout/Screen";
-import { RenderData } from "../../components/dynamic/content/SiteChart";
+import { Card } from "../../../components/ui-elements/Card";
+import { MetricCard } from "../../../components/ui-elements/MetricCard";
+import { SmallStat } from "../../../components/ui-elements/SmallStat";
+import { HeroCard } from "../../../components/ui-elements/HeroCard";
+import { ChartCard, BarChartWidget } from "../../../components/ui-elements/charts";
+import { Screen } from "../../components/layout/Screen";
+import { RenderData } from "../../../components/dynamic/content/SiteChart";
 //Translation
 import { useTranslation } from "react-i18next";
 // Typ
-import type { SiteContentBarChart } from "../../api/implementation/Dynamic-Content-Api";
+import type { SiteContentBarChart } from "../../../api/implementation/Dynamic-Content-Api";
 
 
 
@@ -29,8 +29,8 @@ export function DevHomeScreen() {
   const { width } = useWindowDimensions();
   const { t } = useTranslation(["DevHome"]);
 
-  const SOLAR_PANEL_IMG = require("../../../assets/solar.png");
-  const SMART_HOME_IMG = require("../../../assets/Smarthome.png");
+  const SOLAR_PANEL_IMG = require("../../../../assets/solar.png");
+const SMART_HOME_IMG = require("../../../../assets/Smarthome.png");
 
   const headerImageSource = useMemo(
     () => (SOLAR_PANEL_IMG ? SOLAR_PANEL_IMG : undefined),
