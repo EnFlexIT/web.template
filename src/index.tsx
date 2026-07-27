@@ -32,7 +32,7 @@ import { initializeTheme } from "./redux/slices/themeSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 
-import { NotificationPopup } from "./components/NotificationPopup";
+import { NotificationPopup } from "./template/components/notifications/NotificationPopup";
 import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
 import { LoginScreen } from "./template/screens/login/Login";
 import { DynamicScreen } from "./screens/DynamicScreen";

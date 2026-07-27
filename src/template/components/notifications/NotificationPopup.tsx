@@ -11,12 +11,6 @@ import { StyleSheet } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import Feather from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
-import { Card } from "./ui-elements/Card";
-import { ActionButton } from "./ui-elements/ActionButton";
-import { ThemedText } from "./themed/ThemedText";
-
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
 import {
   closeNotificationPopup,
   markNotificationRead,
@@ -24,9 +18,16 @@ import {
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
   markServerNotificationsRead,
-} from "../redux/slices/notificationSlice";
-import { setActiveMenuId } from "../redux/slices/menuSlice";
-import { selectActiveServerKey } from "../redux/selectors/serverSelectors";
+} from "../../../redux/slices/notificationSlice";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton} from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../components/themed/ThemedText";
+
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+
+import { setActiveMenuId } from "../../../redux/slices/menuSlice";
+import { selectActiveServerKey } from "../../../redux/selectors/serverSelectors";
 
 const NOTIFICATIONS_MENU_ID = 3015;
 const MAX_VISIBLE_NOTIFICATIONS = 3;
