@@ -4,7 +4,7 @@ import { Platform, Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-import { Screen } from "../components/Screen";
+import { Screen } from "../template/components/layout/Screen";
 import { Card } from "../components/ui-elements/Card";
 import { ThemedText } from "../components/themed/ThemedText";
 import { H3 } from "../components/stylistic/H3";

@@ -2,7 +2,7 @@ import { Picker } from "@react-native-picker/picker";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet, UnistylesRuntime } from "react-native-unistyles";
-import { Screen } from "../../../components/Screen";
+import { Screen } from "../../components/layout/Screen";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectLanguage, setLanguage } from "../../../redux/slices/languageSlice";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";

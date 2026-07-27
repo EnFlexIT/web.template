@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { Screen } from "../components/Screen";
+import { Screen } from "../template/components/layout/Screen";
 import { Card } from "../components/ui-elements/Card";
 import { H1 } from "../components/stylistic/H1";
 import { ThemedText } from "../components/themed/ThemedText";

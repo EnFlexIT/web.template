@@ -4,7 +4,7 @@ import { StyleSheet } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-import { Screen } from "../../../components/Screen";
+import { Screen } from "../../components/layout/Screen";
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { ThemedText } from "../../../components/themed/ThemedText";

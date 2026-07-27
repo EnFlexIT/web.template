@@ -4,7 +4,7 @@ import { Platform, View, StyleSheet as NativeStyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { Logo } from "../../components/layout/Logo";
-import { Screen } from "../../../components/Screen";
+import { Screen } from "../../components/layout/Screen";
 import { Card } from "../../../components/ui-elements/Card";
 import { ActionButton } from "../../../components/ui-elements/ActionButton";
 import { H1 } from "../../../components/stylistic/H1";

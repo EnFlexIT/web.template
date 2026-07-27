@@ -1,6 +1,6 @@
 import { ActivityIndicator, View } from "react-native"
 import { StyleSheet } from "react-native-unistyles"
-import { Screen } from "../components/Screen"
+import { Screen } from "../template/components/layout/Screen"
 
 export function LoadingScreen() {
     return (

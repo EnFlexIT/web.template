@@ -18,7 +18,7 @@ import {
   selectDataAnalysisHistory,
   selectDataAnalysisPlatforms,
 } from "../../redux/slices/dataAnalysisSlice";
-import { Screen } from "../../components/Screen";
+import { Screen } from "../../template/components/layout/Screen";
 
 function safeText(value: unknown, fallback = "-"): string {
   if (value === undefined || value === null || value === "") return fallback;

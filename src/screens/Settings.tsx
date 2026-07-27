@@ -6,7 +6,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 import { H4 } from "../components/stylistic/H4";
 import { Card } from "../components/ui-elements/Card";
-import { Screen } from "../components/Screen";
+import { Screen } from "../template/components/layout/Screen";
 import { ThemedText } from "../components/themed/ThemedText";
 
 import { getStaticMenu, StaticMenuItem } from "../redux/slices/staticMenu";

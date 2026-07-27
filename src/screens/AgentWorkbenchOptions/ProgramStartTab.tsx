@@ -32,7 +32,7 @@ import {
   setEmbeddedSystemAgentField,
   setExecSettingsField,
 } from "../../redux/slices/execSettingsSlice";
-import { Screen } from "../../components/Screen";
+import { Screen } from "../../template/components/layout/Screen";
 
 const AntDesign = withUnistyles(AntDesign_);
 
