@@ -24,7 +24,7 @@ import { ServerSwitchOverlay } from "./template/screens/server/ServerSwitchOverl
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import { useAppSelector } from "./hooks/useAppSelector";
 import { useIsWide } from "./hooks/useIsWide";
-import { OfflineOverlay } from "./screens/OfflineOverlay";
+import { OfflineOverlay } from "./template/screens/server/OfflineOverlay";
 import { store } from "./redux/store";
 
 import { initializeLanguage } from "./redux/slices/languageSlice";

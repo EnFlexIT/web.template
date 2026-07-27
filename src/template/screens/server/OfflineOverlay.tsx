@@ -4,29 +4,29 @@ import { Modal, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   checkAlive,
   selectConnectivity,
-} from "../redux/slices/connectivitySlice";
+} from "../../../redux/slices/connectivitySlice";
 
 import {
   selectSelectedServer,
   selectServers,
-} from "../redux/slices/serverSlice";
+} from "../../../redux/slices/serverSlice";
 
 import {
   selectAuthenticationMethod,
   selectIp,
   selectIsLoggedIn,
-} from "../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
-import { Infobox } from "../components/ui-elements/Infobox";
-import { ActionButton } from "../components/ui-elements/ActionButton";
-import { ThemedText } from "../components/themed/ThemedText";
-import { ServerModal } from "../template/screens/login/ServerModal";
+import { Infobox } from "../../../components/ui-elements/Infobox";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { ServerModal } from "../login/ServerModal";
 
 export function OfflineOverlay() {
   const dispatch = useAppDispatch();
