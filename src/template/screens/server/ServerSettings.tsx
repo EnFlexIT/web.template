@@ -5,23 +5,23 @@ import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import { Buffer } from "buffer";
 
-import { Screen } from "../template/components/layout/Screen";
-import { Card } from "../components/ui-elements/Card";
-import { ActionButton } from "../components/ui-elements/ActionButton";
-import { ConfirmModal } from "../components/ui-elements/ConfirmModal";
-import { StylisticTextInput } from "../components/stylistic/StylisticTextInput";
-import { ThemedText } from "../components/themed/ThemedText";
-import { H1 } from "../components/stylistic/H1";
-import { H4 } from "../components/stylistic/H4";
+import { Screen } from "../../components/layout/Screen";
+import { Card } from "../../../components/ui-elements/Card";
+import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { ConfirmModal } from "../../../components/ui-elements/ConfirmModal";
+import { StylisticTextInput } from "../../../components/stylistic/StylisticTextInput";
+import { ThemedText } from "../../../components/themed/ThemedText";
+import { H1 } from "../../../components/stylistic/H1";
+import { H4 } from "../../../components/stylistic/H4";
 
 import {
   SelectableList,
   SelectableItem,
-} from "../components/ui-elements/SelectableList";
+} from "../../../components/ui-elements/SelectableList";
 
-import { ServerLoginModal } from "../template/screens/login/ServerLoginModal";
-import { useAppDispatch } from "../hooks/useAppDispatch";
-import { useAppSelector } from "../hooks/useAppSelector";
+import { ServerLoginModal } from "../login/ServerLoginModal";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
 
 import {
   selectServers,
@@ -30,20 +30,20 @@ import {
   updateServer,
   removeServer,
   ServerEnvironment,
-} from "../redux/slices/serverSlice";
+} from "../../../redux/slices/serverSlice";
 
 import {
   switchServer,
   getJwtForServer,
   selectIp,
   type AuthMethod,
-} from "../redux/slices/apiSlice";
+} from "../../../redux/slices/apiSlice";
 
 import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-} from "../core/server/serverCheck";
+} from "../../../core/server/serverCheck";
 
 type Server = {
   id: string;
