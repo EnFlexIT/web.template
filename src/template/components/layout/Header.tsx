@@ -1,10 +1,10 @@
 import { DrawerHeaderProps, useDrawerStatus } from "@react-navigation/drawer";
 import { Pressable, View } from "react-native";
-import { Text } from "./stylistic/Text";
+import { Text } from "../../../components/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 
-import { useIsWide } from "../hooks/useIsWide";
-import { ToolBox } from "../template/components/layout/ToolBox";
+import { useIsWide } from "../../../hooks/useIsWide";
+import { ToolBox } from "./ToolBox";
 
 import {
   getIdPath,
@@ -12,18 +12,18 @@ import {
   selectMenu,
   setActiveMenuId,
   MenuItem,
-} from "../redux/slices/menuSlice";
+} from "../../../redux/slices/menuSlice";
 
-import { useAppSelector } from "../hooks/useAppSelector";
-import { selectIsLoggedIn } from "../redux/slices/apiSlice";
-import { useAppDispatch } from "../hooks/useAppDispatch";
+import { useAppSelector } from "../../../hooks/useAppSelector";
+import { selectIsLoggedIn } from "../../../redux/slices/apiSlice";
+import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ThemedText } from "./themed/ThemedText";
+import { ThemedText } from "../../../components/themed/ThemedText";
 
 //  Slug builder
-import { buildMenuPaths } from "./routing/menuPaths";
+import { buildMenuPaths } from "../../../components/routing/menuPaths";
 
 interface HeaderEntryProps {
   node: MenuItem;
