@@ -6,7 +6,7 @@ import { useLinkTo } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 
 import { ToolBox } from "../template/components/layout/ToolBox";
-import { Logo } from "./Logo";
+import { Logo } from "../template/components/layout/Logo";
 import { Text } from "./stylistic/Text";
 import {
   selectAuthenticationMethod,

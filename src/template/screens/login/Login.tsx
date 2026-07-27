@@ -16,7 +16,7 @@ import { Buffer } from "buffer";
 import { loadUserProfile } from "../../../redux/slices/userProfileSlice";
 import { openInitialPasswordChangeDialog } from "../../../redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "../../../components/ui-elements/Dropdown";
-import { Logo } from "../../../components/Logo";
+import { Logo } from "../../components/layout/Logo";
 import { H1 } from "../../../components/stylistic/H1";
 import { Text } from "../../../components/stylistic/Text";
 import { ThemedAntDesign } from "../../../components/themed/ThemedAntDesign";

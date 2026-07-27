@@ -11,7 +11,7 @@ export function Logo(props: Omit<ImageProps, 'source' | 'style'> & {
   return (
     <Image
       {...props}
-      source={require('../../assets/awb1024.png')}
+      source={require('../../../../assets/awb1024.png')}
     />
   );
 }
