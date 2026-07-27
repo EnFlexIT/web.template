@@ -1,7 +1,7 @@
 import { ComponentClass, FunctionComponent } from "react";
 
 // Screens
-import { SettingsScreen } from "../../screens/Settings";
+import { SettingsScreen } from "../../template/screens/settings/Settings";
 import { UnauthenticatedSettings } from "../../template/screens/settings/Unauthenticated-Settings";
 import { PrivacySettings } from "../../template/screens/settings/PrivacySettings";
 import { DevHomeScreen } from "../../template/screens/dev/Dev-Home-Screen";

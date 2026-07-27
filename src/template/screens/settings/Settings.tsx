@@ -4,15 +4,15 @@ import { Platform, Pressable, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-import { H4 } from "../components/stylistic/H4";
-import { Card } from "../components/ui-elements/Card";
-import { Screen } from "../template/components/layout/Screen";
-import { ThemedText } from "../components/themed/ThemedText";
+import { H4 } from "../../../components/stylistic/H4";
+import { Card } from "../../../components/ui-elements/Card";
+import { Screen } from "../../components/layout/Screen";
+import { ThemedText } from "../../../components/themed/ThemedText";
 
-import { getStaticMenu, StaticMenuItem } from "../redux/slices/staticMenu";
-import { isMenuEnabled } from "../redux/slices/featureFlags";
+import { getStaticMenu, StaticMenuItem } from "../../../redux/slices/staticMenu";
+import { isMenuEnabled } from "../../../redux/slices/featureFlags";
 
-import { useMenuNavigation } from "../components/routing/useMenuNavigation";
+import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
 
 const SETTINGS_ROOT_ID = 3003;
 
