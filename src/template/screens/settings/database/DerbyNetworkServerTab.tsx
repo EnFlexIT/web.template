@@ -7,8 +7,8 @@ import { TextInput } from "@/components/ui-elements/TextInput";
 import { H2 } from "@/components/stylistic/H2";
 import { Card } from "@/components/ui-elements/Card";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { useAppDispatch } from "../../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import {
   clearDbSettingsError,
   fetchDbSettings,

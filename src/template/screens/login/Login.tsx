@@ -21,8 +21,8 @@ import { H1 } from "@/components/stylistic/H1";
 import { Text } from "@/components/stylistic/Text";
 import { ThemedAntDesign } from "@/components/themed/ThemedAntDesign";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectServers } from "../../../redux/slices/serverSlice";
 import {
   selectAuthenticationMethod,

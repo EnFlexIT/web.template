@@ -11,7 +11,7 @@ import { H1 } from "@/components/stylistic/H1";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { TextInput } from "@/components/ui-elements/TextInput";
 
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectApi } from "../../../redux/slices/apiSlice";
 import { styles } from "../login/styles";
 

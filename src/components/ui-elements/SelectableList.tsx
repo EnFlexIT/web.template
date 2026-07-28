@@ -28,7 +28,7 @@ import {
 
 import {
   useThemedScrollbarWeb,
-} from "../../hooks/useThemedScrollbarWeb";
+} from "@/hooks/useThemedScrollbarWeb";
 
 export type SelectableItem<
   T extends string,

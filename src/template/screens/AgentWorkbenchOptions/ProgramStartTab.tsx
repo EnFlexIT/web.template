@@ -9,8 +9,8 @@ import { Card } from "@/components/ui-elements/Card";
 import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
 import {SelectableList, SelectableItem,} from "@/components/ui-elements/SelectableList";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { fetchDbSettings, selectFactories, selectFactoryStates,} from "../../../redux/slices/dbSettingsSlice";
 import {
   addEmbeddedSystemAgent,

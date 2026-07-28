@@ -10,8 +10,8 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import { ThemedView } from "@/components/themed/ThemedView";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
 
-import { useAppSelector } from "../../../hooks/useAppSelector";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
 
 import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
 import {

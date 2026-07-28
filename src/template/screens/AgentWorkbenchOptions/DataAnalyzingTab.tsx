@@ -9,8 +9,8 @@ import { Card } from "@/components/ui-elements/Card";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import type { BackgroundPlatform } from "../../../redux/slices/dataAnalysisSlice";
 import {
   fetchDataAnalysis,

@@ -8,8 +8,8 @@ import { TableSwitchCell } from "@/components/ui-elements/TableSwitchCell";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { H4 } from "@/components/stylistic/H4";
 
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
 import {

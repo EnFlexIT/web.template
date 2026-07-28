@@ -1,4 +1,4 @@
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectApi, selectAuthenticationMethod, selectIp } from "../../../redux/slices/apiSlice";
 import { selectLanguage } from "../../../redux/slices/languageSlice";
 import { selectThemeInfo } from "../../../redux/slices/themeSlice";

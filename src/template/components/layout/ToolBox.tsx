@@ -12,8 +12,8 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 import {
   logoutAsync,

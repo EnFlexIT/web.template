@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { useAppDispatch} from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch} from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 import {
   normalizeBaseUrl,

@@ -31,15 +31,15 @@ import {
 
 import {
   useAppDispatch,
-} from "../../../hooks/useAppDispatch";
+} from "@/hooks/useAppDispatch";
 
 import {
   useAppSelector,
-} from "../../../hooks/useAppSelector";
+} from "@/hooks/useAppSelector";
 
 import {
   useThemedScrollbarWeb,
-} from "../../../hooks/useThemedScrollbarWeb";
+} from "@/hooks/useThemedScrollbarWeb";
 
 import {
   clearLines,

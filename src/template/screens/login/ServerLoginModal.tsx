@@ -9,7 +9,7 @@ import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ThemedText } from "@/components/themed/ThemedText";
 import type { AuthMethod } from "../../../redux/slices/apiSlice";
 import { openInitialPasswordChangeDialog } from "../../../redux/slices/passwordChangePromptSlice";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
 
 type Props = {
   visible: boolean;

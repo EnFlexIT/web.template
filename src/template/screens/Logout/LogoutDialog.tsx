@@ -11,8 +11,8 @@ import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { Card } from "@/components/ui-elements/Card";
-import { useAppDispatch } from "../../../hooks/useAppDispatch";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/useAppSelector";
 
 import {
   logoutAsync,

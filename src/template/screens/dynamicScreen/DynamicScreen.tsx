@@ -3,7 +3,7 @@ import { Screen } from "../../components/layout/Screen";
 import { LoadingScreen } from  "../loading/LoadingScreen";
 import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
 import { MenuItem } from "../../../redux/slices/menuSlice";
-import { useAppSelector } from "../../../hooks/useAppSelector";
+import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "../../../redux/slices/apiSlice";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { selectBaseMode } from "../../../redux/slices/baseModeSlice";

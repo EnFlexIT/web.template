@@ -32,11 +32,11 @@ import {
 
 import {
   useAppSelector,
-} from "../../../../hooks/useAppSelector";
+} from "@/hooks/useAppSelector";
 
 import {
   useAppDispatch,
-} from "../../../../hooks/useAppDispatch";
+} from "@/hooks/useAppDispatch";
 
 import {
   selectApi,
