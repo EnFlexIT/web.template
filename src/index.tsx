@@ -1,5 +1,5 @@
 // src/index.tsx
-import { DeveloperConsole,DeveloperConsoleConnection,} from "./components/developer-console/DeveloperConsole";
+import { DeveloperConsole,DeveloperConsoleConnection,} from "@/components/developer-console/DeveloperConsole";
   import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
