@@ -8,7 +8,7 @@ import { isMobileShellRuntime } from "../../../util/runtime";
 import { selectDeveloperConsole,toggleDeveloperConsole,} from "../../../redux/slices/developerConsoleSlice";
 
 import {selectLiveConsole,} from "../../../redux/slices/liveConsoleSlice";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";

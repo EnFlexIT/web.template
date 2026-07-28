@@ -21,7 +21,7 @@ import {
 } from "../../../redux/slices/notificationSlice";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton} from "@/components/ui-elements/ActionButton";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";

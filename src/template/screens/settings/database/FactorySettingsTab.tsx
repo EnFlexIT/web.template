@@ -8,7 +8,7 @@ import { TextInput } from "@/components/ui-elements/TextInput";
 import { H4 } from "../../../../components/stylistic/H4";
 import { Card } from "@/components/ui-elements/Card";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
-import { ThemedText } from "../../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import { H2 } from "../../../../components/stylistic/H2";
 import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "../../../../hooks/useAppDispatch";

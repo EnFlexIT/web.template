@@ -5,7 +5,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { Screen } from "../../components/layout/Screen";
 import { Table } from "../../../components/Table";
 import { TableSwitchCell } from "@/components/ui-elements/TableSwitchCell";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import { H4 } from "../../../components/stylistic/H4";
 
 import { useAppDispatch } from "../../../hooks/useAppDispatch";

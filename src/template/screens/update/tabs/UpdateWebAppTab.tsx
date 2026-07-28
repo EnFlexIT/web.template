@@ -24,7 +24,7 @@ import {
 
 import {
   ThemedText,
-} from "../../../../components/themed/ThemedText";
+} from "@/components/themed/ThemedText";
 
 import {
   H3,

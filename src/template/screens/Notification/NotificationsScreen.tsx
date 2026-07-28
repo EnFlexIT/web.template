@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Screen } from "../../components/layout/Screen";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import { H1 } from "../../../components/stylistic/H1";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";

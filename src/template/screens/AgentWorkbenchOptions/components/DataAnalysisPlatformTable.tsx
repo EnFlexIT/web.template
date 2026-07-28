@@ -5,7 +5,7 @@ import { StyleSheet } from "react-native-unistyles";
 
 import { Table } from "../../../../components/Table";
 import { H4 } from "../../../../components/stylistic/H4";
-import { ThemedText } from "../../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import type { BackgroundPlatform } from "../../../../redux/slices/dataAnalysisSlice";
 
 type Props = {

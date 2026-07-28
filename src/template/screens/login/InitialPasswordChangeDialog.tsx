@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { addNotification } from "../../../redux/slices/notificationSlice";
 import { Card } from "@/components/ui-elements/Card";
 import { H4 } from "../../../components/stylistic/H4";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";
 import { selectApi } from "../../../redux/slices/apiSlice";

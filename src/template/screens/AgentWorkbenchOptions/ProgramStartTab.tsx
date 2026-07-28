@@ -7,7 +7,7 @@ import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { TextInput } from "@/components/ui-elements/TextInput";
 import { Card } from "@/components/ui-elements/Card";
 import { H4 } from "../../../components/stylistic/H4";
-import { ThemedText } from "../../../components/themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 import {SelectableList, SelectableItem,} from "@/components/ui-elements/SelectableList";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
