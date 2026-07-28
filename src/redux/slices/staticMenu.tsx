@@ -21,7 +21,7 @@ import { ProgramStartTab } from "../../template/screens/AgentWorkbenchOptions/Pr
 import { LiveConsoleScreen} from "../../template/screens/liveConsole/LiveConsoleScreen";
 // Logic
 import { isMenuEnabled } from "./featureFlags";
-import { withAutoTabs } from "../../components/config/tabAuto";
+import { withAutoTabs } from "@/components/config/tabAuto";
 
 export type StaticMenuItem = {
   caption: string;
