@@ -11,7 +11,7 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import {SelectableList, SelectableItem,} from "@/components/ui-elements/SelectableList";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { fetchDbSettings, selectFactories, selectFactoryStates,} from "../../../redux/slices/dbSettingsSlice";
+import { fetchDbSettings, selectFactories, selectFactoryStates,} from "@/redux/slices/dbSettingsSlice";
 import {
   addEmbeddedSystemAgent,
   clearExecSettingsError,
@@ -31,7 +31,7 @@ import {
   selectLocalIpSelections,
   setEmbeddedSystemAgentField,
   setExecSettingsField,
-} from "../../../redux/slices/execSettingsSlice";
+} from "@/redux/slices/execSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
 

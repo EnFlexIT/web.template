@@ -4,7 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Buffer } from "buffer";
 
-import type { RootState } from "../../../redux/store";
+import type { RootState } from "@/redux/store";
 
 import {
   setJwtLocal,
@@ -13,7 +13,7 @@ import {
   getJwtForServer,
   normalizeBaseUrl,
   loginWithBasic,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
 

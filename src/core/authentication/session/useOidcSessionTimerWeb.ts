@@ -14,7 +14,7 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import {
   loadSessionTime,
   selectSessionTime,
-} from "../../../redux/slices/sessionTimeSlice";
+} from "@/redux/slices/sessionTimeSlice";
 
 type Options = {
   enabled: boolean;

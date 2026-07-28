@@ -21,13 +21,13 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import {
   selectIp,
   selectIsLoggedIn,
-} from "../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   connectLiveConsole,
   disconnectLiveConsole,
   selectLiveConsole,
-} from "../../redux/slices/liveConsoleSlice";
+} from "@/redux/slices/liveConsoleSlice";
 
 import {
   closeDeveloperConsole,
@@ -35,7 +35,7 @@ import {
   persistDeveloperConsoleState,
   selectDeveloperConsole,
   toggleDeveloperConsole,
-} from "../../redux/slices/developerConsoleSlice";
+} from "@/redux/slices/developerConsoleSlice";
 
 type DeveloperConsoleProps = {
   children: React.ReactNode;

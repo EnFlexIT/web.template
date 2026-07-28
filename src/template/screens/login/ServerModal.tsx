@@ -35,13 +35,13 @@ import {
 } from "../../../core/server/serverValidation";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { switchServer } from "../../../redux/slices/apiSlice";
+import { switchServer } from "@/redux/slices/apiSlice";
 import {
   addServer,
   removeServer,
   selectServer,
   updateServer,
-} from "../../../redux/slices/serverSlice";
+} from "@/redux/slices/serverSlice";
 
 import { modalStyles } from "./styles";
 

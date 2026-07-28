@@ -1,6 +1,6 @@
 // src/permissions/selectors.ts
 
-import { RootState } from "../redux/store";
+import { RootState } from "@/redux/store";
 import { PERMISSIONS } from "./PermiossionGroup";
 
 export const selectPermissionItems = (state: RootState) => {

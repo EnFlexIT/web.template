@@ -8,7 +8,7 @@ import { useAppSelector } from "./useAppSelector";
 import {
   addNotification,
   removeNotification,
-} from "../redux/slices/notificationSlice";
+} from "@/redux/slices/notificationSlice";
 
 import {
   checkBackendUpdate,
@@ -17,11 +17,11 @@ import {
 
 import {
   selectApi,
-} from "../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   normalizeServerKey,
-} from "../redux/selectors/serverSelectors";
+} from "@/redux/selectors/serverSelectors";
 
 const DEFAULT_UPDATE_CHECK_INTERVAL_MS =
   60 * 60 * 1000;

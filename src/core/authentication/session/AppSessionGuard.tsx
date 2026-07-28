@@ -7,9 +7,9 @@ import {
   logoutAsync,
   selectAuthenticationMethod,
   selectIsLoggedIn,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
-import { loadSessionTime } from "../../../redux/slices/sessionTimeSlice";
+import { loadSessionTime } from "@/redux/slices/sessionTimeSlice";
 import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
 
 const SESSION_CHECK_INTERVAL_MS = 60_000;

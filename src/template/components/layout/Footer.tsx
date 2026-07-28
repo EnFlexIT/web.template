@@ -5,9 +5,9 @@ import { Buffer } from "buffer";
 import { useTranslation } from "react-i18next";
 import { isMobileShellRuntime } from "../../../util/runtime";
 
-import { selectDeveloperConsole,toggleDeveloperConsole,} from "../../../redux/slices/developerConsoleSlice";
+import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/redux/slices/developerConsoleSlice";
 
-import {selectLiveConsole,} from "../../../redux/slices/liveConsoleSlice";
+import {selectLiveConsole,} from "@/redux/slices/liveConsoleSlice";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { useAppSelector } from "@/hooks/useAppSelector";
@@ -24,31 +24,31 @@ import {
   getJwtForServer,
   selectIsLoggedIn,
   type AuthMethod,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   selectServerStatuses,
   setServerStatus,
-} from "../../../redux/slices/serverStatusSlice";
+} from "@/redux/slices/serverStatusSlice";
 
-import { openInitialPasswordChangeDialog } from "../../../redux/slices/passwordChangePromptSlice";
+import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
 
 import {
   selectSelectedServer,
   selectServers,
   selectServer,
-} from "../../../redux/slices/serverSlice";
+} from "@/redux/slices/serverSlice";
 
 import {
   closeNotificationPopup,
   selectUnreadNotificationCount,
   toggleNotificationPopup,
-} from "../../../redux/slices/notificationSlice";
+} from "@/redux/slices/notificationSlice";
 
 import {
   selectIsTestRelease,
   setWebAppReleaseType,
-} from "../../../redux/slices/appReleaseSlice";
+} from "@/redux/slices/appReleaseSlice";
 
 import { ServerLoginModal } from "../../screens/login/ServerLoginModal";
 

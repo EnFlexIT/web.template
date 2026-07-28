@@ -12,8 +12,8 @@ import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectAuthenticationMethod } from "../../../redux/slices/apiSlice";
-import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "../../../redux/slices/userProfileSlice";
+import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
+import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/redux/slices/userProfileSlice";
 
 export function UserProfileScreen() {
   const dispatch = useAppDispatch();

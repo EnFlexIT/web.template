@@ -18,7 +18,7 @@ import {
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
   markServerNotificationsRead,
-} from "../../../redux/slices/notificationSlice";
+} from "@/redux/slices/notificationSlice";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton} from "@/components/ui-elements/ActionButton";
 import { ThemedText } from "@/components/themed/ThemedText";
@@ -26,8 +26,8 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
 
-import { setActiveMenuId } from "../../../redux/slices/menuSlice";
-import { selectActiveServerKey } from "../../../redux/selectors/serverSelectors";
+import { setActiveMenuId } from "@/redux/slices/menuSlice";
+import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";
 
 const NOTIFICATIONS_MENU_ID = 3015;
 const MAX_VISIBLE_NOTIFICATIONS = 3;

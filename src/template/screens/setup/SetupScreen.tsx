@@ -10,10 +10,10 @@ import {
   addOrganization,
   selectOrganizations,
   setCurrentOrganization,
-} from "../../../redux/slices/organizationsSlice";
+} from "@/redux/slices/organizationsSlice";
 import { useAppSelector } from "@/hooks/useAppSelector";
-//import { setIpLocal } from "../redux/slices/apiSlice";
-import { setReady } from "../../../redux/slices/readySlice";
+//import { setIpLocal } from "@/redux/slices/apiSlice";
+import { setReady } from "@/redux/slices/readySlice";
 import { foldl } from "../../../util/func";
 
 //  WICHTIG: so wie in deinem apiSlice

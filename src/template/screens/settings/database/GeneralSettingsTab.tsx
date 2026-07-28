@@ -11,7 +11,7 @@ import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "../../../../redux/slices/dbSettingsSlice";
+import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/ui-elements/Icon/Icon";
 import Feather from "@expo/vector-icons/Feather";

@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useLinkTo } from "@react-navigation/native";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectMenu, setActiveMenuId } from "../../redux/slices/menuSlice";
+import { selectMenu, setActiveMenuId } from "@/redux/slices/menuSlice";
 import { buildMenuPaths } from "./menuPaths";
 
 export function useMenuNavigation() {

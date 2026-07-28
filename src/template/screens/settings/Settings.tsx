@@ -9,8 +9,8 @@ import { Card } from "@/components/ui-elements/Card";
 import { Screen } from "../../components/layout/Screen";
 import { ThemedText } from "@/components/themed/ThemedText";
 
-import { getStaticMenu, StaticMenuItem } from "../../../redux/slices/staticMenu";
-import { isMenuEnabled } from "../../../redux/slices/featureFlags";
+import { getStaticMenu, StaticMenuItem } from "@/redux/slices/staticMenu";
+import { isMenuEnabled } from "@/redux/slices/featureFlags";
 
 import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
 

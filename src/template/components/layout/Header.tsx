@@ -12,10 +12,10 @@ import {
   selectMenu,
   setActiveMenuId,
   MenuItem,
-} from "../../../redux/slices/menuSlice";
+} from "@/redux/slices/menuSlice";
 
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectIsLoggedIn } from "../../../redux/slices/apiSlice";
+import { selectIsLoggedIn } from "@/redux/slices/apiSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";

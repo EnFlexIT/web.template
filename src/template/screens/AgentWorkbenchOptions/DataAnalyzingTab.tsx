@@ -11,13 +11,13 @@ import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import type { BackgroundPlatform } from "../../../redux/slices/dataAnalysisSlice";
+import type { BackgroundPlatform } from "@/redux/slices/dataAnalysisSlice";
 import {
   fetchDataAnalysis,
   selectDataAnalysisError,
   selectDataAnalysisHistory,
   selectDataAnalysisPlatforms,
-} from "../../../redux/slices/dataAnalysisSlice";
+} from "@/redux/slices/dataAnalysisSlice";
 import { Screen } from "../../components/layout/Screen";
 
 function safeText(value: unknown, fallback = "-"): string {

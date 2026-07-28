@@ -13,8 +13,8 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
 
-import { loadUserProfile } from "../../../redux/slices/userProfileSlice";
-import { openInitialPasswordChangeDialog } from "../../../redux/slices/passwordChangePromptSlice";
+import { loadUserProfile } from "@/redux/slices/userProfileSlice";
+import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
 import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { Logo } from "../../components/layout/Logo";
 import { H1 } from "@/components/stylistic/H1";
@@ -23,22 +23,22 @@ import { ThemedAntDesign } from "@/components/themed/ThemedAntDesign";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectServers } from "../../../redux/slices/serverSlice";
+import { selectServers } from "@/redux/slices/serverSlice";
 import {
   selectAuthenticationMethod,
   selectIp,
   switchServer,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
-import { selectLanguage, setLanguage } from "../../../redux/slices/languageSlice";
-import { selectThemeInfo, setTheme } from "../../../redux/slices/themeSlice";
+import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
+import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
 import { styles } from "./styles";
 import { H4 } from "@/components/stylistic/H4";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { Card } from "@/components/ui-elements/Card";
 import { TextInput } from "@/components/ui-elements/TextInput";
 import { dispatchServerStatusRefresh } from "../../../util/serverStatusRefresh";
-import { setServerStatus } from "../../../redux/slices/serverStatusSlice";
+import { setServerStatus } from "@/redux/slices/serverStatusSlice";
 
 const Feather = withUnistyles(Feather_);
 

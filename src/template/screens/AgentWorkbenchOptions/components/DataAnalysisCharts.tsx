@@ -7,7 +7,7 @@ import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
 import { createEnFlexChart } from "../../../../styles/charttheme";
-import type { DataAnalysisHistoryEntry } from "../../../../redux/slices/dataAnalysisSlice";
+import type { DataAnalysisHistoryEntry } from "@/redux/slices/dataAnalysisSlice";
 
 type Props = {
   history: DataAnalysisHistoryEntry[];

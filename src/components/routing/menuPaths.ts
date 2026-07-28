@@ -1,5 +1,5 @@
 // src/routing/menuPaths.ts
-import { MenuItem } from "../../redux/slices/menuSlice";
+import { MenuItem } from "@/redux/slices/menuSlice";
 
 function normalizePath(p: string) {
   if (!p) return "/";

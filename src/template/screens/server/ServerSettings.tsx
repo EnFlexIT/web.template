@@ -30,14 +30,14 @@ import {
   updateServer,
   removeServer,
   ServerEnvironment,
-} from "../../../redux/slices/serverSlice";
+} from "@/redux/slices/serverSlice";
 
 import {
   switchServer,
   getJwtForServer,
   selectIp,
   type AuthMethod,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   checkServerReachable,

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { clearUpdateSettingsCache } from "../redux/updateSlice";
+import { clearUpdateSettingsCache } from "@/core/update/redux/updateSlice";
 import { reloadUpdatedFrontendWebApp } from "../reloadUpdatedFrontendWebApp";
 
 type Params = {

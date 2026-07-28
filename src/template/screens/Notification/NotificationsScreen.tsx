@@ -11,9 +11,9 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import { H1 } from "@/components/stylistic/H1";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "../../../redux/slices/notificationSlice";
-import { setActiveMenuId } from "../../../redux/slices/menuSlice";
-import { selectActiveServerKey } from "../../../redux/selectors/serverSelectors";
+import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "@/redux/slices/notificationSlice";
+import { setActiveMenuId } from "@/redux/slices/menuSlice";
+import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";
 
 function formatTime(value: string) {
   try {

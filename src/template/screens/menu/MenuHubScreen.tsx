@@ -10,13 +10,13 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import { H3 } from "@/components/stylistic/H3";
 import { H4 } from "@/components/stylistic/H4";
 
-import { getStaticMenu, StaticMenuItem } from "../../../redux/slices/staticMenu";
-import { isMenuEnabled } from "../../../redux/slices/featureFlags";
-import { selectMenu, setActiveMenuId } from "../../../redux/slices/menuSlice";
+import { getStaticMenu, StaticMenuItem } from "@/redux/slices/staticMenu";
+import { isMenuEnabled } from "@/redux/slices/featureFlags";
+import { selectMenu, setActiveMenuId } from "@/redux/slices/menuSlice";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectAuthenticationMethod } from "../../../redux/slices/apiSlice";
+import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
 import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
 
 type ChildItem = StaticMenuItem;

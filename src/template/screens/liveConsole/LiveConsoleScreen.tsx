@@ -47,11 +47,11 @@ import {
   selectLiveConsole,
   setFollowOutput,
   type LiveConsoleStatus,
-} from "../../../redux/slices/liveConsoleSlice";
+} from "@/redux/slices/liveConsoleSlice";
 
 import {
   dockDeveloperConsole,
-} from "../../../redux/slices/developerConsoleSlice";
+} from "@/redux/slices/developerConsoleSlice";
 
 type LiveConsoleScreenProps = {
   embedded?: boolean;

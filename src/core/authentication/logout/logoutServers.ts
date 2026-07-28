@@ -3,7 +3,7 @@ import {
   normalizeBaseUrl,
   setJwtForServer,
   type AuthMethod,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 export type LogoutServerSource = {
   id: string;

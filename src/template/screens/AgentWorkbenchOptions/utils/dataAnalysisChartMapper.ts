@@ -1,6 +1,6 @@
 import type {
   DataAnalysisHistoryEntry,
-} from "../../../redux/slices/dataAnalysisSlice";
+} from "@/redux/slices/dataAnalysisSlice";
 
 export function createCpuChartContent(
   history: DataAnalysisHistoryEntry[],

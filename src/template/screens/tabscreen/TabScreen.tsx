@@ -6,9 +6,9 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { TabsBar } from "@/components/ui-elements/TabsBar";
 
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectMenu } from "../../../redux/slices/menuSlice";
+import { selectMenu } from "@/redux/slices/menuSlice";
 
-import { getTabsForMenu, TabContent } from "../../../redux/slices/staticTabs";
+import { getTabsForMenu, TabContent } from "@/redux/slices/staticTabs";
 
 type TabScreenProps = {
   menuID?: number;

@@ -40,7 +40,7 @@ import {
 
 import {
   selectApi,
-} from "../../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   checkFrontendUpdate,

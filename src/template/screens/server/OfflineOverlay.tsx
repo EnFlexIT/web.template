@@ -10,18 +10,18 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import {
   checkAlive,
   selectConnectivity,
-} from "../../../redux/slices/connectivitySlice";
+} from "@/redux/slices/connectivitySlice";
 
 import {
   selectSelectedServer,
   selectServers,
-} from "../../../redux/slices/serverSlice";
+} from "@/redux/slices/serverSlice";
 
 import {
   selectAuthenticationMethod,
   selectIp,
   selectIsLoggedIn,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import { Infobox } from "@/components/ui-elements/Infobox";
 import { ActionButton } from "@/components/ui-elements/ActionButton";

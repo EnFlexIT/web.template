@@ -13,7 +13,7 @@ import {
   clearDbSettingsError,
   fetchDbSettings,
   saveDerbyNetworkServerSettings,
-  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "../../../../redux/slices/dbSettingsSlice";
+  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "@/redux/slices/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import Feather from "@expo/vector-icons/Feather";
 

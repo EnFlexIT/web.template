@@ -7,13 +7,13 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import {
   normalizeBaseUrl,
   selectApi,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   checkBackendUpdate,
   checkFrontendUpdate,
   loadUpdateStrategy,
-} from "../redux/updateSlice";
+} from "@/core/update/redux/updateSlice";
 
 type Params = {
   enabled: boolean;

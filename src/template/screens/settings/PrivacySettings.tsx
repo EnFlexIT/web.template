@@ -17,7 +17,7 @@ import {
   setPermissionValue,
   acceptAll,
   rejectOptional,
-} from "../../../redux/slices/dataPermissionsSlice";
+} from "@/redux/slices/dataPermissionsSlice";
 import { Card } from "@/components/ui-elements/Card";
 
 export function PrivacySettings() {

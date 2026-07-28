@@ -12,7 +12,7 @@ import { ThemedText } from "@/components/themed/ThemedText";
 import { TextInput } from "@/components/ui-elements/TextInput";
 
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { selectApi } from "../../../redux/slices/apiSlice";
+import { selectApi } from "@/redux/slices/apiSlice";
 import { styles } from "../login/styles";
 
 import { Infobox } from "@/components/ui-elements/Infobox";

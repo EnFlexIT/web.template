@@ -20,9 +20,9 @@ import {
   acceptAll,
   rejectOptional,
   setHasSeenDialog,
-} from "../../../redux/slices/dataPermissionsSlice";
+} from "@/redux/slices/dataPermissionsSlice";
 
-import { selectLanguage, setLanguage } from "../../../redux/slices/languageSlice";
+import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
 
 const BlurView = withUnistyles(BlurView_);
 

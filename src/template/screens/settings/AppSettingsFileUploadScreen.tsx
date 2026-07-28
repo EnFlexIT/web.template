@@ -22,18 +22,18 @@ import {
   resetAuthAfterConfigurationChange,
   selectApi,
   setIpAsync,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
 import {
   selectServer as selectServerAction,
   selectServers,
   updateServer,
-} from "../../../redux/slices/serverSlice";
+} from "@/redux/slices/serverSlice";
 
 import {
   resetUploadState,
   uploadAppSettingsFile,
-} from "../../../redux/slices/appSettingsFileUploadSlice";
+} from "@/redux/slices/appSettingsFileUploadSlice";
 
 const Feather = withUnistyles(Feather_);
 

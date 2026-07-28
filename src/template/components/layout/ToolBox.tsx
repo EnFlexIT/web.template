@@ -19,10 +19,10 @@ import {
   logoutAsync,
   selectAuthenticationMethod,
   selectJwt,
-} from "../../../redux/slices/apiSlice";
+} from "@/redux/slices/apiSlice";
 
-import { logoutBaseMode, selectBaseMode } from "../../../redux/slices/baseModeSlice";
-import { selectThemeInfo, setTheme } from "../../../redux/slices/themeSlice";
+import { logoutBaseMode, selectBaseMode } from "@/redux/slices/baseModeSlice";
+import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
 
 import { useJwtSessionTimerWeb } from "../../../core/authentication/session/useJwtSessionTimerWeb";
 import { useOidcSessionTimerWeb} from "../../../core/authentication/session/useOidcSessionTimerWeb";
@@ -30,7 +30,7 @@ import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";
 import {
   extendSessionTime,
   selectSessionTime,
-} from "../../../redux/slices/sessionTimeSlice";
+} from "@/redux/slices/sessionTimeSlice";
 import { LogoutDialog } from "../../screens/Logout/LogoutDialog";
 import { Text } from "@/components/stylistic/Text";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
