@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useState } from "react";
-import { Screen } from "../../components/layout/Screen";
+import { Screen } from "@/template/components/layout/Screen";
 import { LoadingScreen } from  "../loading/LoadingScreen";
 import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
 import { MenuItem } from "@/redux/slices/menuSlice";

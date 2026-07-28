@@ -16,7 +16,7 @@ import { MetricCard } from "@/components/ui-elements/MetricCard";
 import { SmallStat } from "@/components/ui-elements/SmallStat";
 import { HeroCard } from "@/components/ui-elements/HeroCard";
 import { ChartCard, BarChartWidget } from "@/components/ui-elements/charts";
-import { Screen } from "../../components/layout/Screen";
+import { Screen } from "@/template/components/layout/Screen";
 import { RenderData } from "@/components/dynamic/content/SiteChart";
 //Translation
 import { useTranslation } from "react-i18next";

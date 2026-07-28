@@ -5,7 +5,7 @@ import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import { Buffer } from "buffer";
 
-import { Screen } from "../../components/layout/Screen";
+import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";

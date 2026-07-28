@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
-import { Screen } from "../../components/layout/Screen";
+import { Screen } from "@/template/components/layout/Screen";
 import { Table } from "../../../components/Table";
 import { TableSwitchCell } from "@/components/ui-elements/TableSwitchCell";
 import { ThemedText } from "@/components/themed/ThemedText";

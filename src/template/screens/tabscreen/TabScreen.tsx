@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Screen } from "../../components/layout/Screen";
+import { Screen } from "@/template/components/layout/Screen";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 import { TabsBar } from "@/components/ui-elements/TabsBar";
