@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Text } from "@/components/stylistic/Text";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectApi } from "../../redux/slices/apiSlice";
-import { SiteContentList } from "../../components/dynamic/content/SiteContentList";
+import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
 
 export function DynamicPropertiesScreen() {
     const { dynamic_content_api } = useAppSelector(selectApi)
