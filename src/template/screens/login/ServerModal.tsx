@@ -22,17 +22,17 @@ import {
   SelectableList,
 } from "@/components/ui-elements/SelectableList";
 
-import { detectServerEnvironment } from "../../../core/server/detectServerEnvironment";
-import { normalizeServerInputs } from "../../../core/server/normalizeServerInputs";
+import { detectServerEnvironment } from "@/core/server/detectServerEnvironment";
+import { normalizeServerInputs } from "@/core/server/normalizeServerInputs";
 import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-} from "../../../core/server/serverCheck";
+} from "@/core/server/serverCheck";
 import {
   ServerValidationResult,
   validateServerInput,
-} from "../../../core/server/serverValidation";
+} from "@/core/server/serverValidation";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { switchServer } from "@/redux/slices/apiSlice";

@@ -1,4 +1,4 @@
-import { usePostLoginAutoReloadWeb } from "../../core/update/hooks/usePostLoginAutoReloadWeb";
+import { usePostLoginAutoReloadWeb } from "@/core/update/hooks/usePostLoginAutoReloadWeb";
 
 type Props = {
   enabled: boolean;

@@ -47,11 +47,11 @@ import {
   clearUpdateSettingsCache,
   executeFrontendUpdate,
   loadInstalledFrontendVersion,
-} from "../../../../core/update/redux/updateSlice";
+} from "@/core/update/redux/updateSlice";
 
 import {
   reloadUpdatedFrontendWebApp,
-} from "../../../../core/update/reloadUpdatedFrontendWebApp";
+} from "@/core/update/reloadUpdatedFrontendWebApp";
 
 import {
   UpdateProgressDialog,

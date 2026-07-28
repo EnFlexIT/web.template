@@ -18,14 +18,14 @@ import {
   selectAuthenticationMethod,
 } from "@/redux/slices/apiSlice";
 
-import { setLogoutFlowActive } from "../../../../core/authentication/logout/logoutFlowGuard";
+import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
 
 import {
   checkBackendUpdate,
   executeBackendUpdate,
-} from "../../../../core/update/redux/updateSlice";
+} from "@/core/update/redux/updateSlice";
 
-import { checkServerReachable } from "../../../../core/server/serverCheck";
+import { checkServerReachable } from "@/core/server/serverCheck";
 
 import {
   UpdateProgressDialog,

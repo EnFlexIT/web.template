@@ -43,7 +43,7 @@ import {
   checkServerReachable,
   normalizeBaseUrl,
   normalizeName,
-} from "../../../core/server/serverCheck";
+} from "@/core/server/serverCheck";
 
 type Server = {
   id: string;

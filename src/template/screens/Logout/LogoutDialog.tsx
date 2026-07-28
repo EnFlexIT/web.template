@@ -27,9 +27,9 @@ import {
   getLoggedInServers,
   logoutSelectedServers,
   type LogoutServerItem,
-} from "../../../core/authentication/logout/logoutServers";
+} from "@/core/authentication/logout/logoutServers";
 
-import { setLogoutFlowActive } from "../../../core/authentication/logout/logoutFlowGuard";
+import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
 import { selectServers } from "@/redux/slices/serverSlice";
 import { setServerStatus } from "@/redux/slices/serverStatusSlice";
 
