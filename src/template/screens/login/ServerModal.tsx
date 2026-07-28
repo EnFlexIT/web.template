@@ -10,9 +10,9 @@ import {
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 
-import { H1 } from "../../../components/stylistic/H1";
-import { H4 } from "../../../components/stylistic/H4";
-import { StylisticTextInput } from "../../../components/stylistic/StylisticTextInput";
+import { H1 } from "@/components/stylistic/H1";
+import { H4 } from "@/components/stylistic/H4";
+import { StylisticTextInput } from "@/components/stylistic/StylisticTextInput";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";

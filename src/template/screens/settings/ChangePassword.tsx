@@ -7,7 +7,7 @@ import { Logo } from "../../components/layout/Logo";
 import { Screen } from "../../components/layout/Screen";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
-import { H1 } from "../../../components/stylistic/H1";
+import { H1 } from "@/components/stylistic/H1";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { TextInput } from "@/components/ui-elements/TextInput";
 

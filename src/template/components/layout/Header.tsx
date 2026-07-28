@@ -1,6 +1,6 @@
 import { DrawerHeaderProps, useDrawerStatus } from "@react-navigation/drawer";
 import { Pressable, View } from "react-native";
-import { Text } from "../../../components/stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 
 import { useIsWide } from "../../../hooks/useIsWide";

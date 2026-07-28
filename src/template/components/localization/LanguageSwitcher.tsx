@@ -1,7 +1,7 @@
 import { DropdownProps } from 'react-native-element-dropdown/lib/typescript/components/Dropdown/model';
 import { useUnistyles } from 'react-native-unistyles';
 import { useTranslation } from "react-i18next"
-import { StylisticDropdown } from '../../../components/stylistic/StylisticDropdown';
+import { StylisticDropdown } from '@/components/stylistic/StylisticDropdown';
 
 export const data = [
   { label: 'Deutsch', value: 'de' },

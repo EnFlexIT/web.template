@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
 import { Card } from "@/components/ui-elements/Card";
-import { H4 } from "../../../../components/stylistic/H4";
+import { H4 } from "@/components/stylistic/H4";
 import { ThemedText } from "@/components/themed/ThemedText";
 
 import type { BackgroundPlatform } from "../../../../redux/slices/dataAnalysisSlice";

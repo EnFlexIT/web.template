@@ -7,8 +7,8 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Screen } from "../../components/layout/Screen";
 import { Card } from "@/components/ui-elements/Card";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { H3 } from "../../../components/stylistic/H3";
-import { H4 } from "../../../components/stylistic/H4";
+import { H3 } from "@/components/stylistic/H3";
+import { H4 } from "@/components/stylistic/H4";
 
 import { getStaticMenu, StaticMenuItem } from "../../../redux/slices/staticMenu";
 import { isMenuEnabled } from "../../../redux/slices/featureFlags";

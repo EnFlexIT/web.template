@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { Text } from "../../components/stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import { selectApi } from "../../redux/slices/apiSlice";
 import { SiteContentList } from "../../components/dynamic/content/SiteContentList";

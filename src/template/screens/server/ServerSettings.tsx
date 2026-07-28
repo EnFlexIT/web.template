@@ -9,10 +9,10 @@ import { Screen } from "../../components/layout/Screen";
 import { Card } from "@/components/ui-elements/Card";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";
-import { StylisticTextInput } from "../../../components/stylistic/StylisticTextInput";
+import { StylisticTextInput } from "@/components/stylistic/StylisticTextInput";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { H1 } from "../../../components/stylistic/H1";
-import { H4 } from "../../../components/stylistic/H4";
+import { H1 } from "@/components/stylistic/H1";
+import { H4 } from "@/components/stylistic/H4";
 
 import {
   SelectableList,

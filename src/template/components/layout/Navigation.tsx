@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { ToolBox } from "./ToolBox";
 import { Logo } from "./Logo";
-import { Text } from "../../../components/stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import {
   selectAuthenticationMethod,
 } from "../../../redux/slices/apiSlice";

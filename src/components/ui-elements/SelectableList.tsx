@@ -20,7 +20,7 @@ import {
 
 import {
   StylisticTextInput,
-} from "../../components/stylistic/StylisticTextInput";
+} from "@/components/stylistic/StylisticTextInput";
 
 import {
   ThemedText,

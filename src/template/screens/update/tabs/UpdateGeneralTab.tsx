@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { Card } from "@/components/ui-elements/Card";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { H3 } from "../../../../components/stylistic/H3";
+import { H3 } from "@/components/stylistic/H3";
 import { TableSwitchCell } from "@/components/ui-elements/TableSwitchCell";
 
 import { useAppDispatch } from "../../../../hooks/useAppDispatch";

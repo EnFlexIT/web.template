@@ -32,7 +32,7 @@ import {
   selectSessionTime,
 } from "../../../redux/slices/sessionTimeSlice";
 import { LogoutDialog } from "../../screens/Logout/LogoutDialog";
-import { Text } from "../../../components/stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import { ActionButton } from "@/components/ui-elements/ActionButton";
 
 type LogoutDialogProps = {
