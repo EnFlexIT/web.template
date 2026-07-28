@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { Screen } from "../../components/layout/Screen";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-import { TabsBar } from "../../../components/ui-elements/TabsBar";
+import { TabsBar } from "@/components/ui-elements/TabsBar";
 
 import { useAppSelector } from "../../../hooks/useAppSelector";
 import { selectMenu } from "../../../redux/slices/menuSlice";

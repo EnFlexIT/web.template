@@ -6,14 +6,14 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 
 import { useFileDropWeb } from "../../../hooks/useFileDropWeb";
-import { Card } from "../../../components/ui-elements/Card";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
-import { Dropdown } from "../../../components/ui-elements/Dropdown";
+import { Card } from "@/components/ui-elements/Card";
+import { ActionButton } from "@/components/ui-elements/ActionButton";
+import { Dropdown } from "@/components/ui-elements/Dropdown";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { H3 } from "../../../components/stylistic/H3";
 import {
-  UpdateProgressDialog,type UpdateProgressPhase,} from "../../../components/ui-elements/UpdateProgressDialog";
-import { ConfirmDialog } from "../../../components/ui-elements/ConfirmDialog";
+  UpdateProgressDialog,type UpdateProgressPhase,} from "@/components/ui-elements/UpdateProgressDialog";
+import { ConfirmDialog } from "@/components/ui-elements/ConfirmDialog";
 import { useAppDispatch } from "../../../hooks/useAppDispatch";
 import { useAppSelector } from "../../../hooks/useAppSelector";
 

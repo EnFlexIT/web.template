@@ -16,11 +16,11 @@ import {
 
 import {
   Card,
-} from "../../../../components/ui-elements/Card";
+} from "@/components/ui-elements/Card";
 
 import {
   ActionButton,
-} from "../../../../components/ui-elements/ActionButton";
+} from "@/components/ui-elements/ActionButton";
 
 import {
   ThemedText,
@@ -56,7 +56,7 @@ import {
 import {
   UpdateProgressDialog,
   type UpdateProgressPhase,
-} from "../../../../components/ui-elements/UpdateProgressDialog";
+} from "@/components/ui-elements/UpdateProgressDialog";
 
 const VERSION_REFRESH_ATTEMPTS = 12;
 const VERSION_REFRESH_DELAY_MS = 500;

@@ -23,8 +23,8 @@ import {
   selectIsLoggedIn,
 } from "../../../redux/slices/apiSlice";
 
-import { Infobox } from "../../../components/ui-elements/Infobox";
-import { ActionButton } from "../../../components/ui-elements/ActionButton";
+import { Infobox } from "@/components/ui-elements/Infobox";
+import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ThemedText } from "../../../components/themed/ThemedText";
 import { ServerModal } from "../login/ServerModal";
 

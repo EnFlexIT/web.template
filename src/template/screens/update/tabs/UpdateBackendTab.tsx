@@ -30,14 +30,14 @@ import { checkServerReachable } from "../../../../core/server/serverCheck";
 import {
   UpdateProgressDialog,
   UpdateProgressPhase,
-} from "../../../../components/ui-elements/UpdateProgressDialog";
-import { Card } from "../../../../components/ui-elements/Card";
-import { ActionButton } from "../../../../components/ui-elements/ActionButton";
+} from "@/components/ui-elements/UpdateProgressDialog";
+import { Card } from "@/components/ui-elements/Card";
+import { ActionButton } from "@/components/ui-elements/ActionButton";
 import { ThemedText } from "../../../../components/themed/ThemedText";
 import {
   SelectableItem,
   SelectableList,
-} from "../../../../components/ui-elements/SelectableList";
+} from "@/components/ui-elements/SelectableList";
 import { H3 } from "../../../../components/stylistic/H3";
 
 const API_PREFIX = "/api";

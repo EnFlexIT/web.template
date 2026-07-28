@@ -11,11 +11,11 @@ import {
 import { StyleSheet } from "react-native-unistyles";
 import type { SiteContentTimeSeriesChart } from "../../../api/implementation/Dynamic-Content-Api";
 // UI Components
-import { Card } from "../../../components/ui-elements/Card";
-import { MetricCard } from "../../../components/ui-elements/MetricCard";
-import { SmallStat } from "../../../components/ui-elements/SmallStat";
-import { HeroCard } from "../../../components/ui-elements/HeroCard";
-import { ChartCard, BarChartWidget } from "../../../components/ui-elements/charts";
+import { Card } from "@/components/ui-elements/Card";
+import { MetricCard } from "@/components/ui-elements/MetricCard";
+import { SmallStat } from "@/components/ui-elements/SmallStat";
+import { HeroCard } from "@/components/ui-elements/HeroCard";
+import { ChartCard, BarChartWidget } from "@/components/ui-elements/charts";
 import { Screen } from "../../components/layout/Screen";
 import { RenderData } from "../../../components/dynamic/content/SiteChart";
 //Translation
