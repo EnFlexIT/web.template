@@ -6,9 +6,9 @@ import { useNavigation } from "@react-navigation/native";
 import { Buffer } from "buffer";
 
 import { Screen } from "@/template/components/layout/Screen";
-import { Card } from "@/components/ui-elements/Card";
-import { ActionButton } from "@/components/ui-elements/ActionButton";
-import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";
+import { Card } from "@/template/components/design-system/ui-elements/Card";
+import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
 import { StylisticTextInput } from "@/components/stylistic/StylisticTextInput";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { H1 } from "@/components/stylistic/H1";
@@ -17,7 +17,7 @@ import { H4 } from "@/components/stylistic/H4";
 import {
   SelectableList,
   SelectableItem,
-} from "@/components/ui-elements/SelectableList";
+} from "@/template/components/design-system/ui-elements/SelectableList";
 
 import { ServerLoginModal } from "../login/ServerLoginModal";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

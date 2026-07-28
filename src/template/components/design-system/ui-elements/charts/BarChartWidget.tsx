@@ -1,6 +1,6 @@
-import { View } from "react-native";
+﻿import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { Text } from "../../stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import { BarChartProps } from "./types";
 
 export function BarChartWidget({ data, height = 120 }: BarChartProps) {
@@ -69,3 +69,4 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.text,
   },
 }));
+

@@ -5,17 +5,17 @@ import { useTranslation } from "react-i18next";
 
 import { Logo } from "@/template/components/layout/Logo";
 import { Screen } from "@/template/components/layout/Screen";
-import { Card } from "@/components/ui-elements/Card";
-import { ActionButton } from "@/components/ui-elements/ActionButton";
+import { Card } from "@/template/components/design-system/ui-elements/Card";
+import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { H1 } from "@/components/stylistic/H1";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { TextInput } from "@/components/ui-elements/TextInput";
+import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectApi } from "@/redux/slices/apiSlice";
 import { styles } from "../login/styles";
 
-import { Infobox } from "@/components/ui-elements/Infobox";
+import { Infobox } from "@/template/components/design-system/ui-elements/Infobox";
 
 type PasswordChangePayload = {
   password_old: string;

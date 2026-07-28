@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useMemo,
   useState,
 } from "react";
@@ -24,7 +24,7 @@ import {
 
 import {
   ThemedText,
-} from "../themed/ThemedText";
+} from "@/components/themed/ThemedText";
 
 import {
   useThemedScrollbarWeb,
@@ -86,7 +86,7 @@ export function SelectableList<
   maxHeight = 200,
   showSearch = true,
   searchPlaceholder,
-  emptyText = "Keine Einträge gefunden",
+  emptyText = "Keine EintrÃ¤ge gefunden",
   minVisibleRows = 4,
   variant = "secondary",
   size = "sm",
@@ -100,7 +100,7 @@ export function SelectableList<
    * nativeID des Wrappers.
    *
    * Die CSS-Regel wirkt dadurch auf die intern von
-   * FlatList erzeugte Web-Scrollfläche.
+   * FlatList erzeugte Web-ScrollflÃ¤che.
    */
   const scrollbarNativeId =
     useThemedScrollbarWeb(
@@ -241,7 +241,7 @@ export function SelectableList<
        * dataSet wird bewusst nicht verwendet.
        *
        * nativeID ist Bestandteil der typisierten React-Native-API.
-       * Die CSS-Regel im Hook formatiert alle Scrollflächen innerhalb
+       * Die CSS-Regel im Hook formatiert alle ScrollflÃ¤chen innerhalb
        * dieses Wrappers.
        */}
       <View

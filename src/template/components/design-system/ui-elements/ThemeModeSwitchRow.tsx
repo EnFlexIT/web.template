@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { H4 } from "../stylistic/H4";
-import { ThemedText } from "../themed/ThemedText";
+import { H4 } from "@/components/stylistic/H4";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 interface SettingsSwitchRowProps {
   label: string;
@@ -125,3 +125,5 @@ const styles = StyleSheet.create((theme) => ({
     userSelect: "none",
   },
 }));
+
+

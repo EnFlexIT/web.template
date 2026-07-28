@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
   View,
   TextInput as RNTextInput,
@@ -10,7 +10,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
-import { Text } from "../stylistic/Text";
+import { Text } from "@/components/stylistic/Text";
 import { WebPasswordInput } from "./WebPasswordInput";
 
 type InputSize = "xs" | "sm" | "md";

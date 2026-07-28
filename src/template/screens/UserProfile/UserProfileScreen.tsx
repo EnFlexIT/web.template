@@ -7,8 +7,8 @@ import Feather from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 
 import { Screen } from "@/template/components/layout/Screen";
-import { Card } from "@/components/ui-elements/Card";
-import { ActionButton } from "@/components/ui-elements/ActionButton";
+import { Card } from "@/template/components/design-system/ui-elements/Card";
+import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";

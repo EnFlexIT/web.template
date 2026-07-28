@@ -14,13 +14,13 @@ import { H1 } from "@/components/stylistic/H1";
 import { H4 } from "@/components/stylistic/H4";
 import { StylisticTextInput } from "@/components/stylistic/StylisticTextInput";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { ActionButton } from "@/components/ui-elements/ActionButton";
-import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";
-import { Icon } from "@/components/ui-elements/Icon/Icon";
+import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
+import { Icon } from "@/template/components/design-system/ui-elements/Icon/Icon";
 import {
   SelectableItem,
   SelectableList,
-} from "@/components/ui-elements/SelectableList";
+} from "@/template/components/design-system/ui-elements/SelectableList";
 
 import { detectServerEnvironment } from "@/core/server/detectServerEnvironment";
 import { normalizeServerInputs } from "@/core/server/normalizeServerInputs";

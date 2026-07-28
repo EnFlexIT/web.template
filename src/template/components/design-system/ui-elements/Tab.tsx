@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
-import { H4 } from "../stylistic/H4";
+import { H4 } from "@/components/stylistic/H4";
 
 export type TabProps = {
   label: string;

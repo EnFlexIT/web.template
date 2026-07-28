@@ -1,8 +1,8 @@
-// src/components/ui-elements/ConfirmModal.tsx
+﻿// src/components/ui-elements/ConfirmModal.tsx
 import React from "react";
 import { View } from "react-native";
-import { ThemedText } from "../themed/ThemedText";
-import { H4 } from "../stylistic/H4";
+import { ThemedText } from "@/components/themed/ThemedText";
+import { H4 } from "@/components/stylistic/H4";
 import { ActionButton } from "./ActionButton";
 import { BaseModal } from "./BaseModal";
 
@@ -57,3 +57,4 @@ export function ConfirmModal({
     </BaseModal>
   );
 }
+

@@ -1,5 +1,5 @@
-import { Pressable, View } from "react-native";
-import { Text } from "../stylistic/Text";
+﻿import { Pressable, View } from "react-native";
+import { Text } from "@/components/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 
@@ -35,7 +35,7 @@ export function Checkbox({ value, label, onChange }: CheckboxProps) {
               fontWeight: "600",
             }}
           >
-            ✓
+            âœ“
           </Text>
         )}
       </View>
@@ -64,3 +64,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+

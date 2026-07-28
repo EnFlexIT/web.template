@@ -1,8 +1,8 @@
 // src/components/ui-elements/charts/ChartCard.tsx
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { Text } from "../../stylistic/Text";
-import { ThemedView } from "../../themed/ThemedView";
+import { Text } from "@/components/stylistic/Text";
+import { ThemedView } from "@/components/themed/ThemedView";
 
 interface ChartCardProps {
   title: string;

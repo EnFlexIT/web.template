@@ -8,8 +8,8 @@ import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { Dropdown } from "@/components/ui-elements/Dropdown";
-import { Card } from "@/components/ui-elements/Card";
+import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
+import { Card } from "@/template/components/design-system/ui-elements/Card";
 
 
 export function UnauthenticatedSettings() {

@@ -3,10 +3,10 @@ import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { Card } from "@/components/ui-elements/Card";
+import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ThemedText } from "@/components/themed/ThemedText";
 import { H3 } from "@/components/stylistic/H3";
-import { TableSwitchCell } from "@/components/ui-elements/TableSwitchCell";
+import { TableSwitchCell } from "@/template/components/design-system/ui-elements/TableSwitchCell";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";

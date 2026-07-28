@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import {
   StyleSheet,
@@ -6,7 +6,7 @@ import {
 } from "react-native-unistyles";
 
 import { Icon, IconName } from "./Icon/Icon";
-import { ThemedText } from "../themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 interface ActionButtonProps {
   label?: string;
@@ -166,7 +166,7 @@ const styles = StyleSheet.create(() => ({
     position: "absolute",
 
     // Der Button steht rechts neben dem Eingabefeld.
-    // Deshalb öffnet sich der Tooltip nach links.
+    // Deshalb Ã¶ffnet sich der Tooltip nach links.
     right: 0,
     bottom: "100%",
     marginBottom: 8,

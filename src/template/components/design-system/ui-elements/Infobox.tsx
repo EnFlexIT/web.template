@@ -1,8 +1,8 @@
-// src/components/ui-elements/Infobox.tsx
+﻿// src/components/ui-elements/Infobox.tsx
 import React from "react";
 import { View, StyleSheet as NativeStyleSheet, ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { ThemedText } from "../themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 export type InfoboxTone = "info" | "success" | "warning" | "danger";
 

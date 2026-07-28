@@ -19,11 +19,11 @@ import {
 
 import {
   Card,
-} from "@/components/ui-elements/Card";
+} from "@/template/components/design-system/ui-elements/Card";
 
 import {
   ActionButton,
-} from "@/components/ui-elements/ActionButton";
+} from "@/template/components/design-system/ui-elements/ActionButton";
 
 import {
   ThemedText,

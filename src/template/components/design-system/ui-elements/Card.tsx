@@ -1,9 +1,9 @@
-// src/components/ui-elements/Card/Card.tsx
+﻿// src/components/ui-elements/Card/Card.tsx
 import React, { ReactNode, useMemo, useState } from "react";
 import { Pressable, ViewStyle, StyleProp } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
-import { ThemedView } from "../themed/ThemedView";
+import { ThemedView } from "@/components/themed/ThemedView";
 
 type CardPadding = "none" | "sm" | "md" | "lg";
 

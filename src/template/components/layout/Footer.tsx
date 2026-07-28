@@ -9,7 +9,7 @@ import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/redux/slices/de
 
 import {selectLiveConsole,} from "@/redux/slices/liveConsoleSlice";
 import { ThemedText } from "@/components/themed/ThemedText";
-import { Dropdown } from "@/components/ui-elements/Dropdown";
+import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 

@@ -1,10 +1,10 @@
-import React from "react";
+﻿import React from "react";
 import { Modal, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 
 import { ActionButton } from "./ActionButton";
-import { ThemedText } from "../themed/ThemedText";
+import { ThemedText } from "@/components/themed/ThemedText";
 
 const Feather = withUnistyles(Feather_);
 

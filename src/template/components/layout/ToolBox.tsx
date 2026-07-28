@@ -26,14 +26,14 @@ import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
 
 import { useJwtSessionTimerWeb } from "@/core/authentication/session/useJwtSessionTimerWeb";
 import { useOidcSessionTimerWeb} from "@/core/authentication/session/useOidcSessionTimerWeb";
-import { ConfirmModal } from "@/components/ui-elements/ConfirmModal";
+import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
 import {
   extendSessionTime,
   selectSessionTime,
 } from "@/redux/slices/sessionTimeSlice";
 import { LogoutDialog } from "../../screens/Logout/LogoutDialog";
 import { Text } from "@/components/stylistic/Text";
-import { ActionButton } from "@/components/ui-elements/ActionButton";
+import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 
 type LogoutDialogProps = {
   visible: boolean;
