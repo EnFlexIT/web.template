@@ -4,7 +4,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { Checkbox } from "@/template/components/design-system/ui-elements/Checkbox";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { H2 } from "@/components/stylistic/H2";
+import { H2 } from "@/template/components/design-system/stylistic/H2";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from "react";
 import { Pressable, Switch, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 interface SettingsSwitchRowProps {

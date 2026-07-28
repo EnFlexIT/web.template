@@ -1,5 +1,5 @@
 ﻿import { Pressable, View } from "react-native";
-import { Text } from "@/components/stylistic/Text";
+import { Text } from "@/template/components/design-system/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 

@@ -10,7 +10,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
-import { Text } from "@/components/stylistic/Text";
+import { Text } from "@/template/components/design-system/stylistic/Text";
 import { WebPasswordInput } from "./WebPasswordInput";
 
 type InputSize = "xs" | "sm" | "md";

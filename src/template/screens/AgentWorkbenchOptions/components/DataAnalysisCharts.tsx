@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
 import { createEnFlexChart } from "../../../../styles/charttheme";

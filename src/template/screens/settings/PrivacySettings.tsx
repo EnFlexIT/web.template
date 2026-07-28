@@ -6,7 +6,7 @@ import { Screen } from "@/template/components/layout/Screen";
 import { Table } from "../../../components/Table";
 import { TableSwitchCell } from "@/template/components/design-system/ui-elements/TableSwitchCell";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";

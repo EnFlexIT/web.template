@@ -6,8 +6,8 @@ import { Checkbox } from "@/template/components/design-system/ui-elements/Checkb
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { H2 } from "@/components/stylistic/H2";
-import { H4 } from "@/components/stylistic/H4";
+import { H2 } from "@/template/components/design-system/stylistic/H2";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";

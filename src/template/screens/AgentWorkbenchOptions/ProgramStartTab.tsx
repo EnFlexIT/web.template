@@ -6,7 +6,7 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import {SelectableList, SelectableItem,} from "@/template/components/design-system/ui-elements/SelectableList";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

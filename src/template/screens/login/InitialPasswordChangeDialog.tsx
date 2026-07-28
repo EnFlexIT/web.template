@@ -3,7 +3,7 @@ import { Modal, View, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { addNotification } from "@/redux/slices/notificationSlice";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";

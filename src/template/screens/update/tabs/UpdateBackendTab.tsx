@@ -38,7 +38,7 @@ import {
   SelectableItem,
   SelectableList,
 } from "@/template/components/design-system/ui-elements/SelectableList";
-import { H3 } from "@/components/stylistic/H3";
+import { H3 } from "@/template/components/design-system/stylistic/H3";
 
 const API_PREFIX = "/api";
 const MAX_FEATURES_DRAWN = 5;

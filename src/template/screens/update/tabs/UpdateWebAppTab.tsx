@@ -28,7 +28,7 @@ import {
 
 import {
   H3,
-} from "@/components/stylistic/H3";
+} from "@/template/components/design-system/stylistic/H3";
 
 import {
   useAppSelector,

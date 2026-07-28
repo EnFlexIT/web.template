@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { Text } from "@/components/stylistic/Text";
+import { Text } from "@/template/components/design-system/stylistic/Text";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 type DropdownSize = "xs" | "sm" | "md";

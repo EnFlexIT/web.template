@@ -2,7 +2,7 @@
 import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
-import { H4 } from "@/components/stylistic/H4";
+import { H4 } from "@/template/components/design-system/stylistic/H4";
 
 export type TabProps = {
   label: string;

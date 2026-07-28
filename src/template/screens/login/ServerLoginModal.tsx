@@ -3,7 +3,7 @@ import { Modal,Pressable, View, StyleSheet as NativeStyleSheet, } from "react-na
 import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { Logo } from "@/template/components/layout/Logo";
-import { H1 } from "@/components/stylistic/H1";
+import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";

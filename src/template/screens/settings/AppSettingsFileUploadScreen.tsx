@@ -10,7 +10,7 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { H3 } from "@/components/stylistic/H3";
+import { H3 } from "@/template/components/design-system/stylistic/H3";
 import {
   UpdateProgressDialog,type UpdateProgressPhase,} from "@/template/components/design-system/ui-elements/UpdateProgressDialog";
 import { ConfirmDialog } from "@/template/components/design-system/ui-elements/ConfirmDialog";
