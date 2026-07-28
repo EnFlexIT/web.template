@@ -1,5 +1,5 @@
 import { Modal } from "react-native";
-import { ThemedView } from "../../themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import React, { Dispatch, SetStateAction } from "react";
 import { AbstractSiteContent as AbstractSiteContentType } from "../../../api/implementation/Dynamic-Content-Api";
 import { BlurView as BlurView_ } from 'expo-blur';

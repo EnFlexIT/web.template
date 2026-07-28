@@ -1,5 +1,5 @@
 import { TextProps } from "react-native";
-import { ThemedText } from "../themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { StyleSheet } from "react-native-unistyles";
 
 /**

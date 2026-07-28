@@ -1,5 +1,5 @@
 import { TextInput, TextInputProps } from "react-native";
-import { ThemedTextInput } from "../themed/ThemedTextInput";
+import { ThemedTextInput } from "@/template/components/design-system/themed/ThemedTextInput";
 import { forwardRef } from "react";
 import { StyleSheet } from "react-native-unistyles";
 

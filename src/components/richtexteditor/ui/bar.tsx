@@ -1,4 +1,4 @@
-import { ThemedView } from "../../themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import React from "react";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";
 import { Editor as TipTapEditorType } from '@tiptap/react';

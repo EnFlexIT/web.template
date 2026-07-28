@@ -7,9 +7,9 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 
 //Style
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { ThemedText } from "../../themed/ThemedText";
-import { ThemedTextInput } from "../../themed/ThemedTextInput";
-import { ThemedView } from "../../themed/ThemedView";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { ThemedTextInput } from "@/template/components/design-system/themed/ThemedTextInput";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 
 interface PropertyEntryKeyProps {
     propertyEntry: PropertyEntry,

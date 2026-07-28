@@ -12,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
-import { ThemedText } from "../themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 import { isMobileShellRuntime } from "../../util/runtime";
 import { LiveConsoleScreen } from "../../template/screens/liveConsole/LiveConsoleScreen";

@@ -14,8 +14,8 @@ import { CancelButton } from "./CancelButton";
 import { Bar } from "../../richtexteditor/ui/bar";
 //StyleSheet
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { ThemedView } from "../../themed/ThemedView";
-import { ThemedText } from "../../themed/ThemedText";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 interface SiteContentTextEditorProps {
   siteContentText: SiteContentText;

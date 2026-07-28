@@ -2,8 +2,8 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { H_Icon } from "../icons/H-Icon";
 import { Pressable, ScrollView } from "react-native";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle, useTheme } from "enflex.it-core";
-import { ThemedView } from "../../themed/ThemedView"
-import { ThemedText } from "../../themed/ThemedText"
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView"
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText"
 import { HeadingButton } from "./HeadingButton";
 import { Editor as TipTapEditorType } from '@tiptap/react';
 import { Level } from "@tiptap/extension-heading";

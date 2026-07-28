@@ -1,5 +1,5 @@
 import { DropdownProps } from "react-native-element-dropdown/lib/typescript/components/Dropdown/model";
-import { ThemedDropdown } from "../themed/ThemedDropdown";
+import { ThemedDropdown } from "@/template/components/design-system/themed/ThemedDropdown";
 import { StyleSheet } from "react-native-unistyles";
 
 /**

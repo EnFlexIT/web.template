@@ -1,6 +1,6 @@
 import { Pressable } from "react-native";
-import { ThemedText } from "../../themed/ThemedText";
-import { ThemedView } from "../../themed/ThemedView"
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView"
 import React, { Dispatch, SetStateAction, useState } from "react";
 import { StyleSheet } from "react-native-unistyles";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";

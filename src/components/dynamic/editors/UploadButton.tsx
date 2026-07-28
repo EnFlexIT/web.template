@@ -1,5 +1,5 @@
 import { Pressable, GestureResponderEvent } from "react-native";
-import { ThemedView } from "../../themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import React, { useState } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { StyleSheet } from "react-native-unistyles";
