@@ -6,7 +6,7 @@ import { Logo } from "@/template/components/layout/Logo";
 import { H1 } from "@/components/stylistic/H1";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import type { AuthMethod } from "@/redux/slices/apiSlice";
 import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

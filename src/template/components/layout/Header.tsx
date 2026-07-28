@@ -20,7 +20,7 @@ import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 //  Slug builder
 import { buildMenuPaths } from "../../../components/routing/menuPaths";

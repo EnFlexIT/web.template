@@ -5,7 +5,7 @@ import { StyleSheet } from "react-native-unistyles";
 
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H4 } from "@/components/stylistic/H4";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 import type { BackgroundPlatform } from "@/redux/slices/dataAnalysisSlice";
 

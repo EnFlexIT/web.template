@@ -1,7 +1,7 @@
 ﻿// src/components/ui-elements/ConfirmModal.tsx
 import React from "react";
 import { View } from "react-native";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H4 } from "@/components/stylistic/H4";
 import { ActionButton } from "./ActionButton";
 import { BaseModal } from "./BaseModal";

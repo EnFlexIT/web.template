@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H1 } from "@/components/stylistic/H1";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useUnistyles } from "react-native-unistyles";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTranslation } from "react-i18next";

@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Text } from "@/components/stylistic/Text";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 type DropdownSize = "xs" | "sm" | "md";
 type DropdownAppearance = "field" | "menu";

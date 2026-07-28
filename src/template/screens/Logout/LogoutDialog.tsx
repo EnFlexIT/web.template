@@ -8,7 +8,7 @@ import {
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

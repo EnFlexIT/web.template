@@ -27,7 +27,7 @@ import {
 
 import {
   ThemedText,
-} from "@/components/themed/ThemedText";
+} from "@/template/components/design-system/themed/ThemedText";
 
 import {
   useAppDispatch,

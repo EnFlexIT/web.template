@@ -6,7 +6,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H3 } from "@/components/stylistic/H3";
 import { H4 } from "@/components/stylistic/H4";
 

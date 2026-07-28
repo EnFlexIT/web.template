@@ -16,7 +16,7 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 
 // Styling
 import { StyleSheet } from "react-native-unistyles";
-import { ThemedView } from "../../themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 
 interface SiteContentImageEditorProps {
   siteContentImage: SiteContentImage;

@@ -3,7 +3,7 @@ import React, { ReactNode, useMemo, useState } from "react";
 import { Pressable, ViewStyle, StyleProp } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useUnistyles } from "react-native-unistyles";
-import { ThemedView } from "@/components/themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 
 type CardPadding = "none" | "sm" | "md" | "lg";
 

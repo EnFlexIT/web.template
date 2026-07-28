@@ -6,7 +6,7 @@ import {
 } from "react-native-unistyles";
 
 import { Icon, IconName } from "./Icon/Icon";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 interface ActionButtonProps {
   label?: string;

@@ -1,10 +1,10 @@
-import { ThemedView } from "@/components/themed/ThemedView";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { StyleSheet } from "react-native-unistyles";
 import { useMemo, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
-import { ThemedAntDesign } from "@/components/themed/ThemedAntDesign";
-import { ThemedTextInput } from "@/components/themed/ThemedTextInput";
+import { ThemedAntDesign } from "@/template/components/design-system/themed/ThemedAntDesign";
+import { ThemedTextInput } from "@/template/components/design-system/themed/ThemedTextInput";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import {
   addOrganization,

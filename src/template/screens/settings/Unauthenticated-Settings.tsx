@@ -7,7 +7,7 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 

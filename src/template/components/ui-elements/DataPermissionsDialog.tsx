@@ -6,8 +6,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 
-import { ThemedText } from "@/components/themed/ThemedText";
-import { ThemedView } from "@/components/themed/ThemedView";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { useAppDispatch } from "@/hooks/useAppDispatch";

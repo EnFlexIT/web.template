@@ -2,7 +2,7 @@
 import { Pressable, Switch, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { H4 } from "@/components/stylistic/H4";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 interface SettingsSwitchRowProps {
   label: string;

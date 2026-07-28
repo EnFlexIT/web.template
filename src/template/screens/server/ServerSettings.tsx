@@ -10,7 +10,7 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
 import { StylisticTextInput } from "@/components/stylistic/StylisticTextInput";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H1 } from "@/components/stylistic/H1";
 import { H4 } from "@/components/stylistic/H4";
 

@@ -5,7 +5,7 @@ import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
 import { MenuItem } from "@/redux/slices/menuSlice";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "@/redux/slices/apiSlice";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { selectBaseMode } from "@/redux/slices/baseModeSlice";
 
 //  Feature-Flag Check

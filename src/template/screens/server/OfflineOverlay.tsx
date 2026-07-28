@@ -25,7 +25,7 @@ import {
 
 import { Infobox } from "@/template/components/design-system/ui-elements/Infobox";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ServerModal } from "../login/ServerModal";
 
 export function OfflineOverlay() {

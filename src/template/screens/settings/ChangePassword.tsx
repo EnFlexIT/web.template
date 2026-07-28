@@ -8,7 +8,7 @@ import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { H1 } from "@/components/stylistic/H1";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 
 import { useAppSelector } from "@/hooks/useAppSelector";

@@ -7,7 +7,7 @@ import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdo
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H4 } from "@/components/stylistic/H4";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import {SelectableList, SelectableItem,} from "@/template/components/design-system/ui-elements/SelectableList";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";

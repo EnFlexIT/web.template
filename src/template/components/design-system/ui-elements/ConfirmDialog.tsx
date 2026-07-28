@@ -4,7 +4,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 
 import { ActionButton } from "./ActionButton";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 const Feather = withUnistyles(Feather_);
 

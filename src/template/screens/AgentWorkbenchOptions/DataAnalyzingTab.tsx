@@ -8,7 +8,7 @@ import { DataAnalysisSummaryCard } from "./components/DataAnalysisSummaryCard";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { H4 } from "@/components/stylistic/H4";
-import { ThemedText } from "@/components/themed/ThemedText";
+import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import type { BackgroundPlatform } from "@/redux/slices/dataAnalysisSlice";
