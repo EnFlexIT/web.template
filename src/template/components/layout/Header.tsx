@@ -12,7 +12,7 @@ import {
   selectMenu,
   setActiveMenuId,
   MenuItem,
-} from "@/redux/slices/menuSlice";
+} from "@/template/state/navigation/menuSlice";
 
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectIsLoggedIn } from "@/redux/slices/apiSlice";

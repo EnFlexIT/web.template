@@ -27,7 +27,7 @@ import reducer, {
   isDynamicMenuItem,
   MenuItem,
   initializeMenu,
-} from "../src/redux/slices/menuSlice";
+} from "../src/template/state/navigation/menuSlice";
 
 describe("menuSlice", () => {
 const emptyState: MenuState = {

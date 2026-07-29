@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next from "i18next";
-import { updateMenu } from "./menuSlice";
+import { updateMenu } from "@/template/state/navigation/menuSlice";
 
 const key = "lng" as const;
 const defaultLanguage = "de";

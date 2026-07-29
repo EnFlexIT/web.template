@@ -12,7 +12,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 
 import { getStaticMenu, StaticMenuItem } from "@/template/navigation/menu/staticMenu";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
-import { selectMenu, setActiveMenuId } from "@/redux/slices/menuSlice";
+import { selectMenu, setActiveMenuId } from "@/template/state/navigation/menuSlice";
 
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";

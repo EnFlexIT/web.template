@@ -16,14 +16,14 @@ import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { useEffect } from "react";
-import { getIdPath } from "@/redux/slices/menuSlice";
+import { getIdPath } from "@/template/state/navigation/menuSlice";
 
 import {
   isDynamicMenuItem,
   MenuTree,
   selectMenu,
   setActiveMenuId,
-} from "@/redux/slices/menuSlice";
+} from "@/template/state/navigation/menuSlice";
 import { selectApi } from "@/redux/slices/apiSlice";
 
 import { buildMenuPaths } from "../../../components/routing/menuPaths";

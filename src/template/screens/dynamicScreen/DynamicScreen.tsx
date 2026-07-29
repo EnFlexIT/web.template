@@ -2,7 +2,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import { Screen } from "@/template/components/layout/Screen";
 import { LoadingScreen } from  "../loading/LoadingScreen";
 import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
-import { MenuItem } from "@/redux/slices/menuSlice";
+import { MenuItem } from "@/template/state/navigation/menuSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "@/redux/slices/apiSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";

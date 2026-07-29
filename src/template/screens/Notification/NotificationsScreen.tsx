@@ -12,7 +12,7 @@ import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "@/redux/slices/notificationSlice";
-import { setActiveMenuId } from "@/redux/slices/menuSlice";
+import { setActiveMenuId } from "@/template/state/navigation/menuSlice";
 import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";
 
 function formatTime(value: string) {

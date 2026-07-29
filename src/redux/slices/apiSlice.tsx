@@ -19,7 +19,7 @@ import {
   Configuration as DynamicContentApiConfiguration,
   DefaultApi,
 } from "../../api/implementation/Dynamic-Content-Api";
-import { clearMenu, initializeMenu } from "./menuSlice";
+import { clearMenu, initializeMenu } from "@/template/state/navigation/menuSlice";
 
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;

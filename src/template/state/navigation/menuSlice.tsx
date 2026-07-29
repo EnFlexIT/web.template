@@ -1,14 +1,18 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
 
-import { RootState } from "../store";
-import { foldl } from "../../util/func";
+import type { RootState } from "@/redux/store";
+import { foldl } from "@/util/func";
+import { MenuItem as ApiMenuItem } from "@/api/implementation/Dynamic-Content-Api";
 
-import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Content-Api";
-import { internalSetLanguage } from "./languageSlice";
+import { internalSetLanguage } from "@/redux/slices/languageSlice";
+import type { AuthMethod } from "@/redux/slices/apiSlice";
+
 import { getStaticMenu } from "@/template/navigation/menu/staticMenu";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
-import type { AuthMethod } from "./apiSlice";
-
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;

@@ -45,7 +45,7 @@ import {
   selectMenu,
   setActiveMenuId,
   isDynamicMenuItem,
-} from "./redux/slices/menuSlice";
+} from "@/template/state/navigation/menuSlice";
 
 import { initializeServers } from "./redux/slices/serverSlice";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";

@@ -15,7 +15,7 @@ import {
   closeInitialPasswordChangeDialog,
   selectInitialPasswordChangeDialogOpen,
 } from "@/redux/slices/passwordChangePromptSlice";
-import { setActiveMenuId } from "@/redux/slices/menuSlice";
+import { setActiveMenuId } from "@/template/state/navigation/menuSlice";
 
 const CHANGE_PASSWORD_MENU_ID = 3013;
 

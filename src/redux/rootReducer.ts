@@ -4,7 +4,7 @@ import languageReducer from "./slices/languageSlice";
 import themeReducer from "./slices/themeSlice";
 import apiReducer from "./slices/apiSlice";
 import dataPermissionsReducer from "./slices/dataPermissionsSlice";
-import menuReducer from "./slices/menuSlice";
+import menuReducer from "@/template/state/navigation/menuSlice";
 import readyReducer from "./slices/readySlice";
 import { OrganizationsData } from "./slices/organizationsSlice";
 import baseModeReducer from "./slices/baseModeSlice";

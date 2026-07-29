@@ -8,7 +8,7 @@ jest.mock("i18next", () => ({
   changeLanguage: jest.fn(),
 }));
 
-jest.mock("../redux/slices/menuSlice", () => ({
+jest.mock(".@/template/state/navigation/menuSlice", () => ({
   updateMenu: () => ({ type: "menu/update" }),
 }));
 
