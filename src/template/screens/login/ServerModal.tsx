@@ -41,7 +41,7 @@ import {
   removeServer,
   selectServer,
   updateServer,
-} from "@/redux/slices/serverSlice";
+} from "@/template/state/server/serverSlice";
 
 import { modalStyles } from "./styles";
 

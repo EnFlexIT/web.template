@@ -28,7 +28,7 @@ import {
   selectServer as selectServerAction,
   selectServers,
   updateServer,
-} from "@/redux/slices/serverSlice";
+} from "@/template/state/server/serverSlice";
 
 import {
   resetUploadState,

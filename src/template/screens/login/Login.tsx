@@ -23,7 +23,7 @@ import { ThemedAntDesign } from "@/template/components/design-system/themed/Them
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectServers } from "@/redux/slices/serverSlice";
+import { selectServers } from "@/template/state/server/serverSlice";
 import {
   selectAuthenticationMethod,
   selectIp,
@@ -38,7 +38,7 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { dispatchServerStatusRefresh } from "../../../util/serverStatusRefresh";
-import { setServerStatus } from "@/redux/slices/serverStatusSlice";
+import { setServerStatus } from "@/template/state/server/serverStatusSlice";
 
 const Feather = withUnistyles(Feather_);
 

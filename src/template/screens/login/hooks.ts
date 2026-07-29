@@ -2,7 +2,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi, selectAuthenticationMethod, selectIp } from "@/redux/slices/apiSlice";
 import { selectLanguage } from "@/template/state/localization/languageSlice";
 import { selectThemeInfo } from "@/template/state/theme/themeSlice";
-import { selectServers } from "@/redux/slices/serverSlice";
+import { selectServers } from "@/template/state/server/serverSlice";
 
 export function useLoginState() {
   const authenticationMethod = useAppSelector(selectAuthenticationMethod);

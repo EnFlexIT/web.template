@@ -12,12 +12,12 @@ incrementally into the dedicated `src/core/server` module.
 
 | File | Purpose |
 | --- | --- |
-| `src/redux/slices/serverSlice.ts` | Stores configured servers and active environment. |
+| `sr@/template/state/server/serverSlice.ts` | Stores configured servers and active environment. |
 | `src/redux/slices/apiSlice.tsx` | Switches API base URL and authentication state. |
 | `src/core/server/serverCheck.ts` | Shared server reachability checks, authentication detection and backend settings parsing. |
 | `src/core/server/types.ts` | Shared server check result types. |
 | `sr@/template/state/connectivity/connectivitySlice.tsx` | Periodic `/api/alive` connectivity state. |
-| `src/redux/slices/serverStatusSlice.ts` | Per-server UI status metadata. |
+| `src/redu@/template/state/server/serverStatusSlice.ts` | Per-server UI status metadata. |
 | `src/components/Footer.tsx` | Server selection, notifications and release badge. |
 | `src/screens/ServerSettings.tsx` | Server configuration UI. |
 | `src/screens/ServerSwitchOverlay.tsx` | Overlay displayed while switching servers. |

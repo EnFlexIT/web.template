@@ -29,7 +29,7 @@ import {
 import {
   selectServerStatuses,
   setServerStatus,
-} from "@/redux/slices/serverStatusSlice";
+} from "@/template/state/server/serverStatusSlice";
 
 import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
 
@@ -37,7 +37,7 @@ import {
   selectSelectedServer,
   selectServers,
   selectServer,
-} from "@/redux/slices/serverSlice";
+} from "@/template/state/server/serverSlice";
 
 import {
   closeNotificationPopup,

@@ -30,8 +30,8 @@ import {
 } from "@/core/authentication/logout/logoutServers";
 
 import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
-import { selectServers } from "@/redux/slices/serverSlice";
-import { setServerStatus } from "@/redux/slices/serverStatusSlice";
+import { selectServers } from "@/template/state/server/serverSlice";
+import { setServerStatus } from "@/template/state/server/serverStatusSlice";
 
 type Props = {
   visible: boolean;

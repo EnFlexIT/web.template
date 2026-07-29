@@ -47,7 +47,7 @@ import {
   isDynamicMenuItem,
 } from "@/template/state/navigation/menuSlice";
 
-import { initializeServers } from "./redux/slices/serverSlice";
+import { initializeServers } from "@/template/state/server/serverSlice";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { buildMenuPaths } from "./components/routing/menuPaths";
 import { Footer } from "./template/components/layout/Footer";

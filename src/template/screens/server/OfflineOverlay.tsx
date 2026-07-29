@@ -15,7 +15,7 @@ import {
 import {
   selectSelectedServer,
   selectServers,
-} from "@/redux/slices/serverSlice";
+} from "@/template/state/server/serverSlice";
 
 import {
   selectAuthenticationMethod,
