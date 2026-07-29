@@ -12,7 +12,7 @@ import { useSessionActivityWeb } from "./core/authentication/session/useSessionA
 import { UpdateNotificationWatcher } from "./redux/slices/UpdateNotificationWatcher";
 import { Navigation } from "./template/components/layout/Navigation";
 import { Header } from "./template/components/layout/Header";
-import { DataPermissionsDialog } from "@/template/components/design-system/ui-elements/DataPermissionsDialog";
+import { DataPermissionsDialog } from "@/template/components/design-system";
 
 import {
   initializeApi,
