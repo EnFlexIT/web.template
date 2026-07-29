@@ -22,7 +22,7 @@ import {
 } from "@/redux/slices/apiSlice";
 
 import { logoutBaseMode, selectBaseMode } from "@/redux/slices/baseModeSlice";
-import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 
 import { useJwtSessionTimerWeb } from "@/core/authentication/session/useJwtSessionTimerWeb";
 import { useOidcSessionTimerWeb} from "@/core/authentication/session/useOidcSessionTimerWeb";

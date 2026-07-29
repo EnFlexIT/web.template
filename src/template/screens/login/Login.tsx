@@ -31,7 +31,7 @@ import {
 } from "@/redux/slices/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
-import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 import { styles } from "./styles";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";

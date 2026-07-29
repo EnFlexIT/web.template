@@ -28,7 +28,7 @@ import { OfflineOverlay } from "./template/screens/server/OfflineOverlay";
 import { store } from "./redux/store";
 
 import { initializeLanguage } from "@/template/state/localization/languageSlice";
-import { initializeTheme } from "./redux/slices/themeSlice";
+import { initializeTheme } from "@/template/state/theme/themeSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations } from "./redux/slices/organizationsSlice";
 

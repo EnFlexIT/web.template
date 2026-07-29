@@ -6,7 +6,7 @@ import { Screen } from "@/template/components/layout/Screen";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
+import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
