@@ -9,7 +9,7 @@ import reducer, {
   dismissBackOnline,
   setOfflineLocal,
   checkAlive,
-} from "../sr@/template/state/connectivity/connectivitySlice";
+} from "@/template/state/connectivity/connectivitySlice";
 
 describe("connectivitySlice", () => {
   it("should return the initial state", () => {
