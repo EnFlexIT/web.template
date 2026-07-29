@@ -5,7 +5,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 
-import { useFileDropWeb } from "@/hooks/useFileDropWeb";
+import { useFileDropWeb } from "@/template/hooks/useFileDropWeb";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";

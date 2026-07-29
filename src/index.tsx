@@ -23,7 +23,7 @@ import {
 import { ServerSwitchOverlay } from "./template/screens/server/ServerSwitchOverlay";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { useIsWide } from "./hooks/useIsWide";
+import { useIsWide } from "@/template/hooks/useIsWide";
 import { OfflineOverlay } from "./template/screens/server/OfflineOverlay";
 import { store } from "./redux/store";
 

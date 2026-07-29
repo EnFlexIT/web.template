@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
 
-import { useIsWide } from "@/hooks/useIsWide";
+import { useIsWide } from "@/template/hooks/useIsWide";
 import { ToolBox } from "./ToolBox";
 
 import {

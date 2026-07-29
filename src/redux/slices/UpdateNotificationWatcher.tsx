@@ -1,6 +1,6 @@
 import {
   useUpdateNotifierWeb,
-} from "@/hooks/useUpdateNotifierWeb";
+} from "@/template/hooks/useUpdateNotifierWeb";
 
 type Props = {
   enabled: boolean;

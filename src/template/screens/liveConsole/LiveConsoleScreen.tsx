@@ -11,7 +11,7 @@ import { useAppDispatch,} from "@/core/hooks/useAppDispatch";
 
 import {useAppSelector,} from "@/core/hooks/useAppSelector";
 
-import {useThemedScrollbarWeb,} from "@/hooks/useThemedScrollbarWeb";
+import {useThemedScrollbarWeb,} from "@/template/hooks/useThemedScrollbarWeb";
 
 import {clearLines,connectLiveConsole,selectLiveConsole,setFollowOutput, type LiveConsoleStatus,} from "@/redux/slices/liveConsoleSlice";
 
