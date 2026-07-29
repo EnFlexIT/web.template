@@ -22,7 +22,7 @@ import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScr
 
 // Types and logic
 import type { AuthMethod } from "@/redux/slices/apiSlice";
-import { withAutoTabs } from "@/components/config/tabAuto";
+import { withAutoTabs } from "@/template/navigation/tabs/withAutoTabs";
 import { isMenuEnabled } from "./featureFlags";
 
 export type StaticMenuItem = {
