@@ -13,7 +13,7 @@ import { UpdateBackendTab } from "@/template/screens/update/tabs/UpdateBackendTa
 import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/ProgramStartTab";
 import { DataAnalyzingTab } from "@/template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
 
-import { isTabEnabled } from "@/redux/slices/tabFeatureFlags";
+import { isTabEnabled } from "@/template/navigation/tabs/tabFeatureFlags";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 
