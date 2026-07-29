@@ -4,46 +4,17 @@ import { useTranslation } from "react-i18next";
 import { useUnistyles } from "react-native-unistyles";
 import { useNavigation } from "@react-navigation/native";
 import { Buffer } from "buffer";
-
 import { Screen } from "@/template/components/layout/Screen";
-import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
-import { StylisticTextInput } from "@/template/components/design-system/stylistic/StylisticTextInput";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { H1 } from "@/template/components/design-system/stylistic/H1";
-import { H4 } from "@/template/components/design-system/stylistic/H4";
-
-import {
-  SelectableList,
-  SelectableItem,
-} from "@/template/components/design-system/ui-elements/SelectableList";
-
+import {H1,H4,ThemedText,StylisticTextInput,ConfirmModal,ActionButton,Card } from "@design-system";
+import {SelectableList,SelectableItem,} from "@/template/components/design-system/ui-elements/SelectableList";
 import { ServerLoginModal } from "../login/ServerLoginModal";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
+import {selectServers, addServer, selectServer,updateServer,removeServer,ServerEnvironment,} from "@/redux/slices/serverSlice";
 
-import {
-  selectServers,
-  addServer,
-  selectServer,
-  updateServer,
-  removeServer,
-  ServerEnvironment,
-} from "@/redux/slices/serverSlice";
+import {switchServer, getJwtForServer,selectIp, type AuthMethod,} from "@/redux/slices/apiSlice";
 
-import {
-  switchServer,
-  getJwtForServer,
-  selectIp,
-  type AuthMethod,
-} from "@/redux/slices/apiSlice";
-
-import {
-  checkServerReachable,
-  normalizeBaseUrl,
-  normalizeName,
-} from "@/core/server/serverCheck";
+import {checkServerReachable,normalizeBaseUrl,normalizeName,} from "@/core/server/serverCheck";
 
 type Server = {
   id: string;
