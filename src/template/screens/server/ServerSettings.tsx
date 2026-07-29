@@ -10,8 +10,9 @@ import {SelectableList,SelectableItem,} from "@/template/components/design-syste
 import { ServerLoginModal } from "../login/ServerLoginModal";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import {selectServers, addServer, selectServer,updateServer,removeServer,ServerEnvironment,} from "@/redux/slices/serverSlice";
+import {selectServers, addServer, selectServer,updateServer,removeServer,} from "@/redux/slices/serverSlice";
 
+import type { ServerEnvironment } from "@/core/server/types";
 import {switchServer, getJwtForServer,selectIp, type AuthMethod,} from "@/redux/slices/apiSlice";
 
 import {checkServerReachable,normalizeBaseUrl,normalizeName,} from "@/core/server/serverCheck";
