@@ -1,4 +1,4 @@
-import { ServerEnvironment } from "@/redux/slices/serverSlice";
+import type { ServerEnvironment } from "@/core/server/types";
 
 export function detectServerEnvironment(
   url: string,

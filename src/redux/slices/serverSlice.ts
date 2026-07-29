@@ -4,8 +4,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootState } from "../store";
 const STORAGE_KEY = "servers" as const;
-
-export type ServerEnvironment = "DEV" | "TEST" | "PROD";
+import type { ServerEnvironment } from "@/core/server/types";
 
 export type SavedServer = {
   id: string;
