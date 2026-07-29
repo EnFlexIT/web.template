@@ -4,7 +4,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { StyleSheet, UnistylesRuntime } from "react-native-unistyles";
 import { Screen } from "@/template/components/layout/Screen";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
+import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { selectThemeInfo, setTheme } from "@/redux/slices/themeSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";

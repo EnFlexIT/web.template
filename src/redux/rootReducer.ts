@@ -1,6 +1,6 @@
 import { combineReducers } from "@reduxjs/toolkit";
 
-import languageReducer from "./slices/languageSlice";
+import languageReducer from "@/template/state/localization/languageSlice";
 import themeReducer from "./slices/themeSlice";
 import apiReducer from "./slices/apiSlice";
 import dataPermissionsReducer from "./slices/dataPermissionsSlice";

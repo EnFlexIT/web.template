@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi, selectAuthenticationMethod, selectIp } from "@/redux/slices/apiSlice";
-import { selectLanguage } from "@/redux/slices/languageSlice";
+import { selectLanguage } from "@/template/state/localization/languageSlice";
 import { selectThemeInfo } from "@/redux/slices/themeSlice";
 import { selectServers } from "@/redux/slices/serverSlice";
 

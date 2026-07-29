@@ -21,7 +21,7 @@ import {
   setHasSeenDialog,
 } from "@/redux/slices/dataPermissionsSlice";
 
-import { selectLanguage, setLanguage } from "@/redux/slices/languageSlice";
+import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 
 const BlurView = withUnistyles(BlurView_);
 

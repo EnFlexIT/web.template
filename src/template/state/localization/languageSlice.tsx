@@ -1,7 +1,13 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next from "i18next";
+
+import type { RootState } from "@/redux/store";
 import { updateMenu } from "@/template/state/navigation/menuSlice";
 
 const key = "lng" as const;

@@ -8,7 +8,7 @@ import type { RootState } from "@/redux/store";
 import { foldl } from "@/util/func";
 import { MenuItem as ApiMenuItem } from "@/api/implementation/Dynamic-Content-Api";
 
-import { internalSetLanguage } from "@/redux/slices/languageSlice";
+import { internalSetLanguage } from "@/template/state/localization/languageSlice";
 import type { AuthMethod } from "@/redux/slices/apiSlice";
 
 import { getStaticMenu } from "@/template/navigation/menu/staticMenu";
