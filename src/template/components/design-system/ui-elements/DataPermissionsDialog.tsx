@@ -12,7 +12,7 @@ import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdo
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 
-import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
+import { PERMISSIONS } from "@/permissions/PermiossionGroup";
 import {
   selectPermissionValues,
   setPermissionValue,
