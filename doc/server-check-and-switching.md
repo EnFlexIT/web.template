@@ -16,7 +16,7 @@ incrementally into the dedicated `src/core/server` module.
 | `src/redux/slices/apiSlice.tsx` | Switches API base URL and authentication state. |
 | `src/core/server/serverCheck.ts` | Shared server reachability checks, authentication detection and backend settings parsing. |
 | `src/core/server/types.ts` | Shared server check result types. |
-| `src/redux/slices/connectivitySlice.tsx` | Periodic `/api/alive` connectivity state. |
+| `sr@/template/state/connectivity/connectivitySlice.tsx` | Periodic `/api/alive` connectivity state. |
 | `src/redux/slices/serverStatusSlice.ts` | Per-server UI status metadata. |
 | `src/components/Footer.tsx` | Server selection, notifications and release badge. |
 | `src/screens/ServerSettings.tsx` | Server configuration UI. |

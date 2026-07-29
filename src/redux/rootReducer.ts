@@ -9,7 +9,7 @@ import readyReducer from "./slices/readySlice";
 import { OrganizationsData } from "./slices/organizationsSlice";
 import baseModeReducer from "./slices/baseModeSlice";
 import serversReducer from "./slices/serverSlice";
-import connectivityReducer from "./slices/connectivitySlice";
+import connectivityReducer from "@/template/state/connectivity/connectivitySlice";
 import dbSettingsReducer from "./slices/dbSettingsSlice";
 import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
 import notificationsReducer from "./slices/notificationSlice";

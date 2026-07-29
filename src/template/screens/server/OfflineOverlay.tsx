@@ -10,7 +10,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   checkAlive,
   selectConnectivity,
-} from "@/redux/slices/connectivitySlice";
+} from "@/template/state/connectivity/connectivitySlice";
 
 import {
   selectSelectedServer,
