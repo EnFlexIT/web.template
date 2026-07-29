@@ -1,8 +1,11 @@
-import React from "react";
-import { ComponentClass, FunctionComponent } from "react";
-import { hasTabsForMenu } from "@/redux/slices/staticTabs";
-import { MenuHubScreen } from "../../template/screens/menu/MenuHubScreen";
-import { TabScreen } from "../../template/screens/tabscreen/TabScreen";
+import React, {
+  type ComponentClass,
+  type FunctionComponent,
+} from "react";
+
+import { hasTabsForMenu } from "@/template/navigation/tabs/staticTabs";
+import { MenuHubScreen } from "@/template/screens/menu/MenuHubScreen";
+import { TabScreen } from "@/template/screens/tabscreen/TabScreen";
 
 export type StaticMenuItem = {
   caption: string;
@@ -13,18 +16,20 @@ export type StaticMenuItem = {
 };
 
 export function withAutoTabs(items: StaticMenuItem[]): StaticMenuItem[] {
-  return items.map((it) => {
-    // Hubs nie in Tabs umwandeln
-    if (it.Screen === MenuHubScreen) return it;
+  return items.map((item) => {
+    // Hub-Screens niemals automatisch in Tab-Screens umwandeln.
+    if (item.Screen === MenuHubScreen) {
+      return item;
+    }
 
-    // Wenn es Tabs gibt -> TabScreen mit fixer menuID
-    if (hasTabsForMenu(it.menuID)) {
+    // Wenn für das Menü Tabs existieren, wird automatisch TabScreen verwendet.
+    if (hasTabsForMenu(item.menuID)) {
       return {
-        ...it,
-        Screen: () => <TabScreen menuID={it.menuID} />,
+        ...item,
+        Screen: () => <TabScreen menuID={item.menuID} />,
       };
     }
 
-    return it;
+    return item;
   });
 }

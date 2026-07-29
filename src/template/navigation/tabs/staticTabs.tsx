@@ -1,19 +1,19 @@
-import React from "react";
-import { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
+import type { RootState } from "@/redux/store";
 
+import { DerbyNetworkServerTab } from "@/template/screens/settings/database/DerbyNetworkServerTab";
+import { FactorySettingsTab } from "@/template/screens/settings/database/FactorySettingsTab";
+import { GeneralSettingsTab } from "@/template/screens/settings/database/GeneralSettingsTab";
 
-import { isTabEnabled } from "./tabFeatureFlags";
-import type { RootState } from "../../redux/store";
-// Tabs (deine Imports)
-import { DerbyNetworkServerTab } from "../../template/screens/settings/database/DerbyNetworkServerTab";
-import { FactorySettingsTab } from "../../template/screens/settings/database/FactorySettingsTab";
-import { GeneralSettingsTab } from "../../template/screens/settings/database/GeneralSettingsTab";
-import { UpdateGeneralTab } from "../../template/screens/update/tabs/UpdateGeneralTab";
-import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
-import { UpdateBackendTab } from "../../template/screens/update/tabs/UpdateBackendTab";
-import { ProgramStartTab } from "../../template/screens/AgentWorkbenchOptions/ProgramStartTab";
-import { DataAnalyzingTab } from "../../template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
+import { UpdateGeneralTab } from "@/template/screens/update/tabs/UpdateGeneralTab";
+import { UpdateWebAppTab } from "@/template/screens/update/tabs/UpdateWebAppTab";
+import { UpdateBackendTab } from "@/template/screens/update/tabs/UpdateBackendTab";
+
+import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/ProgramStartTab";
+import { DataAnalyzingTab } from "@/template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
+
+import { isTabEnabled } from "@/redux/slices/tabFeatureFlags";
 export type TabContent = ComponentType<any> | (() => React.ReactNode);
 
 
