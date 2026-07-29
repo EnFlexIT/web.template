@@ -1,58 +1,23 @@
-import React, {
-  useMemo,
-  useRef,
-} from "react";
+import React, {useMemo,useRef,} from "react";
 
-import {
-  Platform,
-  ScrollView,
-  View,
-} from "react-native";
+import {Platform,ScrollView,View,} from "react-native";
 
-import {
-  useTranslation,
-} from "react-i18next";
+import {useTranslation,} from "react-i18next";
 
-import {
-  StyleSheet,
-} from "react-native-unistyles";
+import { StyleSheet,} from "react-native-unistyles";
 
-import {
-  Card,
-} from "@/template/components/design-system/ui-elements/Card";
+import {Card,ActionButton,ThemedText,} from "@design-system";
+import { useAppDispatch,} from "@/hooks/useAppDispatch";
 
-import {
-  ActionButton,
-} from "@/template/components/design-system/ui-elements/ActionButton";
+import {useAppSelector,} from "@/hooks/useAppSelector";
 
-import {
-  ThemedText,
-} from "@/template/components/design-system/themed/ThemedText";
+import {useThemedScrollbarWeb,} from "@/hooks/useThemedScrollbarWeb";
 
-import {
-  useAppDispatch,
-} from "@/hooks/useAppDispatch";
+import {clearLines,connectLiveConsole,selectLiveConsole,setFollowOutput, type LiveConsoleStatus,} from "@/redux/slices/liveConsoleSlice";
 
-import {
-  useAppSelector,
-} from "@/hooks/useAppSelector";
+import {dockDeveloperConsole,} from "@/redux/slices/developerConsoleSlice";
 
-import {
-  useThemedScrollbarWeb,
-} from "@/hooks/useThemedScrollbarWeb";
-
-import {
-  clearLines,
-  connectLiveConsole,
-  selectLiveConsole,
-  setFollowOutput,
-  type LiveConsoleStatus,
-} from "@/redux/slices/liveConsoleSlice";
-
-import {
-  dockDeveloperConsole,
-} from "@/redux/slices/developerConsoleSlice";
-
+//**************************************************************************** */
 type LiveConsoleScreenProps = {
   embedded?: boolean;
 };

@@ -3,7 +3,10 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@design-system": [
+        "./src/template/components/design-system/index"
+      ]
     }
   }
 }
