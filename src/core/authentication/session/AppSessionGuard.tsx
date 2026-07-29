@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import {
   logoutAsync,

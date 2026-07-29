@@ -1,5 +1,5 @@
 import { Modal, View } from 'react-native';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppSelector } from '@/core/hooks/useAppSelector';
 import { selectApi } from '@/redux/slices/apiSlice';
 import { Text } from '@/template/components/design-system/stylistic/Text';
 import { useRoute } from '@react-navigation/native';

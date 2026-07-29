@@ -16,8 +16,8 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 
 import { isMobileShellRuntime } from "../../util/runtime";
 import { LiveConsoleScreen } from "../../template/screens/liveConsole/LiveConsoleScreen";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   selectIp,
   selectIsLoggedIn,

@@ -8,8 +8,8 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { H3 } from "@/template/components/design-system/stylistic/H3";
 import { TableSwitchCell } from "@/template/components/design-system/ui-elements/TableSwitchCell";
 
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import {
   checkBackendUpdate,

@@ -14,9 +14,9 @@ import {
   MenuItem,
 } from "@/redux/slices/menuSlice";
 
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectIsLoggedIn } from "@/redux/slices/apiSlice";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";

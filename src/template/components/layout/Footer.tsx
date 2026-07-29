@@ -10,8 +10,8 @@ import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/redux/slices/de
 import {selectLiveConsole,} from "@/redux/slices/liveConsoleSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
-import { useAppSelector } from "@/hooks/useAppSelector";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 
 import {
   checkServerAuthenticated,

@@ -13,8 +13,8 @@ import {
 } from "@/redux/slices/apiSlice";
 
 import { isMenuEnabled } from "@/redux/slices/featureFlags";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { useEffect } from "react";
 import { getIdPath } from "@/redux/slices/menuSlice";
 

@@ -5,7 +5,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 import { TabsBar } from "@/template/components/design-system/ui-elements/TabsBar";
 
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectMenu } from "@/redux/slices/menuSlice";
 
 import { getTabsForMenu, TabContent } from "@/redux/slices/staticTabs";

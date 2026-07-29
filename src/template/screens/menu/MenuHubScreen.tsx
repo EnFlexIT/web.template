@@ -14,8 +14,8 @@ import { getStaticMenu, StaticMenuItem } from "@/redux/slices/staticMenu";
 import { isMenuEnabled } from "@/redux/slices/featureFlags";
 import { selectMenu, setActiveMenuId } from "@/redux/slices/menuSlice";
 
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
 import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
 

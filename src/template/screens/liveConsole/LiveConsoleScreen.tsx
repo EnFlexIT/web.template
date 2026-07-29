@@ -7,9 +7,9 @@ import {useTranslation,} from "react-i18next";
 import { StyleSheet,} from "react-native-unistyles";
 
 import {Card,ActionButton,ThemedText,} from "@design-system";
-import { useAppDispatch,} from "@/hooks/useAppDispatch";
+import { useAppDispatch,} from "@/core/hooks/useAppDispatch";
 
-import {useAppSelector,} from "@/hooks/useAppSelector";
+import {useAppSelector,} from "@/core/hooks/useAppSelector";
 
 import {useThemedScrollbarWeb,} from "@/hooks/useThemedScrollbarWeb";
 

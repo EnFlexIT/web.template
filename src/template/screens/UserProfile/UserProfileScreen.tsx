@@ -10,8 +10,8 @@ import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
 import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/redux/slices/userProfileSlice";
 

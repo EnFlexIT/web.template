@@ -14,8 +14,8 @@ import { H3 } from "@/template/components/design-system/stylistic/H3";
 import {
   UpdateProgressDialog,type UpdateProgressPhase,} from "@/template/components/design-system/ui-elements/UpdateProgressDialog";
 import { ConfirmDialog } from "@/template/components/design-system/ui-elements/ConfirmDialog";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import {
   normalizeBaseUrl,

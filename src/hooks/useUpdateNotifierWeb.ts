@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 
-import { useAppDispatch } from "./useAppDispatch";
-import { useAppSelector } from "./useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import {
   addNotification,

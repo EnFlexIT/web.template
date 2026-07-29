@@ -23,8 +23,8 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton} from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
-import { useAppDispatch } from "@/hooks/useAppDispatch";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import { setActiveMenuId } from "@/redux/slices/menuSlice";
 import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";

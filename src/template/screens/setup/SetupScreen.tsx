@@ -5,13 +5,13 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { ThemedAntDesign } from "@/template/components/design-system/themed/ThemedAntDesign";
 import { ThemedTextInput } from "@/template/components/design-system/themed/ThemedTextInput";
-import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import {
   addOrganization,
   selectOrganizations,
   setCurrentOrganization,
 } from "@/redux/slices/organizationsSlice";
-import { useAppSelector } from "@/hooks/useAppSelector";
+import { useAppSelector } from "@/core/hooks/useAppSelector";
 //import { setIpLocal } from "@/redux/slices/apiSlice";
 import { setReady } from "@/redux/slices/readySlice";
 import { foldl } from "../../../util/func";
