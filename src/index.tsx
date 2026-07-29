@@ -27,7 +27,7 @@ import { useIsWide } from "@/template/hooks/useIsWide";
 import { OfflineOverlay } from "./template/screens/server/OfflineOverlay";
 import { store } from "./redux/store";
 
-import { initializeLanguage } from "./redux/slices/languageSlice";
+import { initializeLanguage } from "@/template/state/localization/languageSlice";
 import { initializeTheme } from "./redux/slices/themeSlice";
 import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
 import { initializeOrganizations } from "./redux/slices/organizationsSlice";
