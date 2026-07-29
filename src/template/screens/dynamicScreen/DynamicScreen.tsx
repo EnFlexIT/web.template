@@ -9,7 +9,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { selectBaseMode } from "@/redux/slices/baseModeSlice";
 
 //  Feature-Flag Check
-import { isMenuEnabled } from "@/redux/slices/featureFlags";
+import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 
 interface DynamicScreenProps {
   node: MenuItem;

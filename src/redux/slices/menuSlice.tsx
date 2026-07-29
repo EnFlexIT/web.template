@@ -5,8 +5,8 @@ import { foldl } from "../../util/func";
 
 import { MenuItem as ApiMenuItem } from "../../api/implementation/Dynamic-Content-Api";
 import { internalSetLanguage } from "./languageSlice";
-import { getStaticMenu } from "../slices/staticMenu";
-import { isMenuEnabled } from "./featureFlags";
+import { getStaticMenu } from "@/template/navigation/menu/staticMenu";
+import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import type { AuthMethod } from "./apiSlice";
 
 interface BaseMenuItem<P = {}> {

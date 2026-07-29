@@ -10,8 +10,8 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { H3 } from "@/template/components/design-system/stylistic/H3";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 
-import { getStaticMenu, StaticMenuItem } from "@/redux/slices/staticMenu";
-import { isMenuEnabled } from "@/redux/slices/featureFlags";
+import { getStaticMenu, StaticMenuItem } from "@/template/navigation/menu/staticMenu";
+import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { selectMenu, setActiveMenuId } from "@/redux/slices/menuSlice";
 
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";

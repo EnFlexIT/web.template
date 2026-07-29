@@ -15,7 +15,7 @@ jest.mock("../redux/slices/staticMenu", () => ({
   ],
 }));
 
-jest.mock("../redux/slices/featureFlags", () => ({
+jest.mock("@/template/navigation/menu/featureFlags", () => ({
   isMenuEnabled: () => true,
 }));
 

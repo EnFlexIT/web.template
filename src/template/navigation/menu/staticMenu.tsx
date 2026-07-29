@@ -1,27 +1,29 @@
 import { ComponentClass, FunctionComponent } from "react";
 
+
 // Screens
-import { SettingsScreen } from "../../template/screens/settings/Settings";
-import { UnauthenticatedSettings } from "../../template/screens/settings/Unauthenticated-Settings";
-import { PrivacySettings } from "../../template/screens/settings/PrivacySettings";
-import { DevHomeScreen } from "../../template/screens/dev/Dev-Home-Screen";
-import { ServerSettingsScreen } from "../../template/screens/server/ServerSettings";
-import { ChangePasswordScreen } from "../../template/screens/settings/ChangePassword";
-import { UpdateWebAppTab } from "../../template/screens/update/tabs/UpdateWebAppTab";
-import { NotificationsScreen } from "../../template/screens/Notification/NotificationsScreen";
-import { UserProfileScreen } from "../../template/screens/UserProfile/UserProfileScreen";
-import type { AuthMethod } from "../../redux/slices/apiSlice";
+import { SettingsScreen } from "@/template/screens/settings/Settings";
+import { UnauthenticatedSettings } from "@/template/screens/settings/Unauthenticated-Settings";
+import { PrivacySettings } from "@/template/screens/settings/PrivacySettings";
+import { DevHomeScreen } from "@/template/screens/dev/Dev-Home-Screen";
+import { ServerSettingsScreen } from "@/template/screens/server/ServerSettings";
+import { ChangePasswordScreen } from "@/template/screens/settings/ChangePassword";
+import { UpdateWebAppTab } from "@/template/screens/update/tabs/UpdateWebAppTab";
+import { NotificationsScreen } from "@/template/screens/Notification/NotificationsScreen";
+import { UserProfileScreen } from "@/template/screens/UserProfile/UserProfileScreen";
 
 // Hub
-import { MenuHubScreen } from "../../template/screens/menu/MenuHubScreen";
-import { AppSettingsFileUploadScreen } from "../../template/screens/settings/AppSettingsFileUploadScreen";
+import { MenuHubScreen } from "@/template/screens/menu/MenuHubScreen";
+import { AppSettingsFileUploadScreen } from "@/template/screens/settings/AppSettingsFileUploadScreen";
 
 // Agent Workbench Options
-import { ProgramStartTab } from "../../template/screens/AgentWorkbenchOptions/ProgramStartTab";
-import { LiveConsoleScreen} from "../../template/screens/liveConsole/LiveConsoleScreen";
-// Logic
-import { isMenuEnabled } from "./featureFlags";
+import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/ProgramStartTab";
+import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
+
+// Types and logic
+import type { AuthMethod } from "@/redux/slices/apiSlice";
 import { withAutoTabs } from "@/components/config/tabAuto";
+import { isMenuEnabled } from "./featureFlags";
 
 export type StaticMenuItem = {
   caption: string;

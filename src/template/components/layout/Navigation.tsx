@@ -12,7 +12,7 @@ import {
   selectAuthenticationMethod,
 } from "@/redux/slices/apiSlice";
 
-import { isMenuEnabled } from "@/redux/slices/featureFlags";
+import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { useEffect } from "react";
