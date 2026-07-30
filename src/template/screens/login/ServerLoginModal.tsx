@@ -8,7 +8,7 @@ import { TextInput } from "@/template/components/design-system/ui-elements/TextI
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import type { AuthMethod } from "@/redux/slices/apiSlice";
-import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
+import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 
 type Props = {

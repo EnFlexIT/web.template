@@ -14,7 +14,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   closeInitialPasswordChangeDialog,
   selectInitialPasswordChangeDialogOpen,
-} from "@/redux/slices/passwordChangePromptSlice";
+} from "@/template/state/authentication/passwordChangePromptSlice";
 import { setActiveMenuId } from "@/template/state/navigation/menuSlice";
 
 const CHANGE_PASSWORD_MENU_ID = 3013;

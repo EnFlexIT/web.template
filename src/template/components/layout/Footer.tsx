@@ -31,7 +31,7 @@ import {
   setServerStatus,
 } from "@/template/state/server/serverStatusSlice";
 
-import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
+import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 
 import {
   selectSelectedServer,

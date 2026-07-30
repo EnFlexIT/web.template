@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
 
 import { loadUserProfile } from "@/redux/slices/userProfileSlice";
-import { openInitialPasswordChangeDialog } from "@/redux/slices/passwordChangePromptSlice";
+import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { Logo } from "@/template/components/layout/Logo";
 import { H1 } from "@/template/components/design-system/stylistic/H1";

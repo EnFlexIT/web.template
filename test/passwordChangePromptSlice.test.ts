@@ -3,7 +3,7 @@
 import reducer, {
   openInitialPasswordChangeDialog,
   closeInitialPasswordChangeDialog,
-} from "../src/redux/slices/passwordChangePromptSlice";
+} from "../src/template/state/authentication/passwordChangePromptSlice";
 
 describe("passwordChangePromptSlice", () => {
   it("should return the initial state", () => {
