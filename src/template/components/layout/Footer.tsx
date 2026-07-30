@@ -43,7 +43,7 @@ import {
   closeNotificationPopup,
   selectUnreadNotificationCount,
   toggleNotificationPopup,
-} from "@/redux/slices/notificationSlice";
+} from "@/template/state/notifications/notificationSlice";
 
 import {
   selectIsTestRelease,

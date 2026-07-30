@@ -12,7 +12,7 @@ import serversReducer from "@/template/state/server/serverSlice";
 import connectivityReducer from "@/template/state/connectivity/connectivitySlice";
 import dbSettingsReducer from "./slices/dbSettingsSlice";
 import passwordChangePromptReducer from "./slices/passwordChangePromptSlice";
-import notificationsReducer from "./slices/notificationSlice";
+import notificationsReducer from "@/template/state/notifications/notificationSlice";
 import execSettingsReducer from "./slices/execSettingsSlice";
 import dataAnalysisReducer from "./slices/dataAnalysisSlice";
 import updateReducer from "@/core/update/redux/updateSlice";

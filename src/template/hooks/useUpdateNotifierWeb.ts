@@ -8,7 +8,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   addNotification,
   removeNotification,
-} from "@/redux/slices/notificationSlice";
+} from "@/template/state/notifications/notificationSlice";
 
 import {
   checkBackendUpdate,

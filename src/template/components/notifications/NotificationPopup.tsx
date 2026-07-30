@@ -18,7 +18,7 @@ import {
   selectNotificationPopupOpen,
   selectUnreadNotificationCount,
   markServerNotificationsRead,
-} from "@/redux/slices/notificationSlice";
+} from "@/template/state/notifications/notificationSlice";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton} from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";

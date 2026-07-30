@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, View, Pressable, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { addNotification } from "@/redux/slices/notificationSlice";
+import { addNotification } from "@/template/state/notifications/notificationSlice";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";

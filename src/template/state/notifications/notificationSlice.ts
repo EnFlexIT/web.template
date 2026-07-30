@@ -1,9 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "../store";
+import type { RootState } from "@/redux/store";
 import {
   normalizeServerKey,
   selectActiveServerKey,
-} from "../selectors/serverSelectors";
+} from "@/redux/selectors/serverSelectors";
 
 export type NotificationType = "update" | "password" | "system";
 

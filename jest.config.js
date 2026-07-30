@@ -1,10 +1,10 @@
 module.exports = {
   preset: "jest-expo",
-  setupFilesAfterEnv: ["<rootDir>/src/testes/jest.setup.ts"],
-  testMatch: [
-    "**/src/testes/**/*.test.ts",
-    "**/src/testes/**/*.test.tsx"
-  ],
+   setupFilesAfterEnv: ["<rootDir>/test/jest.setup.ts"],
+ testMatch: [
+  "<rootDir>/test/**/*.test.ts",
+  "<rootDir>/test/**/*.test.tsx",
+],
   transformIgnorePatterns: [
     "node_modules/(?!((jest-)?react-native|@react-native|expo|expo-modules-core|@expo|@expo/.*|react-native.*)/)"
   ],

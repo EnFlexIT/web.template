@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-jest.mock("../redux/selectors/serverSelectors", () => ({
+jest.mock("../src/redux/selectors/serverSelectors", () => ({
   normalizeServerKey: (value: string) =>
     String(value ?? "").trim().toLowerCase().replace(/\/+$/, ""),
   selectActiveServerKey: (state: any) => state.server?.activeServerKey ?? "",
@@ -23,7 +23,7 @@ import reducer, {
   selectUnreadNotificationCount,
   selectLatestNotifications,
   selectNotificationPopupOpen,
-} from "../src/redux/slices/notificationSlice";
+} from "../src/template/state/notifications/notificationSlice";
 
 const createNotification = (
   overrides: Partial<AppNotification> = {},
