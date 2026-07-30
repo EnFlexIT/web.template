@@ -1,174 +1,257 @@
-# Server Check and Server Switching
+Server Check and Server Switching
 
-The template can manage multiple Agent.Workbench backend servers and switch
-between them at runtime.
+The template manages multiple Agent.Workbench backend servers and can switchbetween them at runtime.
 
-The reusable server validation and server detection logic is being migrated
-incrementally into the dedicated `src/core/server` module.
+Reusable server validation and detection belong to src/core/server. Reusableserver-selection UI state belongs to src/template/state/server.
 
----
+Layer ownership
 
-# Central files
+template server UI and state
+            ↓
+core server validation and types
+            ↓
+backend endpoints
 
-| File | Purpose |
-| --- | --- |
-| `sr@/template/state/server/serverSlice.ts` | Stores configured servers and active environment. |
-| `src/redux/slices/apiSlice.tsx` | Switches API base URL and authentication state. |
-| `src/core/server/serverCheck.ts` | Shared server reachability checks, authentication detection and backend settings parsing. |
-| `src/core/server/types.ts` | Shared server check result types. |
-| `src/template/state/connectivity/connectivitySlice.tsx` | Periodic `/api/alive` connectivity state. |
-| `src/redu@/template/state/server/serverStatusSlice.ts` | Per-server UI status metadata. |
-| `src/components/Footer.tsx` | Server selection, notifications and release badge. |
-| `src/screens/ServerSettings.tsx` | Server configuration UI. |
-| `src/screens/ServerSwitchOverlay.tsx` | Overlay displayed while switching servers. |
-| `src/screens/OfflineOverlay.tsx` | Overlay displayed when the active server becomes unreachable. |
+The Core server module must not depend on Template UI.
 
----
+Central files
 
-# Stored Server Model
+File
 
-A configured server has the following structure:
+Purpose
 
-```ts
+src/template/state/server/serverSlice.ts
+
+Stores configured servers and the active environment.
+
+src/template/state/server/serverStatusSlice.ts
+
+Per-server UI status metadata.
+
+src/template/state/connectivity/connectivitySlice.tsx
+
+Active-server /api/alive connectivity state.
+
+src/redux/slices/apiSlice.tsx
+
+Transitional active base URL, authentication and API-client state.
+
+src/core/server/serverCheck.ts
+
+Reachability, authentication detection and backend-settings parsing.
+
+src/core/server/serverValidation.ts
+
+Reusable server validation.
+
+src/core/server/normalizeServerInputs.ts
+
+Normalizes server input values.
+
+src/core/server/detectServerEnvironment.ts
+
+Determines the server environment.
+
+src/core/server/types.ts
+
+Shared server result and environment types.
+
+src/template/components/layout/Footer.tsx
+
+Server selection, notifications and release information.
+
+src/template/screens/server/
+
+Server settings, switching and offline presentation.
+
+Shared types
+
+The canonical environment type is defined in:
+
+src/core/server/types.ts
+
+export type ServerEnvironment = "DEV" | "TEST" | "PROD";
+
+Server state may re-export this type temporarily for compatibility, but Corecode should import it from the Core type module.
+
+A configured server uses the following conceptual model:
+
 type SavedServer = {
   id: string;
   name: string;
   baseUrl: string;
-  environment: "DEV" | "TEST" | "PROD";
+  environment: ServerEnvironment;
 };
-```
+
+Persistence
 
 Configured servers are stored in AsyncStorage under:
 
-```text
 servers
-```
 
 If no configuration exists, a default local server is created.
 
-For deployed web applications the runtime origin may replace the default
-localhost backend.
+For a deployed web application, the runtime origin may replace the defaultlocalhost backend.
 
----
+Reachability check
 
-# Reachability Check
+Reachability is checked through:
 
-Server reachability is verified using:
-
-```text
 GET /api/alive
-```
 
-The connectivity check is intentionally lightweight.
+The check answers only:
 
-Any HTTP response indicates that the backend is reachable, including:
+Can the frontend reach the backend?
 
-- successful responses
-- authentication errors
-- redirects
-- server errors
+Any HTTP response proves reachability, including:
 
-The connectivity check answers only one question:
+successful responses
 
-> Can the frontend reach the backend?
+authentication errors
 
-It never decides whether a user should be logged out.
+redirects
 
----
+backend errors
 
-# Authentication Detection
+A connectivity check must never decide that the user should be logged out.
 
-Authentication information is loaded from:
+Authentication detection
 
-```text
+Authentication and selected application settings are read from:
+
 GET /api/app/settings/get
-```
 
-The reusable Core server module evaluates backend settings to determine:
+The Core server module evaluates the backend response to determine:
 
-- authentication method
-- authenticated state
-- application release information
-- available security configuration
+authentication method
 
----
+authenticated state
 
-# Server Switching Flow
+application release information
 
-The current server switching workflow is:
+available security configuration
 
-1. User selects a server.
-2. The base URL is normalized.
-3. Existing JWT information is loaded for the selected server.
-4. The reusable Core server module checks the server.
-5. Authentication information is evaluated.
-6. API clients are rebuilt.
-7. Authentication state is updated.
-8. Menus are reloaded if required.
+The shared authentication type comes from:
 
-The reusable server validation is independent from the Login screen and can be
-used from different application modules.
+src/core/authentication/types.ts
 
----
+Server switching flow
 
-# Server Status Metadata
+The current switching flow is:
 
-`serverStatusSlice` stores status information for every configured server.
+The user selects a configured server.
 
-```ts
+The base URL is normalized.
+
+Stored JWT information is loaded for that server.
+
+Core server checks validate reachability and backend settings.
+
+Authentication information is evaluated.
+
+Generated API clients are rebuilt.
+
+Active authentication and server state are updated.
+
+Template menus are reloaded when required.
+
+The validation functions are reusable and independent from the Login screen.
+
+Server state
+
+Saved servers
+
+src/template/state/server/serverSlice.ts
+
+Responsibilities:
+
+configured server list
+
+active environment
+
+server persistence and initialization
+
+Status metadata
+
+src/template/state/server/serverStatusSlice.ts
+
+Conceptual model:
+
 type ServerStatusMeta = {
   tone: "green" | "yellow" | "red";
   subtitle: string;
 };
-```
 
-This information is displayed inside the server selection UI.
+This data is presentation metadata for the server selection UI.
 
----
+Connectivity
 
-# Offline Behavior
+src/template/state/connectivity/connectivitySlice.tsx
 
-`connectivitySlice` periodically executes `/api/alive` checks.
+Connectivity checks can be triggered:
 
-Connectivity checks are triggered:
+after login
 
-- after login
-- every 40 seconds
-- whenever the browser window becomes active again
+periodically
 
-`OfflineOverlay` displays the offline state using the Redux connectivity
-information.
+when the browser becomes active again
 
----
+The current interval is 40 seconds.
 
-# Current Architecture
+The offline overlay reads this state and presents the result. It does not ownthe reachability algorithm.
 
-The reusable server infrastructure currently consists of:
+Current Core structure
 
-```text
 src/core/server
+├── detectServerEnvironment.ts
+├── normalizeServerInputs.ts
 ├── serverCheck.ts
+├── serverValidation.ts
 └── types.ts
-```
 
-The server module is responsible for reusable server-related functionality,
-while UI components remain responsible only for user interaction and
-presentation.
+Known transition dependency
 
-The migration follows the project's incremental architecture strategy:
+apiSlice.tsx still combines active server state, API-client construction,authentication, persistence and template menu initialization.
 
-```text
-Analyze
-↓
-Extract reusable functionality
-↓
-Move into Core
-↓
-Update imports
-↓
-Test
-↓
-Commit
-↓
-Update documentation
-```
+Because it knows Template navigation, it cannot be moved unchanged into Core.The final solution should separate:
+
+server selection
+
+API-client construction
+
+authentication state
+
+persistence
+
+application/template orchestration
+
+Normalization rule
+
+Use one shared Core normalization implementation for server URLs. Avoid addingnew local normalizeBaseUrl implementations.
+
+Existing duplicate or compatibility exports should be consolidated during theapiSlice separation.
+
+Validation workflow
+
+After server-state moves:
+
+git grep -n -E "redux/slices/serverSlice|redux/slices/serverStatusSlice" -- .
+git grep -n "redux/slices/connectivitySlice" -- .
+npx tsc --noEmit
+npx expo start --clear
+
+Run targeted tests when the affected module has Jest coverage.
+
+Next steps
+
+Keep server state under src/template/state/server.
+
+Keep reusable checks and types under src/core/server.
+
+Consolidate URL normalization.
+
+Separate the server responsibilities currently inside apiSlice.
+
+Move concrete composition into application.
+
+Add a public Core server API and dependency-boundary checks.

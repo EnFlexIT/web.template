@@ -1,70 +1,276 @@
-# Project Structure
+Project Structure
 
-This document describes the current structure of the `web.template` repository.
-The project is an Expo / React Native Web template for EnFlex.IT applications and contains shared infrastructure for theming, authentication, server selection, dynamic content, settings, update handling and generated Agent.Workbench API access.
+This document describes the current structure and migration status of theweb.template repository.
 
-## Root level
+web.template is an Expo / React Native Web / TypeScript foundation forEnFlex.IT applications. It provides reusable infrastructure for authentication,server management, navigation, notifications, localization, theming, updates,configuration and generated Agent.Workbench API access.
 
-```text
+Architecture model
+
+The repository is being migrated toward three explicit layers:
+
+application
+    ↓
+template
+    ↓
+core
+
+The dependency rules are:
+
+application may use template and core.
+
+template may use core.
+
+core must not import from template or application.
+
+Product-specific business logic belongs in application.
+
+Reusable shell UI and reusable feature state belong in template.
+
+Reusable technical capabilities and shared types belong in core.
+
+The migration is incremental. Some legacy folders and Redux modules remain untiltheir responsibilities are separated safely.
+
+Root level
+
 .
 ├── .github/workflows
 ├── assets
 ├── doc
 ├── scripts
 ├── src
+├── test
 ├── app.json
 ├── i18n.ts
 ├── index.ts
+├── jest.config.js
 ├── package.json
 ├── tsconfig.json
 └── unistyles.ts
-```
 
-| Path | Purpose |
-| --- | --- |
-| `.github/workflows` | GitHub Actions for production and test web releases. |
-| `assets` | Static assets such as icons, images and translation JSON files. |
-| `doc` | Existing UML files and new Markdown documentation. |
-| `scripts` | Helper scripts, for example template-branch initialization. |
-| `src` | Application source code. |
-| `index.ts` | Expo entry point. Imports unistyles/i18n and registers the root app. |
-| `i18n.ts` | i18next setup for German and English translation namespaces. |
-| `unistyles.ts` | React Native Unistyles theme and breakpoint configuration. |
-| `package.json` | NPM scripts and dependencies. |
+Path
 
-## Source structure
+Purpose
 
-```text
+.github/workflows
+
+GitHub Actions for test and production web releases.
+
+assets
+
+Static assets and translation JSON files.
+
+doc
+
+Architecture, feature and workflow documentation.
+
+scripts
+
+Repository and release helper scripts.
+
+src
+
+Application source code.
+
+test
+
+Jest tests and jest.setup.ts.
+
+index.ts
+
+Expo entry point.
+
+i18n.ts
+
+i18next configuration.
+
+unistyles.ts
+
+Theme and breakpoint configuration.
+
+jest.config.js
+
+Jest configuration for tests under test/.
+
+package.json
+
+NPM scripts and dependencies.
+
+architecture-docs-current.txt is only a temporary documentation export and isnot part of the intended architecture.
+
+Current source structure
+
+The following tree shows the important current structure. It is intentionallynot an exhaustive file listing.
+
 src
 ├── api
+├── application
 ├── bootstrap
 ├── components
 ├── core
-├── hooks
+│   ├── authentication
+│   ├── hooks
+│   ├── server
+│   └── update
 ├── permissions
 ├── redux
+│   ├── selectors
+│   ├── slices
+│   ├── rootReducer.ts
+│   └── store.ts
 ├── screens
 ├── styles
-├── testes
+├── template
+│   ├── components
+│   │   ├── design-system
+│   │   ├── layout
+│   │   └── notifications
+│   ├── hooks
+│   ├── navigation
+│   │   ├── menu
+│   │   └── tabs
+│   ├── screens
+│   └── state
+│       ├── authentication
+│       ├── connectivity
+│       ├── localization
+│       ├── navigation
+│       ├── notifications
+│       ├── server
+│       └── theme
 └── util
-```
 
-| Path | Purpose |
-| --- | --- |
-| `src/api` | API configuration, OpenAPI definitions, generated clients and small service wrappers. |
-| `src/bootstrap` | Startup helpers such as application mode detection. |
-| `src/components` | Reusable React Native components. |
-| `src/hooks` | Typed Redux hooks and web-specific hooks for session, updates and file drop. |
-| `src/permissions` | Permission selector helpers. |
-| `src/redux` | Redux store, slices, selectors and constants. |
-| `src/screens` | Full screen components used by navigation. |
-| `src/styles` | Light/dark themes, fonts and chart theme. |
-| `src/testes` | Jest tests and setup. |
-| `src/util` | Shared utility functions for runtime, JWT time, environment and server status events. |
+src/components, src/screens and parts of src/redux/slices still containlegacy or not-yet-classified modules. Their presence does not change the targetdependency rules.
 
-## API structure
+Core
 
-```text
+src/core contains reusable technical capabilities without product UI.
+
+Important areas:
+
+src/core
+├── authentication
+│   ├── http
+│   ├── jwt
+│   ├── logout
+│   ├── session
+│   └── types.ts
+├── hooks
+│   ├── useAppDispatch.ts
+│   └── useAppSelector.ts
+├── server
+│   ├── detectServerEnvironment.ts
+│   ├── normalizeServerInputs.ts
+│   ├── serverCheck.ts
+│   ├── serverValidation.ts
+│   └── types.ts
+└── update
+
+Current responsibilities include:
+
+authentication transport and interceptors
+
+JWT renewal
+
+OIDC/JWT session guards and timers
+
+logout orchestration
+
+server validation and authentication detection
+
+shared server and authentication types
+
+update-related technical logic
+
+The canonical authentication type is:
+
+src/core/authentication/types.ts
+
+The canonical ServerEnvironment type is:
+
+src/core/server/types.ts
+
+Template
+
+src/template contains reusable shell UI, reusable navigation and reusablefeature state.
+
+Design system
+
+src/template/components/design-system
+├── stylistic
+├── themed
+├── ui-elements
+└── index.ts
+
+The public alias is:
+
+import { Card, ActionButton } from "@design-system";
+
+New reusable UI should use the public design-system API instead of deep importswhere possible.
+
+Template hooks
+
+src/template/hooks
+├── useFileDropWeb.ts
+├── useIsWide.ts
+├── useThemedScrollbarWeb.ts
+└── useUpdateNotifierWeb.ts
+
+Navigation
+
+src/template/navigation
+├── menu
+│   ├── featureFlags.ts
+│   └── staticMenu.tsx
+└── tabs
+    ├── staticTabs.tsx
+    ├── tabFeatureFlags.tsx
+    └── withAutoTabs.tsx
+
+Navigation registries and feature-flag rules are configuration, not Redux state.
+
+Migrated template state
+
+src/template/state
+├── authentication
+│   └── passwordChangePromptSlice.ts
+├── connectivity
+│   └── connectivitySlice.tsx
+├── localization
+│   └── languageSlice.tsx
+├── navigation
+│   └── menuSlice.tsx
+├── notifications
+│   └── notificationSlice.ts
+├── server
+│   ├── serverSlice.ts
+│   └── serverStatusSlice.ts
+└── theme
+    └── themeSlice.tsx
+
+These modules are reusable shell or UI state and therefore belong to thetemplate layer.
+
+Application
+
+src/application is the target location for concrete product composition andbusiness-specific functionality.
+
+Examples of future application responsibilities:
+
+product-specific screens
+
+product-specific business state
+
+concrete feature selection
+
+product branding and configuration
+
+application-specific services and hooks
+
+composition of template and core modules
+
+The application layer may be empty or only partially populated while themigration is in progress.
+
+API structure
+
 src/api
 ├── config
 ├── definition
@@ -72,149 +278,110 @@ src/api
 ├── services
 ├── apiConfig.ts
 └── publicApiConfig.ts
-```
 
-`src/api/definition` is configured as Git submodule and points to the EnFlexIT `RestAPIs` repository. The generated TypeScript Axios clients are stored under `src/api/implementation/AWB-RestAPI` and `src/api/implementation/Dynamic-Content-Api`.
+src/api/definition contains the API definitions. Generated Axios clients arestored under:
 
-The NPM scripts in `package.json` regenerate these clients:
+src/api/implementation/AWB-RestAPI
+src/api/implementation/Dynamic-Content-Api
 
-```bash
+Generation scripts:
+
 npm run AWB-RestAPI
 npm run Dynamic-Content-Api
 npm run api
-```
-## Core structure
 
-The reusable platform functionality is gradually being extracted into the
-dedicated `src/core` directory.
+Generated files should not be manually refactored into the architecture layers.
 
-Current structure:
+Redux composition and migration state
 
-```text
-src/core
-├── authentication
-│   ├── http
-│   ├── jwt
-│   ├── logout
-│   └── session
-├── server
-└── update
-```
+The store and root reducer currently remain central:
 
-### authentication
+src/redux/store.ts
+src/redux/rootReducer.ts
 
-Provides reusable authentication infrastructure including:
+They compose reducers from both migrated template modules and legacy Reduxmodules.
 
-- authentication interceptors
-- JWT renewal
-- session management
-- logout handling
-- session guards
+Important legacy or transitional modules still under src/redux/slicesinclude:
 
-### server
+apiSlice.tsx
+appReleaseSlice.tsx
+appSettingsFileUploadSlice.ts
+baseModeSlice.ts
+Data.ts
+dataAnalysisSlice.ts
+dataPermissionsSlice.tsx
+dbSettingsSlice.ts
+developerConsoleSlice.ts
+execSettingsSlice.tsx
+liveConsoleSlice.ts
+organizationsSlice.tsx
+PostLoginUpdateWatcher.tsx
+readySlice.tsx
+reloadUpdatedFrontendWebApp.ts
+sessionTimeSlice.tsx
+UpdateNotificationWatcher.tsx
+userProfileSlice.ts
 
-Provides reusable server functionality including:
+Not every file in this folder is a Redux slice. Watchers and reload helpersshould eventually move to their owning feature or technical module.
 
-- server validation
-- server reachability
-- authentication detection
-- shared server types
+Two important transition modules are intentionally not moved blindly:
 
-### update
+apiSlice.tsx currently combines API clients, authentication, serverselection, storage and menu initialization.
 
-Provides reusable update functionality including:
+sessionTimeSlice.tsx currently combines Redux state, HTTP requests, activeserver selection and session timing.
 
-- frontend version monitoring
-- reload handling
-- shared update state
-## Components structure
+They require responsibility separation before a final layer placement.
 
-```text
-src/components
-├── config
-├── dynamic
-├── richtexteditor
-├── routing
-├── stylistic
-├── themed
-├── ui-elements
-├── Footer.tsx
-├── Header.tsx
-├── Navigation.tsx
-└── Screen.tsx
-```
+Tests
 
-The component layer is split into application layout, routing helpers, styled primitives and reusable UI elements.
+Tests are stored in:
 
-`themed` components apply theme colors. `stylistic` components build on top of the themed components and define typography or sizing. `ui-elements` contains reusable application widgets such as cards, buttons, dialogs, dropdowns, tabs and inputs.
+test
+├── jest.setup.ts
+└── *.test.ts / *.test.tsx
 
-## Redux structure
+The normal validation sequence is:
 
-```text
-src/redux
-├── constants
-├── selectors
-├── slices
-└── store.ts
-```
+npx tsc --noEmit
+npx jest --runTestsByPath <test-file>
+npx expo start --clear
 
-`store.ts` combines all application slices. Important slices include:
+Refactoring workflow
 
-| Slice | Responsibility |
-| --- | --- |
-| `apiSlice` | API clients, selected base URL, JWT/OIDC state, login/logout and server switching. |
-| `serverSlice` | Stored server list and active environment (`DEV`, `TEST`, `PROD`). |
-| `connectivitySlice` | Server reachability checks via `/api/alive`. |
-| `serverStatusSlice` | UI status metadata per configured server. |
-| `menuSlice` | Static and dynamic menu construction. |
-| `staticMenu` / `staticTabs` | Static settings menu and tab definitions. |
-| `updateSlice` | Frontend/backend update state and update requests. |
-| `appSettingsFileUploadSlice` | Upload state for app settings/configuration files. |
-| `sessionTimeSlice` | Session time loading and extension for OIDC sessions. |
-| `notificationSlice` | Local notifications per server. |
-| `appReleaseSlice` | Production/test release type marker. |
-| `userProfileSlice` | OIDC user profile fields from server settings. |
+For architecture moves, use this sequence:
 
-## Screens structure
+Search all usages with git grep -- ..
 
-```text
-src/screens
-├── AgentWorkbenchOptions
-├── Logout
-├── Notification
-├── UserProfile
-├── dev
-├── dynamic-content
-├── login
-├── settings
-├── update
-├── Home.tsx
-├── MenuHubScreen.tsx
-├── ServerSettings.tsx
-├── ServerSwitchOverlay.tsx
-├── Settings.tsx
-└── TabScreen.tsx
-```
+Inspect internal imports.
 
-Main screen groups:
+Replace fragile relative imports with stable aliases where appropriate.
 
-| Path | Purpose |
-| --- | --- |
-| `login` | JWT/OIDC login, server detection and login modals. |
-| `settings` | Settings screens, database settings and file configuration upload. |
-| `update` | Frontend/backend update tabs and progress dialog. |
-| `AgentWorkbenchOptions` | Agent Workbench program start and data analysis options. |
-| `UserProfile` | OIDC user profile display. |
-| `Notification` | Notification overview. |
-| `MenuHubScreen.tsx` | Hub view for grouped settings menu entries. |
-| `TabScreen.tsx` | Generic tab renderer driven by `staticTabs`. |
-| `ServerSwitchOverlay.tsx` | UI overlay for server switch flows. |
-| `OfflineOverlay.tsx` | UI overlay for connectivity errors. |
+Move a small related group.
 
-## Routing and menu model
+Perform exact global path replacement.
 
-The application combines dynamic menu entries from the backend with static menu entries defined in `staticMenu.tsx`.
+Search for every old path variant.
 
-`buildMenuPaths` creates stable slug paths from menu captions. `useMenuNavigation` synchronizes React Navigation with the Redux active menu ID. This keeps breadcrumbs, sidebar selection and browser URLs in sync.
+Run TypeScript.
 
-Static menu entries can automatically become tab screens through `withAutoTabs`. If a menu ID has tabs in `staticTabs.tsx`, its screen is replaced with `TabScreen`.
+Run targeted tests.
+
+Start Expo with a cleared cache.
+
+Commit the completed batch.
+
+Next architecture steps
+
+Finish documentation and keep it synchronized with moves.
+
+Classify the remaining legacy Redux modules in a few batches.
+
+Separate apiSlice and sessionTimeSlice responsibilities.
+
+Move product-specific code into src/application.
+
+Add public APIs for core, template and application.
+
+Introduce layer aliases only after the physical structure is stable.
+
+Add automated dependency-boundary checks.

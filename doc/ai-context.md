@@ -1,569 +1,470 @@
-# AI Context for EnFlexIT/web.template
-
-> **Purpose**
->
-> This document provides the complete project context for AI assistants working on the
-> **EnFlexIT/web.template** repository.
->
-> It should be used as the primary context whenever a new ChatGPT conversation starts.
->
-> The goal is that an AI assistant understands:
->
-> - the project architecture
-> - development philosophy
-> - folder structure
-> - workflows
-> - coding conventions
-> - documentation strategy
-> - current roadmap
-> - future direction
-
----
-
-# Project Overview
-
-`web.template` is a reusable React Native / Expo Web / TypeScript application template for EnFlex.IT web applications.
-
-Originally developed as a reusable base template, it has evolved into a complete application framework that provides common infrastructure for future EnFlex.IT projects.
-
-The template focuses on providing reusable building blocks rather than project-specific functionality.
-
-Current infrastructure includes:
-
-- Authentication
-- OpenID Connect
-- Update System
-- Release Management
-- Test Release Management
-- Server Switching
-- Server Availability Checks
-- Static Menu Infrastructure
-- Notification System
-- User Profile Handling
-- File Configuration Upload
-- Feature Flags
-- Theme Support
-- Localization
-- Version Information
-- Redux Infrastructure
-
----
-
-# Project Vision
-
-The long-term goal is to evolve `web.template` into a reusable framework for all EnFlex.IT web applications.
-
-Whenever possible, new functionality should be implemented as reusable infrastructure instead of application-specific code.
-
-Future applications should be able to reuse:
-
-- authentication
-- navigation
-- server communication
-- update handling
-- configuration management
-- feature management
-- branding
-- localization
-- user management
-- release management
-
-without duplicating code.
-
----
-
-# Tech Stack
-
-- React Native
-- Expo Web
-- TypeScript
-- Redux Toolkit
-- React Navigation
-- React Native Unistyles
-- Axios
-- i18next
-- OpenAPI generated clients
-- GitHub Actions
-
----
+AI Context for EnFlexIT/web.template
 
-# Project Architecture
+Purpose
 
-```
-Application
-│
-├── UI
-│
-├── Navigation
-│
-├── Redux State
-│
-├── API Layer
-│
-├── Services
-│
-├── Localization
-│
-├── Components
-│
-├── Update System
-│
-└── Server Communication
-```
+This is the primary project context for AI assistants working on theEnFlexIT/web.template repository.
 
----
+It describes the architecture, migration rules, development workflow,important modules and current open decisions.
 
-# Important Project Areas
+Project overview
 
-## API
+web.template is a reusable React Native / Expo Web / TypeScript foundation forEnFlex.IT web applications.
 
-```
-src/api
-```
+It provides common infrastructure for:
 
-Contains
+JWT and OpenID Connect authentication
 
-- OpenAPI definitions
-- generated clients
-- API configuration
-- custom services
+session handling and JWT renewal
 
-Important files:
+server selection and availability checks
 
-- apiConfig.ts
-- publicApiConfig.ts
+generated Agent.Workbench API clients
 
----
+update and release handling
 
-## Components
+notifications
 
-```
-src/components
-```
+navigation and feature flags
 
-Contains reusable UI.
+theming and localization
 
-Examples
+reusable UI components
 
-- Cards
-- Buttons
-- Dialogs
-- Footer
-- Header
-- Notification Popup
-- Routing helpers
+configuration and settings
 
-AI should always reuse existing components before creating new ones.
+The repository is being changed from a single large template into a layeredfoundation for multiple products.
 
----
+Architecture
 
-## Redux
+application
+    ↓
+template
+    ↓
+core
 
-```
-src/redux
-```
+Core
 
-Shared application state.
+src/core contains reusable technical capabilities and shared types.
 
-Important slices include
+Core may contain:
 
-- updateSlice
-- serverSlice
-- connectivitySlice
-- notificationSlice
-- sessionTimeSlice
-- appReleaseSlice
-- featureFlags
-- themeSlice
+authentication transport and session logic
 
-Redux should only contain shared application state.
+server validation
 
----
+update infrastructure
 
-## Screens
+networking
 
-```
-src/screens
-```
+storage abstractions
 
-Contains all application screens.
+shared technical types and utilities
 
-Important areas
+Core must not import from template or application.
 
-Login
+Template
 
-Settings
+src/template contains reusable shell UI and reusable feature infrastructure.
 
-Notifications
+Template may contain:
 
-Logout
+design system
 
-Server Settings
+header, footer and navigation
 
-Update Screens
+reusable screens
 
-User Profile
+notifications
 
-Server Switch Overlay
+localization and theme state
 
-Offline Overlay
+server-selection UI state
 
-Menu Hub
+reusable hooks
 
----
+feature flags and registries
 
-# Main Features
-
-## Authentication
-
-Supports
-
-- JWT
-- OpenID Connect
-
-including
-
-- Login
-- Logout
-- Session Time
-- JWT Renewal
-- User Profile
-
----
-
-## Server Management
-
-Supports
-
-- Server Switching
-- Availability Check
-- Connectivity State
-- Footer Status
-
----
-
-## Update System
-
-Supports
-
-- Update Detection
-- Update Execution
-- Release Handling
-
----
-
-## Release Management
-
-GitHub Actions
-
-Normal Release
-
-```
-export-put-release.yml
-```
-
-Test Release
-
-```
-export-put-test-release.yml
-```
-
----
-
-## Notifications
-
-Central notification infrastructure.
-
----
-
-## Static Menu
-
-Menu and tabs are configurable through feature flags.
-
----
-
-## Localization
-
-```
-assets/locales
-```
-
-Languages
-
-- German
-- English
-
-Feature-based localization.
-
----
-
-# Documentation Strategy
-
-README.md
-
-↓
-
-Overview
-
-↓
-
-doc/
-
-↓
-
-Detailed documentation
-
-Examples
-
-- authentication.md
-
-- update-system.md
-
-- redux.md
-
-- components.md
-
-- release-workflow.md
-
-- ai-context.md
-
-README should stay small.
-
----
-
-# Release Workflow
-
-Development
-
-↓
-
-Git Commit
-
-↓
-
-GitHub
-
-↓
-
-GitHub Action
-
-↓
-
-Release Export
-
-↓
-
-Test Release
-
-↓
-
-Validation
-
-↓
-
-Production Release
-
----
-
-# Coding Guidelines
-
-AI should
-
-✔ follow existing architecture
-
-✔ reuse existing components
-
-✔ preserve project structure
-
-✔ keep functions focused
-
-✔ use descriptive names
-
-✔ avoid duplicated logic
-
-✔ prefer reusable solutions
-
-Avoid
-
-❌ rewriting large files unnecessarily
-
-❌ changing architecture without request
-
-❌ introducing duplicate functionality
-
-❌ bypassing Redux architecture
-
----
-
-# AI Working Rules
-
-Before changing code:
-
-1. Understand the existing implementation.
-
-2. Search for reusable components.
-
-3. Search for existing Redux logic.
-
-4. Search for localization.
-
-5. Search for existing APIs.
-
-6. Explain architectural impact before large changes.
-
-7. Prefer incremental improvements.
-
----
-
-# Protected Areas
-
-Unless explicitly requested, never redesign
-
-- Authentication
-
-- Redux Architecture
-
-- Navigation
-
-- Update Workflow
-
-- Localization Structure
-
-- API Generation
-
----
-
-# Documentation Rules
-
-Every feature documentation should explain
-
-- Purpose
-
-- Architecture
-
-- Data Flow
-
-- Configuration
-
-- Important Files
-
-- Troubleshooting
-
-- Future Extensions
-
----
-
-# Commit Message Convention
-
-Examples
-
-```
-feat(login): Add OpenID redirect
-
-fix(update): Prevent duplicate update check
-
-docs: Improve authentication documentation
-
-refactor(api): Simplify service initialization
-```
-
----
-
-# Current Roadmap
-
-Current development focus
-
-✔ Server Master
-
-✔ Update Process
-
-✔ Base Server Settings
-
-✔ OpenID Connect
-
-✔ Event Logging
-
-✔ Build Types
-
-✔ Feature Installation
-
-✔ Central Configuration
-
-Future ideas
-
-- Version History
-
-- Automatic Release Notes
-
-- Feature Management
-
-- Dynamic Branding
-
-- Configurable Applications
-
----
-
-# Future Architecture
-
-Long-term planned infrastructure
+Template may import from Core, but never from Application.
 
 Application
 
-↓
+src/application is the concrete product layer.
 
-Configuration
+Application may contain:
 
-↓
+product-specific business logic
 
-Feature Management
+product-specific screens and state
 
-↓
+concrete feature selection
 
-Branding
+branding and application configuration
 
-↓
+final store and navigation composition
+
+Application may use Template and Core.
+
+Current migration status
+
+Completed or established
+
+Design system moved to src/template/components/design-system.
+
+Public design-system alias added as @design-system.
+
+Reusable template hooks moved to src/template/hooks.
+
+Typed Redux hooks currently live in src/core/hooks.
+
+Navigation registries moved to src/template/navigation.
+
+Menu state moved to src/template/state/navigation.
+
+Language state moved to src/template/state/localization.
+
+Theme state moved to src/template/state/theme.
+
+Server and server-status state moved to src/template/state/server.
+
+Connectivity state moved to src/template/state/connectivity.
+
+Notification state moved to src/template/state/notifications.
+
+Password-change prompt state moved tosrc/template/state/authentication.
+
+AuthMethod moved to src/core/authentication/types.ts.
+
+ServerEnvironment moved to src/core/server/types.ts.
+
+Legacy duplicate connectivity state was removed.
+
+Jest uses the test folder and test/jest.setup.ts.
+
+Transitional
+
+src/redux/store.ts and src/redux/rootReducer.ts still compose all state.
+
+apiSlice.tsx still mixes API, authentication, server, persistence andtemplate menu responsibilities.
+
+sessionTimeSlice.tsx still mixes state, HTTP requests and active serverselection.
+
+Some screens and components remain in legacy top-level folders.
+
+Several feature slices remain under src/redux/slices.
+
+Public APIs and aliases for the three layers are not finished.
+
+Important current paths
+
+Core
+
+src/core/authentication
+src/core/server
+src/core/update
+src/core/hooks
+
+Template
+
+src/template/components/design-system
+src/template/components/layout
+src/template/components/notifications
+src/template/hooks
+src/template/navigation
+src/template/screens
+src/template/state
+
+Redux composition
+
+src/redux/store.ts
+src/redux/rootReducer.ts
+src/redux/selectors
+src/redux/slices
+
+Tests
+
+test
+test/jest.setup.ts
+
+Design system
+
+Reusable UI lives under:
+
+src/template/components/design-system
+
+Preferred public import:
+
+import {
+  ActionButton,
+  Card,
+  ConfirmDialog,
+  ThemedText,
+} from "@design-system";
+
+Before creating a new component, search the design system for an existingsolution.
+
+Navigation
+
+Navigation configuration:
+
+src/template/navigation/menu
+src/template/navigation/tabs
+
+Redux menu state:
+
+src/template/state/navigation/menuSlice.tsx
+
+Important distinction:
+
+staticMenu and staticTabs are registries
+
+feature-flag files contain configuration rules
+
+menuSlice contains state
+
+withAutoTabs is a navigation helper
 
 Authentication
 
-↓
+Canonical shared type:
 
-Updates
+src/core/authentication/types.ts
 
-↓
+Reusable implementation:
 
-Version History
+src/core/authentication/http
+src/core/authentication/jwt
+src/core/authentication/logout
+src/core/authentication/session
 
-↓
+Reusable authentication behavior belongs in Core. Login screens and dialogsbelong in Template.
 
-Notifications
+Known exception: Core session modules still consume the transitionalsessionTimeSlice, which depends on the concrete Redux store and apiSlice.Do not hide this dependency; separate it deliberately in a future refactor.
 
-↓
+Server management
 
-Business Modules
+Reusable logic and types:
 
----
+src/core/server
 
-# AI Prompt
+Reusable shell state:
 
-Whenever starting a new conversation:
+src/template/state/server
+src/template/state/connectivity
 
-```
+Connectivity checks answer only whether the backend is reachable. They mustnever perform logout.
+
+Redux
+
+Redux is not a layer. Place state according to responsibility:
+
+technical reusable state → Core
+
+reusable shell/UI state → Template
+
+product business state → Application
+
+reducer composition → Application composition
+
+Do not move apiSlice or sessionTimeSlice only to make the folder tree lookclean. First separate their responsibilities.
+
+API
+
+src/api
+├── config
+├── definition
+├── implementation
+└── services
+
+Generated API clients live under src/api/implementation.
+
+Do not manually refactor generated code.
+
+Localization
+
+Translations live under:
+
+assets/locales
+
+Supported languages currently include German and English.
+
+Prefer feature namespaces and existing translation keys. Do not hard-code UItext when the surrounding feature uses i18next.
+
+Working method
+
+The project uses small, verifiable refactoring batches.
+
+For each move:
+
+Search all references:
+
+git grep -n "<name-or-path>" -- .
+
+Inspect internal imports.
+
+Stabilize cross-folder imports with aliases where appropriate.
+
+Move one coherent file group.
+
+Apply exact global search-and-replace.
+
+Search for all old path variants.
+
+Run:
+
+npx tsc --noEmit
+
+Run targeted Jest tests:
+
+npx jest --runTestsByPath <test-file>
+
+Start Expo:
+
+npx expo start --clear
+
+Commit the completed batch.
+
+Do not wait for Metro to reveal stale imports one at a time.
+
+Coding rules
+
+AI assistants should:
+
+inspect the existing implementation before changing it
+
+reuse existing components, hooks, selectors and services
+
+respect the dependency direction
+
+prefer focused changes over large rewrites
+
+preserve behavior during architecture moves
+
+use exact, repository-wide import searches
+
+update tests and documentation with code moves
+
+identify transitional architecture honestly
+
+Avoid:
+
+creating duplicate utilities
+
+adding a second URL normalization implementation
+
+moving a mixed module without separating responsibilities
+
+introducing upward imports
+
+changing generated API code manually
+
+redesigning authentication, navigation or updates without explicit scope
+
+putting product-specific logic into Core or Template
+
+Documentation strategy
+
+README.md should remain a concise project entry point.
+
+Detailed documentation belongs in doc/, including:
+
+project structure
+
+Redux/state architecture
+
+authentication
+
+server switching
+
+update system
+
+components/design system
+
+releases
+
+architecture decisions
+
+AI context
+
+Documentation must distinguish:
+
+current implementation
+
+target architecture
+
+transitional exceptions
+
+open TODOs
+
+Commit convention
+
+Examples:
+
+feat(login): add OpenID redirect
+fix(update): prevent duplicate update check
+docs: update layered architecture
+refactor(state): move notification state into template
+
+Current roadmap
+
+Immediate
+
+Finish and commit the architecture documentation.
+
+Classify remaining Redux modules in a few batches.
+
+Move clear Template feature state.
+
+Move clear product-specific state into Application.
+
+Keep apiSlice and sessionTimeSlice transitional until separated.
+
+Next architecture phase
+
+Define public APIs for Core, Template and Application.
+
+Add aliases after physical structure is stable.
+
+Move store/root-reducer composition to Application.
+
+Add automated dependency-boundary checks.
+
+Consolidate Core utilities such as server URL normalization.
+
+Future platform capabilities
+
+application configuration
+
+feature management
+
+dynamic branding
+
+dynamic navigation and content
+
+application registry
+
+version history
+
+automatic release notes
+
+Prompt for a new AI conversation
 
 I am working on the EnFlexIT/web.template repository.
 
-Please use this AI context document as the primary project documentation.
+Use doc/ai-context.md as the primary project context.
 
-Always
+Respect this dependency direction:
 
-- understand existing architecture first
-- reuse existing components
-- preserve coding style
-- avoid duplicate functionality
-- explain architectural decisions
-- keep documentation inside doc/
+application -> template -> core
+
+Before changing code:
+- search all references
+- inspect existing reusable modules
+- explain the architectural impact
+- make a small coherent change
+- update imports globally
+- run TypeScript, targeted tests and Expo
+- update documentation when paths or responsibilities change
 
 Current task:
 
 [INSERT CURRENT TASK HERE]
-
-```
