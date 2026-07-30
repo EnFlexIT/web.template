@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
-
+import type { AuthMethod } from "@/core/authentication/types";
 import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
 import {
   getApplicationMode,
@@ -25,8 +25,7 @@ const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
 export const jwtByServerKey = "jwtByServer" as const;
 const serversKey = "servers" as const;
-
-export type AuthMethod = "jwt" | "oidc" | "unknown";
+export type { AuthMethod };
 type JwtByServer = Record<string, string>;
 
 const defaultAuthenticationMethod: AuthMethod = "unknown";

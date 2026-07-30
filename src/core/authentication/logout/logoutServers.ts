@@ -2,9 +2,9 @@ import {
   getJwtForServer,
   normalizeBaseUrl,
   setJwtForServer,
-  type AuthMethod,
+  
 } from "@/redux/slices/apiSlice";
-
+import type { AuthMethod } from "@/core/authentication/types";
 export type LogoutServerSource = {
   id: string;
   name?: string | null;
