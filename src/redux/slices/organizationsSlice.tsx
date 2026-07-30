@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
+import { RootState } from '@/redux/store';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Data } from "./Data";
 

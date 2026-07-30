@@ -1,6 +1,6 @@
 // src/redux/selectors/serverSelectors.ts
 
-import type { RootState } from "../store";
+import type { RootState } from '@/redux/store';
 
 export function normalizeServerKey(url: string | null | undefined) {
   return (url ?? "").trim().replace(/\/+$/, "");

@@ -7,7 +7,7 @@ import {
   getApplicationMode,
   type ApplicationMode,
 } from "../../util/applicationMode";
-import { RootState } from "../store";
+import { RootState } from '@/redux/store';
 import { setReady } from "./readySlice";
 import {
   AdminsApi,
