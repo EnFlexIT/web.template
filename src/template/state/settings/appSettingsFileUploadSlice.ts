@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import type { AuthMethod } from "./apiSlice";
+import type { AuthMethod } from "@/core/authentication/types";
 
 type MessageType = "INFO" | "WARNING" | "ERROR";
 

@@ -3,7 +3,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import type { RootState } from '@/redux/store';
-import { normalizeBaseUrl, selectApi } from "./apiSlice";
+import { normalizeBaseUrl,selectApi } from "@/redux/slices/apiSlice";
 
 export type SessionTimes = {
   remainingTime: number;

@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+﻿/// <reference types="jest" />
 
 import reducer, {
   setExecSettingsField,
@@ -12,7 +12,7 @@ import reducer, {
   fetchProjects,
   fetchProjectSetups,
   fetchAvailableExecAgents,
-} from "../src/redux/slices/execSettingsSlice";
+} from "../src/template/state/agent-workbench/execSettingsSlice";
 
 describe("execSettingsSlice", () => {
   it("should return the initial state", () => {
@@ -262,7 +262,7 @@ describe("execSettingsSlice", () => {
  * ============================================================
  * PURPOSE
  * ============================================================
- * Testet den Redux execSettingsSlice unabhängig von UI und Backend.
+ * Testet den Redux execSettingsSlice unabhÃ¤ngig von UI und Backend.
  *
  * Fokus:
  * - Initial State

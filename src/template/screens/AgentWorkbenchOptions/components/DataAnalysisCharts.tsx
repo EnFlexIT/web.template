@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -7,7 +7,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
 import { createEnFlexChart } from "../../../../styles/charttheme";
-import type { DataAnalysisHistoryEntry } from "@/redux/slices/dataAnalysisSlice";
+import type { DataAnalysisHistoryEntry } from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {
   history: DataAnalysisHistoryEntry[];

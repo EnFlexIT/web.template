@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -11,13 +11,13 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import type { BackgroundPlatform } from "@/redux/slices/dataAnalysisSlice";
+import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
 import {
   fetchDataAnalysis,
   selectDataAnalysisError,
   selectDataAnalysisHistory,
   selectDataAnalysisPlatforms,
-} from "@/redux/slices/dataAnalysisSlice";
+} from "@/template/state/agent-workbench/dataAnalysisSlice";
 import { Screen } from "@/template/components/layout/Screen";
 
 function safeText(value: unknown, fallback = "-"): string {
@@ -94,7 +94,7 @@ export function DataAnalyzingTab() {
         subtitle: `${getPlatformRole(
           platform,
           t,
-        )} · CPU ${platform.currentCpuLoad.toFixed(2)} % · Threads ${
+        )} Â· CPU ${platform.currentCpuLoad.toFixed(2)} % Â· Threads ${
           platform.currentNumThreads
         }`,
         tone: getPlatformTone(platform),

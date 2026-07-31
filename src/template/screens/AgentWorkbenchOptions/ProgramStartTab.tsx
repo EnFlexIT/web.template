@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Modal } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
@@ -11,7 +11,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import {SelectableList, SelectableItem,} from "@/template/components/design-system/ui-elements/SelectableList";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { fetchDbSettings, selectFactories, selectFactoryStates,} from "@/redux/slices/dbSettingsSlice";
+import { fetchDbSettings, selectFactories, selectFactoryStates,} from "@/template/state/settings/database/dbSettingsSlice";
 import {
   addEmbeddedSystemAgent,
   clearExecSettingsError,
@@ -31,7 +31,7 @@ import {
   selectLocalIpSelections,
   setEmbeddedSystemAgentField,
   setExecSettingsField,
-} from "@/redux/slices/execSettingsSlice";
+} from "@/template/state/agent-workbench/execSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
 
@@ -558,7 +558,7 @@ const onChangeLocalAddressMode = (value: LocalAddressMode) => {
                   onPress={() => onChangeLocalAddressMode("ip")}
                 />
                 <ActionButton
-                label="✎"
+                label="âœŽ"
                 size="sm"
                 variant="secondary"
                 onPress={() => {

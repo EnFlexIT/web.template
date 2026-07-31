@@ -10,19 +10,19 @@ import { OrganizationsData } from "@/template/state/organizations/organizationsS
 import baseModeReducer from "@/template/state/mode/baseModeSlice";
 import serversReducer from "@/template/state/server/serverSlice";
 import connectivityReducer from "@/template/state/connectivity/connectivitySlice";
-import dbSettingsReducer from "./slices/dbSettingsSlice";
+import dbSettingsReducer from "@/template/state/settings/database/dbSettingsSlice";
 import passwordChangePromptReducer from "@/template/state/authentication/passwordChangePromptSlice";
 import notificationsReducer from "@/template/state/notifications/notificationSlice";
-import execSettingsReducer from "./slices/execSettingsSlice";
-import dataAnalysisReducer from "./slices/dataAnalysisSlice";
+import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
+import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
 import updateReducer from "@/core/update/redux/updateSlice";
 import sessionTimeReducer from "./slices/sessionTimeSlice";
 import serverStatusReducer from "@/template/state/server/serverStatusSlice";
-import appSettingsFileUploadReducer from "./slices/appSettingsFileUploadSlice";
+import appSettingsFileUploadReducer from "@/template/state/settings/appSettingsFileUploadSlice";
 import appReleaseReducer from "@/template/state/release/appReleaseSlice";
 import userProfileReducer from "@/template/state/authentication/userProfileSlice";
-import liveConsoleReducer from "./slices/liveConsoleSlice";
-import developerConsoleReducer from "./slices/developerConsoleSlice";
+import liveConsoleReducer from "@/template/state/developer-tools/liveConsoleSlice";
+import developerConsoleReducer from "@/template/state/developer-tools/developerConsoleSlice";
 
 export const rootReducer = combineReducers({
   language: languageReducer,
@@ -51,3 +51,4 @@ export const rootReducer = combineReducers({
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
+

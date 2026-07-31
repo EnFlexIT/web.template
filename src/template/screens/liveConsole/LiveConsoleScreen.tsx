@@ -1,4 +1,4 @@
-import React, {useMemo,useRef,} from "react";
+﻿import React, {useMemo,useRef,} from "react";
 
 import {Platform,ScrollView,View,} from "react-native";
 
@@ -13,9 +13,9 @@ import {useAppSelector,} from "@/core/hooks/useAppSelector";
 
 import {useThemedScrollbarWeb,} from "@/template/hooks/useThemedScrollbarWeb";
 
-import {clearLines,connectLiveConsole,selectLiveConsole,setFollowOutput, type LiveConsoleStatus,} from "@/redux/slices/liveConsoleSlice";
+import {clearLines,connectLiveConsole,selectLiveConsole,setFollowOutput, type LiveConsoleStatus,} from "@/template/state/developer-tools/liveConsoleSlice";
 
-import {dockDeveloperConsole,} from "@/redux/slices/developerConsoleSlice";
+import {dockDeveloperConsole,} from "@/template/state/developer-tools/developerConsoleSlice";
 
 //**************************************************************************** */
 type LiveConsoleScreenProps = {
@@ -70,7 +70,7 @@ export function LiveConsoleScreen({
     );
 
   /*
-   * Die CSS-Regel des Hooks wirkt auf alle Scrollflächen
+   * Die CSS-Regel des Hooks wirkt auf alle ScrollflÃ¤chen
    * innerhalb des Views mit dieser nativeID.
    *
    * Dadurch werden sowohl die normale Live-Konsole als auch

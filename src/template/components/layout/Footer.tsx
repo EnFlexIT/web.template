@@ -5,9 +5,9 @@ import { Buffer } from "buffer";
 import { useTranslation } from "react-i18next";
 import { isMobileShellRuntime } from "../../../util/runtime";
 
-import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/redux/slices/developerConsoleSlice";
+import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/template/state/developer-tools/developerConsoleSlice";
 
-import {selectLiveConsole,} from "@/redux/slices/liveConsoleSlice";
+import {selectLiveConsole,} from "@/template/state/developer-tools/liveConsoleSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
@@ -580,3 +580,4 @@ consoleStatusDotError: {
   backgroundColor: "#ef4444",
 },
 }));
+

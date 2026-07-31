@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+﻿/// <reference types="jest" />
 
 import reducer, {
   setDerbyField,
@@ -15,7 +15,7 @@ import reducer, {
   saveDerbyNetworkServerSettings,
   testGeneralDbConnection,
   testFactoryDbConnection,
-} from "../src/redux/slices/dbSettingsSlice";
+} from "../src/template/state/settings/database/dbSettingsSlice";
 
 describe("dbSettingsSlice", () => {
   it("should return the initial state", () => {
@@ -329,7 +329,7 @@ describe("dbSettingsSlice", () => {
  * - kaputte Derby-Konfiguration
  * - fehlerhafte Reducer
  * - falsche selectedFactoryId
- * - fehlerhafte Save/Fetch Zustände
+ * - fehlerhafte Save/Fetch ZustÃ¤nde
  * - inkonsistente DB-Systeme
  * - kaputte Loading/Saving States
  *
@@ -360,8 +360,8 @@ describe("dbSettingsSlice", () => {
  * ============================================================
  * GOAL
  * ============================================================
- * Sichere Prüfung der gesamten DB-Settings-Logik,
- * damit Refactoring und Backend-Änderungen keine
+ * Sichere PrÃ¼fung der gesamten DB-Settings-Logik,
+ * damit Refactoring und Backend-Ã„nderungen keine
  * versteckten Fehler erzeugen.
  * ============================================================
  */

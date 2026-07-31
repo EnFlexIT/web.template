@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -33,7 +33,7 @@ import {
 import {
   resetUploadState,
   uploadAppSettingsFile,
-} from "@/redux/slices/appSettingsFileUploadSlice";
+} from "@/template/state/settings/appSettingsFileUploadSlice";
 
 const Feather = withUnistyles(Feather_);
 
@@ -102,8 +102,8 @@ async function readResponseMessage(
     const text = (await response.text()).trim();
 
     /*
-     * HTML-Fehlerseiten sind für Benutzer nicht hilfreich und
-     * sollen nicht direkt in der Oberfläche angezeigt werden.
+     * HTML-Fehlerseiten sind fÃ¼r Benutzer nicht hilfreich und
+     * sollen nicht direkt in der OberflÃ¤che angezeigt werden.
      */
     if (
       !text ||
@@ -248,11 +248,11 @@ function setJettySetting(
 
 function getDisplayFileName(file: File): string {
   /*
-   * Browser liefern bei <input type="file"> aus Sicherheitsgründen
-   * häufig einen künstlichen Wert wie "C:\\fakepath\\datei.xml".
+   * Browser liefern bei <input type="file"> aus SicherheitsgrÃ¼nden
+   * hÃ¤ufig einen kÃ¼nstlichen Wert wie "C:\\fakepath\\datei.xml".
    *
    * Der echte lokale Dateipfad ist im Browser absichtlich nicht
-   * verfügbar. Für die Anzeige verwenden wir deshalb ausschließlich
+   * verfÃ¼gbar. FÃ¼r die Anzeige verwenden wir deshalb ausschlieÃŸlich
    * den sicheren Dateinamen aus File.name.
    */
   const fileName = String(file.name ?? "").trim();
@@ -829,7 +829,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
           getUploadResultMessage(result) ||
           t(
             "messageConfigurationUploadInvalid",
-            "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+            "Die Konfigurationsdatei ist nicht gÃ¼ltig und wurde nicht angewendet.",
           );
 
         setConfigDialogVisible(false);
@@ -862,7 +862,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
       setConfigDialogText(
         t(
           "messageConfigurationUploadLogout",
-          "Die Anmeldung wird zurückgesetzt. Bitte melde dich danach erneut an.",
+          "Die Anmeldung wird zurÃ¼ckgesetzt. Bitte melde dich danach erneut an.",
         ),
       );
 
@@ -1025,7 +1025,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
           response.status >= 500
         ) {
           /*
-           * Eine verständliche Servermeldung hat Vorrang.
+           * Eine verstÃ¤ndliche Servermeldung hat Vorrang.
            * Bei leerer oder technischer Antwort wird eine
            * benutzerfreundliche Meldung verwendet.
            */
@@ -1128,7 +1128,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
 
       /*
        * Nicht direkt widerrufen, da einige Browser den Download
-       * sonst abbrechen können.
+       * sonst abbrechen kÃ¶nnen.
        */
       window.setTimeout(() => {
         window.URL.revokeObjectURL(
@@ -1247,7 +1247,7 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
               <ThemedText style={s.info}>
                 {t(
                   "messageDetectedNextServerUrl",
-                  "Die Datei ändert voraussichtlich die Server-Adresse auf {{url}}.",
+                  "Die Datei Ã¤ndert voraussichtlich die Server-Adresse auf {{url}}.",
                   { url: nextBaseUrlAfterUpload },
                 )}
               </ThemedText>
@@ -1309,11 +1309,11 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
           icon="alert-triangle"
           title={t(
             "messagePortChangeDialogTitle",
-            "Server-Adresse ändern?",
+            "Server-Adresse Ã¤ndern?",
           )}
           description={t(
             "messagePortChangeDialogDescription",
-            "Die ausgewählte Konfiguration ändert die Server-Adresse von {{currentUrl}} auf {{nextUrl}}. Möchtest du die neue Adresse verwenden oder die Datei vor dem Upload auf die aktuelle Adresse umschreiben?",
+            "Die ausgewÃ¤hlte Konfiguration Ã¤ndert die Server-Adresse von {{currentUrl}} auf {{nextUrl}}. MÃ¶chtest du die neue Adresse verwenden oder die Datei vor dem Upload auf die aktuelle Adresse umschreiben?",
             {
               currentUrl: normalizeBaseUrl(api.ip),
               nextUrl: nextBaseUrlAfterUpload,
@@ -1344,16 +1344,16 @@ async function syncSelectedServerBaseUrl(baseUrl: string): Promise<void> {
           icon="alert-triangle"
           title={t(
             "messageConfigurationUploadWarningTitle",
-            "Konfigurationsdatei ungültig",
+            "Konfigurationsdatei ungÃ¼ltig",
           )}
           description={
             uploadWarningText ||
             t(
               "messageConfigurationUploadInvalid",
-              "Die Konfigurationsdatei ist nicht gültig und wurde nicht angewendet.",
+              "Die Konfigurationsdatei ist nicht gÃ¼ltig und wurde nicht angewendet.",
             )
           }
-          confirmLabel={t("buttonClose", "Schließen")}
+          confirmLabel={t("buttonClose", "SchlieÃŸen")}
           onConfirm={() => {
             setUploadWarningDialogVisible(false);
           }}

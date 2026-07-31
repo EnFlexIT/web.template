@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useEffect,
 } from "react";
 
@@ -27,7 +27,7 @@ import {
   connectLiveConsole,
   disconnectLiveConsole,
   selectLiveConsole,
-} from "@/redux/slices/liveConsoleSlice";
+} from "@/template/state/developer-tools/liveConsoleSlice";
 
 import {
   closeDeveloperConsole,
@@ -35,7 +35,7 @@ import {
   persistDeveloperConsoleState,
   selectDeveloperConsole,
   toggleDeveloperConsole,
-} from "@/redux/slices/developerConsoleSlice";
+} from "@/template/state/developer-tools/developerConsoleSlice";
 
 type DeveloperConsoleProps = {
   children: React.ReactNode;
@@ -48,7 +48,7 @@ const RIGHT_PANEL_WIDTH = 460;
 const CONSOLE_HEADER_HEIGHT = 38;
 
 /**
- * Verwaltet die WebSocket-Verbindung unabhängig
+ * Verwaltet die WebSocket-Verbindung unabhÃ¤ngig
  * von der sichtbaren Console-Darstellung.
  *
  * Diese Komponente wird genau einmal in index.tsx
@@ -139,7 +139,7 @@ export function DeveloperConsole({
       "closing";
 
   /**
-   * Speichert geöffnet/geschlossen und
+   * Speichert geÃ¶ffnet/geschlossen und
    * die letzte Docking-Position.
    */
   useEffect(() => {
@@ -331,7 +331,7 @@ export function DeveloperConsole({
               "closeDeveloperConsole",
               {
                 defaultValue:
-                  "Developer Console schließen",
+                  "Developer Console schlieÃŸen",
               },
             )}
             onPress={() => {
@@ -348,7 +348,7 @@ export function DeveloperConsole({
             <ThemedText
               style={s.closeButtonText}
             >
-              ×
+              Ã—
             </ThemedText>
           </Pressable>
         </View>

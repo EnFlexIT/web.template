@@ -5,7 +5,7 @@ import {
   BGPLATFORM,
   DATA_ANALYZING_PERFORMATIVE,
   bgPlatformKey,
-} from "../constants/dataAnalyzingConstants";
+} from "@/redux/constants/dataAnalyzingConstants";
 
 type PropertyEntry = {
   key: string;

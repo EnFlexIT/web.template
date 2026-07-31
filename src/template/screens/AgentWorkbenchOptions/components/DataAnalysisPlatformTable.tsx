@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { ScrollView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -6,7 +6,7 @@ import { StyleSheet } from "react-native-unistyles";
 import { Table } from "../../../../components/Table";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import type { BackgroundPlatform } from "@/redux/slices/dataAnalysisSlice";
+import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {
   platforms: BackgroundPlatform[];
