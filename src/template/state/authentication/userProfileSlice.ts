@@ -1,7 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import { RootState } from '@/redux/store';
-import { normalizeBaseUrl, type AuthMethod } from "./apiSlice";
+import type { AuthMethod } from "@/core/authentication/types";
+import { normalizeBaseUrl } from "@/redux/slices/apiSlice";
 
 type PropertyEntry = {
   key: string;

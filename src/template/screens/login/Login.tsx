@@ -1,4 +1,4 @@
-// src/screens/login/Login.tsx
+﻿// src/screens/login/Login.tsx
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -13,7 +13,7 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
 
-import { loadUserProfile } from "@/redux/slices/userProfileSlice";
+import { loadUserProfile } from "@/template/state/authentication/userProfileSlice";
 import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { Logo } from "@/template/components/layout/Logo";
@@ -413,7 +413,7 @@ export function LoginScreen() {
 
       if (!isWeb || typeof window === "undefined") {
         setLoginRequestStatus("failed");
-        setLoginFeedback("OIDC ist nur im Web verfügbar.");
+        setLoginFeedback("OIDC ist nur im Web verfÃ¼gbar.");
         return;
       }
 
@@ -506,7 +506,7 @@ export function LoginScreen() {
 
       if (msg.includes("duplicate_sessions")) {
         setLoginFeedback(
-          "Es gibt doppelte Server-Sessions. Bitte alte OIDC-Sitzungen schließen und erneut anmelden.",
+          "Es gibt doppelte Server-Sessions. Bitte alte OIDC-Sitzungen schlieÃŸen und erneut anmelden.",
         );
       } else if (
         msg.includes("failed to fetch") ||

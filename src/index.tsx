@@ -1,4 +1,4 @@
-// src/index.tsx
+﻿// src/index.tsx
 import { DeveloperConsole,DeveloperConsoleConnection,} from "@/components/developer-console/DeveloperConsole";
   import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
@@ -29,8 +29,8 @@ import { store } from "./redux/store";
 
 import { initializeLanguage } from "@/template/state/localization/languageSlice";
 import { initializeTheme } from "@/template/state/theme/themeSlice";
-import { initializeDataPermissions } from "./redux/slices/dataPermissionsSlice";
-import { initializeOrganizations } from "./redux/slices/organizationsSlice";
+import { initializeDataPermissions } from "@/template/state/privacy/dataPermissionsSlice";
+import { initializeOrganizations } from "@/template/state/organizations/organizationsSlice";
 
 import { NotificationPopup } from "./template/components/notifications/NotificationPopup";
 import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";

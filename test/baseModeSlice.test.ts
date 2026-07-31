@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+﻿/// <reference types="jest" />
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock")
@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import reducer, {
   setBaseModeLoggedIn,
   logoutBaseMode,
-} from "../src/redux/slices/baseModeSlice";
+} from "../src/template/state/mode/baseModeSlice";
 
 describe("baseModeSlice", () => {
   beforeEach(() => {
@@ -79,7 +79,7 @@ describe("baseModeSlice", () => {
  * ============================================================
  * Diese Tests verhindern:
  * - verlorenen BaseMode Login Status
- * - fehlerhafte Logout-Zustände
+ * - fehlerhafte Logout-ZustÃ¤nde
  * - kaputte AsyncStorage Speicherung
  * - inkonsistente baseMode States
  * - fehlerhafte Reducer Updates
@@ -102,7 +102,7 @@ describe("baseModeSlice", () => {
  * ============================================================
  * GOAL
  * ============================================================
- * Sichere Prüfung der BaseMode-Logik,
+ * Sichere PrÃ¼fung der BaseMode-Logik,
  * damit Login/Logout Verhalten stabil bleibt
  * und Refactoring keine versteckten Fehler erzeugt.
  * ============================================================

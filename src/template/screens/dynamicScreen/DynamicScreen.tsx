@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
+﻿import React, { ReactNode, useEffect, useState } from "react";
 import { Screen } from "@/template/components/layout/Screen";
 import { LoadingScreen } from  "../loading/LoadingScreen";
 import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
@@ -6,7 +6,7 @@ import { MenuItem } from "@/template/state/navigation/menuSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "@/redux/slices/apiSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { selectBaseMode } from "@/redux/slices/baseModeSlice";
+import { selectBaseMode } from "@/template/state/mode/baseModeSlice";
 
 //  Feature-Flag Check
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
@@ -24,7 +24,7 @@ export function DynamicScreen({ node }: DynamicScreenProps) {
   // falls BaseMode separat :
   const { baseModeLoggedIn } = useAppSelector(selectBaseMode);
 
-  // ROUTE-GATE: wenn feature disabled → sofort stoppen
+  // ROUTE-GATE: wenn feature disabled â†’ sofort stoppen
   const enabled = isMenuEnabled(node.menuID);
 
   // nur laden, wenn wirklich autorisiert
@@ -39,7 +39,7 @@ export function DynamicScreen({ node }: DynamicScreenProps) {
     if (!enabled) {
       setElement(
         <ThemedText>
-          Dieser Bereich ist aktuell in Bearbeitung und daher vorübergehend nicht verfügbar.
+          Dieser Bereich ist aktuell in Bearbeitung und daher vorÃ¼bergehend nicht verfÃ¼gbar.
         </ThemedText>
       );
       return () => {
@@ -53,7 +53,7 @@ export function DynamicScreen({ node }: DynamicScreenProps) {
           if (alive) {
             setElement(
               <ThemedText>
-                Nicht angemeldet – Dynamic Content kann nicht geladen werden.
+                Nicht angemeldet â€“ Dynamic Content kann nicht geladen werden.
               </ThemedText>
             );
           }
@@ -76,7 +76,7 @@ export function DynamicScreen({ node }: DynamicScreenProps) {
         if (status === 401) {
           setElement(
             <ThemedText>
-              401 Unauthorized – bitte neu einloggen oder Base-Login prüfen.
+              401 Unauthorized â€“ bitte neu einloggen oder Base-Login prÃ¼fen.
             </ThemedText>
           );
           return;
@@ -97,3 +97,4 @@ export function DynamicScreen({ node }: DynamicScreenProps) {
 
   return element ? <Screen>{element}</Screen> : <LoadingScreen />;
 }
+

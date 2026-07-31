@@ -1,4 +1,4 @@
-// src/template/components/ui-elements/DataPermissionsDialog.tsx
+﻿// src/template/components/ui-elements/DataPermissionsDialog.tsx
 import React, { useMemo } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { BlurView as BlurView_ } from "expo-blur";
@@ -19,7 +19,7 @@ import {
   acceptAll,
   rejectOptional,
   setHasSeenDialog,
-} from "@/redux/slices/dataPermissionsSlice";
+} from "@/template/state/privacy/dataPermissionsSlice";
 
 import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 
@@ -169,7 +169,7 @@ export function DataPermissionsDialog() {
           <ThemedView style={styles.textContainer}>
             <ThemedText style={styles.text}>
               {t("privacy_settings_description", {
-                defaultValue: "Auf Ihrem Gerät gespeicherte Informationen:",
+                defaultValue: "Auf Ihrem GerÃ¤t gespeicherte Informationen:",
               })}
             </ThemedText>
           </ThemedView>
@@ -211,7 +211,7 @@ export function DataPermissionsDialog() {
               style={styles.actionButton}
             >
               <ThemedText style={styles.actionText}>
-                {t("apply", { defaultValue: "Bestätigen" })}
+                {t("apply", { defaultValue: "BestÃ¤tigen" })}
               </ThemedText>
             </Pressable>
           </ThemedView>

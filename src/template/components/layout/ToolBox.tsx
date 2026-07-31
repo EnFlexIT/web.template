@@ -1,4 +1,4 @@
-// src/components/ToolBox.tsx
+﻿// src/components/ToolBox.tsx
 
 import React, {
   useCallback,
@@ -21,7 +21,7 @@ import {
   selectJwt,
 } from "@/redux/slices/apiSlice";
 
-import { logoutBaseMode, selectBaseMode } from "@/redux/slices/baseModeSlice";
+import { logoutBaseMode, selectBaseMode } from "@/template/state/mode/baseModeSlice";
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 
 import { useJwtSessionTimerWeb } from "@/core/authentication/session/useJwtSessionTimerWeb";
@@ -154,7 +154,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   /*
    * JWT:
    * Wenn ein JWT vorhanden ist und es nicht OIDC ist,
-   * arbeitet der Timer über JWT-exp.
+   * arbeitet der Timer Ã¼ber JWT-exp.
    */
   const isJwt = Boolean(jwt) && !isOidc;
 
@@ -172,7 +172,7 @@ export function ToolBox({ isLoggedIn, isBaseMode }: ToolBoxProps) {
   const suppressSessionPopupUntilRef = useRef<number>(0);
 
   /*
-   * Dieser 1-Sekunden-Tick ist nur für OIDC nötig,
+   * Dieser 1-Sekunden-Tick ist nur fÃ¼r OIDC nÃ¶tig,
    * weil S/T aus Redux + lastCheckedAt live runtergerechnet werden.
    * JWT bringt secondsLeft schon direkt aus useJwtSessionTimerWeb.
    */

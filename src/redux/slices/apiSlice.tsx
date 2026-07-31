@@ -8,7 +8,7 @@ import {
   type ApplicationMode,
 } from "../../util/applicationMode";
 import { RootState } from '@/redux/store';
-import { setReady } from "./readySlice";
+import { setReady } from "@/template/state/bootstrap/readySlice";
 import {
   AdminsApi,
   Configuration as RestApiConfiguration,
@@ -988,7 +988,7 @@ const initialState: ApiState = {
 
         state.awb_rest_api = apis.awb_rest_api;
         state.dynamic_content_api = apis.dynamic_content_api;
-        state.isLoggedIn = computeLoggedIn({
+      state.isLoggedIn = computeLoggedIn({
           authenticationMethod: action.payload.authenticationMethod,
           jwt: action.payload.jwt,
           authenticated: action.payload.authenticated,
@@ -1009,11 +1009,10 @@ const initialState: ApiState = {
         state.awb_rest_api = apis.awb_rest_api;
         state.dynamic_content_api = apis.dynamic_content_api;
 
-        state.isLoggedIn = computeLoggedIn({
-          authenticationMethod: state.authenticationMethod,
-          jwt: action.payload,
-          authenticated: state.isBaseMode === false,
-        });
+       state.isLoggedIn = computeLoggedIn({
+        authenticationMethod: state.authenticationMethod,
+        jwt: action.payload,
+      });
       },
 
       logoutLocal: (state) => {

@@ -1,9 +1,9 @@
-
+﻿
 
 import reducer, {
   ReadyState,
   setReady,
-} from "../src/redux/slices/readySlice";
+} from "../src/template/state/bootstrap/readySlice";
 
 describe("readySlice", () => {
   const initialState: ReadyState = {
@@ -78,13 +78,13 @@ describe("readySlice", () => {
  * ============================================================
  * Keine direkten Backend-Features.
  *
- * Der Slice steuert ausschließlich den lokalen
+ * Der Slice steuert ausschlieÃŸlich den lokalen
  * Redux Ready-State der Anwendung.
  *
  * ============================================================
  * GOAL
  * ============================================================
- * Sichere Prüfung der Ready-State-Logik,
+ * Sichere PrÃ¼fung der Ready-State-Logik,
  * damit Initialisierung und App-Status
  * stabil funktionieren.
  * ============================================================

@@ -1,4 +1,4 @@
-import { View } from "react-native";
+﻿import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
@@ -17,7 +17,7 @@ import {
   setPermissionValue,
   acceptAll,
   rejectOptional,
-} from "@/redux/slices/dataPermissionsSlice";
+} from "@/template/state/privacy/dataPermissionsSlice";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 
 export function PrivacySettings() {
@@ -117,3 +117,4 @@ const styles = StyleSheet.create(() => ({
   },
   rightCell: {},
 }));
+

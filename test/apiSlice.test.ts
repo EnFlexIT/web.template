@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+﻿/// <reference types="jest" />
 
 jest.mock(
   "@react-native-async-storage/async-storage",
@@ -16,7 +16,7 @@ jest.mock("../src/util/applicationMode", () => ({
   getApplicationMode: () => "development",
 }));
 
-jest.mock("../src/redux/slices/menuSlice", () => ({
+jest.mock("@/template/state/navigation/menuSlice", () => ({
   clearMenu: () => ({
     type: "menu/clearMenu",
   }),
@@ -26,7 +26,7 @@ jest.mock("../src/redux/slices/menuSlice", () => ({
   }),
 }));
 
-jest.mock("../src/redux/slices/readySlice", () => ({
+jest.mock("../src/template/state/bootstrap/readySlice", () => ({
   setReady: (value: boolean) => ({
     type: "ready/setReady",
     payload: value,
@@ -80,7 +80,7 @@ import reducer, {
 
 /**
  * JWT mit einem Ablaufdatum in der Zukunft.
- * Eine Signatur ist für jwtDecode im Test nicht notwendig.
+ * Eine Signatur ist fÃ¼r jwtDecode im Test nicht notwendig.
  */
 const VALID_TEST_JWT =
   "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +

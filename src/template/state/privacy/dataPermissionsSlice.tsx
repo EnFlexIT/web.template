@@ -7,7 +7,7 @@ import {
   DEFAULT_PERMISSION_VALUES,
   PermissionId,
   PERMISSIONS,
-} from "../../permissions/PermiossionGroup";
+} from "@/permissions/PermiossionGroup";
 
 const STORAGE_KEY = "dataPermissions";
 

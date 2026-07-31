@@ -1,4 +1,4 @@
-import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
+﻿import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { StyleSheet } from "react-native-unistyles";
 import { useMemo, useState } from "react";
@@ -10,10 +10,10 @@ import {
   addOrganization,
   selectOrganizations,
   setCurrentOrganization,
-} from "@/redux/slices/organizationsSlice";
+} from "@/template/state/organizations/organizationsSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 //import { setIpLocal } from "@/redux/slices/apiSlice";
-import { setReady } from "@/redux/slices/readySlice";
+import { setReady } from "@/template/state/bootstrap/readySlice";
 import { foldl } from "../../../util/func";
 
 //  WICHTIG: so wie in deinem apiSlice
@@ -326,3 +326,4 @@ const styles = StyleSheet.create((theme) => ({
     },
   },
 }));
+

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform,Pressable,useWindowDimensions, View,} from "react-native";import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Buffer } from "buffer";
@@ -48,7 +48,7 @@ import {
 import {
   selectIsTestRelease,
   setWebAppReleaseType,
-} from "@/redux/slices/appReleaseSlice";
+} from "@/template/state/release/appReleaseSlice";
 
 import { ServerLoginModal } from "../../screens/login/ServerLoginModal";
 
@@ -239,7 +239,7 @@ export function Footer() {
 
     try {
       if (pendingServerAuthMethod !== "jwt") {
-        throw new Error("Für diesen Server ist kein Passwort-Login nötig.");
+        throw new Error("FÃ¼r diesen Server ist kein Passwort-Login nÃ¶tig.");
       }
 
       const trimmedUsername = params.username.trim();

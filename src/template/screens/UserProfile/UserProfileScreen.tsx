@@ -1,4 +1,4 @@
-// src/screens/UserProfile/UserProfileScreen.tsx
+﻿// src/screens/UserProfile/UserProfileScreen.tsx
 
 import React, { useEffect, useMemo } from "react";
 import { ScrollView, View } from "react-native";
@@ -13,7 +13,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
-import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/redux/slices/userProfileSlice";
+import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/template/state/authentication/userProfileSlice";
 
 export function UserProfileScreen() {
   const dispatch = useAppDispatch();
