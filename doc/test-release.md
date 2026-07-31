@@ -167,7 +167,7 @@ the footer can show a visible `TEST` badge.
 
 | File | Purpose |
 | --- | --- |
-| `src/redux/slices/appReleaseSlice.tsx` | Stores the current web application release type. |
+| `src/template/state/release/appReleaseSlice.tsx` | Stores the current web application release type. |
 | `src/screens/login/serverCheck.ts` | Reads backend application settings and parses `_WebAppReleaseType`. |
 | `src/components/Footer.tsx` | Displays release related UI such as the `TEST` badge. |
 
@@ -239,7 +239,7 @@ Check the backend application settings response and the release type handling in
 
 ```txt
 src/screens/login/serverCheck.ts
-src/redux/slices/appReleaseSlice.tsx
+src/template/state/release/appReleaseSlice.tsx
 src/components/Footer.tsx
 ```
 

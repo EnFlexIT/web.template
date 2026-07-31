@@ -7,7 +7,7 @@ The file configuration upload screen allows users to download and upload backend
 | File | Purpose |
 | --- | --- |
 | `src/screens/settings/AppSettingsFileUploadScreen.tsx` | UI and upload/download flow. |
-| `src/redux/slices/appSettingsFileUploadSlice.ts` | Upload thunk and upload state. |
+| `src/template/state/settings/appSettingsFileUploadSlice.ts` | Upload thunk and upload state. |
 | `src/hooks/useFileDropWeb.ts` | Drag-and-drop support for web. |
 | `src/screens/update/Dialog/BackendUpdateProgressDialog.tsx` | Progress dialog reused for configuration upload/restart/logout phases. |
 | `assets/locales/*/FileConfiguration.json` | Translation namespace. |
