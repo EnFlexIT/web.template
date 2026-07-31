@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 //  Slug builder
-import { buildMenuPaths } from "../../../components/routing/menuPaths";
+import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
 
 interface HeaderEntryProps {
   node: MenuItem;

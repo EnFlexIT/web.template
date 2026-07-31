@@ -26,7 +26,7 @@ import {
 } from "@/template/state/navigation/menuSlice";
 import { selectApi } from "@/redux/slices/apiSlice";
 
-import { buildMenuPaths } from "../../../components/routing/menuPaths";
+import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
 
 /* =========================
    Drawer Item

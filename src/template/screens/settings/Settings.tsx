@@ -12,7 +12,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { getStaticMenu, StaticMenuItem } from "@/template/navigation/menu/staticMenu";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 
-import { useMenuNavigation } from "../../../components/routing/useMenuNavigation";
+import { useMenuNavigation } from "@/template/navigation/routing/useMenuNavigation";
 
 const SETTINGS_ROOT_ID = 3003;
 

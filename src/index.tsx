@@ -49,7 +49,7 @@ import {
 
 import { initializeServers } from "@/template/state/server/serverSlice";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
-import { buildMenuPaths } from "./components/routing/menuPaths";
+import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
 import { Footer } from "./template/components/layout/Footer";
 import { checkAlive } from "@/template/state/connectivity/connectivitySlice";
 

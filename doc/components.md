@@ -575,8 +575,8 @@ src/components/routing
 
 | File | Purpose |
 | --- | --- |
-| `src/components/routing/menuPaths.ts` | Builds slug paths from menu IDs and captions. |
-| `src/components/routing/useMenuNavigation.ts` | Navigates by menu ID and updates Redux active menu state. |
+| `src/template/navigation/routing/menuPaths.ts` | Builds slug paths from menu IDs and captions. |
+| `src/template/navigation/routing/useMenuNavigation.ts` | Navigates by menu ID and updates Redux active menu state. |
 
 ### Purpose
 

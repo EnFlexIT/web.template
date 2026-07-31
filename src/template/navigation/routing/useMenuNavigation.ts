@@ -1,4 +1,4 @@
-// src/components/routing/useMenuNavigation.ts
+// src/template/navigation/routing/useMenuNavigation.ts
 import { useMemo } from "react";
 import { useLinkTo } from "@react-navigation/native";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
