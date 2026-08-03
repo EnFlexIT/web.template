@@ -3,7 +3,7 @@ import type { RootState } from "@/redux/store";
 import {
   normalizeServerKey,
   selectActiveServerKey,
-} from "@/redux/selectors/serverSelectors";
+} from "@/template/state/server/serverSelectors";
 
 export type NotificationType = "update" | "password" | "system";
 

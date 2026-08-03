@@ -21,7 +21,7 @@ import {
 
 import {
   normalizeServerKey,
-} from "@/redux/selectors/serverSelectors";
+} from "@/template/state/server/serverSelectors";
 
 const DEFAULT_UPDATE_CHECK_INTERVAL_MS =
   60 * 60 * 1000;

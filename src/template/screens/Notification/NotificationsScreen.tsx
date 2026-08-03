@@ -13,7 +13,7 @@ import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { markServerNotificationsRead,markNotificationRead,selectAllNotifications,selectUnreadNotificationCount,} from "@/template/state/notifications/notificationSlice";
 import { setActiveMenuId } from "@/template/state/navigation/menuSlice";
-import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";
+import { selectActiveServerKey } from "@/template/state/server/serverSelectors";
 
 function formatTime(value: string) {
   try {

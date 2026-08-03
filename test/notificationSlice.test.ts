@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-jest.mock("../src/redux/selectors/serverSelectors", () => ({
+jest.mock("../src/template/state/server/serverSelectors", () => ({
   normalizeServerKey: (value: string) =>
     String(value ?? "").trim().toLowerCase().replace(/\/+$/, ""),
   selectActiveServerKey: (state: any) => state.server?.activeServerKey ?? "",

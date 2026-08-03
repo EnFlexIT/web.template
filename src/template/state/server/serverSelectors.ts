@@ -1,5 +1,4 @@
-// src/redux/selectors/serverSelectors.ts
-
+// src/template/state/server/serverSelectors.ts
 import type { RootState } from '@/redux/store';
 
 export function normalizeServerKey(url: string | null | undefined) {

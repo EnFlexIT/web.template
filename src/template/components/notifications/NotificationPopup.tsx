@@ -27,7 +27,7 @@ import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 
 import { setActiveMenuId } from "@/template/state/navigation/menuSlice";
-import { selectActiveServerKey } from "@/redux/selectors/serverSelectors";
+import { selectActiveServerKey } from "@/template/state/server/serverSelectors";
 
 const NOTIFICATIONS_MENU_ID = 3015;
 const MAX_VISIBLE_NOTIFICATIONS = 3;

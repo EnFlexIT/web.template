@@ -8,7 +8,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";
 import { selectApi } from "@/redux/slices/apiSlice";
-import { normalizeServerKey } from "@/redux/selectors/serverSelectors";
+import { normalizeServerKey } from "@/template/state/server/serverSelectors";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
