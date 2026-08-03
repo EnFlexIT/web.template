@@ -4,6 +4,9 @@
     "strict": true,
     "paths": {
       "@/*": ["./src/*"],
+      "@core": ["./src/core/index"],
+      "@template": ["./src/template/index"],
+      "@application": ["./src/application/index"],
       "@design-system": [
         "./src/template/components/design-system/index"
       ]

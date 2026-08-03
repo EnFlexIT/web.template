@@ -2,8 +2,7 @@ import './unistyles'
 import './i18n'
 import '@expo/metro-runtime'
 import { registerRootComponent } from 'expo';
-import { bootstrapAppMode } from './src/bootstrap/appBootstrap';
-import App from './src';
+import App from './src/application/App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

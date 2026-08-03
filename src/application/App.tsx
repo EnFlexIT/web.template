@@ -1,58 +1,17 @@
-﻿// src/index.tsx
-import { DeveloperConsole,DeveloperConsoleConnection,} from "@/template/components/developer-tools/developer-console/DeveloperConsole";
-  import { createDrawerNavigator } from "@react-navigation/drawer";
+﻿import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import React, {useEffect,useMemo,useRef, useState,} from "react";
+import {ActivityIndicator, StyleSheet, View,} from "react-native";
 import { Provider } from "react-redux";
-import { UnistylesRuntime, useUnistyles } from "react-native-unistyles";
-import { PostLoginUpdateWatcher } from "@/application/bootstrap/watchers/PostLoginUpdateWatcher";
-import { useSessionActivityWeb } from "./core/authentication/session/useSessionActivityWeb";
-import { UpdateNotificationWatcher } from "@/application/bootstrap/watchers/UpdateNotificationWatcher";
-import { Navigation } from "./template/components/layout/Navigation";
-import { Header } from "./template/components/layout/Header";
+import { UnistylesRuntime, useUnistyles,} from "react-native-unistyles";
+import { AppSessionGuard,useAppDispatch, useAppSelector,useSessionActivityWeb,} from "@core";
 import { DataPermissionsDialog } from "@design-system";
-
-import {
-  initializeApi,
-  selectIsLoggedIn,
-  selectAuthenticationMethod,
-} from "./redux/slices/apiSlice";
-
-import { ServerSwitchOverlay } from "./template/screens/server/ServerSwitchOverlay";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { useIsWide } from "@/template/hooks/useIsWide";
-import { OfflineOverlay } from "./template/screens/server/OfflineOverlay";
-import { store } from "./redux/store";
-
-import { initializeLanguage } from "@/template/state/localization/languageSlice";
-import { initializeTheme } from "@/template/state/theme/themeSlice";
-import { initializeDataPermissions } from "@/template/state/privacy/dataPermissionsSlice";
-import { initializeOrganizations } from "@/template/state/organizations/organizationsSlice";
-
-import { NotificationPopup } from "./template/components/notifications/NotificationPopup";
-import { AppSessionGuard } from "./core/authentication/session/AppSessionGuard";
-import { LoginScreen } from "./template/screens/login/Login";
-import { DynamicScreen } from "./template/screens/dynamicScreen/DynamicScreen";
-import { NotAvailableScreen } from "./template/screens/fallback/NotAvailableScreen";
-import { InitialPasswordChangeDialog } from "./template/screens/login/InitialPasswordChangeDialog";
-
-import {
-  hasId,
-  initializeMenu,
-  selectMenu,
-  setActiveMenuId,
-  isDynamicMenuItem,
-} from "@/template/state/navigation/menuSlice";
-
-import { initializeServers } from "@/template/state/server/serverSlice";
-import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
-import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
-import { Footer } from "./template/components/layout/Footer";
-import { checkAlive } from "@/template/state/connectivity/connectivitySlice";
-
+import { DeveloperConsole, DeveloperConsoleConnection,DynamicScreen,Footer, Header,InitialPasswordChangeDialog,LoginScreen, Navigation, NotAvailableScreen, NotificationPopup, OfflineOverlay, ServerSwitchOverlay, buildMenuPaths,checkAlive, hasId,initializeDataPermissions, initializeLanguage, initializeMenu,initializeOrganizations,initializeServers,initializeTheme,isDynamicMenuItem,isMenuEnabled, selectMenu,setActiveMenuId,useIsWide,} from "@template";
+import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/redux/slices/apiSlice";
+import { store } from "@/redux/store";
+import { PostLoginUpdateWatcher } from "./bootstrap/watchers/PostLoginUpdateWatcher";
+import { UpdateNotificationWatcher } from "./bootstrap/watchers/UpdateNotificationWatcher";
 UnistylesRuntime.setAdaptiveThemes(false);
 UnistylesRuntime.setTheme("light");
 
