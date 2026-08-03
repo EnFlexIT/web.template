@@ -17,7 +17,7 @@ import { SmallStat } from "@/template/components/design-system/ui-elements/Small
 import { HeroCard } from "@/template/components/design-system/ui-elements/HeroCard";
 import { ChartCard, BarChartWidget } from "@/template/components/design-system/ui-elements/charts";
 import { Screen } from "@/template/components/layout/Screen";
-import { RenderData } from "@/components/dynamic/content/SiteChart";
+import { RenderData } from "@/template/components/dynamic-content/content/SiteChart";
 //Translation
 import { useTranslation } from "react-i18next";
 // Typ

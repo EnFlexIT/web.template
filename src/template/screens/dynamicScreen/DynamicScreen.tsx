@@ -1,7 +1,7 @@
 ﻿import React, { ReactNode, useEffect, useState } from "react";
 import { Screen } from "@/template/components/layout/Screen";
 import { LoadingScreen } from  "../loading/LoadingScreen";
-import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
+import { SiteContentList } from "@/template/components/dynamic-content/content/SiteContentList";
 import { MenuItem } from "@/template/state/navigation/menuSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi, selectIsLoggedIn, selectJwt } from "@/redux/slices/apiSlice";

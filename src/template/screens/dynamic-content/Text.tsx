@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import { selectApi } from "@/redux/slices/apiSlice";
-import { SiteContentList } from "@/components/dynamic/content/SiteContentList";
+import { SiteContentList } from "@/template/components/dynamic-content/content/SiteContentList";
 
 export function DynamicTextScreen() {
     const { dynamic_content_api } = useAppSelector(selectApi)
