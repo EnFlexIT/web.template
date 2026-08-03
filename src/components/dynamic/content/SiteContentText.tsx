@@ -1,5 +1,5 @@
 import React, { Dispatch, useEffect, useState } from "react";
-import { SiteContentText as SiteContentTextType } from "../../../api/implementation/Dynamic-Content-Api";
+import { SiteContentText as SiteContentTextType } from "@/api/implementation/Dynamic-Content-Api";
 import { Pressable, View } from "react-native";
 import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/react";

@@ -5,7 +5,7 @@ import React, { Dispatch, SetStateAction, useState } from "react";
 import {
   AbstractSiteContent as AbstractSiteContentType,
   SiteContentImage,
-} from "../../../api/implementation/Dynamic-Content-Api";
+} from "@/api/implementation/Dynamic-Content-Api";
 
 // Picker
 import * as DocumentPicker from "expo-document-picker";

@@ -1,7 +1,7 @@
 import { ViewStyle } from "react-native";
 import React, { Dispatch, SetStateAction, useState } from "react";
 //Dynamic-Content-Api
-import { AbstractSiteContent as AbstractSiteContentType, SiteContentProperties, PropertyEntry } from "../../../api/implementation/Dynamic-Content-Api";
+import { AbstractSiteContent as AbstractSiteContentType, SiteContentProperties, PropertyEntry } from "@/api/implementation/Dynamic-Content-Api";
 //Elemente
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 

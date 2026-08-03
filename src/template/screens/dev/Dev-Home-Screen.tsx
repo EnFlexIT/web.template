@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import type { SiteContentTimeSeriesChart } from "../../../api/implementation/Dynamic-Content-Api";
+import type { SiteContentTimeSeriesChart } from "@/api/implementation/Dynamic-Content-Api";
 // UI Components
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { MetricCard } from "@/template/components/design-system/ui-elements/MetricCard";
@@ -21,7 +21,7 @@ import { RenderData } from "@/components/dynamic/content/SiteChart";
 //Translation
 import { useTranslation } from "react-i18next";
 // Typ
-import type { SiteContentBarChart } from "../../../api/implementation/Dynamic-Content-Api";
+import type { SiteContentBarChart } from "@/api/implementation/Dynamic-Content-Api";
 
 
 

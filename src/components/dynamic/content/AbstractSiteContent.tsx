@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
-import { AbstractSiteContent as AbstractSiteContentType } from "../../../api/implementation/Dynamic-Content-Api"
-import { isSiteContentText, isSiteContentImage, isSiteContentProperties } from "../../../util/isAbstractSiteContent"
+import { AbstractSiteContent as AbstractSiteContentType } from "@/api/implementation/Dynamic-Content-Api"
+import { isSiteContentText, isSiteContentImage, isSiteContentProperties } from "@/util/isAbstractSiteContent"
 // import { DynamicContentChanger } from "../editors/DynamicContextChanger"
 import { SiteContentImage } from "./SiteContentImage"
 import { SiteContentText } from "./SiteContentText"

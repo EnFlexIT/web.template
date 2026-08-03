@@ -4,7 +4,7 @@ import React, { Dispatch, Fragment, SetStateAction, useState } from "react";
 import {
   AbstractSiteContent as AbstractSiteContentType,
   SiteContentText,
-} from "../../../api/implementation/Dynamic-Content-Api";
+} from "@/api/implementation/Dynamic-Content-Api";
 //Editor
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";

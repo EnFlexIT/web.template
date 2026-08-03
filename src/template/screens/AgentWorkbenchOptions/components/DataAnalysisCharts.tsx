@@ -6,7 +6,7 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
-import { createEnFlexChart } from "../../../../styles/charttheme";
+import { createEnFlexChart } from "@/styles/charttheme";
 import type { DataAnalysisHistoryEntry } from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {

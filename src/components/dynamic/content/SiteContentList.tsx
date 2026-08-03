@@ -1,4 +1,4 @@
-import { SiteContentList as SiteContentListType } from "../../../api/implementation/Dynamic-Content-Api"
+import { SiteContentList as SiteContentListType } from "@/api/implementation/Dynamic-Content-Api"
 import { AbstractSiteContent } from "./AbstractSiteContent"
 
 interface SiteContentProps {

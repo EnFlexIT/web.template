@@ -8,7 +8,7 @@ import {
   SiteContentPieChart,
   SiteContentTimeSeriesChart,
   AbstractSiteContent,
-} from "../../../api/implementation/Dynamic-Content-Api";
+} from "@/api/implementation/Dynamic-Content-Api";
 
 import {
   VictoryArea,
@@ -23,9 +23,9 @@ import {
   isSiteContentLineChart,
   isSiteContentPieChart,
   isSiteContentTimeSeriesChart,
-} from "../../../util/isAbstractSiteContent";
+} from "@/util/isAbstractSiteContent";
 
-import { createEnFlexChart } from "../../../styles/charttheme";
+import { createEnFlexChart } from "@/styles/charttheme";
 
 /* -------------------------
    RENDER: PIE

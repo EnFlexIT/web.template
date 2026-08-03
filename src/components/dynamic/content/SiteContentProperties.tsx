@@ -1,5 +1,5 @@
 import React, { Dispatch } from "react"
-import { SiteContentProperties as SiteContentPropertiesType } from "../../../api/implementation/Dynamic-Content-Api"
+import { SiteContentProperties as SiteContentPropertiesType } from "@/api/implementation/Dynamic-Content-Api"
 import { Pressable } from "react-native"
 // import { useTheme } from "enflex.it-core"
 // import { ThemedText, ThemedView } from "enflex.it-styled-ui"
