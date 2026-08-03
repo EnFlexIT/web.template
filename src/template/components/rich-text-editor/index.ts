@@ -1,0 +1,1 @@
+export { Bar as RichTextToolbar } from "./ui/bar";

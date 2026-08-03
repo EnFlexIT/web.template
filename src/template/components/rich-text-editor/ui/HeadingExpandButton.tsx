@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useState } from "react";
-import { H_Icon } from "../icons/H-Icon";
+import { HIcon } from "@design-system";
 import { Pressable, ScrollView } from "react-native";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle, useTheme } from "enflex.it-core";
 import { ThemedView } from "@/template/components/design-system/themed/ThemedView"
@@ -7,7 +7,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { HeadingButton } from "./HeadingButton";
 import { Editor as TipTapEditorType } from '@tiptap/react';
 import { Level } from "@tiptap/extension-heading";
-import { HeadingIcon } from "../icons/Headin-Icon";
+import { HeadingIcon } from "@design-system";
 import { StyleSheet } from "react-native-unistyles";
 
 interface MenuEntryProps {
@@ -89,7 +89,7 @@ export function HeadingExpandButton({ editor }: HeadingExpandButtonProps) {
             onHoverOut={() => setOver(false)}
         >
             <ThemedView>
-                <H_Icon style={[styles.container2, over ? styles.containerOver : styles.containerNotOver]} />
+                <HIcon style={[styles.container2, over ? styles.containerOver : styles.containerNotOver]} />
                 {
                     open &&
                     <ThemedView style={[styles.menu]}>

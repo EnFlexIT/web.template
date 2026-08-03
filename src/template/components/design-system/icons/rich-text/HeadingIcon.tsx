@@ -1,11 +1,12 @@
 import { Level } from "@tiptap/extension-heading";
 import { SvgProps } from "react-native-svg";
-import { H1_Icon } from "./H1-Icon";
-import { H2_Icon } from "./H2-Icon";
-import { H3_Icon } from "./H3-Icon";
-import { H4_Icon } from "./H4-Icon";
-import { H5_Icon } from "./H5_Icon";
-import { H6_Icon } from "./H6_Icon";
+
+import { H1_Icon } from "./H1Icon";
+import { H2_Icon } from "./H2Icon";
+import { H3_Icon } from "./H3Icon";
+import { H4_Icon } from "./H4Icon";
+import { H5_Icon } from "./H5Icon";
+import { H6_Icon } from "./H6Icon";
 
 interface HeadingIconProps extends SvgProps {
     level: Level

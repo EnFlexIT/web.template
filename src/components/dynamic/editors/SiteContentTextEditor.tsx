@@ -11,7 +11,7 @@ import StarterKit from "@tiptap/starter-kit";
 //Elemnte
 import { ConfirmButton } from "./ConfirmButton";
 import { CancelButton } from "./CancelButton";
-import { Bar } from "../../richtexteditor/ui/bar";
+import { RichTextToolbar } from "@/template/components/rich-text-editor";
 //StyleSheet
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
@@ -64,7 +64,7 @@ export function SiteContentTextEditor({
     return (
       <ThemedView style={[styles.textEditorContainer]}>
         {/* <ThemedView style={{ flex: 1, backgroundColor: "blue" }}> */}
-        <Bar editor={editor} />
+        <RichTextToolbar editor={editor} />
         {/* </ThemedView> */}
         <Pressable
           onPress={() => {

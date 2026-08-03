@@ -2,7 +2,7 @@ import { Pressable } from "react-native";
 import React, { useState } from "react";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";
 import { Editor as TipTapEditorType } from '@tiptap/react';
-import { Strike_Icon } from "../../richtexteditor/icons/Strike-Icon";
+import { StrikeIcon } from "@design-system";
 import { StyleSheet } from "react-native-unistyles";
 
 
@@ -23,7 +23,7 @@ export function StrikeButton({ editor }: StrikeButtonProps) {
         onHoverIn={() => setOver(true)}
         onHoverOut={() => setOver(false)}
     >
-        <Strike_Icon style={[over ? styles.over : styles.notOver, styles.container]} />
+        <StrikeIcon style={[over ? styles.over : styles.notOver, styles.container]} />
     </Pressable>
 }
 

@@ -6,7 +6,7 @@ import { HeadingButton } from "./HeadingButton"
 import { BoldButton } from "./BoldButton";
 import { ItalicButton } from "./ItalicButton";
 import { StrikeButton } from "./StrikeButton";
-import { H_Icon } from "../icons/H-Icon";
+import { HIcon } from "@design-system";
 import { HeadingExpandButton } from "./HeadingExpandButton";
 import { StyleSheet } from "react-native-unistyles";
 

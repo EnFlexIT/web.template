@@ -3,12 +3,14 @@ import React, { useState } from "react";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";
 import { Editor as TipTapEditorType } from '@tiptap/react';
 import { Level } from "@tiptap/extension-heading";
-import { H1_Icon } from "../../richtexteditor/icons/H1-Icon";
-import { H2_Icon } from "../../richtexteditor/icons/H2-Icon";
-import { H3_Icon } from "../../richtexteditor/icons/H3-Icon";
-import { H4_Icon } from "../../richtexteditor/icons/H4-Icon";
-import { H5_Icon } from "../../richtexteditor/icons/H5_Icon";
-import { H6_Icon } from "../../richtexteditor/icons/H6_Icon";
+import {
+  H1Icon,
+  H2Icon,
+  H3Icon,
+  H4Icon,
+  H5Icon,
+  H6Icon,
+} from "@design-system";
 import { SvgProps } from "react-native-svg";
 
 
@@ -32,7 +34,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H1_Icon {...rest} />
+                <H1Icon {...rest} />
             </Pressable>
         case 2:
             return <Pressable
@@ -45,7 +47,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H2_Icon {...rest} />
+                <H2Icon {...rest} />
             </Pressable>
         case 3:
             return <Pressable
@@ -58,7 +60,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H3_Icon {...rest} />
+                <H3Icon {...rest} />
             </Pressable>
         case 4:
             return <Pressable
@@ -71,7 +73,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H4_Icon {...rest} />
+                <H4Icon {...rest} />
             </Pressable>
         case 5:
             return <Pressable
@@ -84,7 +86,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H5_Icon {...rest} />
+                <H5Icon {...rest} />
             </Pressable>
         case 6:
             return <Pressable
@@ -97,7 +99,7 @@ export function HeadingButton({ editor, level, ...rest }: HeadingButtonProps) {
             // onHoverIn={() => setOver(true)}
             // onHoverOut={() => setOver(false)}
             >
-                <H6_Icon {...rest} />
+                <H6Icon {...rest} />
             </Pressable>
     }
 }
