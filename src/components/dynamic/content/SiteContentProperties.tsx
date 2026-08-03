@@ -4,7 +4,7 @@ import { Pressable } from "react-native"
 // import { useTheme } from "enflex.it-core"
 // import { ThemedText, ThemedView } from "enflex.it-styled-ui"
 import { Text } from "@/template/components/design-system/stylistic/Text";
-import { Table } from "@/template/components/design-system/ui-elements/Table";
+import { Table } from "@design-system";
 type SiteContentPropertiesProps = {
     content: SiteContentPropertiesType,
     setChangerVisible: Dispatch<React.SetStateAction<boolean>>,

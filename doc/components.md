@@ -31,7 +31,7 @@ Layout components define the global application frame and common UI structure.
 | `src/components/Logo.tsx` | Application logo component. |
 | `src/components/NotificationPopup.tsx` | Popup for local/application notifications. |
 | `src/components/DataPermissionsDialog.tsx` | Dialog for data permission information and confirmation. |
-| `src/components/Table.tsx` | Generic table component used for structured data. |
+| `src/template/components/design-system/ui-elements/Table.tsx` | Generic table component used for structured data. |
 | `src/components/ToolBox.tsx` | Toolbox component for contextual actions. |
 
 ### Usage guideline

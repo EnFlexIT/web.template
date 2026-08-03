@@ -3,7 +3,7 @@ import { ScrollView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
-import { Table } from "@/template/components/design-system/ui-elements/Table";
+import { Table } from "@design-system";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
