@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
 import { Screen } from "@/template/components/layout/Screen";
-import { Table } from "../../../components/Table";
+import { Table } from "@/template/components/design-system/ui-elements/Table";
 import { TableSwitchCell } from "@/template/components/design-system/ui-elements/TableSwitchCell";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
