@@ -3,16 +3,8 @@ import React, { useState } from "react";
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";
 import { Editor as TipTapEditorType } from '@tiptap/react';
 import { Level } from "@tiptap/extension-heading";
-import {
-  H1Icon,
-  H2Icon,
-  H3Icon,
-  H4Icon,
-  H5Icon,
-  H6Icon,
-} from "@design-system";
+import { H1Icon,H2Icon,H3Icon,H4Icon,H5Icon,H6Icon } from "@design-system";
 import { SvgProps } from "react-native-svg";
-
 
 interface HeadingButtonProps extends SvgProps {
     level: Level,
