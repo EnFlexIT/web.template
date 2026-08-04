@@ -12,7 +12,7 @@ jest.mock("../src/core/server/runtimeBaseUrl", () => ({
   resolveRuntimeBaseUrl: () => null,
 }));
 
-jest.mock("../src/util/applicationMode", () => ({
+jest.mock("../src/core/runtime/applicationMode", () => ({
   getApplicationMode: () => "development",
 }));
 

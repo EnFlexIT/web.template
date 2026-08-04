@@ -6,7 +6,7 @@ import { resolveRuntimeBaseUrl } from "@/core/server/runtimeBaseUrl";
 import {
   getApplicationMode,
   type ApplicationMode,
-} from "../../util/applicationMode";
+}  from "@/core/runtime/applicationMode";;
 import { RootState } from '@/redux/store';
 import { setReady } from "@/template/state/bootstrap/readySlice";
 import {

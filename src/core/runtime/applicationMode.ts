@@ -1,4 +1,4 @@
-// src/util/applicationMode.ts
+//applicationMode.ts
 export type ApplicationMode = "CENTRAL_SHELL" | "STANDALONE";
 
 export function getApplicationMode(): ApplicationMode {
