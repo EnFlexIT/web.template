@@ -1,9 +1,6 @@
 import { Dispatch, ReactNode, useEffect, useState } from "react"
 import { SiteContentImage as SiteContentImageType } from "@/api/implementation/Dynamic-Content-Api"
-// import * as DocumentPicker from 'expo-document-picker';
 import { Image as ImageJSX, Pressable } from "react-native";
-// import { AbstractSiteContent as AbstractSiteContentType } from "../../api/implementation/Dynamic-Content-Api"
-// import { ThemedText } from "enflex.it-styled-ui"
 
 interface SiteContentImageProps {
     content: SiteContentImageType,

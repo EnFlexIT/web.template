@@ -15,7 +15,7 @@ import passwordChangePromptReducer from "@/template/state/authentication/passwor
 import notificationsReducer from "@/template/state/notifications/notificationSlice";
 import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
 import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
-import updateReducer from "@/core/update/redux/updateSlice";
+import updateReducer from "@/template/state/update/updateSlice";
 import sessionTimeReducer from "./slices/sessionTimeSlice";
 import serverStatusReducer from "@/template/state/server/serverStatusSlice";
 import appSettingsFileUploadReducer from "@/template/state/settings/appSettingsFileUploadSlice";

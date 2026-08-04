@@ -19,7 +19,7 @@ import { setReady } from "@/template/state/bootstrap/readySlice";
 import {
   Configuration as RestApiConfiguration,
   InfoApi,
-} from "../../../api/implementation/AWB-RestAPI";
+} from "@/api/implementation/AWB-RestAPI";
 
 function normalizeBaseUrl(input: string) {
   const trimmed = input.trim();

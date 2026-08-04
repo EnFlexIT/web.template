@@ -49,7 +49,7 @@ import {
   setWebAppReleaseType,
 } from "@/template/state/release/appReleaseSlice";
 
-import { ServerLoginModal } from "../../screens/login/ServerLoginModal";
+import { ServerLoginModal } from "@/template/screens/login/ServerLoginModal";
 
 const Feather = withUnistyles(Feather_);
 

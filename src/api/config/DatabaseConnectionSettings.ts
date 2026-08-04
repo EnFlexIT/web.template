@@ -1,6 +1,5 @@
 // src/config/DatabaseConnectionSettings.ts
-import { PropertyEntry } from "../../api/implementation/AWB-RestAPI/index";
-
+import type { PropertyEntry } from "@/api/implementation/AWB-RestAPI";
 
 export class DatabaseConnectionSettings {
   host = "";

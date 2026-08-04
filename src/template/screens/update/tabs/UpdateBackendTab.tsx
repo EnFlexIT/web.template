@@ -23,7 +23,7 @@ import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuar
 import {
   checkBackendUpdate,
   executeBackendUpdate,
-} from "@/core/update/redux/updateSlice";
+} from "@/template/state/update/updateSlice";
 
 import { checkServerReachable } from "@/core/server/serverCheck";
 

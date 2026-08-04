@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-import { clearUpdateSettingsCache } from "@/core/update/redux/updateSlice";
-import { reloadUpdatedFrontendWebApp } from "../reloadUpdatedFrontendWebApp";
+import { clearUpdateSettingsCache } from "@/template/state/update/updateSlice";
+import { reloadUpdatedFrontendWebApp } from"@/core/update/reloadUpdatedFrontendWebApp";
 
 type Params = {
   enabled: boolean;

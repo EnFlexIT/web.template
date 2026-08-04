@@ -14,11 +14,11 @@ import {
   Configuration as RestApiConfiguration,
   InfoApi,
   UserApi,
-} from "../../api/implementation/AWB-RestAPI";
+} from "@/api/implementation/AWB-RestAPI";
 import {
   Configuration as DynamicContentApiConfiguration,
   DefaultApi,
-} from "../../api/implementation/Dynamic-Content-Api";
+} from "@/api/implementation/Dynamic-Content-Api";
 import { clearMenu, initializeMenu } from "@/template/state/navigation/menuSlice";
 
 const ipKey = "ip" as const;

@@ -31,7 +31,7 @@ import {
   extendSessionTime,
   selectSessionTime,
 } from "@/redux/slices/sessionTimeSlice";
-import { LogoutDialog } from "../../screens/Logout/LogoutDialog";
+import { LogoutDialog } from "@/template/screens/Logout/LogoutDialog";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 

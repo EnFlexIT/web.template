@@ -28,10 +28,10 @@ The update system consists of four areas:
 
 ```text
 Update System
-├── Redux state and API communication
-├── Background watchers
-├── Update user interface
-└── Browser reload infrastructure
+â”œâ”€â”€ Redux state and API communication
+â”œâ”€â”€ Background watchers
+â”œâ”€â”€ Update user interface
+â””â”€â”€ Browser reload infrastructure
 ```
 
 Reusable update infrastructure has been moved incrementally into the dedicated
@@ -48,12 +48,12 @@ The reusable update infrastructure currently has the following structure:
 
 ```text
 src/core/update
-├── hooks
-│   ├── useFrontendVersionReloadWeb.ts
-│   └── usePostLoginAutoReloadWeb.ts
-├── redux
-│   └── updateSlice.ts
-└── reloadUpdatedFrontendWebApp.ts
+â”œâ”€â”€ hooks
+â”‚   â”œâ”€â”€ useFrontendVersionReloadWeb.ts
+â”‚   â””â”€â”€ usePostLoginAutoReloadWeb.ts
+â”œâ”€â”€ redux
+â”‚   â””â”€â”€ updateSlice.ts
+â””â”€â”€ reloadUpdatedFrontendWebApp.ts
 ```
 
 ---
@@ -62,9 +62,9 @@ src/core/update
 
 | File | Purpose |
 | --- | --- |
-| `src/core/update/redux/updateSlice.ts` | Shared update state, update checks and update-related API actions. |
-| `src/core/update/hooks/useFrontendVersionReloadWeb.ts` | Watches frontend version changes and triggers a browser reload when required. |
-| `src/core/update/hooks/usePostLoginAutoReloadWeb.ts` | Handles automatic frontend reload checks after login. |
+| `src/template/state/update/updateSlice.ts` | Shared update state, update checks and update-related API actions. |
+| `src/template/hooks/update/useFrontendVersionReloadWeb.ts` | Watches frontend version changes and triggers a browser reload when required. |
+| `src/template/hooks/update/usePostLoginAutoReloadWeb.ts` | Handles automatic frontend reload checks after login. |
 | `src/core/update/reloadUpdatedFrontendWebApp.ts` | Provides the reusable browser reload workflow after a frontend update. |
 | `src/screens/update` | Update screens, tabs, dialogs and user interaction. |
 | `src/screens/Notification` | Displays update-related notifications when update information is published through the notification system. |
@@ -96,15 +96,15 @@ The frontend update flow is:
 
 ```text
 Check frontend version
-↓
+â†“
 Detect a newer version
-↓
+â†“
 Notify the user
-↓
+â†“
 User starts the update
-↓
+â†“
 Frontend update is completed
-↓
+â†“
 Reload the WebApp
 ```
 
@@ -129,7 +129,7 @@ outdated.
 The reusable post-login workflow is implemented in:
 
 ```text
-src/core/update/hooks/usePostLoginAutoReloadWeb.ts
+src/template/hooks/update/usePostLoginAutoReloadWeb.ts
 ```
 
 When a reload is required, the shared reload infrastructure is used instead of
@@ -142,7 +142,7 @@ duplicating browser reload logic inside a screen or application component.
 Frontend version changes are observed through:
 
 ```text
-src/core/update/hooks/useFrontendVersionReloadWeb.ts
+src/template/hooks/update/useFrontendVersionReloadWeb.ts
 ```
 
 The hook separates update monitoring from UI components.
@@ -160,17 +160,17 @@ A typical flow is:
 
 ```text
 Check backend version
-↓
+â†“
 Detect an available update
-↓
+â†“
 Notify the user
-↓
+â†“
 User starts the installation
-↓
+â†“
 Backend becomes temporarily unavailable
-↓
+â†“
 Frontend reconnects
-↓
+â†“
 Authentication state is reevaluated
 ```
 
@@ -195,7 +195,7 @@ autoUpdate enabled
 automatic update checks
 
 autoUpdate enabled
-≠
+â‰ 
 automatic installation
 ```
 
@@ -239,8 +239,9 @@ the expected application behavior.
 
 The completed migration includes:
 
-- moving the shared update Redux slice into `src/core/update/redux`
-- moving frontend update hooks into `src/core/update/hooks`
+- The shared update Redux slice now lives in `src/template/state/update`.
+- Frontend update hooks now live in `src/template/hooks/update`.
+- The framework-independent reload helper remains in `src/core/update/reloadUpdatedFrontendWebApp.ts`.
 - extracting the browser reload workflow into a reusable Core function
 - updating all affected imports
 - testing the update behavior after the migration
@@ -249,14 +250,14 @@ The migration followed the standard architecture workflow:
 
 ```text
 Analyze
-↓
+â†“
 Move or extract one responsibility
-↓
+â†“
 Update imports
-↓
+â†“
 Test
-↓
+â†“
 Commit
-↓
+â†“
 Update documentation
 ```
