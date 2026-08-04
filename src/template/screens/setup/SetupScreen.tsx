@@ -14,7 +14,6 @@ import {
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 //import { setIpLocal } from "@/redux/slices/apiSlice";
 import { setReady } from "@/template/state/bootstrap/readySlice";
-import { foldl } from "../../../util/func";
 
 //  WICHTIG: so wie in deinem apiSlice
 import {
@@ -199,11 +198,9 @@ function AddServerModal({ isVisibile, setIsVisible }: AddServerModalProps) {
     ];
   }, [serverName, ipAdress, ipAdressStatus]);
 
-  const longestRow = foldl(
-    (acc, curr) => (curr > acc ? curr : acc),
-    0,
-    table.map((val) => val.length)
-  );
+ const longestRow = table
+  .map((row) => row.length)
+  .reduce((acc, curr) => (curr > acc ? curr : acc), 0);
 
   const canAdd =
     serverName.trim() !== "" &&
