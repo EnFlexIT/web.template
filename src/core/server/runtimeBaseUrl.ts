@@ -1,4 +1,3 @@
-// src/util/runtimeBaseUrl.ts
 
 import { Platform } from "react-native";
 import Constants from "expo-constants";

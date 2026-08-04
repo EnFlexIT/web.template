@@ -8,7 +8,7 @@ jest.mock(
     ),
 );
 
-jest.mock("../src/util/runtimeBaseUrl", () => ({
+jest.mock("../src/core/server/runtimeBaseUrl", () => ({
   resolveRuntimeBaseUrl: () => null,
 }));
 

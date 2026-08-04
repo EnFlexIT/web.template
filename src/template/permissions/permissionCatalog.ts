@@ -1,4 +1,4 @@
-// src/permissions/permissionCatalog.ts
+//permissionCatalog.ts
 
 export type PermissionId = number;
 
