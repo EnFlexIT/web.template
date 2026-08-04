@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native-unistyles'
-import { Platform } from 'react-native';
-import { lightTheme } from './src/styles/lightTheme';
-import { darkTheme } from './src/styles/darkTheme';
+import { lightTheme}from "@/template/styles/lightTheme";
+import { darkTheme } from '@/template/styles/darkTheme';
 
 
 const appThemes = {
@@ -26,12 +25,14 @@ declare module 'react-native-unistyles' {
 }
 
 StyleSheet.configure({
-    settings: {
-        adaptiveThemes: true
-    },
-    themes: {
-        light: lightTheme,
-        dark: darkTheme,
-    },
-    breakpoints,
-})
+  themes: {
+    light: lightTheme,
+    dark: darkTheme,
+  },
+
+  breakpoints,
+
+  settings: {
+    initialTheme: "light",
+  },
+});

@@ -25,8 +25,7 @@ import {
   isSiteContentTimeSeriesChart,
 } from "@/util/isAbstractSiteContent";
 
-import { createEnFlexChart } from "@/styles/charttheme";
-
+import { createEnFlexChart } from "@/template/styles/charttheme";
 /* -------------------------
    RENDER: PIE
 --------------------------*/

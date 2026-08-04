@@ -4,16 +4,14 @@ import * as Linking from "expo-linking";
 import React, {useEffect,useMemo,useRef, useState,} from "react";
 import {ActivityIndicator, StyleSheet, View,} from "react-native";
 import { Provider } from "react-redux";
-import { UnistylesRuntime, useUnistyles,} from "react-native-unistyles";
-import { AppSessionGuard,useAppDispatch, useAppSelector,useSessionActivityWeb,} from "@core";
+import { useUnistyles } from "react-native-unistyles";import { AppSessionGuard,useAppDispatch, useAppSelector,useSessionActivityWeb,} from "@core";
 import { DataPermissionsDialog } from "@design-system";
 import { DeveloperConsole, DeveloperConsoleConnection,DynamicScreen,Footer, Header,InitialPasswordChangeDialog,LoginScreen, Navigation, NotAvailableScreen, NotificationPopup, OfflineOverlay, ServerSwitchOverlay, buildMenuPaths,checkAlive, hasId,initializeDataPermissions, initializeLanguage, initializeMenu,initializeOrganizations,initializeServers,initializeTheme,isDynamicMenuItem,isMenuEnabled, selectMenu,setActiveMenuId,useIsWide,} from "@template";
 import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/redux/slices/apiSlice";
 import { store } from "@/redux/store";
 import { PostLoginUpdateWatcher } from "./bootstrap/watchers/PostLoginUpdateWatcher";
 import { UpdateNotificationWatcher } from "./bootstrap/watchers/UpdateNotificationWatcher";
-UnistylesRuntime.setAdaptiveThemes(false);
-UnistylesRuntime.setTheme("light");
+
 
 const Drawer = createDrawerNavigator();
 
