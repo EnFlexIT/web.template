@@ -11,7 +11,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 
-import { PERMISSIONS } from "../../../permissions/PermiossionGroup";
+import { PERMISSIONS } from "@/template/permissions/permissionCatalog";
 import {
   selectPermissionValues,
   setPermissionValue,
