@@ -31,7 +31,7 @@ export function createEnFlexChart(theme: any) {
   const bg = c.background ?? "#fff";
 
   return {
-    ...VictoryTheme.clean,
+  
 
     //  Global Axis / Grid (super wichtig, sonst sieht man in Darkmode nix)
     axis: {
@@ -92,7 +92,7 @@ export function createEnFlexChartBlue(theme: any) {
   const border = c.border ?? "rgba(0,0,0,0.12)";
 
   return {
-    ...VictoryTheme.clean,
+  
     axis: {
       style: {
         axis: { stroke: border, strokeWidth: 1 },
