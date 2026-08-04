@@ -7,7 +7,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   normalizeBaseUrl,
   selectApi,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import {
   checkBackendUpdate,

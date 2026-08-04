@@ -15,7 +15,7 @@ import {
 } from "@/template/state/navigation/menuSlice";
 
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectIsLoggedIn } from "@/redux/slices/apiSlice";
+import { selectIsLoggedIn } from "@/template/state/api/apiSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";

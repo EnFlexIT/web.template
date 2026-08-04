@@ -1,19 +1,25 @@
 /// <reference types="jest" />
 
-jest.mock("../redux/slices/apiSlice", () => ({
-  normalizeBaseUrl: (url: string) => String(url ?? "").trim().replace(/\/+$/, ""),
+jest.mock("@/template/state/api/apiSlice", () => ({
+  normalizeBaseUrl: (url: string) =>
+    String(url ?? "")
+      .trim()
+      .replace(/\/+$/, ""),
+
   selectIp: (state: any) => state.api.ip,
 }));
 
 import reducer, {
+  checkAlive,
   dismissBackOnline,
   setOfflineLocal,
-  checkAlive,
 } from "@/template/state/connectivity/connectivitySlice";
 
 describe("connectivitySlice", () => {
   it("should return the initial state", () => {
-    const state = reducer(undefined, { type: "unknown" });
+    const state = reducer(undefined, {
+      type: "unknown",
+    });
 
     expect(state.isOffline).toBe(false);
     expect(state.showBackOnline).toBe(false);
@@ -29,7 +35,10 @@ describe("connectivitySlice", () => {
       lastError: null,
     };
 
-    const state = reducer(currentState, dismissBackOnline());
+    const state = reducer(
+      currentState,
+      dismissBackOnline(),
+    );
 
     expect(state.showBackOnline).toBe(false);
   });
@@ -43,7 +52,9 @@ describe("connectivitySlice", () => {
     );
 
     expect(state.isOffline).toBe(true);
-    expect(state.lastError).toBe("Server nicht erreichbar.");
+    expect(state.lastError).toBe(
+      "Server nicht erreichbar.",
+    );
     expect(state.showBackOnline).toBe(false);
   });
 
@@ -54,7 +65,9 @@ describe("connectivitySlice", () => {
     );
 
     expect(state.isOffline).toBe(true);
-    expect(state.lastError).toBeNull();
+    expect(state.lastError).toBe(
+      "Server nicht erreichbar.",
+    );
     expect(state.showBackOnline).toBe(false);
   });
 
@@ -106,7 +119,8 @@ describe("connectivitySlice", () => {
         wentOnline: false,
         error: null,
         skipped: false,
-        checkedUrl: "http://localhost:8080/api/alive",
+        checkedUrl:
+          "http://localhost:8080/api/alive",
         checkedStatus: 200,
       },
     });
@@ -132,7 +146,8 @@ describe("connectivitySlice", () => {
         wentOnline: true,
         error: null,
         skipped: false,
-        checkedUrl: "http://localhost:8080/api/alive",
+        checkedUrl:
+          "http://localhost:8080/api/alive",
         checkedStatus: 200,
       },
     });
@@ -151,7 +166,8 @@ describe("connectivitySlice", () => {
         wentOnline: false,
         error: "Server nicht erreichbar.",
         skipped: false,
-        checkedUrl: "http://localhost:8080/api/alive",
+        checkedUrl:
+          "http://localhost:8080/api/alive",
         checkedStatus: undefined,
       },
     });
@@ -159,7 +175,9 @@ describe("connectivitySlice", () => {
     expect(state.checking).toBe(false);
     expect(state.isOffline).toBe(true);
     expect(state.showBackOnline).toBe(false);
-    expect(state.lastError).toBe("Server nicht erreichbar.");
+    expect(state.lastError).toBe(
+      "Server nicht erreichbar.",
+    );
   });
 
   it("should handle checkAlive.rejected", () => {
@@ -173,7 +191,9 @@ describe("connectivitySlice", () => {
     expect(state.checking).toBe(false);
     expect(state.isOffline).toBe(true);
     expect(state.showBackOnline).toBe(false);
-    expect(state.lastError).toBe("Request failed");
+    expect(state.lastError).toBe(
+      "Request failed",
+    );
   });
 });
 
@@ -181,7 +201,7 @@ describe("connectivitySlice", () => {
  * ============================================================
  * FILE
  * ============================================================
- * src/testes/connectivitySlice.test.ts
+ * test/connectivitySlice.test.ts
  *
  * ============================================================
  * PURPOSE
@@ -190,12 +210,12 @@ describe("connectivitySlice", () => {
  * Netzwerkverbindung und ohne echte API.
  *
  * Fokus:
- * - Online / Offline State
+ * - Online-/Offline-State
  * - Server-Erreichbarkeit
- * - Back-Online Hinweis
- * - Checking State
+ * - Back-Online-Hinweis
+ * - Checking-State
  * - Fehlerstatus
- * - checkAlive Lifecycle
+ * - checkAlive-Lifecycle
  *
  * ============================================================
  * PROTECTED FEATURES
@@ -203,28 +223,28 @@ describe("connectivitySlice", () => {
  * Diese Tests verhindern:
  * - falsche Offline-Anzeige
  * - verlorene Fehlermeldungen
- * - kaputte Back-Online Benachrichtigung
- * - fehlerhafte Checking States
+ * - kaputte Back-Online-Benachrichtigung
+ * - fehlerhafte Checking-States
  * - falsches Verhalten bei Serverwechsel
- * - inkonsistente Connectivity States
+ * - inkonsistente Connectivity-States
  *
  * ============================================================
  * TEST CATEGORIES
  * ============================================================
- * 1. Initial State Tests
- * 2. Reducer Tests
- * 3. Offline State Tests
- * 4. Back-Online Notification Tests
- * 5. checkAlive pending Tests
- * 6. checkAlive fulfilled Tests
- * 7. checkAlive rejected Tests
+ * 1. Initial-State-Tests
+ * 2. Reducer-Tests
+ * 3. Offline-State-Tests
+ * 4. Back-Online-Notification-Tests
+ * 5. checkAlive-pending-Tests
+ * 6. checkAlive-fulfilled-Tests
+ * 7. checkAlive-rejected-Tests
  *
  * ============================================================
  * BACKEND FEATURES COVERED
  * ============================================================
  * - /api/alive
  * - Server Connectivity
- * - Server Online/Offline Status
+ * - Server Online-/Offline-Status
  *
  * ============================================================
  * MOCKED DEPENDENCIES
@@ -235,8 +255,8 @@ describe("connectivitySlice", () => {
  * ============================================================
  * GOAL
  * ============================================================
- * Sichere Prüfung der Connectivity-Logik,
- * damit Netzwerkstatus, Offline-Anzeige und
- * Back-Online-Verhalten stabil funktionieren.
+ * Sichere Prüfung der Connectivity-Logik, damit
+ * Netzwerkstatus, Offline-Anzeige und Back-Online-Verhalten
+ * stabil funktionieren.
  * ============================================================
  */

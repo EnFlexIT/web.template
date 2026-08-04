@@ -28,7 +28,7 @@ import {
   selectAuthenticationMethod,
   selectIp,
   switchServer,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";

@@ -4,7 +4,7 @@ import { LoadingScreen } from  "../loading/LoadingScreen";
 import { SiteContentList } from "@/template/components/dynamic-content/content/SiteContentList";
 import { MenuItem } from "@/template/state/navigation/menuSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectApi, selectIsLoggedIn, selectJwt } from "@/redux/slices/apiSlice";
+import { selectApi, selectIsLoggedIn, selectJwt } from "@/template/state/api/apiSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { selectBaseMode } from "@/template/state/mode/baseModeSlice";
 

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from '@/redux/store';
-import { normalizeBaseUrl } from "@/redux/slices/apiSlice";
+import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
 import type { AuthMethod } from "@/core/authentication/types";
 const LIVE_CONSOLE_PERFORMATIVE =
   process.env.EXPO_PUBLIC_LIVE_CONSOLE_PERFORMATIVE ??

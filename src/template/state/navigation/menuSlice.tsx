@@ -6,7 +6,7 @@ import {
 
 import type { RootState } from "@/redux/store";
 import type { MenuItem as ApiMenuItem } from "@/api/implementation/Dynamic-Content-Api";
-import type { AuthMethod } from "@/redux/slices/apiSlice";
+import type { AuthMethod } from "@/template/state/api/apiSlice";
 
 import { internalSetLanguage } from "@/template/state/localization/languageSlice";
 import { getStaticMenu } from "@/template/navigation/menu/staticMenu";

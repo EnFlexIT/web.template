@@ -35,7 +35,7 @@ import {
 } from "@/core/server/serverValidation";
 
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { switchServer } from "@/redux/slices/apiSlice";
+import { switchServer } from "@/template/state/api/apiSlice";
 import {
   addServer,
   removeServer,

@@ -16,7 +16,7 @@ import {
   logoutAsync,
   selectApi,
   selectAuthenticationMethod,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
 

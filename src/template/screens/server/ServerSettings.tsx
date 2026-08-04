@@ -13,7 +13,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {selectServers, addServer, selectServer,updateServer,removeServer,} from "@/template/state/server/serverSlice";
 
 import type { ServerEnvironment } from "@/core/server/types";
-import {switchServer, getJwtForServer,selectIp, type AuthMethod,} from "@/redux/slices/apiSlice";
+import {switchServer, getJwtForServer,selectIp, type AuthMethod,} from "@/template/state/api/apiSlice";
 
 import {checkServerReachable,normalizeBaseUrl,normalizeName,} from "@/core/server/serverCheck";
 

@@ -7,7 +7,7 @@ import {
   logoutAsync,
   selectAuthenticationMethod,
   selectIsLoggedIn,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { loadSessionTime } from "@/redux/slices/sessionTimeSlice";
 import { isLogoutFlowActive } from "../logout/logoutFlowGuard";

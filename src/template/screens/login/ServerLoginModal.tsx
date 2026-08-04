@@ -7,7 +7,7 @@ import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import type { AuthMethod } from "@/redux/slices/apiSlice";
+import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 

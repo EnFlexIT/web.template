@@ -2,7 +2,7 @@
 
 import languageReducer from "@/template/state/localization/languageSlice";
 import themeReducer from "@/template/state/theme/themeSlice";
-import apiReducer from "./slices/apiSlice";
+import apiReducer from "@/template/state/api/apiSlice";
 import dataPermissionsReducer from "@/template/state/privacy/dataPermissionsSlice";
 import menuReducer from "@/template/state/navigation/menuSlice";
 import readyReducer from "@/template/state/bootstrap/readySlice";

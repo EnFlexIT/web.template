@@ -21,7 +21,7 @@ import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/Progra
 import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
 
 // Types and logic
-import type { AuthMethod } from "@/redux/slices/apiSlice";
+import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { withAutoTabs } from "@/template/navigation/tabs/withAutoTabs";
 import { isMenuEnabled } from "./featureFlags";
 

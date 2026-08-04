@@ -1,4 +1,4 @@
-import type { AuthMethod } from "@/redux/slices/apiSlice";
+import type { AuthMethod } from "@/template/state/api/apiSlice";
 
 export const menuFeatureFlags: Record<number, boolean> = {
   3011: false,

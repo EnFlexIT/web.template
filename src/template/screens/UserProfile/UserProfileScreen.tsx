@@ -12,7 +12,7 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
+import { selectAuthenticationMethod } from "@/template/state/api/apiSlice";
 import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/template/state/authentication/userProfileSlice";
 
 export function UserProfileScreen() {

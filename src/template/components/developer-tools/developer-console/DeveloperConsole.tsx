@@ -20,7 +20,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   selectIp,
   selectIsLoggedIn,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import {
   connectLiveConsole,

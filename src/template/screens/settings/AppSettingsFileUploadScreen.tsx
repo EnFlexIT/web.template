@@ -22,7 +22,7 @@ import {
   resetAuthAfterConfigurationChange,
   selectApi,
   setIpAsync,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import {
   selectServer as selectServerAction,

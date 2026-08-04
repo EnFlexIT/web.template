@@ -21,7 +21,7 @@ import {
   selectAuthenticationMethod,
   selectIp,
   selectIsLoggedIn,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { Infobox } from "@/template/components/design-system/ui-elements/Infobox";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";

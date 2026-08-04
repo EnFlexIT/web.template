@@ -12,7 +12,7 @@ import {
   setCurrentOrganization,
 } from "@/template/state/organizations/organizationsSlice";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-//import { setIpLocal } from "@/redux/slices/apiSlice";
+//import { setIpLocal } from "@/template/state/api/apiSlice";
 import { setReady } from "@/template/state/bootstrap/readySlice";
 
 //  WICHTIG: so wie in deinem apiSlice

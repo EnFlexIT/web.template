@@ -1,4 +1,4 @@
-Authentication
+﻿Authentication
 
 The template supports two authentication modes against an Agent.Workbenchbackend:
 
@@ -11,9 +11,9 @@ Authentication is being separated into reusable Core infrastructure, reusableTem
 Layer ownership
 
 template authentication UI
-            ↓
+            â†“
 core authentication capabilities
-            ↓
+            â†“
 server and HTTP communication
 
 Rules:
@@ -48,7 +48,7 @@ src/core/authentication/types.ts
 
 Shared AuthMethod type.
 
-src/redux/slices/apiSlice.tsx
+src/template/state/api/apiSlice.tsx
 
 Transitional authentication/API/server state and generated API clients.
 
@@ -197,19 +197,19 @@ Logout controls can be excluded from automatic extension.
 Current Core structure
 
 src/core/authentication
-├── http
-│   └── attachAuthInterceptors.tsx
-├── jwt
-│   └── jwtRenewSlice.tsx
-├── logout
-│   ├── logoutFlowGuard.ts
-│   └── logoutServers.ts
-├── session
-│   ├── AppSessionGuard.tsx
-│   ├── useJwtSessionTimerWeb.ts
-│   ├── useOidcSessionTimerWeb.ts
-│   └── useSessionActivityWeb.tsx
-└── types.ts
+â”œâ”€â”€ http
+â”‚   â””â”€â”€ attachAuthInterceptors.tsx
+â”œâ”€â”€ jwt
+â”‚   â””â”€â”€ jwtRenewSlice.tsx
+â”œâ”€â”€ logout
+â”‚   â”œâ”€â”€ logoutFlowGuard.ts
+â”‚   â””â”€â”€ logoutServers.ts
+â”œâ”€â”€ session
+â”‚   â”œâ”€â”€ AppSessionGuard.tsx
+â”‚   â”œâ”€â”€ useJwtSessionTimerWeb.ts
+â”‚   â”œâ”€â”€ useOidcSessionTimerWeb.ts
+â”‚   â””â”€â”€ useSessionActivityWeb.tsx
+â””â”€â”€ types.ts
 
 Important behavior
 

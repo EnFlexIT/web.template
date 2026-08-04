@@ -10,7 +10,7 @@ import { Logo } from "./Logo";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import {
   selectAuthenticationMethod,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
@@ -24,7 +24,7 @@ import {
   selectMenu,
   setActiveMenuId,
 } from "@/template/state/navigation/menuSlice";
-import { selectApi } from "@/redux/slices/apiSlice";
+import { selectApi } from "@/template/state/api/apiSlice";
 
 import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
 

@@ -16,7 +16,7 @@ import { selectMenu, setActiveMenuId } from "@/template/state/navigation/menuSli
 
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectAuthenticationMethod } from "@/redux/slices/apiSlice";
+import { selectAuthenticationMethod } from "@/template/state/api/apiSlice";
 import { useMenuNavigation } from "@/template/navigation/routing/useMenuNavigation";
 
 type ChildItem = StaticMenuItem;

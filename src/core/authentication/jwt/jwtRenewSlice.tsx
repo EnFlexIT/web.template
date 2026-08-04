@@ -13,7 +13,7 @@ import {
   getJwtForServer,
   normalizeBaseUrl,
   loginWithBasic,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
 

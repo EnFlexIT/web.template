@@ -76,7 +76,7 @@ import reducer, {
   setIsLogoutDialogOpen,
   setJwtLocal,
   switchServer,
-} from "../src/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 /**
  * JWT mit einem Ablaufdatum in der Zukunft.

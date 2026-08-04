@@ -7,7 +7,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { useTranslation } from "react-i18next";
-import { selectApi } from "@/redux/slices/apiSlice";
+import { selectApi } from "@/template/state/api/apiSlice";
 import { normalizeServerKey } from "@/template/state/server/serverSelectors";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";

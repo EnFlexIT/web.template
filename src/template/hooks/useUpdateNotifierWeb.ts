@@ -17,7 +17,7 @@ import {
 
 import {
   selectApi,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import {
   normalizeServerKey,

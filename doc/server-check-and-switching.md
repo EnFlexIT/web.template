@@ -1,4 +1,4 @@
-Server Check and Server Switching
+﻿Server Check and Server Switching
 
 The template manages multiple Agent.Workbench backend servers and can switchbetween them at runtime.
 
@@ -7,9 +7,9 @@ Reusable server validation and detection belong to src/core/server. Reusableserv
 Layer ownership
 
 template server UI and state
-            ↓
+            â†“
 core server validation and types
-            ↓
+            â†“
 backend endpoints
 
 The Core server module must not depend on Template UI.
@@ -32,7 +32,7 @@ src/template/state/connectivity/connectivitySlice.tsx
 
 Active-server /api/alive connectivity state.
 
-src/redux/slices/apiSlice.tsx
+src/template/state/api/apiSlice.tsx
 
 Transitional active base URL, authentication and API-client state.
 
@@ -203,11 +203,11 @@ The offline overlay reads this state and presents the result. It does not ownthe
 Current Core structure
 
 src/core/server
-├── detectServerEnvironment.ts
-├── normalizeServerInputs.ts
-├── serverCheck.ts
-├── serverValidation.ts
-└── types.ts
+â”œâ”€â”€ detectServerEnvironment.ts
+â”œâ”€â”€ normalizeServerInputs.ts
+â”œâ”€â”€ serverCheck.ts
+â”œâ”€â”€ serverValidation.ts
+â””â”€â”€ types.ts
 
 Known transition dependency
 

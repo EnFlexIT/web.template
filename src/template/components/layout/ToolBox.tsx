@@ -19,7 +19,7 @@ import {
   logoutAsync,
   selectAuthenticationMethod,
   selectJwt,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import { logoutBaseMode, selectBaseMode } from "@/template/state/mode/baseModeSlice";
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";

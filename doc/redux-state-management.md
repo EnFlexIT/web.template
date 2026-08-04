@@ -1,4 +1,4 @@
-# Redux State Management
+﻿# Redux State Management
 
 The project uses Redux Toolkit. Redux is currently composed centrally while
 feature state is being moved to its owning architecture layer.
@@ -75,7 +75,7 @@ Only two slices remain under `src/redux/slices`:
 
 | State key | Current file | Responsibility / status |
 | --- | --- | --- |
-| `api` | `src/redux/slices/apiSlice.tsx` | API clients, authentication, active server, persistence and server switching. Mixed responsibility; separate before moving. |
+| `api` | `src/template/state/api/apiSlice.tsx` | API clients, authentication, active server, persistence and server switching. Mixed responsibility; separate before moving. |
 | `sessionTime` | `src/redux/slices/sessionTimeSlice.tsx` | OIDC session state, direct HTTP requests and active-server access. Mixed responsibility; separate before moving. |
 
 ### Composition helpers outside Redux state
@@ -234,3 +234,4 @@ Then commit the completed batch.
   persistence responsibilities.
 - Extract session HTTP communication from `sessionTimeSlice`.
 - Add public layer APIs and automated import-boundary checks.
+

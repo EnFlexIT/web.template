@@ -23,7 +23,7 @@ import {
   getJwtForServer,
   selectIsLoggedIn,
   type AuthMethod,
-} from "@/redux/slices/apiSlice";
+} from "@/template/state/api/apiSlice";
 
 import {
   selectServerStatuses,

@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { selectApi } from "@/redux/slices/apiSlice";
+import { selectApi } from "@/template/state/api/apiSlice";
 import { SiteContentList } from "@/template/components/dynamic-content/content/SiteContentList";
 
 export function DynamicPropertiesScreen() {
