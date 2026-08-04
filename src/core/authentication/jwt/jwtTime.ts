@@ -1,4 +1,4 @@
-// src/utils/jwtTime.ts
+// src/core/authentication/jwt/jwtTime.ts
 import { jwtDecode } from "jwt-decode";
 
 export function getJwtExpMs(jwt: string | null): number {

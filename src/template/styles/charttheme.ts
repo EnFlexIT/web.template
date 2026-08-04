@@ -1,5 +1,5 @@
-// src/styles/charttheme.ts
-import { VictoryTheme } from "victory";
+// src/template/styles/charttheme.ts
+// import { VictoryTheme } from "victory";
 
 // optional helper (falls du es weiter nutzen willst)
 const rgb = (r: number, g: number, b: number) => `rgb(${r}, ${g}, ${b})`;

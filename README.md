@@ -243,7 +243,7 @@ To expand the themes by these properties, simply add the properties to the javas
 
 e.g. to include the previously mentioned backgroundcolor, one could add:
 ```ts
-// src/styles/darkTheme.tsx
+// src/template/styles/darkTheme.ts
 import { fonts } from "./fonts";
 
 export const darkTheme = {
