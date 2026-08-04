@@ -1,7 +1,6 @@
 import { View, ViewProps, ScrollView } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { isMobileShellRuntime } from "../../../util/runtime";
-
+import { isMobileShellRuntime } from "@/template/runtime/runtime";
 type Props = ViewProps & {
   scrollable?: boolean;
 };

@@ -3,8 +3,7 @@ import { Platform,Pressable,useWindowDimensions, View,} from "react-native";impo
 import Feather_ from "@expo/vector-icons/Feather";
 import { Buffer } from "buffer";
 import { useTranslation } from "react-i18next";
-import { isMobileShellRuntime } from "../../../util/runtime";
-
+import { isMobileShellRuntime } from "@/template/runtime/runtime";
 import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/template/state/developer-tools/developerConsoleSlice";
 
 import {selectLiveConsole,} from "@/template/state/developer-tools/liveConsoleSlice";

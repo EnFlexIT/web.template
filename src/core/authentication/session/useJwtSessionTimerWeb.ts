@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
-import { getJwtRemainingMs } from "../../../util/jwtTime";
-import { renewJwtIfNeeded } from "../jwt/jwtRenewSlice";
+import { getJwtRemainingMs } from "@/core/authentication/jwt/jwtTime";import { renewJwtIfNeeded } from "../jwt/jwtRenewSlice";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 
 type Options = {

@@ -4,7 +4,7 @@ import React, { Dispatch, SetStateAction } from "react";
 import { AbstractSiteContent as AbstractSiteContentType } from "@/api/implementation/Dynamic-Content-Api";
 import { BlurView as BlurView_ } from 'expo-blur';
 // import { createThematicallyDependentStyle, useThematicallyDependentStyle } from "enflex.it-core";
-import { isSiteContentImage, isSiteContentProperties, isSiteContentText } from "@/util/isAbstractSiteContent";
+import { isSiteContentImage, isSiteContentProperties, isSiteContentText } from "@/template/components/dynamic-content/model/isAbstractSiteContent";
 import { SiteContentTextEditor } from "./SiteContentTextEditor";
 import { SiteContentImageEditor } from "./SiteContentImageEditor";
 import { SiteContentPropertiesEditor } from "./SiteContentPropertiesEditor";

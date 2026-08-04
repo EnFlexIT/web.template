@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import type { AuthMethod } from "@/core/authentication/types";
-import { resolveRuntimeBaseUrl } from "../../util/runtimeBaseUrl";
+import { resolveRuntimeBaseUrl } from "@/core/server/runtimeBaseUrl";
 import {
   getApplicationMode,
   type ApplicationMode,

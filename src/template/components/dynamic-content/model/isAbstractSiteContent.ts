@@ -1,13 +1,13 @@
-import {
+import type {
   AbstractSiteContent,
-  SiteContentText,
-  SiteContentImage,
-  SiteContentProperties,
   SiteContentBarChart,
+  SiteContentImage,
   SiteContentLineChart,
   SiteContentPieChart,
+  SiteContentProperties,
+  SiteContentText,
   SiteContentTimeSeriesChart,
-} from "../api/implementation/Dynamic-Content-Api";
+} from "@/api/implementation/Dynamic-Content-Api";
 
 function hasType(content: AbstractSiteContent | null | undefined): content is AbstractSiteContent {
   return !!content && typeof (content as any).AbstractSiteContentType === "string";

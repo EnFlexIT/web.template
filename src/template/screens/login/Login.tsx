@@ -37,8 +37,9 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { dispatchServerStatusRefresh } from "../../../util/serverStatusRefresh";
-import { setServerStatus } from "@/template/state/server/serverStatusSlice";
+import {
+  dispatchServerStatusRefresh,
+} from "@/template/state/server/serverStatusRefresh";import { setServerStatus } from "@/template/state/server/serverStatusSlice";
 
 const Feather = withUnistyles(Feather_);
 

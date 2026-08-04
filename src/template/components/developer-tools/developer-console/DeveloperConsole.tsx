@@ -14,8 +14,7 @@ import { StyleSheet } from "react-native-unistyles";
 
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
-import { isMobileShellRuntime } from "@/util/runtime";
-import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
+import { isMobileShellRuntime } from "@/template/runtime/runtime";import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
 import { useAppDispatch } from "@/core/hooks/useAppDispatch";
 import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {

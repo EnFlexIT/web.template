@@ -23,7 +23,7 @@ import {
   isSiteContentLineChart,
   isSiteContentPieChart,
   isSiteContentTimeSeriesChart,
-} from "@/util/isAbstractSiteContent";
+} from "@/template/components/dynamic-content/model/isAbstractSiteContent";
 
 import { createEnFlexChart } from "@/template/styles/charttheme";
 /* -------------------------
