@@ -7,7 +7,7 @@ import { useAppSelector } from "@/core/hooks/useAppSelector";
 import {
   extendSessionTime,
   selectSessionTime,
-} from "@/redux/slices/sessionTimeSlice";
+} from "@/template/state/session/sessionTimeSlice";
 
 
 type Options = {

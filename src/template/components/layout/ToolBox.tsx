@@ -24,13 +24,9 @@ import {
 import { logoutBaseMode, selectBaseMode } from "@/template/state/mode/baseModeSlice";
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 
-import { useJwtSessionTimerWeb } from "@/core/authentication/session/useJwtSessionTimerWeb";
-import { useOidcSessionTimerWeb} from "@/core/authentication/session/useOidcSessionTimerWeb";
-import { ConfirmModal } from "@/template/components/design-system/ui-elements/ConfirmModal";
-import {
-  extendSessionTime,
-  selectSessionTime,
-} from "@/redux/slices/sessionTimeSlice";
+import { useJwtSessionTimerWeb } from "@/template/authentication/session/useJwtSessionTimerWeb";
+import { useOidcSessionTimerWeb} from "@/template/authentication/session/useOidcSessionTimerWeb";
+import {extendSessionTime, selectSessionTime,} from "@/template/state/session/sessionTimeSlice";
 import { LogoutDialog } from "@/template/screens/Logout/LogoutDialog";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";

@@ -9,8 +9,8 @@ import {
   selectIsLoggedIn,
 } from "@/template/state/api/apiSlice";
 
-import { loadSessionTime } from "@/redux/slices/sessionTimeSlice";
-import { isLogoutFlowActive } from "../logout/logoutFlowGuard";
+import { loadSessionTime } from "@/template/state/session/sessionTimeSlice";
+import { isLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
 
 const SESSION_CHECK_INTERVAL_MS = 60_000;
 const LOGIN_GRACE_PERIOD_MS = 12_000;

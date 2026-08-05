@@ -27,7 +27,7 @@ import {
   getLoggedInServers,
   logoutSelectedServers,
   type LogoutServerItem,
-} from "@/core/authentication/logout/logoutServers";
+} from "@/template/authentication/logout/logoutServers";
 
 import { setLogoutFlowActive } from "@/core/authentication/logout/logoutFlowGuard";
 import { selectServers } from "@/template/state/server/serverSlice";

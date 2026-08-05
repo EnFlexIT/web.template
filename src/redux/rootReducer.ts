@@ -16,7 +16,7 @@ import notificationsReducer from "@/template/state/notifications/notificationSli
 import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
 import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
 import updateReducer from "@/template/state/update/updateSlice";
-import sessionTimeReducer from "./slices/sessionTimeSlice";
+import sessionTimeReducer from "@/template/state/session/sessionTimeSlice";
 import serverStatusReducer from "@/template/state/server/serverStatusSlice";
 import appSettingsFileUploadReducer from "@/template/state/settings/appSettingsFileUploadSlice";
 import appReleaseReducer from "@/template/state/release/appReleaseSlice";
