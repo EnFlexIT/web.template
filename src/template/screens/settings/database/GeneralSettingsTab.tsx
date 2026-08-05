@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
@@ -9,8 +9,8 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { H2 } from "@/template/components/design-system/stylistic/H2";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/template/state/settings/database/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/template/components/design-system/ui-elements/Icon/Icon";

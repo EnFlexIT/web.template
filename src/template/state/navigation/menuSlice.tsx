@@ -4,7 +4,7 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 
-import type { RootState } from "@/redux/store";
+import type { RootState } from "@/template/state/store/store";
 import type { MenuItem as ApiMenuItem } from "@/api/implementation/Dynamic-Content-Api";
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 

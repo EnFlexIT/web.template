@@ -1,4 +1,4 @@
-﻿// src/template/components/ui-elements/DataPermissionsDialog.tsx
+// src/template/components/ui-elements/DataPermissionsDialog.tsx
 import React, { useMemo } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { BlurView as BlurView_ } from "expo-blur";
@@ -9,8 +9,8 @@ import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 
 import { PERMISSIONS } from "@/template/permissions/permissionCatalog";
 import {

@@ -3,7 +3,7 @@ import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectIsSwitchingServer } from "@/template/state/api/apiSlice";
 
 export function ServerSwitchOverlay() {

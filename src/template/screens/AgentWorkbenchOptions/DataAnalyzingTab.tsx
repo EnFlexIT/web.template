@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
@@ -9,8 +9,8 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
 import {
   fetchDataAnalysis,

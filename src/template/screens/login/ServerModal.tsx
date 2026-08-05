@@ -34,7 +34,7 @@ import {
   validateServerInput,
 } from "@/core/server/serverValidation";
 
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { switchServer } from "@/template/state/api/apiSlice";
 import {
   addServer,

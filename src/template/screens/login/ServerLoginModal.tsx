@@ -9,7 +9,7 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 
 type Props = {
   visible: boolean;

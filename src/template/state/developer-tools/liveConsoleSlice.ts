@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from '@/redux/store';
+import type { AppDispatch, RootState } from '@/template/state/store/store';
 import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
 import type { AuthMethod } from "@/core/authentication/types";
 const LIVE_CONSOLE_PERFORMATIVE =

@@ -13,8 +13,8 @@ import {
 } from "@/template/state/api/apiSlice";
 
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { useEffect } from "react";
 import { getIdPath } from "@/template/state/navigation/menuSlice";
 

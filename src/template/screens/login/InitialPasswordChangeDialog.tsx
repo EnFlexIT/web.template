@@ -9,8 +9,8 @@ import { ActionButton } from "@/template/components/design-system/ui-elements/Ac
 import { useTranslation } from "react-i18next";
 import { selectApi } from "@/template/state/api/apiSlice";
 import { normalizeServerKey } from "@/template/state/server/serverSelectors";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {
   closeInitialPasswordChangeDialog,
   selectInitialPasswordChangeDialogOpen,

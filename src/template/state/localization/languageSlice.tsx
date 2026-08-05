@@ -7,7 +7,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next from "i18next";
 
-import type { RootState } from "@/redux/store";
+import type { RootState } from "@/template/state/store/store";
 import { updateMenu } from "@/template/state/navigation/menuSlice";
 
 const key = "lng" as const;

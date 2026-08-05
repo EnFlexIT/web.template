@@ -8,8 +8,8 @@ import { Screen } from "@/template/components/layout/Screen";
 import {H1,H4,ThemedText,StylisticTextInput,ConfirmModal,ActionButton,Card } from "@design-system";
 import {SelectableList,SelectableItem,} from "@/template/components/design-system/ui-elements/SelectableList";
 import { ServerLoginModal } from "../login/ServerLoginModal";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {selectServers, addServer, selectServer,updateServer,removeServer,} from "@/template/state/server/serverSlice";
 
 import type { ServerEnvironment } from "@/core/server/types";

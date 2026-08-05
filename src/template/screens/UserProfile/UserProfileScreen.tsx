@@ -1,4 +1,4 @@
-﻿// src/screens/UserProfile/UserProfileScreen.tsx
+// src/screens/UserProfile/UserProfileScreen.tsx
 
 import React, { useEffect, useMemo } from "react";
 import { ScrollView, View } from "react-native";
@@ -10,8 +10,8 @@ import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectAuthenticationMethod } from "@/template/state/api/apiSlice";
 import {loadUserProfile,selectIsUserProfileLoading, selectUserProfile,selectUserProfileError,} from "@/template/state/authentication/userProfileSlice";
 

@@ -4,7 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Buffer } from "buffer";
 
-import type { RootState } from "@/redux/store";
+import type { RootState } from "@/template/state/store/store";
 
 import {
   setJwtLocal,

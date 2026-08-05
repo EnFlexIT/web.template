@@ -1,4 +1,4 @@
-﻿import { createDrawerNavigator } from "@react-navigation/drawer";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import React, {useEffect,useMemo,useRef, useState,} from "react";
@@ -9,7 +9,7 @@ import { DataPermissionsDialog } from "@design-system";
 import { AppSessionGuard } from "@/template/authentication/session/AppSessionGuard";
 import { DeveloperConsole, DeveloperConsoleConnection,DynamicScreen,Footer, Header,InitialPasswordChangeDialog,LoginScreen, Navigation, NotAvailableScreen, NotificationPopup, OfflineOverlay, ServerSwitchOverlay, buildMenuPaths,checkAlive, hasId,initializeDataPermissions, initializeLanguage, initializeMenu,initializeOrganizations,initializeServers,initializeTheme,isDynamicMenuItem,isMenuEnabled, selectMenu,setActiveMenuId,useIsWide,} from "@template";
 import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/template/state/api/apiSlice";
-import { store } from "@/redux/store";
+import { store } from "@/template/state/store/store";
 import { PostLoginUpdateWatcher } from "./bootstrap/watchers/PostLoginUpdateWatcher";
 import { UpdateNotificationWatcher } from "./bootstrap/watchers/UpdateNotificationWatcher";
 

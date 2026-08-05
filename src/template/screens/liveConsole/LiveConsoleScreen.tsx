@@ -1,4 +1,4 @@
-﻿import React, {useMemo,useRef,} from "react";
+import React, {useMemo,useRef,} from "react";
 
 import {Platform,ScrollView,View,} from "react-native";
 
@@ -7,9 +7,9 @@ import {useTranslation,} from "react-i18next";
 import { StyleSheet,} from "react-native-unistyles";
 
 import {Card,ActionButton,ThemedText,} from "@design-system";
-import { useAppDispatch,} from "@/core/hooks/useAppDispatch";
+import { useAppDispatch,} from "@/template/state/store/useAppDispatch";
 
-import {useAppSelector,} from "@/core/hooks/useAppSelector";
+import {useAppSelector,} from "@/template/state/store/useAppSelector";
 
 import {useThemedScrollbarWeb,} from "@/template/hooks/useThemedScrollbarWeb";
 

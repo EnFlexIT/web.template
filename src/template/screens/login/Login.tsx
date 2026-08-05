@@ -1,4 +1,4 @@
-﻿// src/screens/login/Login.tsx
+// src/screens/login/Login.tsx
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -21,8 +21,8 @@ import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { ThemedAntDesign } from "@/template/components/design-system/themed/ThemedAntDesign";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectServers } from "@/template/state/server/serverSlice";
 import {
   selectAuthenticationMethod,

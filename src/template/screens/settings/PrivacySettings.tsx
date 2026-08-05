@@ -1,4 +1,4 @@
-﻿import { View } from "react-native";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
@@ -8,8 +8,8 @@ import { TableSwitchCell } from "@/template/components/design-system/ui-elements
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import { PERMISSIONS } from "@/template/permissions/permissionCatalog";
 import {

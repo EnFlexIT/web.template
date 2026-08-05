@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from '@/redux/store';
+import type { RootState } from '@/template/state/store/store';
 
 const EXEC_MODE: string = "exec.mode";
 const SERVER_MASTER_URL: string = "server.master.url";

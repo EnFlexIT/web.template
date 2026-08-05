@@ -1,8 +1,8 @@
 // src/template/navigation/routing/useMenuNavigation.ts
 import { useMemo } from "react";
 import { useLinkTo } from "@react-navigation/native";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectMenu, setActiveMenuId } from "@/template/state/navigation/menuSlice";
 import { buildMenuPaths } from "./menuPaths";
 

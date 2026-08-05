@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform,Pressable,useWindowDimensions, View,} from "react-native";import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { Buffer } from "buffer";
@@ -9,8 +9,8 @@ import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/template/state/
 import {selectLiveConsole,} from "@/template/state/developer-tools/liveConsoleSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 
 import {
   checkServerAuthenticated,

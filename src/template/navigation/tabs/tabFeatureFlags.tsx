@@ -1,4 +1,4 @@
-import type { RootState } from "@/redux/store";
+import type { RootState } from "@/template/state/store/store";
 export function isTabEnabled(flagID: number, state?: RootState): boolean {
   switch (flagID) {
     case 5001:

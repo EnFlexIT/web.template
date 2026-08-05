@@ -1,4 +1,4 @@
-﻿// src/components/ToolBox.tsx
+// src/components/ToolBox.tsx
 
 import React, {
   useCallback,
@@ -12,8 +12,8 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { Platform, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import {
   logoutAsync,

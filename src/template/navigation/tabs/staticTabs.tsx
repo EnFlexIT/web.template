@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 
-import type { RootState } from "@/redux/store";
+import type { RootState } from "@/template/state/store/store";
 
 import { DerbyNetworkServerTab } from "@/template/screens/settings/database/DerbyNetworkServerTab";
 import { FactorySettingsTab } from "@/template/screens/settings/database/FactorySettingsTab";

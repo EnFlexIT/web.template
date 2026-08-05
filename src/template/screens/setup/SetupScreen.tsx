@@ -1,17 +1,17 @@
-﻿import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
+import { ThemedView } from "@/template/components/design-system/themed/ThemedView";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { StyleSheet } from "react-native-unistyles";
 import { useMemo, useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 import { ThemedAntDesign } from "@/template/components/design-system/themed/ThemedAntDesign";
 import { ThemedTextInput } from "@/template/components/design-system/themed/ThemedTextInput";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import {
   addOrganization,
   selectOrganizations,
   setCurrentOrganization,
 } from "@/template/state/organizations/organizationsSlice";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 //import { setIpLocal } from "@/template/state/api/apiSlice";
 import { setReady } from "@/template/state/bootstrap/readySlice";
 

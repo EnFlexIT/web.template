@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 
 import { getJwtRemainingMs } from "@/core/authentication/jwt/jwtTime";
 import { renewJwtIfNeeded } from "@/template/authentication/jwt/jwtRenewThunks";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 
 type Options = {
   enabled: boolean;

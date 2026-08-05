@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
@@ -7,8 +7,8 @@ import { TextInput } from "@/template/components/design-system/ui-elements/TextI
 import { H2 } from "@/template/components/design-system/stylistic/H2";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {
   clearDbSettingsError,
   fetchDbSettings,

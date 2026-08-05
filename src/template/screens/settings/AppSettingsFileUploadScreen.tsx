@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -14,8 +14,8 @@ import { H3 } from "@/template/components/design-system/stylistic/H3";
 import {
   UpdateProgressDialog,type UpdateProgressPhase,} from "@/template/components/design-system/ui-elements/UpdateProgressDialog";
 import { ConfirmDialog } from "@/template/components/design-system/ui-elements/ConfirmDialog";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import {
   normalizeBaseUrl,

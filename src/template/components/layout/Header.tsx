@@ -14,9 +14,9 @@ import {
   MenuItem,
 } from "@/template/state/navigation/menuSlice";
 
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectIsLoggedIn } from "@/template/state/api/apiSlice";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useLinkTo } from "@react-navigation/native";
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";

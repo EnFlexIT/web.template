@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   useEffect,
 } from "react";
 
@@ -15,8 +15,8 @@ import { StyleSheet } from "react-native-unistyles";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 
 import { isMobileShellRuntime } from "@/template/runtime/runtime";import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
-import { useAppDispatch } from "@/core/hooks/useAppDispatch";
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppDispatch } from "@/template/state/store/useAppDispatch";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {
   selectIp,
   selectIsLoggedIn,

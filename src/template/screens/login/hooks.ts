@@ -1,4 +1,4 @@
-import { useAppSelector } from "@/core/hooks/useAppSelector";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectApi, selectAuthenticationMethod, selectIp } from "@/template/state/api/apiSlice";
 import { selectLanguage } from "@/template/state/localization/languageSlice";
 import { selectThemeInfo } from "@/template/state/theme/themeSlice";
