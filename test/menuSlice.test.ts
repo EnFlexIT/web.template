@@ -1,10 +1,12 @@
 /// <reference types="jest" />
 
 jest.mock("@react-native-async-storage/async-storage", () =>
-  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+  require(
+    "@react-native-async-storage/async-storage/jest/async-storage-mock",
+  ),
 );
 
-jest.mock("../redux/slices/staticMenu", () => ({
+jest.mock("@/template/navigation/menu/staticMenu", () => ({
   getStaticMenu: () => [
     {
       menuID: 3003,
@@ -19,40 +21,54 @@ jest.mock("@/template/navigation/menu/featureFlags", () => ({
   isMenuEnabled: () => true,
 }));
 
+import {
+  getStaticMenu,
+} from "@/template/navigation/menu/staticMenu";
+
 import reducer, {
-  MenuState,
-  setActiveMenuId,
-  rawListToTrees,
   getDepthFromList,
-  isDynamicMenuItem,
-  MenuItem,
   initializeMenu,
-} from "../src/template/state/navigation/menuSlice";
+  isDynamicMenuItem,
+  rawListToTrees,
+  setActiveMenuId,
+} from "@/template/state/navigation/menuSlice";
+
+import type {
+  MenuItem,
+  MenuState,
+} from "@/template/state/navigation/menuSlice";
 
 describe("menuSlice", () => {
-const emptyState: MenuState = {
-  menu: [],
-  rawMenu: [],
-  activeMenuId: 1,
-};
+  const emptyState: MenuState = {
+    menu: [],
+    rawMenu: [],
+    activeMenuId: 1,
+  };
 
-it("should return the initial state with static menu", () => {
-  const state = reducer(undefined, { type: "unknown" });
+  it("should return the initial state with static menu", () => {
+    const state = reducer(undefined, {
+      type: "unknown",
+    });
 
-  expect(state.activeMenuId).toBe(3003);
-  expect(state.rawMenu).toHaveLength(1);
-  expect(state.rawMenu[0].menuID).toBe(3003);
-  expect(state.menu).toHaveLength(1);
-  expect(state.menu[0].val.menuID).toBe(3003);
-});
+    expect(state.activeMenuId).toBe(3003);
+    expect(state.rawMenu).toHaveLength(1);
+    expect(state.rawMenu[0].menuID).toBe(3003);
+
+    expect(state.menu).toHaveLength(1);
+    expect(state.menu[0].val.menuID).toBe(3003);
+  });
 
   it("should set activeMenuId", () => {
-    const state = reducer(emptyState, setActiveMenuId(5))
+    const state = reducer(
+      emptyState,
+      setActiveMenuId(5),
+    );
+
     expect(state.activeMenuId).toBe(5);
   });
 
   it("should handle initializeMenu.fulfilled", () => {
-    const apiMenu: MenuItem[] = [
+    const dynamicMenu: MenuItem[] = [
       {
         menuID: 1,
         caption: "Home",
@@ -68,20 +84,46 @@ it("should return the initial state with static menu", () => {
       },
     ];
 
+    const staticMenu = getStaticMenu();
+
     const action = {
       type: initializeMenu.fulfilled.type,
-      payload: apiMenu,
+      payload: {
+        dynamicMenu,
+        staticMenu,
+        authenticationMethod: "jwt" as const,
+      },
     };
 
-    const state = reducer(emptyState, action)
+    const state = reducer(emptyState, action);
 
-    // rawMenu enthält API-Daten + statische Settings-Einträge
-    expect(state.rawMenu.length).toBeGreaterThan(apiMenu.length);
+    // Zwei dynamische Einträge und ein statischer Eintrag.
+    expect(state.rawMenu).toHaveLength(3);
 
-    // Menübaum wurde aufgebaut
+    // Dynamische Menüeinträge wurden übernommen.
+    expect(
+      state.rawMenu.some(
+        (item) => item.menuID === 1,
+      ),
+    ).toBe(true);
+
+    expect(
+      state.rawMenu.some(
+        (item) => item.menuID === 2,
+      ),
+    ).toBe(true);
+
+    // Der statische Settings-Eintrag wurde ergänzt.
+    expect(
+      state.rawMenu.some(
+        (item) => item.menuID === 3003,
+      ),
+    ).toBe(true);
+
+    // Der Menübaum wurde aufgebaut.
     expect(state.menu.length).toBeGreaterThan(0);
 
-    // activeMenuId wird zurückgesetzt
+    // Die bisher aktive Menü-ID bleibt erhalten.
     expect(state.activeMenuId).toBe(1);
   });
 });
@@ -119,17 +161,24 @@ describe("menuSlice helpers (pure functions)", () => {
   it("rawListToTrees builds a correct tree structure", () => {
     const tree = rawListToTrees(flatMenu);
 
-    expect(tree.length).toBe(1);
+    expect(tree).toHaveLength(1);
     expect(tree[0].val.menuID).toBe(1);
 
-    expect(tree[0].children.length).toBe(1);
-    expect(tree[0].children[0].val.menuID).toBe(2);
+    expect(tree[0].children).toHaveLength(1);
+    expect(
+      tree[0].children[0].val.menuID,
+    ).toBe(2);
 
-    expect(tree[0].children[0].children.length).toBe(1);
-    expect(tree[0].children[0].children[0].val.menuID).toBe(3);
+    expect(
+      tree[0].children[0].children,
+    ).toHaveLength(1);
+
+    expect(
+      tree[0].children[0].children[0].val.menuID,
+    ).toBe(3);
   });
 
-  it("detects dynamic vs static menu items correctly", () => {
+  it("detects dynamic and static menu items correctly", () => {
     const dynamicItem: MenuItem = {
       menuID: 10,
       caption: "Dynamic",
@@ -140,18 +189,25 @@ describe("menuSlice helpers (pure functions)", () => {
     const staticItem: MenuItem = {
       menuID: 11,
       caption: "Static",
+      position: 0,
       Screen: () => null,
     };
 
-    expect(isDynamicMenuItem(dynamicItem)).toBe(true);
-    //expect(isStaticMenuItem(staticItem)).toBe(true);
+    expect(
+      isDynamicMenuItem(dynamicItem),
+    ).toBe(true);
+
+    expect(
+      isDynamicMenuItem(staticItem),
+    ).toBe(false);
   });
 });
+
 /**
  * ============================================================
  * FILE
  * ============================================================
- * src/testes/menuSlice.test.ts
+ * test/menuSlice.test.ts
  *
  * ============================================================
  * PURPOSE
@@ -169,11 +225,11 @@ describe("menuSlice helpers (pure functions)", () => {
  * PROTECTED FEATURES
  * ============================================================
  * Diese Tests verhindern:
- * - leeres Menü nach Refactoring
+ * - leeres Menü nach einem Refactoring
  * - falsche activeMenuId
  * - kaputten Menübaum
  * - fehlerhafte Verarbeitung dynamischer Menüs
- * - Fehler beim Zusammenführen von static + dynamic menu
+ * - Fehler beim Zusammenführen statischer und dynamischer Menüs
  *
  * ============================================================
  * DEPENDENCIES MOCKED
@@ -182,7 +238,9 @@ describe("menuSlice helpers (pure functions)", () => {
  * - staticMenu
  * - featureFlags
  *
- * Ziel:
- * Slice isoliert testen ohne React Native UI.
+ * ============================================================
+ * GOAL
+ * ============================================================
+ * Der Slice wird isoliert und ohne React-Native-UI getestet.
  * ============================================================
  */
