@@ -1,19 +1,11 @@
-import React, {
-  type ComponentClass,
-  type FunctionComponent,
-} from "react";
+import React from "react";
+
+import type {StaticMenuItem,} from "@/template/navigation/menu/types";
 
 import { hasTabsForMenu } from "@/template/navigation/tabs/staticTabs";
 import { MenuHubScreen } from "@/template/screens/menu/MenuHubScreen";
 import { TabScreen } from "@/template/screens/tabscreen/TabScreen";
 
-export type StaticMenuItem = {
-  caption: string;
-  menuID: number;
-  parentID?: number;
-  position?: number;
-  Screen: ComponentClass<any> | FunctionComponent<any>;
-};
 
 export function withAutoTabs(items: StaticMenuItem[]): StaticMenuItem[] {
   return items.map((item) => {

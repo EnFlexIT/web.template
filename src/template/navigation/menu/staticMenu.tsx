@@ -1,6 +1,3 @@
-import { ComponentClass, FunctionComponent } from "react";
-
-
 // Screens
 import { SettingsScreen } from "@/template/screens/settings/Settings";
 import { UnauthenticatedSettings } from "@/template/screens/settings/Unauthenticated-Settings";
@@ -11,7 +8,6 @@ import { ChangePasswordScreen } from "@/template/screens/settings/ChangePassword
 import { UpdateWebAppTab } from "@/template/screens/update/tabs/UpdateWebAppTab";
 import { NotificationsScreen } from "@/template/screens/Notification/NotificationsScreen";
 import { UserProfileScreen } from "@/template/screens/UserProfile/UserProfileScreen";
-
 // Hub
 import { MenuHubScreen } from "@/template/screens/menu/MenuHubScreen";
 import { AppSettingsFileUploadScreen } from "@/template/screens/settings/AppSettingsFileUploadScreen";
@@ -19,23 +15,18 @@ import { AppSettingsFileUploadScreen } from "@/template/screens/settings/AppSett
 // Agent Workbench Options
 import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/ProgramStartTab";
 import { LiveConsoleScreen } from "@/template/screens/liveConsole/LiveConsoleScreen";
+import type { StaticMenuItem,} from "@/template/navigation/menu/types";
 
+export type { StaticMenuItem,} from "@/template/navigation/menu/types";
 // Types and logic
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { withAutoTabs } from "@/template/navigation/tabs/withAutoTabs";
 import { isMenuEnabled } from "./featureFlags";
 
-export type StaticMenuItem = {
-  caption: string;
-  menuID: number;
-  parentID?: number;
-  position?: number;
-  Screen: ComponentClass<any> | FunctionComponent<any>;
-};
 
-export function getStaticMenu(
-  authenticationMethod?: AuthMethod,
-): StaticMenuItem[] {
+export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuItem[]
+{
+
   const items: StaticMenuItem[] = [
     {
       caption: "settings",

@@ -1,4 +1,3 @@
-import type { ComponentType, ReactNode } from "react";
 
 import type { RootState } from "@/template/state/store/store";
 
@@ -14,17 +13,9 @@ import { ProgramStartTab } from "@/template/screens/AgentWorkbenchOptions/Progra
 import { DataAnalyzingTab } from "@/template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
 
 import { isTabEnabled } from "@/template/navigation/tabs/tabFeatureFlags";
-export type TabContent = ComponentType<any> | (() => React.ReactNode);
+import type {StaticTabItem,} from "@/template/navigation/tabs/types";
 
-
-export type StaticTabItem = {
-  menuID: number;
-  tabKey: string;
-  caption: string;
-  position?: number;
-  featureID?: number;
-  Content: TabContent;
-};
+export type {StaticTabItem,TabContent,} from "@/template/navigation/tabs/types";
 
 export const STATIC_TABS: StaticTabItem[] = [
 

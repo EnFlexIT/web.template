@@ -36,3 +36,10 @@ export { isMenuEnabled } from "./navigation/menu/featureFlags";
 export { buildMenuPaths } from "./navigation/routing/menuPaths";
 
 export { RichTextToolbar } from "./components/rich-text-editor";
+export type {
+  ApplicationConfig,
+  MenuVisibilityContext,
+  MenuVisibilityResolver,
+  TabVisibilityContext,
+  TabVisibilityResolver,
+} from "./application/ApplicationConfig";
