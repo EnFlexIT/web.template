@@ -1,4 +1,3 @@
-// src/redux/slices/connectivitySlice.ts
 
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
