@@ -10,8 +10,8 @@ import { AppSessionGuard } from "@/template/authentication/session/AppSessionGua
 import { DeveloperConsole, DeveloperConsoleConnection,DynamicScreen,Footer, Header,InitialPasswordChangeDialog,LoginScreen, Navigation, NotAvailableScreen, NotificationPopup, OfflineOverlay, ServerSwitchOverlay, buildMenuPaths,checkAlive, hasId,initializeDataPermissions, initializeLanguage, initializeMenu,initializeOrganizations,initializeServers,initializeTheme,isDynamicMenuItem,isMenuEnabled, selectMenu,setActiveMenuId,useIsWide,} from "@template";
 import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/template/state/api/apiSlice";
 import { store } from "@/template/state/store/store";
-import { PostLoginUpdateWatcher } from "./bootstrap/watchers/PostLoginUpdateWatcher";
-import { UpdateNotificationWatcher } from "./bootstrap/watchers/UpdateNotificationWatcher";
+import { PostLoginUpdateWatcher } from "@/template/update/watchers/PostLoginUpdateWatcher";
+import { UpdateNotificationWatcher } from "@/template/update/watchers/UpdateNotificationWatcher";
 
 
 const Drawer = createDrawerNavigator();
@@ -364,7 +364,7 @@ function RootStack() {
     </NavigationContainer>
   );
 }
-export default function App() {
+export default function TemplateApp() {
   return (
     <Provider store={store}>
       <DeveloperConsoleConnection />
