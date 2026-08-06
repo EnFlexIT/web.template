@@ -7,11 +7,13 @@ import type {
 import TemplateApp from "@/template/application/TemplateApp";
 
 /**
- * Verbindet eine konkrete Application-Konfiguration mit der
- * wiederverwendbaren Template-Shell.
+ * Connects a concrete application configuration with the
+ * reusable template shell.
  */
-export function createTemplateApp(
-  config: ApplicationConfig,
+export function createTemplateApp<
+  TState = unknown,
+>(
+  config: ApplicationConfig<TState>,
 ): React.ComponentType {
   function ConfiguredTemplateApp() {
     return (

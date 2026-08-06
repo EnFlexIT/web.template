@@ -13,8 +13,11 @@ import { store } from "@/template/state/store/store";
 import { PostLoginUpdateWatcher } from "@/template/update/watchers/PostLoginUpdateWatcher";
 import { UpdateNotificationWatcher } from "@/template/update/watchers/UpdateNotificationWatcher";
 import type {ApplicationConfig,} from "@/template/application/ApplicationConfig";
-type TemplateAppProps = {config: ApplicationConfig;};
-
+type TemplateAppProps<
+  TState = unknown,
+> = {
+  config: ApplicationConfig<TState>;
+};
 const Drawer = createDrawerNavigator();
 
 function normalizePath(p: string) {
@@ -45,9 +48,11 @@ function getNumericIdFromPath(pathname: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function RootStack({
+function RootStack<
+  TState = unknown,
+>({
   config,
-}: TemplateAppProps) {
+}: TemplateAppProps<TState>) {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
 
@@ -367,7 +372,11 @@ function RootStack({
     </NavigationContainer>
   );
 }
-export default function TemplateApp({config}: TemplateAppProps) {
+export default function TemplateApp<
+  TState = unknown,
+>({
+  config,
+}: TemplateAppProps<TState>) {
   return (
     <Provider store={store}>
       <DeveloperConsoleConnection />

@@ -1,16 +1,21 @@
-import type { AuthMethod } from "@/template/state/api/apiSlice";
-import type { RootState } from "@/template/state/store/store";
+import type {
+  AuthMethod,
+} from "@/template/state/api/apiSlice";
 
-import type {StaticMenuItem,} from "@/template/navigation/menu/types";
+import type {
+  StaticMenuItem,
+} from "@/template/navigation/menu/types";
 
-import type {StaticTabItem,} from "@/template/navigation/tabs/types";
+import type {
+  StaticTabItem,
+} from "@/template/navigation/tabs/types";
 
-export type MenuVisibilityContext = {
-  authenticationMethod?: AuthMethod;
-};
+export type MenuVisibilityContext = {authenticationMethod?: AuthMethod;};
 
-export type TabVisibilityContext = {
-  state?: RootState;
+export type TabVisibilityContext<
+  TState = unknown,
+> = {
+  state?: TState;
 };
 
 export type MenuVisibilityResolver = (
@@ -18,24 +23,28 @@ export type MenuVisibilityResolver = (
   context: MenuVisibilityContext,
 ) => boolean;
 
-export type TabVisibilityResolver = (
+export type TabVisibilityResolver<
+  TState = unknown,
+> = (
   featureID: number,
-  context: TabVisibilityContext,
+  context: TabVisibilityContext<TState>,
 ) => boolean;
 
-export type ApplicationConfig = {
+export type ApplicationConfig<
+  TState = unknown,
+> = {
   /**
-   * Technische, stabile ID.
+   * Stable technical application identifier.
    *
-   * Beispiele:
+   * Examples:
    * - base-template
-   * - hems
    * - agent-workbench
+   * - hems
    */
   id: string;
 
   /**
-   * Sichtbarer Name der Anwendung.
+   * Visible application name.
    */
   displayName: string;
 
@@ -47,7 +56,7 @@ export type ApplicationConfig = {
 
     tabs: {
       items: readonly StaticTabItem[];
-      isEnabled: TabVisibilityResolver;
+      isEnabled: TabVisibilityResolver<TState>;
     };
   };
 };
