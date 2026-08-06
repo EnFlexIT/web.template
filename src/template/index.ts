@@ -31,6 +31,7 @@ export { initializeDataPermissions } from "./state/privacy/dataPermissionsSlice"
 export { initializeOrganizations } from "./state/organizations/organizationsSlice";
 export { initializeServers } from "./state/server/serverSlice";
 export { checkAlive } from "./state/connectivity/connectivitySlice";
+export {createTemplateApp,} from "./application/createTemplateApp";
 
 export { isMenuEnabled } from "./navigation/menu/featureFlags";
 export { buildMenuPaths } from "./navigation/routing/menuPaths";

@@ -424,20 +424,7 @@ export const menuSlice = createSlice({
             );
         }
 
-        console.log(
-          "[MENU DEBUG UserProfile]",
-          state.rawMenu
-            .filter(
-              (item) =>
-                item.menuID === 3025,
-            )
-            .map((item) => ({
-              id: item.menuID,
-              caption: item.caption,
-              parentID: item.parentID,
-              hasScreen: Boolean(item.Screen),
-            })),
-        );
+       
       },
     );
 

@@ -12,7 +12,8 @@ import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/tem
 import { store } from "@/template/state/store/store";
 import { PostLoginUpdateWatcher } from "@/template/update/watchers/PostLoginUpdateWatcher";
 import { UpdateNotificationWatcher } from "@/template/update/watchers/UpdateNotificationWatcher";
-
+import type {ApplicationConfig,} from "@/template/application/ApplicationConfig";
+type TemplateAppProps = {config: ApplicationConfig;};
 
 const Drawer = createDrawerNavigator();
 
@@ -44,7 +45,9 @@ function getNumericIdFromPath(pathname: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function RootStack() {
+function RootStack({
+  config,
+}: TemplateAppProps) {
   const dispatch = useAppDispatch();
   const { theme } = useUnistyles();
 
@@ -336,7 +339,7 @@ function RootStack() {
                   return <DynamicScreen node={node} />;
                 }}
                 options={{
-                  title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
+                  title: config.displayName,
                 }}
               />
             ))}
@@ -345,7 +348,7 @@ function RootStack() {
               name="NotFound"
               component={NotAvailableScreen}
               options={{
-                title: process.env.EXPO_PUBLIC_APPLICATION_TITLE,
+                title: config.displayName,
               }}
             />
           </Drawer.Group>
@@ -364,14 +367,14 @@ function RootStack() {
     </NavigationContainer>
   );
 }
-export default function TemplateApp() {
+export default function TemplateApp({config}: TemplateAppProps) {
   return (
     <Provider store={store}>
       <DeveloperConsoleConnection />
 
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
-          <RootStack />
+          <RootStack config={config} />
         </View>
 
         <Footer />

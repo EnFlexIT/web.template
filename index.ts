@@ -1,10 +1,13 @@
-import './unistyles'
-import './i18n'
-import '@expo/metro-runtime'
-import { registerRootComponent } from 'expo';
-import TemplateApp from "./src/template/application/TemplateApp";
+import "./unistyles";
+import "./i18n";
+import "@expo/metro-runtime";
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(TemplateApp);
+import { registerRootComponent } from "expo";
+
+import { applicationConfig,} from "./src/application";
+
+import {createTemplateApp,} from "./src/template/application/createTemplateApp";
+
+const App = createTemplateApp(applicationConfig,);
+
+registerRootComponent(App);

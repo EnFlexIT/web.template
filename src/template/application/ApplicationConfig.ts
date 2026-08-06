@@ -1,13 +1,9 @@
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 import type { RootState } from "@/template/state/store/store";
 
-import type {
-  StaticMenuItem,
-} from "@/template/navigation/menu/types";
+import type {StaticMenuItem,} from "@/template/navigation/menu/types";
 
-import type {
-  StaticTabItem,
-} from "@/template/navigation/tabs/types";
+import type {StaticTabItem,} from "@/template/navigation/tabs/types";
 
 export type MenuVisibilityContext = {
   authenticationMethod?: AuthMethod;
