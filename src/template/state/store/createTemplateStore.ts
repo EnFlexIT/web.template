@@ -11,8 +11,7 @@ import type {
 } from "./types";
 
 export type CreateTemplateStoreOptions<
-  TApplicationReducers extends ApplicationReducers =
-    ApplicationReducers,
+  TApplicationReducers extends ApplicationReducers = {},
 > = {
   applicationReducers?: TApplicationReducers;
 };
@@ -27,13 +26,13 @@ export type CreateTemplateStoreOptions<
  * Base Template.
  */
 export function createTemplateStore<
-  TApplicationReducers extends ApplicationReducers =
-    ApplicationReducers,
+  TApplicationReducers extends ApplicationReducers = {},
 >(
   options: CreateTemplateStoreOptions<TApplicationReducers> = {},
 ) {
-  const applicationReducers =
-    options.applicationReducers ?? {};
+  const applicationReducers = (
+    options.applicationReducers ?? {}
+  ) as TApplicationReducers;
 
   const templateReducerKeys =
     new Set(Object.keys(templateReducers));
@@ -52,10 +51,12 @@ export function createTemplateStore<
     );
   }
 
+  const reducers = {
+    ...templateReducers,
+    ...applicationReducers,
+  } as typeof templateReducers & TApplicationReducers;
+
   return configureStore({
-    reducer: {
-      ...templateReducers,
-      ...applicationReducers,
-    },
+    reducer: reducers,
   });
 }
