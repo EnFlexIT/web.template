@@ -35,7 +35,7 @@ export {createTemplateApp,} from "./application/createTemplateApp";
 
 export { isMenuEnabled } from "./navigation/menu/featureFlags";
 export { buildMenuPaths } from "./navigation/routing/menuPaths";
-
+export type {ApplicationReducers,} from "./state/store/types";
 export { RichTextToolbar } from "./components/rich-text-editor";
 export type {
   ApplicationConfig,
