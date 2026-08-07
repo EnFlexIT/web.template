@@ -1,6 +1,5 @@
 
 import type { RootState } from "@/template/state/store/store";
-
 import { DerbyNetworkServerTab } from "@/template/screens/settings/database/DerbyNetworkServerTab";
 import { FactorySettingsTab } from "@/template/screens/settings/database/FactorySettingsTab";
 import { GeneralSettingsTab } from "@/template/screens/settings/database/GeneralSettingsTab";

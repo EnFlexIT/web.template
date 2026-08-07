@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { RootState } from '@/template/state/store/store';
-
+import type { RootState } from "@/template/state/store/store";
 import {
   BGPLATFORM,
   DATA_ANALYZING_PERFORMATIVE,
