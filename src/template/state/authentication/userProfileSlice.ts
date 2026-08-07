@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import { RootState } from '@/template/state/store/store';
+import type { RootState } from "@/template/state/store/store";
 import type { AuthMethod } from "@/core/authentication/types";
 import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
 
