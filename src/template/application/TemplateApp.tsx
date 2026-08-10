@@ -13,6 +13,7 @@ import { store } from "@/template/state/store/store";
 import { PostLoginUpdateWatcher } from "@/template/update/watchers/PostLoginUpdateWatcher";
 import { UpdateNotificationWatcher } from "@/template/update/watchers/UpdateNotificationWatcher";
 import type {ApplicationConfig,} from "@/template/application/ApplicationConfig";
+import {ApplicationConfigProvider,} from "@/template/application/ApplicationConfigContext";
 type TemplateAppProps<
   TState = unknown,
 > = {
@@ -377,7 +378,8 @@ export default function TemplateApp<
 >({
   config,
 }: TemplateAppProps<TState>) {
-  return (
+ return (
+  <ApplicationConfigProvider config={config}>
     <Provider store={store}>
       <DeveloperConsoleConnection />
 
@@ -389,7 +391,8 @@ export default function TemplateApp<
         <Footer />
       </View>
     </Provider>
-  );
+  </ApplicationConfigProvider>
+);
 }
 
 const styles = StyleSheet.create({

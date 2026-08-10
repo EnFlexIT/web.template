@@ -4,28 +4,18 @@ import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useLinkTo } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
-
+import {useApplicationConfig,} from "@/template/application/ApplicationConfigContext";
 import { ToolBox } from "./ToolBox";
 import { Logo } from "./Logo";
 import { Text } from "@/template/components/design-system/stylistic/Text";
-import {
-  selectAuthenticationMethod,
-} from "@/template/state/api/apiSlice";
-
+import {selectAuthenticationMethod,} from "@/template/state/api/apiSlice";
 import { isMenuEnabled } from "@/template/navigation/menu/featureFlags";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { useEffect } from "react";
 import { getIdPath } from "@/template/state/navigation/menuSlice";
-
-import {
-  isDynamicMenuItem,
-  MenuTree,
-  selectMenu,
-  setActiveMenuId,
-} from "@/template/state/navigation/menuSlice";
+import {isDynamicMenuItem, MenuTree,selectMenu,setActiveMenuId,} from "@/template/state/navigation/menuSlice";
 import { selectApi } from "@/template/state/api/apiSlice";
-
 import { buildMenuPaths } from "@/template/navigation/routing/menuPaths";
 
 /* =========================
@@ -44,15 +34,12 @@ function DrawerItem({ node, expanded, setExpanded, pathById }: DrawerItemProps) 
   const linkTo = useLinkTo();
   const dispatch = useAppDispatch();
   const { t } = useTranslation(["Drawer"]);
-
   const { rawMenu, activeMenuId } = useAppSelector(selectMenu);
   const authenticationMethod = useAppSelector(selectAuthenticationMethod,);
   const [hovered, setHovered] = useState(false);
-
   const id = node.val.menuID!;
   const isFolder = node.children.length > 0;
   const isOpen = expanded[id] ?? false;
-
   const path = pathById[id] ?? `/${id}`;
 
   styles.useVariants({
@@ -150,6 +137,7 @@ export function Navigation({ menu, isLoggedIn, isWide }: NavigationProps) {
   const { pathById } = useMemo(() => buildMenuPaths(rawMenu), [rawMenu]);
 
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const {displayName,} = useApplicationConfig();
 
   const rootPath = pathById[menu.val.menuID!] ?? `/${menu.val.menuID!}`;
 
@@ -160,8 +148,8 @@ export function Navigation({ menu, isLoggedIn, isWide }: NavigationProps) {
         <View style={styles.logoContainer}>
           <Logo style={{ width: 28, height: 28 }} />
           <Text style={{ fontWeight: "bold" }}>
-            {process.env.EXPO_PUBLIC_APPLICATION_TITLE}
-            {isBaseMode ? " (Base)" : ""}
+              {displayName}
+          {isBaseMode ? " (Base)" : ""}
           </Text>
         </View>
 

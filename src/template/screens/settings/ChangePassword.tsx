@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { Platform, View, StyleSheet as NativeStyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-
+import {useApplicationConfig,} from "@/template/application/ApplicationConfigContext";
 import { Logo } from "@/template/components/layout/Logo";
 import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
@@ -381,7 +381,7 @@ async function onSave() {
   ];
 
   const hasRuleMissing = ruleLines.some((r) => !r.ok);
-
+  const {displayName,} = useApplicationConfig();
   const generalText =
     inline.generalRaw ?? (inline.generalKey ? t(inline.generalKey) : null);
 
@@ -493,7 +493,7 @@ async function onSave() {
         }}
       >
         <Logo style={logoStyles.logo} />
-        <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
+        <H1>{displayName}</H1>
       </View>
 
       <View style={[styles.upperHalf]}>

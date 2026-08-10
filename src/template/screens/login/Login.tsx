@@ -1,18 +1,12 @@
 // src/screens/login/Login.tsx
 
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet as NativeStyleSheet,
-  View,
-} from "react-native";
+import {Platform,Pressable,ScrollView,StyleSheet as NativeStyleSheet,View,} from "react-native";
 import { withUnistyles, useUnistyles } from "react-native-unistyles";
 import Feather_ from "@expo/vector-icons/Feather";
 import { useTranslation } from "react-i18next";
 import { Buffer } from "buffer";
-
+import { useApplicationConfig,} from "@/template/application/ApplicationConfigContext";
 import { loadUserProfile } from "@/template/state/authentication/userProfileSlice";
 import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
@@ -24,11 +18,7 @@ import { ThemedText } from "@/template/components/design-system/themed/ThemedTex
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectServers } from "@/template/state/server/serverSlice";
-import {
-  selectAuthenticationMethod,
-  selectIp,
-  switchServer,
-} from "@/template/state/api/apiSlice";
+import {selectAuthenticationMethod,selectIp, switchServer,} from "@/template/state/api/apiSlice";
 import { ServerModal } from "./ServerModal";
 import { selectLanguage, setLanguage } from "@/template/state/localization/languageSlice";
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
@@ -198,7 +188,7 @@ export function LoginScreen() {
     "loading" | "successful" | "failed"
   >("loading");
   const [loginFeedback, setLoginFeedback] = useState<string | null>(null);
-
+  const {displayName,} = useApplicationConfig();
   const isWeb = Platform.OS === "web";
   const isExpoWeb =
     isWeb &&
@@ -529,7 +519,7 @@ export function LoginScreen() {
       <View style={[styles.widget, styles.border]}>
         <View style={[styles.titleContainer]}>
           <Logo style={logoStyles.logo} />
-          <H1>{process.env.EXPO_PUBLIC_APPLICATION_TITLE}</H1>
+          <H1>{displayName}</H1>
         </View>
 
         <View style={[styles.upperHalf]}>
