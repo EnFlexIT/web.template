@@ -1,237 +1,1095 @@
 ﻿# Redux State Management
 
-The project uses Redux Toolkit. Redux is currently composed centrally while
-feature state is being moved to its owning architecture layer.
+This document describes the current Redux architecture, ownership rules,
+migration status, and extension model of `web.template`.
 
-## Central composition
+The project uses Redux Toolkit.
 
-```text
-src/redux/store.ts
-src/redux/rootReducer.ts
-```
+Redux is treated as a state-management technology and not as an
+architectural layer.
 
-`rootReducer.ts` imports reducers from both migrated template modules and
-two explicit transition modules under `src/redux/slices`.
-
-Typed hooks currently live in:
+The architecture follows this dependency direction:
 
 ```text
-src/core/hooks/useAppDispatch.ts
-src/core/hooks/useAppSelector.ts
+Application --> Template --> Core
 ```
 
-These hooks depend on the concrete store types. Their final layer placement may
-be revisited when store composition moves into the application layer.
+State belongs to the architectural area that owns the corresponding
+responsibility.
 
-## Architecture rule
+---
 
-Redux is a state-management technology, not an architecture layer.
+## 1. Architecture Rule
 
-A slice belongs to the layer that owns its responsibility:
+Redux must not define architectural ownership.
 
-- reusable technical state can belong to `core`
-- reusable shell, navigation and UI state belongs to `template`
-- product-specific business state belongs to `application`
-- reducer composition belongs to the concrete application composition
+A reducer or slice belongs to the layer that owns its responsibility.
 
-The `src/redux` folder is therefore transitional and should not become the
-permanent owner of all state.
-
-## Current store slices
-
-### Migrated template state
-
-| State key | Current file | Responsibility |
-| --- | --- | --- |
-| `language` | `src/template/state/localization/languageSlice.tsx` | UI language and i18n synchronization. |
-| `theme` | `src/template/state/theme/themeSlice.tsx` | Theme selection. |
-| `menu` | `src/template/state/navigation/menuSlice.tsx` | Static/dynamic menu tree and active menu ID. |
-| `servers` | `src/template/state/server/serverSlice.ts` | Saved servers and active environment. |
-| `serverStatus` | `src/template/state/server/serverStatusSlice.ts` | Per-server UI status metadata. |
-| `connectivity` | `src/template/state/connectivity/connectivitySlice.tsx` | Active server online/offline state. |
-| `passwordChangePrompt` | `src/template/state/authentication/passwordChangePromptSlice.ts` | Initial password-change dialog state. |
-| `notifications` | `src/template/state/notifications/notificationSlice.ts` | Local notifications grouped by server. |
-
-### Additional migrated Template state
-
-| State key | Current file | Responsibility |
-| --- | --- | --- |
-| `dataPermissions` | `src/template/state/privacy/dataPermissionsSlice.tsx` | Data-permission dialog and persisted privacy settings. |
-| `organizations` | `src/template/state/organizations/organizationsSlice.tsx` | Persisted organization data. |
-| `ready` | `src/template/state/bootstrap/readySlice.tsx` | Global bootstrap readiness flag. |
-| `baseMode` | `src/template/state/mode/baseModeSlice.ts` | Base/customer mode state. |
-| `dbSettings` | `src/template/state/settings/database/dbSettingsSlice.ts` | Database configuration state. |
-| `execSettings` | `src/template/state/agent-workbench/execSettingsSlice.tsx` | Agent Workbench execution settings. |
-| `dataAnalysis` | `src/template/state/agent-workbench/dataAnalysisSlice.ts` | Agent Workbench data-analysis state. |
-| `appSettingsFileUpload` | `src/template/state/settings/appSettingsFileUploadSlice.ts` | Configuration file upload state. |
-| `appRelease` | `src/template/state/release/appReleaseSlice.tsx` | Production/test release marker. |
-| `userProfile` | `src/template/state/authentication/userProfileSlice.ts` | OIDC user profile data. |
-| `developerConsole` | `src/template/state/developer-tools/developerConsoleSlice.ts` | Developer-console UI state. |
-| `liveConsole` | `src/template/state/developer-tools/liveConsoleSlice.ts` | Live-console state and communication. |
-
-### Explicit transition modules
-
-Only two slices remain under `src/redux/slices`:
-
-| State key | Current file | Responsibility / status |
-| --- | --- | --- |
-| `api` | `src/template/state/api/apiSlice.tsx` | API clients, authentication, active server, persistence and server switching. Mixed responsibility; separate before moving. |
-| `sessionTime` | `src/redux/slices/sessionTimeSlice.tsx` | OIDC session state, direct HTTP requests and active-server access. Mixed responsibility; separate before moving. |
-
-### Composition helpers outside Redux state
-
-The update watchers are application bootstrap components:
+General ownership rules:
 
 ```text
-src/application/bootstrap/watchers/PostLoginUpdateWatcher.tsx
-src/application/bootstrap/watchers/UpdateNotificationWatcher.tsx
+Reusable technical capability --> Core
+Reusable application mechanism --> Template
+Concrete product state         --> Application
 ```
 
-The canonical frontend reload implementation is:
+Typical examples:
+
+- Reusable Template UI state belongs to `template`.
+- Navigation state belongs to `template`.
+- Notification state belongs to `template`.
+- Reusable authentication UI state belongs to `template`.
+- Product-specific business state belongs to `application`.
+- Pure technical logic should be moved to `core` when it does not depend
+  on Template or Application code.
+
+The previous generic `src/redux` architecture is no longer the target
+structure.
+
+Redux state is organized by responsibility.
+
+---
+
+## 2. Current Redux Structure
+
+The important Redux infrastructure is located under:
 
 ```text
-src/core/update/reloadUpdatedFrontendWebApp.ts
+src/template/state/
 ```
 
-`Data.ts` is located next to its owning organization state:
+The store infrastructure is located under:
 
 ```text
-src/template/state/organizations/Data.ts
+src/template/state/store/
++-- createTemplateStore.ts
++-- rootReducer.ts
++-- store.ts
++-- templateReducers.ts
++-- types.ts
++-- useAppDispatch.ts
++-- useAppSelector.ts
 ```
 
-## Initialization flow
+The concrete Application layer currently provides an application
+reducer registry under:
 
-The root application currently initializes shared state in this order:
+```text
+src/application/state/
++-- applicationReducers.ts
+```
 
-1. `initializeServers`
-2. `initializeLanguage`
-3. `initializeTheme`
-4. `initializeApi`
-5. `initializeDataPermissions`
-6. `initializeOrganizations`
-7. `initializeMenu`
+The repository is currently transitioning from the existing fixed store
+composition to an extensible Base Template store.
 
-This makes server and API information available before dynamic menu loading.
+---
 
-## API client rebuilds
+## 3. Current Active Store
 
-`apiSlice` builds generated clients from the active base URL and authentication
-state.
+The existing application still uses the current Template store.
 
-For JWT:
+The active composition remains based on:
+
+```text
+src/template/state/store/store.ts
+src/template/state/store/rootReducer.ts
+```
+
+`TemplateApp` still receives the existing store through the Redux
+`Provider`.
+
+Conceptually:
+
+```text
+TemplateApp
+    |
+    v
+Provider
+    |
+    v
+current store
+    |
+    v
+current rootReducer
+```
+
+This remains the runtime configuration until the new extensible store
+factory is connected safely.
+
+The existing store must not be removed or replaced prematurely.
+
+---
+
+## 4. Extensible Store Architecture
+
+A reusable store factory has been introduced in parallel with the
+existing active store.
+
+The factory is located at:
+
+```text
+src/template/state/store/createTemplateStore.ts
+```
+
+Its purpose is to combine:
+
+```text
+Template-owned reducers
+        +
+Application-owned reducers
+        |
+        v
+Configured Redux store
+```
+
+Conceptually:
+
+```ts
+createTemplateStore({
+  applicationReducers: {
+    execSettings: execSettingsReducer,
+    dataAnalysis: dataAnalysisReducer,
+  },
+});
+```
+
+The Base Template provides the store mechanism.
+
+The concrete application provides its own reducers.
+
+This prevents the Base Template from permanently depending on
+Agent.Workbench, HEMS, or another concrete product.
+
+---
+
+## 5. Template Reducers
+
+The reusable Base Template reducer registry is defined in:
+
+```text
+src/template/state/store/templateReducers.ts
+```
+
+`templateReducers` contains reducers whose responsibilities belong to
+the reusable Base Template.
+
+Current Template reducer areas include:
+
+```text
+language
+theme
+api
+dataPermissions
+menu
+organizations
+ready
+baseMode
+servers
+connectivity
+dbSettings
+passwordChangePrompt
+notifications
+update
+sessionTime
+serverStatus
+appSettingsFileUpload
+appRelease
+userProfile
+liveConsole
+developerConsole
+```
+
+The exact internal folder of each slice follows its owning
+responsibility.
+
+The important architectural rule is that Template reducers must not
+include permanent product-specific business state.
+
+---
+
+## 6. Application Reducers
+
+The application reducer extension contract is defined through:
+
+```text
+ApplicationReducers
+```
+
+The contract is located in:
+
+```text
+src/template/state/store/types.ts
+```
+
+A concrete application can provide its reducers through this contract.
+
+The current application registry is:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+The current Agent.Workbench application registry includes
+application-specific reducers such as:
+
+```text
+execSettings
+dataAnalysis
+```
+
+Conceptually:
+
+```text
+Application
+    |
+    +-- execSettings
+    +-- dataAnalysis
+    |
+    v
+ApplicationReducers
+    |
+    v
+createTemplateStore
+```
+
+This establishes the architectural ownership even though some of these
+reducers are still physically located inside the current repository.
+
+---
+
+## 7. Transitional Agent.Workbench State
+
+Some Agent.Workbench-specific reducers are still located under:
+
+```text
+src/template/state/agent-workbench/
+```
+
+Known examples include:
+
+```text
+execSettingsSlice.tsx
+dataAnalysisSlice.ts
+dataAnalyzingConstants.ts
+```
+
+These modules are application-specific and should eventually move into
+the separate Agent.Workbench application repository.
+
+Their current physical location is transitional.
+
+The intended final direction is:
+
+```text
+Agent.Workbench Repository
+    |
+    +-- state/
+        +-- execSettings
+        +-- dataAnalysis
+```
+
+The Base Template must not permanently import these reducers.
+
+The application should provide them through the public reducer extension
+contract.
+
+---
+
+## 8. Reducer Collision Protection
+
+Application reducers must not override reducers owned by the Base
+Template.
+
+`createTemplateStore` checks reducer keys before configuring the store.
+
+For example, an application must not provide another reducer using a
+Template-owned key such as:
+
+```text
+theme
+language
+api
+notifications
+```
+
+If an application reducer conflicts with a Base Template reducer key,
+store creation fails with an explicit error.
+
+Conceptually:
+
+```text
+templateReducers
+      +
+applicationReducers
+      |
+      v
+check duplicate keys
+      |
+      +-- conflict --> error
+      |
+      +-- valid ----> configureStore
+```
+
+This protects the public Template state contract from accidental
+application overrides.
+
+---
+
+## 9. Store Factory Tests
+
+The extensible store factory has dedicated Jest coverage.
+
+The tests validate at least:
+
+- Template reducers are available.
+- Application reducers can be added.
+- Application reducers can update their own state.
+- Application reducers cannot override Template reducer keys.
+
+The store factory tests isolate the factory from real Template reducer
+dependencies where necessary.
+
+This prevents unrelated React Native or runtime dependencies from
+affecting the store factory unit tests.
+
+---
+
+## 10. Typed Redux Hooks
+
+Typed Redux hooks now belong to the Template store infrastructure.
+
+Current files:
+
+```text
+src/template/state/store/useAppDispatch.ts
+src/template/state/store/useAppSelector.ts
+```
+
+These hooks are tied to the current Redux store types.
+
+Their typing may need further refinement when the extensible application
+store becomes the active runtime store.
+
+The long-term type model must support both:
+
+```text
+Template state
++
+Application-specific state
+```
+
+without forcing the Base Template to know concrete application reducers.
+
+---
+
+## 11. RootState Imports
+
+Redux state types should be imported as type-only dependencies whenever
+they are used only for TypeScript typing.
+
+Preferred form:
+
+```ts
+import type {
+  RootState,
+} from "@/template/state/store/store";
+```
+
+Using type-only imports reduces unnecessary runtime dependency edges and
+helps avoid import cycles.
+
+A type dependency does not automatically determine architectural
+ownership.
+
+The underlying responsibility of the module remains the deciding factor.
+
+---
+
+## 12. Template State by Responsibility
+
+Reusable state is grouped by responsibility under:
+
+```text
+src/template/state/
+```
+
+Important areas include:
+
+```text
+api/
+authentication/
+bootstrap/
+connectivity/
+developer-tools/
+localization/
+mode/
+navigation/
+notifications/
+organizations/
+privacy/
+release/
+server/
+settings/
+store/
+theme/
+update/
+```
+
+The exact folder names may evolve as responsibilities are refined.
+
+The architecture must not return to one large generic `redux/slices`
+folder.
+
+---
+
+## 13. API State
+
+The API state currently lives under:
+
+```text
+src/template/state/api/apiSlice.tsx
+```
+
+It is still a complex module.
+
+Its responsibilities include areas such as:
+
+- API client handling
+- Authentication-related state
+- Active server handling
+- Persistence
+- Server switching
+
+Some of these responsibilities may eventually be separated further.
+
+The important current rule is that the module already belongs to the
+Template state structure rather than a legacy root Redux folder.
+
+Any future move toward Core must first remove dependencies on
+Template-specific behavior.
+
+Core must never depend upward on Template code.
+
+---
+
+## 14. Session State
+
+Session-related Redux state has also been moved into the Template state
+structure.
+
+It participates in the current Template reducer composition.
+
+Session handling should be separated according to responsibility:
+
+```text
+Core
++-- technical session mechanisms
++-- reusable transport logic
+
+Template
++-- session state
++-- session UI integration
++-- application shell behavior
+```
+
+Technical logic may move to Core when it has no Template dependencies.
+
+Redux state that supports reusable application-shell behavior remains
+Template-owned.
+
+---
+
+## 15. Menu State
+
+Menu state belongs to the reusable Template navigation mechanism.
+
+The menu slice is located under the Template state structure.
+
+Its responsibilities include state such as:
+
+- Current menu tree
+- Active menu
+- Dynamic navigation state
+
+Navigation configuration itself is not Redux state.
+
+Configuration and state must remain separate.
+
+Conceptually:
+
+```text
+Application navigation definition
+        |
+        v
+Template navigation mechanism
+        |
+        v
+Template menu state
+```
+
+---
+
+## 16. Navigation Configuration
+
+Static menu and tab definitions are configuration rather than reducers.
+
+The Template owns the navigation mechanism.
+
+The concrete Application should eventually own product-specific
+navigation configuration.
+
+The planned developer-facing application configuration includes:
+
+```text
+menu.properties
+menuFeatureFlags.properties
+tabs.properties
+tabFeatureFlags.properties
+```
+
+These property formats are planned and have not yet replaced the current
+navigation configuration.
+
+The Redux migration must not be confused with the navigation
+configuration migration.
+
+They are related but separate architecture concerns.
+
+---
+
+## 17. Notifications
+
+Notification state belongs to the reusable Base Template.
+
+Notification state is located under:
+
+```text
+src/template/state/notifications/
+```
+
+Its responsibilities include:
+
+- Local notifications
+- Read and unread state
+- Notification severity
+- Server-related notification grouping
+- Notification actions
+
+Notification logic should remain reusable and must not depend on a
+specific product application unless an explicit extension mechanism is
+introduced.
+
+---
+
+## 18. Server and Connectivity State
+
+Reusable server and connectivity state belongs to the Base Template.
+
+Important areas include:
+
+```text
+src/template/state/server/
+src/template/state/connectivity/
+```
+
+Responsibilities include:
+
+- Saved server environments
+- Active server selection
+- Server status
+- Connectivity state
+
+Reusable technical server types and validation logic may belong to:
+
+```text
+src/core/
+```
+
+The responsibility boundary is:
+
+```text
+Technical server capability --> Core
+Reusable server UI/state    --> Template
+Product server definition   --> Application
+```
+
+---
+
+## 19. Authentication State
+
+Reusable authentication-related Redux state belongs to the Template
+when it supports reusable application-shell behavior.
+
+Examples include:
+
+```text
+password-change prompt state
+user profile state
+session-related state
+```
+
+Authentication must be separated according to responsibility rather
+than moved as one large feature.
+
+Conceptually:
+
+```text
+Core
++-- technical authentication capability
++-- reusable authentication types
+
+Template
++-- authentication UI
++-- reusable authentication state
++-- session integration
+
+Application
++-- product-specific authentication configuration
+```
+
+---
+
+## 20. Settings State
+
+Reusable settings state belongs to the Template when it represents
+functionality offered by the Base Template.
+
+Current examples include settings for areas such as:
+
+```text
+database configuration
+application settings file upload
+```
+
+Some settings may later prove to be product-specific.
+
+Their final ownership must be reviewed before physical repository
+extraction.
+
+Current physical location alone must not be used as proof of final
+architectural ownership.
+
+---
+
+## 21. Developer Tool State
+
+Reusable developer tooling currently has Template-owned Redux state.
+
+Examples include:
+
+```text
+developerConsole
+liveConsole
+```
+
+Their current location is under:
+
+```text
+src/template/state/developer-tools/
+```
+
+The final ownership of some developer tools is still under review.
+
+Possible ownership includes:
+
+```text
+Base Template
+or
+Agent.Workbench Application
+```
+
+Until that decision is made, the state remains in the current Template
+structure.
+
+---
+
+## 22. Update State and Watchers
+
+Reusable update state belongs to the Template.
+
+Update-related state is located under:
+
+```text
+src/template/state/update/
+```
+
+Runtime update watchers are located under:
+
+```text
+src/template/update/watchers/
+```
+
+Examples include:
+
+```text
+PostLoginUpdateWatcher.tsx
+UpdateNotificationWatcher.tsx
+```
+
+The watchers are application-shell infrastructure rather than Redux
+reducers.
+
+They may dispatch Redux actions, but that does not make them part of the
+Redux state layer.
+
+---
+
+## 23. Redux Initialization
+
+The application initializes reusable state in an ordered startup flow.
+
+Important initialization areas include:
+
+```text
+servers
+language
+theme
+api
+data permissions
+organizations
+menu
+```
+
+Server and API initialization must happen early enough for features that
+depend on active-server information.
+
+The exact startup orchestration belongs to the reusable Template
+application shell.
+
+Initialization order should not be changed casually because later
+initializers may depend on earlier state.
+
+---
+
+## 24. API Client Configuration
+
+The API state builds generated API clients according to the active
+server and authentication state.
+
+JWT-based communication uses an authorization header conceptually like:
 
 ```text
 Authorization: Bearer <jwt>
 ```
 
-For OIDC:
+OIDC browser sessions use credentials and cookies rather than requiring
+the frontend to manage the same bearer-token flow.
+
+Generated API clients remain under the API implementation area.
+
+Redux should hold only state and orchestration that belong to the
+corresponding responsibility.
+
+Generated client source code must not be treated as Redux code.
+
+---
+
+## 25. ApplicationConfig and Redux
+
+Application configuration and Redux are separate extension mechanisms.
+
+`ApplicationConfig` provides configuration such as:
 
 ```text
-withCredentials: true
+application identity
+navigation definitions
+feature rules
 ```
 
-OIDC sessions use browser cookies rather than a frontend-managed bearer token.
+`ApplicationReducers` provides application-specific Redux state.
 
-`apiSlice` is a known transition module because it currently also knows
-template navigation. A final refactor must remove upward layer dependencies
-before placing it in `core`.
-
-## Menu state
-
-The menu state is owned by the template:
+Conceptually:
 
 ```text
-src/template/state/navigation/menuSlice.tsx
+Application
+    |
+    +-- ApplicationConfig
+    |
+    +-- ApplicationReducers
+    |
+    v
+Base Template
 ```
 
-Navigation configuration is separate from state:
+The Base Template should accept both through supported public contracts.
+
+The Template must not import a concrete application to obtain either
+configuration or reducers.
+
+---
+
+## 26. Current Integration Gap
+
+The Redux extension infrastructure exists, but the runtime integration
+is not yet complete.
+
+Current state:
 
 ```text
-src/template/navigation/menu/staticMenu.tsx
-src/template/navigation/menu/featureFlags.ts
-src/template/navigation/tabs/staticTabs.tsx
-src/template/navigation/tabs/tabFeatureFlags.tsx
-src/template/navigation/tabs/withAutoTabs.tsx
+ApplicationReducers       implemented
+templateReducers          implemented
+createTemplateStore       implemented
+collision protection      implemented
+factory tests             implemented
+
+TemplateApp integration   pending
+createTemplateApp wiring  pending
+final combined typing     pending
 ```
 
-`staticMenu` and `staticTabs` are registries, not reducers.
+The new store factory must not replace the active store until the
+remaining type and dependency issues are resolved.
 
-## Notifications
+This migration should continue in a controlled batch rather than through
+a large store rewrite.
 
-Notification state is owned by:
+---
+
+## 27. Target Runtime Composition
+
+The intended future runtime composition is approximately:
 
 ```text
-src/template/state/notifications/notificationSlice.ts
+Application Repository
+        |
+        +-- applicationConfig
+        |
+        +-- applicationReducers
+        |
+        v
+createTemplateApp(...)
+        |
+        v
+createTemplateStore(...)
+        |
+        +-- templateReducers
+        +-- applicationReducers
+        |
+        v
+Redux Provider
+        |
+        v
+TemplateApp
 ```
 
-Notifications are grouped by a normalized server key. Selectors expose
-notifications and unread counts for the active server.
+The final public API may differ slightly as implementation details are
+refined.
 
-The slice has targeted Jest coverage under:
+The architectural rule remains stable:
+
+> The Base Template provides the extension mechanism, while the
+> application provides concrete product state.
+
+---
+
+## 28. Target State Typing
+
+The final Redux typing must support both Base Template state and
+application-specific state.
+
+Conceptually:
 
 ```text
-test/notificationSlice.test.ts
+TemplateStoreState
+        +
+ApplicationReducers
+        |
+        v
+Application RootState
 ```
 
-## Server state
+The Template should be able to type its own reducers without importing
+concrete Agent.Workbench state.
 
-Reusable shell state is split by concern:
+Application code should be able to access both:
 
-```text
-src/template/state/server/serverSlice.ts
-src/template/state/server/serverStatusSlice.ts
-src/template/state/connectivity/connectivitySlice.tsx
-```
+- Template state
+- Application-specific state
 
-Shared server types and validation logic live in `src/core/server`.
+This type design must be completed before the extensible store becomes
+the active store.
 
-## Authentication state
+---
 
-The initial password dialog is reusable UI state:
+## 29. Import Policy
 
-```text
-src/template/state/authentication/passwordChangePromptSlice.ts
-```
+Prefer stable aliases for cross-area imports.
 
-The main authentication state remains in `apiSlice.tsx` until its API,
-authentication, server, storage and navigation responsibilities are separated.
-
-The session-time slice also remains transitional because Core session hooks
-currently consume it while it depends on the concrete `RootState` and
-`apiSlice`.
-
-## Import policy
-
-Prefer stable aliases for cross-folder imports:
+Examples:
 
 ```ts
-import type { RootState } from "@/redux/store";
-import { selectTheme } from "@/template/state/theme/themeSlice";
-import { Card } from "@design-system";
+import type {
+  RootState,
+} from "@/template/state/store/store";
+
+import {
+  selectTheme,
+} from "@/template/state/theme/themeSlice";
 ```
 
-Do not replace every relative import blindly. Use exact search-and-replace for
-a verified old path.
+Type-only imports should use:
 
-## Validation workflow
+```ts
+import type {
+  SomeType,
+} from "...";
+```
 
-After moving state:
+Do not perform broad automated path replacement across the entire
+repository.
+
+Before changing an import path:
+
+1. Search the exact old path.
+2. Verify architectural ownership.
+3. Update only the affected files.
+4. Search again for stale imports.
+5. Run TypeScript validation.
+
+Generated API files should not be modified as a side effect of Redux
+refactoring.
+
+---
+
+## 30. Validation Workflow
+
+After Redux architecture changes, run targeted validation.
+
+TypeScript:
 
 ```bash
-git grep -n "<old-path>" -- .
 npx tsc --noEmit
-npx jest --runTestsByPath <affected-test>
-npx expo start --clear
 ```
 
-Then commit the completed batch.
+Whitespace and patch validation:
 
-## Open decisions
+```bash
+git diff --check
+```
 
-- Move root reducer/store composition into the application composition layer.
-- Revisit the final location of typed Redux hooks.
-- Separate `apiSlice` into focused authentication, API-client, server and
-  persistence responsibilities.
-- Extract session HTTP communication from `sessionTimeSlice`.
-- Add public layer APIs and automated import-boundary checks.
+Search for stale paths:
 
+```bash
+git grep -n "<old-path>" -- src test
+```
+
+Run the tests affected by the change.
+
+For example:
+
+```bash
+npx jest --runTestsByPath test/createTemplateStore.test.ts
+```
+
+When runtime store composition changes, start the application through
+the normal npm entry point:
+
+```bash
+npm start
+```
+
+Using the npm entry point also ensures that application configuration is
+generated before Expo starts.
+
+---
+
+## 31. Migration Safety
+
+Redux refactoring must be performed in small batches.
+
+Do not:
+
+- Replace the active store before the parallel factory is proven.
+- Move all reducers at once.
+- Run broad scripts that rewrite unrelated files.
+- Mix generated API cleanup with Redux architecture work.
+- Change reducer keys without checking all selectors and consumers.
+- Move product-specific reducers individually without checking their
+  related screens and navigation.
+
+Preferred sequence:
+
+```text
+Define contract
+    |
+    v
+Build parallel infrastructure
+    |
+    v
+Add tests
+    |
+    v
+Register application reducers
+    |
+    v
+Resolve typing
+    |
+    v
+Connect runtime store
+    |
+    v
+Remove transitional composition
+```
+
+---
+
+## 32. Current Status
+
+### Implemented
+
+- Redux Toolkit
+- State organization by architectural responsibility
+- Template-owned state under `src/template/state`
+- Template store infrastructure under `src/template/state/store`
+- Typed Template Redux hooks
+- Type-only `RootState` imports where applicable
+- `ApplicationReducers` extension contract
+- `templateReducers`
+- `createTemplateStore`
+- Reducer key collision protection
+- Store factory tests
+- Application reducer registry
+- Identification of Agent.Workbench-specific state
+
+### Transitional
+
+- `TemplateApp` still uses the existing store.
+- `rootReducer.ts` still represents the active application composition.
+- Agent.Workbench reducers are still physically located in the current
+  repository.
+- Application reducers are not yet connected through
+  `createTemplateApp`.
+- Combined Template/Application state typing is not finalized.
+- Some Template feature ownership decisions remain open.
+
+### Planned
+
+- Connect `applicationReducers` to application creation.
+- Make `createTemplateStore` the active runtime store factory.
+- Finalize Template and Application state typing.
+- Move Agent.Workbench reducers into the separate Agent.Workbench
+  repository.
+- Remove remaining concrete application state from the Base Template.
+- Finalize the public Redux extension API.
+- Maintain automated architecture boundary validation.
+
+---
+
+## 33. Success Criteria
+
+The Redux migration is complete when:
+
+1. The Base Template store is created through a reusable store factory.
+2. Template reducers are owned and registered by the Base Template.
+3. Application reducers are provided by the concrete application.
+4. Application reducers cannot override Template reducer keys.
+5. The Base Template does not import Agent.Workbench or HEMS reducers.
+6. Template state typing does not depend on concrete application state.
+7. Application code can access both Template and application-specific
+   state safely.
+8. Agent.Workbench-specific reducers live in the Agent.Workbench
+   repository.
+9. Redux state is organized by responsibility rather than by one generic
+   Redux folder.
+10. Store composition is covered by targeted automated tests.
+11. Runtime behavior remains unchanged during the migration.

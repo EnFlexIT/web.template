@@ -2,7 +2,8 @@
 
 ## 1. Status
 
-**Status:** Draft  
+**Status:** In Progress
+
 **Project:** web.template
 
 The fundamental architecture decision is:
@@ -10,8 +11,9 @@ The fundamental architecture decision is:
 - The Base Template will have its own repository.
 - Agent.Workbench will have its own application repository.
 - HEMS will have its own application repository.
-- Future applications will use the same technical template foundation.
-- The template must not directly import any concrete application.
+- Future applications will use the same reusable technical foundation.
+- The Base Template must not directly import any concrete application.
+- Core must remain independent of both Template and Application code.
 
 ---
 
@@ -20,23 +22,23 @@ The fundamental architecture decision is:
 The allowed dependency direction is:
 
 ```text
-Agent.Workbench ─┐
-                 ├──→ Base Template ──→ Core
-HEMS ────────────┘
+Agent.Workbench ----\
+                     +--> Base Template --> Core
+HEMS ----------------/
 ```
 
 In short:
 
 ```text
-Application → Template → Core
+Application --> Template --> Core
 ```
 
 The following dependency directions are not allowed:
 
 ```text
-Template → Application
-Core → Template
-Core → Application
+Template --> Application
+Core --> Template
+Core --> Application
 ```
 
 The Base Template must be independently maintainable and releasable
@@ -53,145 +55,345 @@ The Base Template contains the reusable technical foundation:
 
 ```text
 Base Template
-├── TemplateApp
-├── createTemplateApp
-├── ApplicationConfig
-├── ApplicationConfigContext
-├── Navigation Engine
-├── Redux Infrastructure
-├── Authentication and Session Management
-├── Server and Connectivity Features
-├── Design System
-├── General Screens
-├── Notifications
-├── Update Infrastructure
-├── Header, Footer, and Layout
-└── Core
+|
++-- TemplateApp
++-- createTemplateApp
++-- ApplicationConfig
++-- ApplicationConfigContext
++-- Configuration Infrastructure
++-- Navigation Engine
++-- Redux Infrastructure
++-- Authentication and Session Management
++-- Server and Connectivity Features
++-- Design System
++-- General Screens
++-- Notifications
++-- Update Infrastructure
++-- Header, Footer, and Layout
++-- Core
 ```
+
+The Base Template provides mechanisms and reusable functionality.
+
+It must not contain concrete Agent.Workbench or HEMS configuration.
 
 ### 3.2 Application Repository
 
-Each concrete application has its own repository:
+Each concrete application has its own repository.
+
+The application repository contains the product-specific composition:
 
 ```text
 Application
-├── Own Configuration
-├── Own Menus
-├── Own Menu Feature Flags
-├── Own Tabs
-├── Own Tab Feature Flags
-├── Own Screens
-├── Own Redux State
-├── Own Branding
-├── Own API Integrations
-├── Own Build
-└── Own Helm and Deployment Configuration
+|
++-- Configuration
++-- Menus
++-- Menu Feature Flags
++-- Tabs
++-- Tab Feature Flags
++-- Screens
++-- Application-specific Redux State
++-- Branding
++-- Application-specific Extensions
++-- Build Configuration
++-- Deployment Configuration
 ```
 
-Agent.Workbench and HEMS use the same repository structure but provide
-their own application-specific content.
+Agent.Workbench and HEMS should follow the same general repository
+structure while providing their own application-specific content.
 
 ---
 
-## 4. Planned Application Structure
+## 4. Application Configuration
+
+Application configuration must be simple for application developers to
+edit.
+
+The developer-facing configuration format is based on key-value
+property files.
+
+It must not require developers to edit JSON, JavaScript, or TypeScript
+configuration files.
+
+### Current Application Structure
 
 ```text
 src/
-└── application/
-    ├── config/
-    │   ├── application.config.ts
-    │   ├── menu.config.ts
-    │   ├── menuFeatureFlags.config.ts
-    │   ├── tabs.config.ts
-    │   └── tabFeatureFlags.config.ts
-    │
-    ├── screens/
-    ├── state/
-    ├── branding/
-    └── index.ts
++-- application/
+    +-- config/
+    |   +-- application.properties
+    |
+    +-- generated/
+    |   +-- applicationConfig.generated.ts
+    |
+    +-- state/
+    +-- screens/
+    +-- branding/
+    +-- index.ts
 ```
 
-### `application.config.ts`
+### Target Configuration Structure
 
-Contains the central application configuration:
+The configuration area is planned to grow incrementally:
 
-- Technical application ID
-- Visible application name
-- Branding
-- Enabled features
-- Navigation configuration
-- Application-specific extensions
+```text
+src/
++-- application/
+    +-- config/
+    |   +-- application.properties
+    |   +-- menu.properties
+    |   +-- menuFeatureFlags.properties
+    |   +-- tabs.properties
+    |   +-- tabFeatureFlags.properties
+    |   +-- cookies.properties
+    |   +-- layout.properties
+    |
+    +-- generated/
+    |   +-- applicationConfig.generated.ts
+    |
+    +-- screens/
+    +-- state/
+    +-- branding/
+    +-- index.ts
+```
 
-### `menu.config.ts`
+Currently, only `application.properties` is implemented.
 
-Defines the static menus of the application.
-
-### `menuFeatureFlags.config.ts`
-
-Defines the visibility and availability of application menus.
-
-### `tabs.config.ts`
-
-Defines the tabs and their assignment to menus.
-
-### `tabFeatureFlags.config.ts`
-
-Defines the visibility and availability of application tabs.
-
-### `screens/`
-
-Contains only domain-specific screens of the application.
-
-### `state/`
-
-Contains application-specific:
-
-- Redux slices
-- Thunks
-- Selectors
-- State types
-- Constants
-
-### `branding/`
-
-Contains, for example:
-
-- Logo
-- Icons
-- Colors
-- Application-specific assets
+The other property files are planned and must be introduced
+incrementally when their contracts are defined.
 
 ---
 
-## 5. Planned Template Structure
+## 5. Application Properties
+
+The central application identity is currently configured in:
+
+```text
+src/application/config/application.properties
+```
+
+Example:
+
+```properties
+ApplicationId=agent-workbench
+ApplicationTitle=Agent.Workbench
+ApplicationLogo=../assets/bild.png
+ApplicationContact=admin@xxx
+ApplicationOwner=EnFlex.IT
+
+LegalImprintCompanyHomepage=
+LegalImprintCompanyName=
+LegalImprintEmail=admin@xxx
+```
+
+### ApplicationId
+
+`ApplicationId` is the stable technical identifier of the application.
+
+Possible future uses include:
+
+- Build identification
+- Docker image naming
+- Helm release naming
+- Logging
+- Storage prefixes
+- Technical metadata
+
+The application ID is not used to select an application directory inside
+the Base Template.
+
+Each application has its own repository and therefore already has a
+clear application identity.
+
+### ApplicationTitle
+
+`ApplicationTitle` is the user-visible application name.
+
+It is currently used by template UI through `ApplicationConfig`.
+
+Examples include:
+
+- Navigation
+- Login
+- Password-related screens
+- Navigation screen titles
+- General application identity
+
+The Base Template does not read the application title directly from
+`EXPO_PUBLIC_APPLICATION_TITLE`.
+
+The previous direct environment dependency has been removed.
+
+### Additional Properties
+
+Properties such as:
+
+```text
+ApplicationLogo
+ApplicationContact
+ApplicationOwner
+LegalImprintCompanyHomepage
+LegalImprintCompanyName
+LegalImprintEmail
+```
+
+are already possible in the developer-facing properties file.
+
+However, not all of these values are currently mapped into the typed
+`ApplicationConfig`.
+
+Their final contracts and consumers will be added incrementally.
+
+---
+
+## 6. Configuration Generation
+
+The developer-facing properties are transformed into a typed
+configuration that can be consumed by the Base Template.
+
+Current flow:
+
+```text
+application.properties
+        |
+        v
+generateApplicationConfig.mjs
+        |
+        v
+applicationConfig.generated.ts
+        |
+        v
+createTemplateApp(applicationConfig)
+        |
+        v
+ApplicationConfigProvider
+        |
+        v
+Base Template
+```
+
+The current generator is located at:
+
+```text
+src/template/config/build/generateApplicationConfig.mjs
+```
+
+The generated configuration is written to:
+
+```text
+src/application/generated/applicationConfig.generated.ts
+```
+
+The generated TypeScript file is technical build output.
+
+Application developers should edit the `.properties` source instead of
+manually editing the generated configuration.
+
+### Current Generated Values
+
+The current implementation generates at least:
+
+```text
+ApplicationId    --> ApplicationConfig.id
+ApplicationTitle --> ApplicationConfig.displayName
+```
+
+Additional properties will be added to the typed contract as their
+template consumers are implemented.
+
+---
+
+## 7. Starting the Application
+
+Application configuration is generated automatically when the project is
+started through the npm scripts.
+
+Supported development entry points are:
+
+```bash
+npm start
+npm run web
+npm run android
+npm run ios
+```
+
+The corresponding npm lifecycle hooks execute the configuration
+generator before Expo starts.
+
+Example:
+
+```text
+npm start
+    |
+    v
+prestart
+    |
+    v
+npm run config:generate
+    |
+    v
+application.properties
+    |
+    v
+applicationConfig.generated.ts
+    |
+    v
+expo start
+```
+
+The configuration can also be generated manually:
+
+```bash
+npm run config:generate
+```
+
+Directly running:
+
+```bash
+npx expo start
+```
+
+bypasses the npm lifecycle hooks.
+
+Therefore, it does not automatically regenerate the application
+configuration and should not be used as the standard project startup
+command.
+
+---
+
+## 8. Template Application Structure
+
+The reusable template area currently follows this general structure:
 
 ```text
 src/
-├── template/
-│   ├── application/
-│   │   ├── TemplateApp.tsx
-│   │   ├── createTemplateApp.tsx
-│   │   ├── ApplicationConfig.ts
-│   │   └── ApplicationConfigContext.tsx
-│   │
-│   ├── authentication/
-│   ├── components/
-│   ├── navigation/
-│   ├── screens/
-│   ├── state/
-│   ├── styles/
-│   ├── update/
-│   └── ...
-│
-└── core/
++-- template/
+|   +-- application/
+|   |   +-- TemplateApp.tsx
+|   |   +-- createTemplateApp.tsx
+|   |   +-- ApplicationConfig.ts
+|   |   +-- ApplicationConfigContext.tsx
+|   |
+|   +-- authentication/
+|   +-- components/
+|   +-- config/
+|   +-- navigation/
+|   +-- screens/
+|   +-- state/
+|   +-- styles/
+|   +-- update/
+|   +-- ...
+|
++-- core/
 ```
 
-### `TemplateApp.tsx`
+### TemplateApp.tsx
 
-Contains the reusable technical application shell:
+`TemplateApp` contains the reusable technical application shell.
+
+Its responsibilities include:
 
 - Providers
-- Redux store
 - Navigation container
 - Header and footer
 - Session guard
@@ -199,175 +401,122 @@ Contains the reusable technical application shell:
 - Notifications
 - Update watchers
 - General layout
+- Current Redux integration
 
-### `createTemplateApp.tsx`
+### createTemplateApp.tsx
 
-Connects a concrete application to the template:
+`createTemplateApp` connects a concrete application configuration with
+the reusable template shell.
+
+Current usage:
 
 ```ts
 const App = createTemplateApp(applicationConfig);
 ```
 
-### `ApplicationConfig.ts`
+### ApplicationConfig.ts
 
-Defines the contract between an application and the template.
+`ApplicationConfig` defines the typed contract between an application
+and the Base Template.
 
-The template defines the types.  
+The Base Template defines the contract.
+
 The application provides the concrete values.
 
-### `ApplicationConfigContext.tsx`
+### ApplicationConfigContext.tsx
 
-Makes the active application configuration available throughout the
-template.
+`ApplicationConfigContext` makes application identity available inside
+the reusable template without requiring template components to import
+application files.
 
-Template components therefore do not need to directly import
-application files or application-specific environment variables.
+The current context provides application identity such as:
+
+```text
+id
+displayName
+```
+
+Template components can access these values through
+`useApplicationConfig`.
+
+This prevents direct application-specific environment access inside
+template UI components.
 
 ---
 
-## 6. Responsibilities
+## 9. Responsibilities
 
 ### Base Template
 
-The template defines the reusable mechanisms:
+The Base Template owns reusable mechanisms and infrastructure.
 
-- How menus are displayed
-- How menu trees are built
-- How routing works
-- How tabs are displayed
-- How feature rules are evaluated
-- How Redux is provided
-- How authentication and session management work
-- How general UI components behave and look
+Examples include:
+
+- Menu rendering
+- Menu tree construction
+- Routing
+- Tab rendering
+- Feature rule evaluation
+- Redux infrastructure
+- Authentication
+- Session handling
+- Connectivity
+- Design system
+- Notifications
+- Update infrastructure
+- General UI behavior
 
 ### Application
 
-The application defines its concrete domain-specific content:
+The application owns concrete product definitions.
 
-- Which menus exist
-- Which tabs exist
-- Which screens are displayed
-- Which domain-specific feature flags apply
-- Which application-specific Redux slices are required
-- Which branding is used
-- How the application is built and deployed
+Examples include:
+
+- Application identity
+- Application branding
+- Concrete menus
+- Concrete tabs
+- Domain-specific screens
+- Domain-specific feature rules
+- Application-specific Redux state
+- Application-specific composition
+- Application build configuration
+- Application deployment configuration
 
 General rule:
 
 ```text
-Mechanism and infrastructure → Template
-Concrete domain definition   → Application
+Mechanism and infrastructure --> Template
+Concrete product definition  --> Application
 ```
 
 ---
 
-## 7. Starting an Application
+## 10. Redux Extension
 
-An application repository should start the template approximately as
-follows:
+Redux is a state-management technology and not an architecture layer.
 
-```ts
-import {
-  createTemplateApp,
-} from "@enflex/web-template";
+Redux state should belong to the architectural area that owns the
+corresponding responsibility.
 
-import {
-  applicationConfig,
-} from "./src/application";
+The Base Template provides the reusable Redux infrastructure.
 
-const App = createTemplateApp(applicationConfig);
+This includes:
 
-export default App;
-```
-
-The startup flow is:
-
-```text
-applicationConfig
-        ↓
-createTemplateApp(config)
-        ↓
-TemplateApp
-        ↓
-Navigation, Redux, UI, and Core
-```
-
-Because each application has its own repository, no central resolver is
-required to switch between Agent.Workbench and HEMS.
-
----
-
-## 8. Application ID and Display Name
-
-### Application ID
-
-Example:
-
-```env
-EXPO_PUBLIC_APPLICATION_ID=agent-workbench
-```
-
-The application ID is a stable technical identifier.
-
-Possible uses:
-
-- Build names
-- Docker image names
-- Helm release names
-- Logging
-- Storage prefixes
-- Technical metadata
-
-With separate application repositories, the ID is not used to select an
-application folder inside the template.
-
-### Application Title
-
-Example:
-
-```env
-EXPO_PUBLIC_APPLICATION_TITLE=Agent.Workbench
-```
-
-The application title is the visible name shown to users.
-
-Possible uses:
-
-- Navigation
-- Header
-- Login
-- Browser title
-- Application information
-
-Environment values are read inside the application repository and
-converted into an `ApplicationConfig`.
-
-The template only uses the final configuration object.
-
----
-
-## 9. Redux Extension
-
-The template provides the general Redux infrastructure:
-
-- Store creation
 - Template reducers
-- Redux provider
+- Store creation infrastructure
+- Redux provider integration
 - Typed Redux hooks
-- General template slices
+- General template-owned slices
+- An application reducer extension contract
 
-An application may register additional application-specific Redux
-slices.
+The extensible store factory has been introduced through
+`createTemplateStore`.
 
-Examples for Agent.Workbench:
+The application reducer extension contract is represented by
+`ApplicationReducers`.
 
-```text
-execSettings
-dataAnalysis
-additional domain-specific state
-```
-
-Planned concept:
+Conceptually:
 
 ```ts
 createTemplateStore({
@@ -378,40 +527,57 @@ createTemplateStore({
 });
 ```
 
-Alternatively, the Redux extension may be part of application creation:
+The store factory also prevents application reducers from overriding
+Base Template reducer keys.
 
-```ts
-createTemplateApp({
-  config: applicationConfig,
-  applicationReducers,
-});
-```
+### Current Redux Status
 
-The exact API will be designed separately.
+The Redux separation is not yet fully complete.
+
+Implemented:
+
+- `ApplicationReducers` extension contract
+- `templateReducers`
+- `createTemplateStore`
+- Collision protection for reducer keys
+- Tests for the extensible store factory
+
+Still transitional:
+
+- `TemplateApp` still uses the existing Redux store integration.
+- The new application reducer extension is not yet fully connected to
+  `createTemplateApp`.
+- Some Agent.Workbench-specific reducers are still physically located
+  inside the current template repository.
+- Final application-specific state typing is still being refined.
 
 Important rule:
 
-> The template must not directly import Agent.Workbench or HEMS
-> reducers.
+> The Base Template must not permanently import concrete
+> Agent.Workbench or HEMS reducers.
 
-The application passes its reducers through a public template extension
-interface.
+Concrete applications must provide their reducers through a public
+extension interface.
 
 ---
 
-## 10. Navigation
+## 11. Navigation
 
-The template owns the navigation engine:
+The Base Template owns the navigation mechanism.
+
+This includes:
 
 - Menu tree construction
 - Navigation rendering
 - Routing
 - Path calculation
 - Tab rendering
-- Feature flag evaluation
-- Merging dynamic and static menus
+- Feature rule evaluation
+- Dynamic and static navigation composition
 
-The application provides:
+The application owns the concrete navigation definition.
+
+This includes:
 
 - Menu items
 - Tabs
@@ -422,18 +588,34 @@ The application provides:
 General rule:
 
 ```text
-Navigation mechanism → Template
-Concrete navigation  → Application
+Navigation mechanism --> Template
+Concrete navigation  --> Application
+```
+
+The final developer-facing menu and tab configuration is planned to use
+property-based configuration.
+
+The exact contracts for these files have not yet been finalized.
+
+Planned files include:
+
+```text
+menu.properties
+menuFeatureFlags.properties
+tabs.properties
+tabFeatureFlags.properties
 ```
 
 ---
 
-## 11. Current Transitional State
+## 12. Current Transitional State
 
-Some Agent.Workbench-specific functionality is still located inside the
-template area.
+The repository is currently in a migration phase.
 
-Likely Agent.Workbench-specific areas include:
+Some Agent.Workbench-specific functionality is still physically located
+inside the template area.
+
+Known candidates include:
 
 ```text
 src/template/screens/AgentWorkbenchOptions/
@@ -448,20 +630,20 @@ Related functionality includes:
 - Data Analysis State
 - Menu ID 3023
 - Tabs assigned to menu ID 3023
-- The SERVER_MASTER visibility rule for Data Analyzing
+- The `SERVER_MASTER` visibility rule for Data Analyzing
 
-These areas should later be moved together into the Agent.Workbench
-repository.
+These areas should eventually move together into the Agent.Workbench
+application repository.
 
-Until the new repository is available, they remain in the current
-project.
+They remain in the current repository until the application extraction
+is performed safely.
 
 ---
 
-## 12. Open Ownership Decisions
+## 13. Open Ownership Decisions
 
-The following areas still require clarification with the architecture
-lead:
+Some feature ownership decisions still require clarification before the
+final repository extraction.
 
 | Area | Possible Ownership | Status |
 |---|---|---|
@@ -476,11 +658,17 @@ lead:
 | General Settings | Template or Application | Review required |
 | User Profile | Template or Application | Review required |
 
+These decisions should be made according to responsibility and
+reusability rather than the current physical file location.
+
 ---
 
-## 13. Public Template API
+## 14. Public Template API
 
-Application repositories should not import internal template paths.
+Application repositories should consume the Base Template through an
+explicit public API.
+
+They should not depend on arbitrary internal template paths.
 
 Target usage:
 
@@ -488,84 +676,193 @@ Target usage:
 import {
   createTemplateApp,
   type ApplicationConfig,
+  type ApplicationReducers,
   type StaticMenuItem,
   type StaticTabItem,
 } from "@enflex/web-template";
 ```
 
-The public API should export only explicitly supported:
+The public API should expose only explicitly supported:
 
 - Types
 - Functions
 - Components
+- Configuration contracts
 - Extension interfaces
 
-Internal template implementations remain private.
+Internal template implementation details should remain private.
 
 ---
 
-## 14. Migration Phases
+## 15. Current Implementation Status
 
-### Phase 1 – Application Configuration
+### Implemented
+
+The following architecture foundations are already implemented:
+
+- `ApplicationConfig`
+- `createTemplateApp`
+- `ApplicationConfigContext`
+- `ApplicationConfigProvider`
+- `useApplicationConfig`
+- `application.properties`
+- Application configuration generator
+- Generated typed application configuration
+- Application ID loaded from properties
+- Application display name loaded from properties
+- Direct `EXPO_PUBLIC_APPLICATION_TITLE` usage removed from template code
+- Automatic config generation through npm lifecycle scripts
+- `ApplicationReducers`
+- `templateReducers`
+- `createTemplateStore`
+- Reducer key collision protection
+- Store factory tests
+
+### Transitional
+
+The following areas are intentionally still transitional:
+
+- The existing Redux store is still connected to `TemplateApp`.
+- The extensible Redux store factory is not yet the active application
+  store.
+- Agent.Workbench-specific screens are still located in the current
+  repository.
+- Agent.Workbench-specific state is still located in the current
+  repository.
+- The current configuration generator is part of the existing
+  repository structure and may need to become more generic when the
+  repositories are physically separated.
+
+### Planned
+
+The following work remains planned:
+
+- Menu configuration through properties
+- Menu feature flags through properties
+- Tab configuration through properties
+- Tab feature flags through properties
+- Layout configuration
+- Cookie configuration
+- Additional branding configuration
+- Mapping additional application metadata into `ApplicationConfig`
+- Final Redux integration with `createTemplateApp`
+- Public package API finalization
+- Agent.Workbench repository extraction
+- HEMS integration
+- Independent Base Template build and release workflow
+
+---
+
+## 16. Migration Phases
+
+### Phase 1 - Application Configuration
+
+Status: largely implemented.
+
+Completed or introduced:
 
 - Define `ApplicationConfig`
 - Provide `createTemplateApp`
-- Make the configuration available through a context
-- Remove direct application environment access from the template
+- Introduce `ApplicationConfigContext`
+- Introduce property-based application identity
+- Generate typed configuration
+- Remove direct application title environment access from template UI
+- Add automatic npm configuration generation
 
-### Phase 2 – Configurable Navigation
+Remaining work:
 
-- Make menus injectable
-- Make menu feature flags injectable
-- Make tabs injectable
-- Make tab feature flags injectable
-- Keep the navigation engine inside the template
+- Extend the configuration contract with additional metadata
+- Generalize build-time configuration tooling where necessary
 
-### Phase 3 – Extensible Redux Store
+### Phase 2 - Configurable Navigation
 
-- Convert the store into a factory
-- Allow applications to register reducers
-- Define state typing for template and application state
-- Connect the Redux extension to `createTemplateApp`
+Status: planned.
 
-### Phase 4 – Public Template API
+Tasks:
+
+- Define `menu.properties`
+- Define menu feature flag configuration
+- Define `tabs.properties`
+- Define tab feature flag configuration
+- Connect application navigation configuration to the template
+- Keep navigation mechanisms inside the Base Template
+
+### Phase 3 - Extensible Redux Store
+
+Status: partially implemented.
+
+Completed or introduced:
+
+- Define application reducer contract
+- Define Base Template reducers
+- Create extensible store factory
+- Prevent application reducers from overriding template reducer keys
+- Add store factory tests
+
+Remaining work:
+
+- Connect the extensible store to `TemplateApp`
+- Connect application reducers to application creation
+- Finalize application state typing
+- Move application-specific reducers to the application repository
+
+### Phase 4 - Public Template API
+
+Status: in progress.
+
+Tasks:
 
 - Define stable exports
-- Avoid internal path imports
+- Avoid internal template imports from application repositories
 - Prepare the package interface
-- Add automated dependency boundary checks
+- Add or maintain dependency boundary checks
+- Document supported extension points
 
-### Phase 5 – Agent.Workbench Extraction
+### Phase 5 - Agent.Workbench Extraction
 
-- Move AgentWorkbenchOptions
+Status: planned.
+
+Tasks:
+
+- Move `AgentWorkbenchOptions`
 - Move Agent.Workbench state
 - Move Agent.Workbench menus and tabs
-- Move Agent.Workbench feature flags
-- Review API ownership
-- Prepare the separate build
-- Create the deployment configuration
+- Move Agent.Workbench feature rules
+- Review concrete API ownership
+- Prepare the independent application build
+- Prepare deployment configuration
 
-### Phase 6 – Base Template Cleanup
+### Phase 6 - Base Template Cleanup
+
+Status: planned.
+
+Tasks:
 
 - Remove remaining Agent.Workbench dependencies
 - Test the Base Template independently
-- Integrate HEMS
+- Integrate HEMS as a separate application
+- Validate repository boundaries
 - Create a guide for building new applications
 
 ---
 
-## 15. Success Criteria
+## 17. Success Criteria
 
-The separation is considered successful when:
+The separation is considered complete when:
 
-1. The template does not import any concrete application.
-2. Core imports neither template nor application code.
-3. Agent.Workbench and HEMS use the same public template API.
-4. Every application can register its own screens.
-5. Every application can register its own menus and tabs.
-6. Every application can register its own Redux slices.
-7. Every application has its own build.
-8. Every application has its own deployment configuration.
-9. Template updates can be provided centrally.
-10. A new application can be created without modifying internal template
-    files.
+1. The Base Template does not import any concrete application.
+2. Core imports neither Template nor Application code.
+3. Agent.Workbench and HEMS consume the same supported Base Template API.
+4. Application identity is configured outside the Base Template.
+5. Applications can provide their own screens.
+6. Applications can provide their own menus and tabs.
+7. Applications can provide their own feature rules.
+8. Applications can provide their own Redux reducers.
+9. Applications have independent build configurations.
+10. Applications have independent deployment configurations.
+11. Base Template updates can be maintained and released centrally.
+12. A new application can be created without modifying internal Base
+    Template implementation files.
+13. Application developers can configure common application properties
+    without editing TypeScript or JavaScript configuration files.
+14. Repository dependency boundaries remain enforceable and testable.
