@@ -1,0 +1,99 @@
+<diagram program="umletino" version="15.1"><zoom_level>16</zoom_level><help_text>&lt;&lt;component&gt;&gt;
+PermissionCatalog
+
++ PERMISSIONS: PermissionDefinition[]
++ DEFAULT_PERMISSION_VALUES: Record&lt;PermissionId, boolean&gt;
+
+Verantwortung:
+- Statische Definition aller Permissions
+- id
+- title
+- description
+- defaultValue</help_text><element><id>UMLClass</id><coordinates><x>0</x><y>192</y><w>976</w><h>640</h></coordinates><panel_attributes>&lt;&lt;Architecture&gt;&gt;
+Permission System
+
+--
+Layers
+--
+1. Definition Layer
+2. State Layer
+3. Adapter Layer
+4. UI Layer
+
+--
+Description
+--
+Die Permission-Architektur besteht aus vier Schichten:
+(1) Der PermissionGroup definiert statisch die verfügbaren Permissions (ID, Titel, Beschreibung, Default).
+(2) Der Redux Slice speichert ausschließlich den Zustand (aktiv/inaktiv) als values[PermissionId] plus Metadaten (accepted/hasSeenDialog) und persistiert in AsyncStorage.
+(3) Ein Selector/Adapter kombiniert Catalog und Redux-State zu UI-fertigen Items.
+(4) PrivacySettings/DataProtection rendert diese Items und dispatcht Aktionen bei Änderungen.
+Dadurch ist das System wartbar, skalierbar und Redux-konform.</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1104</x><y>0</y><w>336</w><h>496</h></coordinates><panel_attributes>&lt;&lt;Component&gt;&gt;
+PermissionGroup
+
+--
+Attributes
+--
++ PERMISSIONS: PermissionDefinition[]
++ DEFAULT_PERMISSION_VALUES: Record&lt;PermissionId, boolean&gt;
+
+--
+Responsibilities
+--
+* Defines all available permissions
+* Contains id, title, description, defaultValue
+* No state management
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1104</x><y>608</y><w>400</w><h>496</h></coordinates><panel_attributes>&lt;&lt;Redux Component&gt;&gt;
+DataPermissionsSlice
+
+--
+State
+--
++ values: Record&lt;PermissionId, boolean&gt;
++ accepted: boolean
++ hasSeenDialog: boolean
+
+--
+Operations
+--
++ setPermissionValue()
++ acceptAll()
++ rejectOptional()
++ initializeDataPermissions()
+
+--
+Responsibilities
+--
+* Stores permission state
+* Applies business rules
+* Persists state
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1664</x><y>48</y><w>400</w><h>496</h></coordinates><panel_attributes>&lt;&lt;Adapter&gt;&gt;
+PermissionSelector
+
+--
+Operations
+--
++ selectPermissionItems(state)
++ selectAllAccepted(state)
+
+--
+Responsibilities
+--
+* Combines Catalog + Redux State
+* Produces UI-ready permission items
+* Acts as ViewModel layer
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1632</x><y>720</y><w>400</w><h>496</h></coordinates><panel_attributes>&lt;&lt;UI Component&gt;&gt;
+PrivacySettings / DataProtection
+
+--
+Responsibilities
+--
+* Renders permission table
+* Displays switches
+* Dispatches Redux actions
+* Contains no business logic
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1424</x><y>352</y><w>272</w><h>64</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..n</panel_attributes><additional_attributes>150;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1840</x><y>528</y><w>80</w><h>224</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..n</panel_attributes><additional_attributes>10;120;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1488</x><y>784</y><w>176</w><h>64</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..n</panel_attributes><additional_attributes>90;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1504</x><y>848</y><w>160</w><h>64</h></coordinates><panel_attributes>lt=&lt;-
+m1=0..n</panel_attributes><additional_attributes>10;10;80;10</additional_attributes></element></diagram>

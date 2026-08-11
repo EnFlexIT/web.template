@@ -1,0 +1,75 @@
+<diagram program="umletino" version="15.1"><zoom_level>10</zoom_level><help_text>StaticMenu
+-&gt; withAutoTabs
+-&gt; TabScreen (for menuID 3010)
+
+--
+
+STATIC_TABS
+-&gt; GeneralSettingsTab
+-&gt; FactorySettingsTab
+-&gt; DerbyNetworkServerTab</help_text><element><id>UMLClass</id><coordinates><x>130</x><y>100</y><w>210</w><h>190</h></coordinates><panel_attributes>StaticMenu
+-&gt; withAutoTabs
+-&gt; TabScreen (for menuID 3010)
+
+--
+
+STATIC_TABS
+-&gt; GeneralSettingsTab
+-&gt; FactorySettingsTab
+-&gt; DerbyNetworkServerTab</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>390</x><y>450</y><w>210</w><h>190</h></coordinates><panel_attributes>GeneralSettingsTab
+
+--
+uses:
+- selectDbSystems
+- dispatch(fetchDbSettings)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>390</x><y>650</y><w>210</w><h>190</h></coordinates><panel_attributes>FactorySettingsTab
+
+--
+uses:
+- selectFactories
+- selectFactoryStates
+- dispatch(fetchDbSettings)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>390</x><y>850</y><w>210</w><h>190</h></coordinates><panel_attributes>DerbyNetworkServerTab
+
+--
+uses:
+- selectDerbyNetworkServer
+- dispatch(fetchDbSettings)
+- dispatch(saveDerbyNetworkServerSettings)</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1040</x><y>400</y><w>210</w><h>320</h></coordinates><panel_attributes>dbSettingsSlice
+
+--
+state:
+- dbSystems
+- factories
+- factoryStates
+- derbyNetworkServer
+
+--
+
+actions:
+- setDerbyField
+- clearDbSettingsError
+
+--
+
+thunks:
+- fetchDbSettings
+- saveDerbyNetworkServerSettings</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLUseCase</id><coordinates><x>720</x><y>690</y><w>260</w><h>170</h></coordinates><panel_attributes>apiSlice
+
+--
+provides:
+- awb_rest_api.infoApi</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLUseCase</id><coordinates><x>1000</x><y>0</y><w>330</w><h>300</h></coordinates><panel_attributes>InfoApi
+
+--
+calls:
+- GET /app/settings/get
+- SET /app/settings/set
+
+--
+
+uses:
+- X-Performative:
+  - DB.SYSTEMS
+  - DB.FACTORIES
+  - DB.DERBY.NETWORKSERVER</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>200</x><y>290</y><w>80</w><h>520</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;include&gt;&gt;</panel_attributes><additional_attributes>10;10;10;500</additional_attributes></element><element><id>Relation</id><coordinates><x>200</x><y>510</y><w>200</w><h>170</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>180;10;130;10;130;150;10;150</additional_attributes></element><element><id>Relation</id><coordinates><x>200</x><y>770</y><w>200</w><h>140</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>180;120;130;120;130;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>200</x><y>720</y><w>210</w><h>30</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>190;10;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1140</x><y>290</y><w>80</w><h>130</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;include&gt;&gt;</panel_attributes><additional_attributes>10;10;10;110</additional_attributes></element><element><id>Relation</id><coordinates><x>700</x><y>630</y><w>350</w><h>50</h></coordinates><panel_attributes>lt=&lt;.
+&lt;&lt;include&gt;&gt;</panel_attributes><additional_attributes>10;30;330;10</additional_attributes></element><element><id>Relation</id><coordinates><x>590</x><y>500</y><w>150</w><h>180</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;10;120;10;130;160</additional_attributes></element><element><id>Relation</id><coordinates><x>590</x><y>660</y><w>150</w><h>320</h></coordinates><panel_attributes>lt=&lt;&lt;.</panel_attributes><additional_attributes>10;300;130;290;130;10</additional_attributes></element><element><id>Relation</id><coordinates><x>590</x><y>650</y><w>140</w><h>90</h></coordinates><panel_attributes>lt=&lt;..</panel_attributes><additional_attributes>10;70;120;10</additional_attributes></element></diagram>

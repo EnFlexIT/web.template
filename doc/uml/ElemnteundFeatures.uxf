@@ -1,0 +1,13 @@
+<diagram program="umletino" version="15.1"><zoom_level>9</zoom_level><element><id>UMLClass</id><coordinates><x>750</x><y>329</y><w>99</w><h>36</h></coordinates><panel_attributes>lw=2
+Features</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>561</x><y>356</y><w>261</w><h>153</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>270;10;270;150;10;150</additional_attributes></element><element><id>UMLClass</id><coordinates><x>471</x><y>473</y><w>99</w><h>36</h></coordinates><panel_attributes>lw=2
+editors</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>453</x><y>500</y><w>90</w><h>207</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>80;10;80;210;10;210;10;170</additional_attributes></element><element><id>UMLClass</id><coordinates><x>372</x><y>608</y><w>99</w><h>36</h></coordinates><panel_attributes>lw=2
+Texteditor</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>282</x><y>320</y><w>198</w><h>90</h></coordinates><panel_attributes>lw=2
+ui-elements
+-
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>147</x><y>464</y><w>144</w><h>99</h></coordinates><panel_attributes>lw=2
+Buttons
+-
+UploadButton.tsx
+xButton
+ActionButton.tsx
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>237</x><y>401</y><w>108</w><h>81</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>10;70;10;50;100;50;100;10</additional_attributes></element><element><id>Relation</id><coordinates><x>210</x><y>554</y><w>180</w><h>99</h></coordinates><panel_attributes>lt=&lt;-</panel_attributes><additional_attributes>180;90;10;90;10;10</additional_attributes></element></diagram>
