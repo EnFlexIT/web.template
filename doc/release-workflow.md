@@ -1,211 +1,738 @@
 # Release Workflow
 
-This document describes the production release workflow of the web.template project.
-
-The project uses a GitHub Actions workflow to build the Expo web application, package the exported web build as a ZIP file and upload it to a configured FTP target.
-
 ## Purpose
 
-The production release workflow is used to create a deployable web application artifact.
+This document describes the current production release workflow of
+`web.template`.
 
-It is intended for stable versions that should be made available through the normal application update mechanism.
+The workflow builds the Expo web application, packages the exported files as a
+ZIP archive, uploads the archive to the configured FTP target and creates a
+GitHub release.
 
-## Workflow file
+This document describes the current implementation.
 
-```txt
+The architecture is currently transitioning toward separate Application
+repositories.
+
+---
+
+# 1. Workflow File
+
+The production release workflow is defined in:
+
+```text
 .github/workflows/export-put-release.yml
 ```
 
-Workflow name:
+The workflow name is:
 
-```txt
+```text
 Export Put Release
 ```
 
-The workflow is started manually through GitHub Actions by using:
+It is started manually through:
 
-```txt
+```yaml
 workflow_dispatch
 ```
 
-This means the release is not created automatically on every push. A developer has to start it manually.
+A production release is therefore not automatically created on every push.
 
-## Main workflow steps
+---
 
-The production release workflow performs the following steps:
+# 2. Current Workflow Overview
 
-1. Checkout the repository.
-2. Print Git and package debug information.
-3. Setup Node.js 20.
-4. Update npm to version 10.
-5. Validate the lockfile and install dependencies with `npm ci`.
-6. Read the application version from `package.json`.
-7. Generate a timestamp.
-8. Export the Expo web application.
-9. Package the generated `dist` folder into a ZIP file.
-10. Upload the ZIP file to the configured FTP path.
-11. Create a GitHub release using the generated ZIP file.
+The verified production workflow performs the following sequence:
 
-## Build command
+```text
+Checkout repository
+        |
+        v
+Show Git information
+        |
+        v
+Setup Node.js 20
+        |
+        v
+Install npm 10
+        |
+        v
+Show Node/npm versions
+        |
+        v
+Show package diagnostics
+        |
+        v
+npm ci
+        |
+        v
+Read package version
+        |
+        v
+Generate timestamp
+        |
+        v
+Expo web export
+        |
+        v
+ZIP package
+        |
+        v
+FTP upload
+        |
+        v
+GitHub release
+```
 
-The actual Expo web export is created with:
+---
+
+# 3. Checkout
+
+The workflow uses:
+
+```yaml
+actions/checkout@v4
+```
+
+with:
+
+```yaml
+fetch-depth: 1
+```
+
+The workflow also prints Git information for diagnostics.
+
+This includes values such as:
+
+```text
+GITHUB_SHA
+current commit
+current branch
+repository file listing
+package.json presence
+package-lock.json presence
+```
+
+---
+
+# 4. Node.js and npm
+
+The workflow uses:
+
+```text
+Node.js 20
+npm 10
+```
+
+Node is configured through:
+
+```yaml
+actions/setup-node@v4
+```
+
+with npm caching enabled.
+
+npm is then explicitly updated using:
+
+```bash
+npm install -g npm@10
+```
+
+---
+
+# 5. Dependency Installation
+
+Dependencies are installed using:
+
+```bash
+npm ci
+```
+
+This requires a valid and synchronized:
+
+```text
+package.json
+package-lock.json
+```
+
+If the lockfile does not match the package definition, the workflow fails
+during installation.
+
+---
+
+# 6. Package Diagnostics
+
+Before installation, the workflow currently prints additional package
+diagnostics.
+
+These include:
+
+```text
+@floating-ui/dom references
+lockfile version
+package name
+package version
+```
+
+These diagnostics are useful for troubleshooting dependency and lockfile
+issues.
+
+They are not part of the release artifact itself.
+
+---
+
+# 7. Version
+
+The release version is read from:
+
+```text
+package.json
+```
+
+using Node:
+
+```bash
+node -p "require('./package.json').version"
+```
+
+The value is stored as a GitHub Actions output.
+
+Example:
+
+```text
+0.0.4
+```
+
+---
+
+# 8. Timestamp
+
+The workflow generates a timestamp using:
+
+```bash
+date +%Y%m%d-%H%M
+```
+
+Example:
+
+```text
+20260811-0915
+```
+
+The timestamp is used as part of the release archive name.
+
+---
+
+# 9. Current Build Command
+
+The current production export is created with:
 
 ```bash
 npx expo export -p web
 ```
 
-The output is written to:
+Expo writes the generated web application to:
 
-```txt
+```text
 dist/
 ```
 
-The content of this folder is then zipped and uploaded.
+This is the current production build command.
 
-## Required repository secrets
+---
 
-The workflow requires the following GitHub repository secrets:
+# 10. Application Configuration Generation
 
-| Secret | Purpose |
-| --- | --- |
-| `FTP_UPLOAD_URL` | FTP server URL used for uploading the release artifact. |
-| `FTP_USER` | FTP username. |
-| `FTP_PSWD` | FTP password. |
-| `PROJECT_NAME` | Name prefix used for the generated ZIP file. |
-| `PROJECT_PATH` | Target directory on the FTP server. The directory must already exist. |
+The Application configuration is generated separately through:
 
-> Important: The workflow uses `FTP_PSWD`. Keep the secret name exactly as defined in the workflow file.
+```bash
+npm run config:generate
+```
 
-## Artifact naming
+Normal npm runtime commands such as:
 
-The production workflow creates ZIP files using this pattern:
+```text
+npm start
+npm run web
+npm run android
+npm run ios
+```
 
-```txt
+trigger configuration generation through npm lifecycle hooks.
+
+The production release workflow does not currently use one of those npm
+commands.
+
+Instead, it executes:
+
+```bash
+npx expo export -p web
+```
+
+directly.
+
+Therefore:
+
+```text
+npm lifecycle configuration generation
+        |
+        X
+direct Expo export
+```
+
+The current production release workflow does not explicitly guarantee that the
+generated Application configuration is refreshed immediately before export.
+
+This is a known transitional build integration issue.
+
+---
+
+# 11. Current Configuration Risk
+
+The runtime currently consumes the generated file:
+
+```text
+src/application/generated/applicationConfig.generated.ts
+```
+
+That file is generated from:
+
+```text
+src/application/config/application.properties
+```
+
+through:
+
+```text
+src/template/config/build/generateApplicationConfig.mjs
+```
+
+Because the production workflow does not currently execute:
+
+```bash
+npm run config:generate
+```
+
+before the Expo export, the generated TypeScript configuration could
+theoretically be stale.
+
+The build should eventually generate Application configuration
+deterministically before every export.
+
+---
+
+# 12. Recommended Build Sequence
+
+The desired production sequence is conceptually:
+
+```text
+npm ci
+    |
+    v
+npm run config:generate
+    |
+    v
+npx expo export -p web
+    |
+    v
+package
+    |
+    v
+publish
+```
+
+The workflow should not depend on a previously generated configuration file
+being current.
+
+This change should be implemented and tested separately from documentation.
+
+---
+
+# 13. Packaging
+
+After the Expo export, the contents of:
+
+```text
+dist/
+```
+
+are packaged into a ZIP archive.
+
+The current naming pattern is:
+
+```text
 <PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
 ```
 
 Example:
 
-```txt
-baseTemplate_0.0.4_20260706-1421.zip
+```text
+Agent.Workbench_0.0.4_20260811-0915.zip
 ```
 
-The version is read from:
+The actual prefix is supplied through the repository secret:
 
-```txt
-package.json
+```text
+PROJECT_NAME
 ```
 
-The timestamp is generated during the workflow run.
+---
 
-## Upload target
+# 14. FTP Upload
 
-The production ZIP file is uploaded to:
+The ZIP file is uploaded through FTP.
 
-```txt
+The configured target is:
+
+```text
 <PROJECT_PATH>
 ```
 
-on the configured FTP server.
+The workflow uses values from GitHub repository secrets.
 
-The workflow uses an FTP command sequence similar to:
+Conceptually:
 
-```txt
+```text
 open <FTP_UPLOAD_URL>
 user <FTP_USER> <FTP_PSWD>
 cd <PROJECT_PATH>
-put <artifact>.zip
+put <archive>.zip
 exit
 ```
 
-## GitHub release
+The target directory must already be available on the FTP server.
 
-After uploading the ZIP file to the FTP server, the workflow also creates a GitHub release using:
+---
 
-```txt
+# 15. Required Repository Secrets
+
+The verified production workflow uses:
+
+| Secret | Purpose |
+| --- | --- |
+| `FTP_UPLOAD_URL` | FTP server address |
+| `FTP_USER` | FTP username |
+| `FTP_PSWD` | FTP password |
+| `PROJECT_NAME` | Release archive name prefix |
+| `PROJECT_PATH` | FTP target path |
+
+The secret name:
+
+```text
+FTP_PSWD
+```
+
+must remain consistent with the workflow.
+
+---
+
+# 16. GitHub Release
+
+After the FTP upload, the workflow creates a GitHub release through:
+
+```text
 softprops/action-gh-release@v2
 ```
 
-The release tag is generated from the package version:
+The generated ZIP archive is attached to the release.
 
-```txt
+The tag name is:
+
+```text
 v<package.version>
 ```
 
 Example:
 
-```txt
+```text
 v0.0.4
 ```
 
-## When to use this workflow
+---
 
-Use the production release workflow when:
+# 17. Duplicate Version Risk
 
-- the application version is stable
-- the build should be available as normal release
-- the update mechanism should consume the production artifact
-- the release has already been tested
+The GitHub release tag is derived only from:
 
-Do not use this workflow for experimental builds or internal validation. Use the test release workflow for that.
+```text
+package.version
+```
 
-## Notes
+The archive filename additionally contains a timestamp, but the Git tag does
+not.
 
-The workflow uses `npm ci`, therefore a valid and up-to-date `package-lock.json` is required.
+Therefore multiple production releases using the same package version may
+conflict with an already existing release tag.
 
-If dependencies in `package.json` and `package-lock.json` do not match, the workflow will fail during the install step.
+The package version should be reviewed before starting a production release.
 
-The GitHub release tag is based only on the package version. If the same version is released multiple times, the GitHub release/tag behavior should be checked.
+---
 
-## Troubleshooting
+# 18. Production vs Test Release
 
-### `npm ci` fails
+The production workflow publishes to the normal production FTP path:
 
-Possible reasons:
+```text
+<PROJECT_PATH>
+```
 
-- `package-lock.json` is missing
-- `package-lock.json` is not in sync with `package.json`
-- dependencies were changed without updating the lockfile
+The test release workflow is documented separately in:
 
-Fix:
+```text
+doc/test-release.md
+```
+
+Test and production release workflows should remain clearly distinguishable.
+
+---
+
+# 19. Current Architecture Ownership
+
+The current workflow still exists inside:
+
+```text
+web.template
+```
+
+This is valid during the architecture migration.
+
+The target architecture is:
+
+```text
+Application --> Template --> Core
+```
+
+Concrete release and deployment configuration ultimately belongs to the
+Application.
+
+Examples include:
+
+```text
+Application version
+artifact naming
+release destination
+product FTP target
+deployment configuration
+product release workflow
+```
+
+The Base Template may provide reusable build tooling.
+
+It should not permanently own the concrete deployment process of
+Agent.Workbench, HEMS or another product.
+
+---
+
+# 20. Target Repository Ownership
+
+The target repository model is conceptually:
+
+```text
+Base Template Repository
+|
++-- reusable Template
++-- reusable Core
++-- reusable build tooling where appropriate
+
+Agent.Workbench Repository
+|
++-- Application configuration
++-- product build
++-- product release workflow
++-- product deployment
+
+HEMS Repository
+|
++-- Application configuration
++-- product build
++-- product release workflow
++-- product deployment
+```
+
+Each Application should be independently releasable.
+
+---
+
+# 21. Current Status
+
+## Implemented
+
+```text
+manual production release
+Node.js 20
+npm 10
+npm ci
+Expo web export
+ZIP packaging
+FTP upload
+GitHub release
+package-version based release tag
+timestamped archive naming
+```
+
+## Transitional
+
+```text
+production workflow still owned by web.template
+direct Expo export
+generated Application configuration assumed to be current
+shared repository contains concrete product release workflow
+```
+
+## Planned
+
+```text
+deterministic configuration generation before export
+Application-owned release workflows
+independent Agent.Workbench release
+independent HEMS release
+clear Base Template build-tooling boundary
+```
+
+---
+
+# 22. Troubleshooting
+
+## npm ci fails
+
+Possible causes:
+
+```text
+package-lock.json is missing
+package-lock.json is outdated
+package.json and package-lock.json differ
+dependency metadata is inconsistent
+```
+
+Typical local repair flow:
 
 ```bash
 npm install
-git add package-lock.json package.json
-git commit -m "chore: Update package lockfile"
+git add package.json package-lock.json
+git commit -m "chore: update package lockfile"
 ```
 
-### FTP upload fails
+Review the resulting dependency changes before committing.
 
-Possible reasons:
+---
 
-- wrong FTP credentials
-- missing repository secrets
-- wrong `PROJECT_PATH`
-- target directory does not exist on the FTP server
+## Application configuration is outdated
 
-Check the following secrets:
+Regenerate the Application configuration locally:
 
-```txt
+```bash
+npm run config:generate
+```
+
+Then verify:
+
+```text
+src/application/generated/applicationConfig.generated.ts
+```
+
+Before a final release, the build pipeline should eventually perform this
+generation automatically.
+
+---
+
+## FTP upload fails
+
+Verify:
+
+```text
 FTP_UPLOAD_URL
 FTP_USER
 FTP_PSWD
-PROJECT_NAME
 PROJECT_PATH
+PROJECT_NAME
 ```
 
-### GitHub release fails
+Also verify that the remote target directory exists.
 
-Possible reasons:
+---
 
-- release tag already exists
-- missing GitHub permissions
-- package version was not updated
+## GitHub release fails
 
-Check the package version in:
+Verify:
 
-```txt
-package.json
+```text
+package.json version
+existing Git tags
+existing GitHub releases
+repository permissions
 ```
 
-and verify whether a release tag with the same version already exists.
+A previously existing:
+
+```text
+v<package.version>
+```
+
+tag may conflict with the new release.
+
+---
+
+# 23. Validation Before Production Release
+
+Before creating a production release, validate at least:
+
+```bash
+npm run config:generate
+npx tsc --noEmit
+```
+
+Run relevant automated tests and verify the Application through the normal npm
+startup path.
+
+Also verify:
+
+```bash
+git status
+git diff --check
+```
+
+The production release should be created from a known and reviewed Git state.
+
+---
+
+# 24. Summary
+
+The current production pipeline is:
+
+```text
+GitHub Actions
+      |
+      v
+npm ci
+      |
+      v
+npx expo export -p web
+      |
+      v
+dist/
+      |
+      v
+ZIP
+      |
+      +------> FTP
+      |
+      +------> GitHub Release
+```
+
+The main current architecture gap is:
+
+```text
+application.properties
+        |
+        v
+config generation
+        |
+        X
+production export
+```
+
+The production workflow does not yet explicitly regenerate Application
+configuration before export.
+
+Long term, concrete production release workflows belong to their respective
+Application repositories.

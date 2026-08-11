@@ -1,351 +1,1055 @@
 # web.template
 
+Base Template for reusable EnFlexIT web applications.
+
+The repository provides reusable technical capabilities and application-shell
+functionality for concrete products such as Agent.Workbench, HEMS and future
+EnFlexIT applications.
+
+The current architecture follows the dependency direction:
+
+```text
+Application --> Template --> Core
+```
+
+The Base Template consists of Template and Core.
+
+Concrete products are represented by their own Application layer and are
+intended to live in separate Application repositories.
+
+---
+
 ## Table of Contents
-- [About](#About)
-- [Motivation](#Motivation)
-- [Working with this Repository](#Working-with-this-Repository)
-  - [Requirements](#Requirements-Template)
-  - [Setting up](#Setup-Template)
-- [Creating a new EnFlex.IT Project which is based on this template](#Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template)
-  - [Requirements](#Requirements-Project)
-  - [Setting up](#Setup-Project)
-  - [Workflow](#Intended-Workflow)
-  - [Build and Deployment](#BuildingAndDeploying)
-    - [Manually](#BuildingAndDeployingManually)
-    - [Automatically](#BuildingAndDeployingAutomatically)
-- [Project Structure](#Project-Structure)
+
+- [About](#about)
+- [Architecture](#architecture)
+- [Repository Responsibilities](#repository-responsibilities)
+- [Requirements](#requirements)
+- [Setup](#setup)
+- [Application Configuration](#application-configuration)
+- [Development](#development)
+- [Build and Deployment](#build-and-deployment)
+  - [Manual Web Build](#manual-web-build)
+  - [Production Release](#production-release)
+  - [Test Release](#test-release)
+- [Project Structure](#project-structure)
 - [Styling](#styling)
-    - [History](#stylingHistory)
-    - [How to style](#HowToStyle)
-    - [How to include new values into the theme](#ExpandingTheTheme)
-    - [How themeing is implemented](#HowItIsActuallyImplemented)
-    - [unistyles vs legacy](#UnistylesVSLegacy)
-- [Api](#api)
-- [Data Management](#redux)
-- [Additional Documentation](#Additional-Documentation)
+  - [Theme Structure](#theme-structure)
+  - [Design System](#design-system)
+  - [Unistyles](#unistyles)
+- [API](#api)
+- [State Management](#state-management)
+- [Architecture Decisions](#architecture-decisions)
+- [Additional Documentation](#additional-documentation)
 
-## <a id="About">About</a>
+---
 
-Its codebase acts as a template for succeeding EnFlex.IT applications and already implements features such as:
-- Theming
-- Authentication with an Agent.Workbench via jwt and openidconnect
+## About
+
+`web.template` provides reusable functionality for EnFlexIT web applications.
+
+Examples include:
+
+- Application bootstrap
+- Authentication and session handling
+- Server selection and server checks
+- Navigation infrastructure
+- Menu and tab infrastructure
+- Redux infrastructure
+- Design system
+- Notifications
+- Update infrastructure
 - Dynamic content
-- Dynamic menues
+- Reusable screens
+- Runtime utilities
+- Technical Core helpers
 
-## <a id="Motivation">Motivation</a>
+The repository is currently also capable of running as a standalone project
+during the architecture migration.
 
-At some point while developing, we wanted to split our code into different packages.
-We tried so for some time and came to the conclusion that packaging our code and especially maintaining those packages comes with its own kind of challenges and is really time consuming too.
-We felt that the extra effort was not worth the gain and so we ended up moving all the code back into one repo again.
-Still, we wanted to reuse what code we already have across multiple projects.
-So we arrived at the following solution:
-This repository is the basis for all EnFlex.IT applications.
-If you wish to create a new EnFlex.IT application, you need to do so by instantiating this template.
-This new project must then have a 'template' branch whose origin points to this repository.
-By doing so, you can pull any changes related to this repository into your local 'template' branch and then merge these changes with your local 'master' branch.
-In the end, all of the framework code lives in this repository and all of the project specific code lives in its specific repository and we do not package any code.
+Long term, concrete products such as Agent.Workbench and HEMS should consume the
+Base Template from their own Application repositories.
 
-## <a id="Working-with-this-Repository">Working with this Repository</a>
+---
 
-In its current state, this repository is not just a template you can use to create new projects but also a standalone project that can be developed and run.
-this section explains how to setup and run this specific respository locally.
+## Architecture
 
-### <a id="Requirements-Template">Requirements</a>
+The authoritative dependency direction is:
 
-In Order to download, initialize and run the code, you need the following software:
-- git
+```text
+Application
+    |
+    v
+Template
+    |
+    v
+Core
+```
+
+### Application
+
+Application contains concrete product functionality.
+
+Examples include:
+
+- Application identity
+- Application configuration
+- Menus
+- Tabs
+- Product-specific screens
+- Product-specific Redux state
+- Branding
+- Business logic
+- Product-specific backend integration
+- Product build configuration
+- Product deployment configuration
+
+Application may depend on Template and Core.
+
+### Template
+
+Template contains the reusable application shell.
+
+Examples include:
+
+- `TemplateApp`
+- `createTemplateApp`
+- `ApplicationConfig`
+- Navigation infrastructure
+- Menu and tab infrastructure
+- Redux infrastructure
+- Authentication orchestration
+- Session handling
+- Server-selection behavior
+- Design system
+- Notifications
+- Update orchestration
+- Reusable screens
+- Reusable React hooks and components
+
+Template may depend on Core.
+
+Template must not depend on a concrete Application.
+
+### Core
+
+Core contains focused reusable technical capabilities.
+
+Examples include:
+
+- Technical authentication helpers
+- Technical runtime utilities
+- Server normalization and validation
+- Technical server detection
+- Pure update helpers
+- Technical types and utilities
+
+Core must not depend on Template or Application.
+
+---
+
+## Repository Responsibilities
+
+The target repository model is:
+
+```text
+                 Base Template Repository
+                 +------------------------+
+                 | Template               |
+                 |        |               |
+                 |        v               |
+                 | Core                   |
+                 +-----------+------------+
+                             ^
+                             |
+              +--------------+--------------+
+              |                             |
++--------------------------+   +--------------------------+
+| Agent.Workbench          |   | HEMS                     |
+| Application Repository   |   | Application Repository   |
++--------------------------+   +--------------------------+
+```
+
+Future Applications follow the same model.
+
+The Base Template does not contain a runtime mechanism that selects between
+multiple products.
+
+Each concrete Application supplies its own configuration and product
+functionality to Template through explicit contracts.
+
+The current repository is still in an incremental migration phase.
+
+Some Agent.Workbench-specific functionality may therefore still physically
+exist below `src/template`.
+
+Its temporary physical location does not automatically define its final
+architectural ownership.
+
+---
+
+## Requirements
+
+To install and run the project locally, the following tools are required:
+
+- Git
+- Node.js
 - npm
-- node.js (tested and working with lts Jod)
 
-Git hardly needs any explanation I would assume. Get it [here](https://git-scm.com/downloads).
-Both npm and Node.js come bundled together. Node.js is the runtime environment for javascript outside of the browser and npm is javascript's dedicated package manager.
-You could compare Node.js with the jre and npm with maven.
-Get both executables by following the official instructions [here](https://nodejs.org/en/download).
+The GitHub Actions release workflows currently use:
 
-After you have successfully installed the software above and set it up in such a way that you can work with it (e.g. setting the $PATH environment variable) we can continue to set up this repository locally.
-
-### <a id="Setup-Template">Setting up</a>
-
-First `git clone` this Repository to any desired location on your computer. I will refer to this location by $ROOT.
-
-Next, open up a Terminal and navigate to $ROOT. This is usually done with `cd $ROOT`.
-Once $ROOT is your working directory, we need to install all of the project's dependencies. This can be done with `npm install`.
-We now have all of the code and its dependencies installed locally.
-
-Finally, start the 'compiler' with `npx expo`.
-
-You should now see the interface of the metro bundler. this is the piece of software that takes all of our code and bundles it. Further, it serves this bundled code on a local webbrowser.
-So we can e.g. visit http://localhost:8080 (this is the default url where metro serves our code and could differ in your case. consult the metro interface if you suspect a different url) and metro should start compiling our code.
-Once its done, the webpage gets rendered and you can start developing.
-If you make any changes to the codebase, metro should pick up on that, recompile everything and hot reload the webpage.
-
-## <a id="Creating-a-new-EnFlex.IT-Project-which-is-based-on-this-template">Creating a new EnFlex.IT Project that is based on this template</a>
-
-this section describes how to create a new project $MY_PROJECT that is based on this template, set up your environment so you can develop $MY_PROJECT locally and configure the intended workflow to keep $MY_PROJECT up to date with this template.
-
-### <a id="Requirements-Project">Requirements</a>
-
-Any new project you want to be able to run inherently needs to be able to run the code present in this template.
-Therefore, check [here](#Requirements-Template) for the requirements of the template and come back once you are done.
-
-After you have successfully met all requirements descibed by the template, we can start to create a new project that is based on this template.
-
-### <a id="Setup-Project">Setting up</a>
-
-First, you want to click on the green "Use this template" button in the upper right corner of the Github interface to create a new github repository that is based on this template.
-
-After you have hit "Create repository", it should take only a few seconds and then you are greeted with a new repository.
-This new repository already includes all of the files this repository has plus its remote `origin` was set to the url of the new repository.
-
-Next - as your new project is merely a clone of the template at this point - follow all of the steps described [here](#Setup-Template) to finish the setup and come back once you are done.
-
-You should now be able to run the code and visit the webpage.
-
-The only thing that is missing now is to set up the [intended workflow](#Intended-Workflow) and then you can start developing.
-
-## <a id="Intended-Workflow">Intended Workflow</a>
-
-Wether you have just created a new project that is based on this template or you have pulled an exisiting project that is based on this template, to now be able to sync this template with your project, please run `scripts/init.sh`.
-This little helper script does two things:
-- It adds a new origin `template` to your project that is pointing to this template
-- It creates a new branch whose upstream is the newly created `template` origin.
-
-Now, If there is a change to this template, first pull your local `template` branch to include the newest changes and then merge `template` with your `master` branch.
-this way your project is always up to date with this template, but all of the framework code lives in this repo and all of the project specific code lives in the project specific repository.
-
-## <a id="BuildingAndDeploying">Building and Deployment</a>
-
-If you wish to build and deploy your app, after you have sucessfully instantiated a new project and made development, you have two choices:
-- Either build and deploy manually
-- Or do it automatically via a provided script
-
-### <a id="BuildingAndDeployingManually">Manually</a>
-If you wish to build and deploy your project in a manual way such that you have full control, you can run the following command: `npx expo export -p web`.
-This command packages all of your source code with the metro bundler and outputs an `index.html` alongside all of the assets inside of `/dist`.
-You can now serve the app via e.g. nginx.
-
-Note that this only works for web. If you wish to deploy the app to any mobile device you need to do your own research as we have not done this as of writing this document.
-
-### <a id="BuildingAndDeployingAutomatically">Automatically</a>
-If you wish to build and deploy your app automatically such that it integrates with e.g. agent.workbench, we have provided the github action `Export Put Release` under `.github/workflows/export-put-release.yml`.
-To be able to use this action, simply do as follows:
-- Go to Repository Settings > Secrets and Variables > Actions > Repository secrets > New Repository Secret and add the following secrets:
-  - FTP_UPLOAD_URL - the url of the ftp server that is used to upload the build artifact
-  - FTP_USER - the ftp user for the server
-  - FTP_PWSD - the password of the user
-  - PROJECT_NAME - the name that is used to bundle the build artifact. `$PROJECT_NAME.zip`
-  - PROJECT_PATH - the relative path from the root of the ftp server where the `.zip` will be put. Be aware that the directories must already be available.
-- After sucessfully setting all required secrets, go to: Actions > Export Put Release > Run Workflow and run the workflow.
-  This will build the project and upload the build artifact to the ftp server.
-
-Any `.zip` build artifact that is exported this way follows this naming convention: $name_$version_$timeAndDate where the name is equal to the repository secret, the version number is equal to the version number that is specified in `package.json` and the timeAndDate are equal to the time and date of the build server. 
-
-## <a id="Project-Structure">Project Structure</a>
-
-```
-.
-├── assets
-│   └── locales
-│       ├── de
-│       └── en
-├── scripts
-└── src
-    ├── api
-    │   ├── definition
-    │   └── implementation
-    │       ├── AWB-RestAPI
-    │       │   └── docs
-    │       └── Dynamic-Content-Api
-    │           └── docs
-    ├── components
-    │   ├── dynamic
-    │   │   ├── content
-    │   │   └── editors
-    │   ├── richtexteditor
-    │   │   ├── icons
-    │   │   └── ui
-    │   ├── stylistic
-    │   └── themed
-    ├── hooks
-    ├── redux
-    │   └── slices
-    ├── screens
-    │   ├── dynamic-content
-    │   └── settings
-    └── util
+```text
+Node.js 20
+npm 10
 ```
 
-- `assets` - this directory includes all non-code files that are still essential to the project
-- `assets/locales` - stores translation-files that are used by i18n
-- `scripts` - keeps all scripts that are used for one thing or another. e.g. setting up the 'template' branch on initial set up
-- `src` - this dir has all of the code source files
-- `src/api` - Includes both a submodule which stores all our openapi.yml files as well as automatically generated implementations of those openapi.yml files via `npm run api` with `openapi-generator-cli`
-- `src/components` - stores all react native components
-- `src/components/dynamic` - includes the components to render AbstractSiteContent and its related editor
-- `src/richtexteditor` - includes all neccessary components to make the richtexteditor work.
-- `src/stylistic` & `src/themed` - has components that are automatically styled according to the theme. See [styling](#styling) for more information
-- `src/hooks` - any custom react hook
-- `src/redux` - all code that belongs to the redux library.
-- `src/screens` - this folder stores all React Components that are used as screens. Screens are those components that make up the entirety of the screen.
+After installing Node.js and npm, verify the installation:
 
+```bash
+node -v
+npm -v
+git --version
+```
 
-## <a id="Styling">Styling</a>
-This section discusses how to change the project-wide styling information to modify the look of the entire application - so called themes - as well as how to style individual elements.
-You should be familiar with the principles of React, namely what components are and how they play a key-role in programming with react to understand this section.
-If you are not up to speed, you can read up on components [here](https://react.dev/learn/your-first-component).
+---
 
-### <a id="stylingHistory">History</a>
-Originally, we used a really simple setup for styling:
-We had a `<ThemeProvider />`, which was just a `<Context.Provider />`, sit at the top of the DOM hierarchy.
-Its value would be the result of a `useState` function call.
-If anybody down the hierarchy now wanted to update the theme, they would get the `setTheme` function via `useContext` and call it to rerender the whole application.
-Any StyleSheet `stylesF` that was defined, was actually a function of type `Theme -> StyleSheet`, such that inside of a component you could first accquire the Theme and then call `const styles = stylesF(theme);` to therefore make StyleSheets dependent on Themes.
+## Setup
 
-This approached worked wonderfully but had two minor downsides: If you wanted to use any style inside of a component, you always had to first call `useTheme` to retrieve the theme and then call `stylesF(theme)` to actually construct the StyleSheet.
-We later introduced `useThematicallyDependentStyle(stylesF)` which reduced the boilerplate to a single function call.\
-Secondely, if you had any conditional styles, they would not be nice to implement. You would need a state variable to track the boolean and then use a ternary operator in conjunction with two `on` and `off` styles to implement the desired "conditional" style.
-Namely the fact that you had to introduce two styles to implement one conditional style quickly made StyleSheet declarations unreadable and cluttered.
-E.g. say we want to implement a button which should change its textcolor and backgroundcolor on hover. Further we want it to have padding and a bigger fontsize regardless of the state in which its in.
-For this to work, we now need the following styles: `[container, containerHover, containerNotHover, text, textHover, textNotHover]`.
-It is easy to see that any non-trivial component suffers from this approach.
+Clone the repository:
 
-To fix the issues stated above, we introduced and have ever since been successfully working with unistyles as our styling solution.
+```bash
+git clone <repository-url>
+```
 
-See [this](#UnistylesVSLegacy) section to how the unistyles approach compares to the legacy approach.
+Enter the repository:
 
-### <a id="HowToStyle">How to style</a>
-The styling information of this application is split into two categories.
+```bash
+cd web.template
+```
 
-First we have all styling that impacts how something looks.
-That could be textcolor, backgroundcolor, cardcolor, fontsize, fontFamily, etc...
+Install dependencies:
 
-Secondely we have all styling that impacts where something is located.
-e.g. padding, margin, flexDirection, align-properties.
+```bash
+npm install
+```
 
-The first category is defined and can be changed at the theme-level.
-This means that any of the properties previously mentioned are defined on a per-theme basis in the `DarkTheme` and `LightTheme` objects.
-See `src/styles/*theme.tsx`.
+The project uses generated Application configuration.
 
-The second category is defined on a per-component basis.
-This means that if you'd like to change e.g. the margin between items inside of the header, you would have to look into `src/components/Header.tsx`
+For normal development, prefer the npm scripts because the corresponding npm
+lifecycle hooks generate the Application configuration automatically.
 
-There may be inconsistency of course but this is how we tried to do it across the application.
+For web development:
 
-Further, we use the library `unistyles` for styling.
-Refer to [their Documentation](https://www.unistyl.es/) to see whats possible.
+```bash
+npm run web
+```
 
-### <a id="ExpandingTheTheme">How to include new values into the theme</a>
-It may happen that our theme type does not capture some project wide styling property that would be great to have.
+Alternatively:
 
-e.g. Background Color specifically for the Sidebar.
+```bash
+npm start
+```
 
-To expand the themes by these properties, simply add the properties to the javascript object and the type dynamically gets updated.
+The normal npm startup path should be preferred over directly running:
 
-e.g. to include the previously mentioned backgroundcolor, one could add:
+```bash
+npx expo start
+```
+
+because direct Expo commands bypass npm lifecycle hooks such as `prestart` and
+`preweb`.
+
+---
+
+## Application Configuration
+
+Application-specific developer configuration is stored in:
+
+```text
+src/application/config/application.properties
+```
+
+Example:
+
+```properties
+ApplicationId=agent-workbench
+ApplicationTitle=Agent.Workbench
+ApplicationLogo=../assets/bild.png
+ApplicationContact=admin@xxx
+ApplicationOwner=EnFlex.IT
+
+LegalImprintCompanyHomepage=
+LegalImprintCompanyName=
+LegalImprintEmail=admin@xxx
+```
+
+The configuration is intentionally developer-facing and uses simple
+key-value properties rather than JSON or TypeScript configuration files.
+
+The configuration generator is located at:
+
+```text
+src/template/config/build/generateApplicationConfig.mjs
+```
+
+It generates:
+
+```text
+src/application/generated/applicationConfig.generated.ts
+```
+
+The configuration can be generated manually with:
+
+```bash
+npm run config:generate
+```
+
+Conceptually:
+
+```text
+application.properties
+        |
+        v
+configuration generator
+        |
+        v
+applicationConfig.generated.ts
+        |
+        v
+ApplicationConfig
+        |
+        v
+createTemplateApp(...)
+        |
+        v
+TemplateApp
+```
+
+The current central Application integration contract is:
+
+```text
+ApplicationConfig
+```
+
+Template defines the contract.
+
+Application supplies the concrete values.
+
+---
+
+## Development
+
+The application entry point composes the concrete Application configuration
+with the reusable Template.
+
+Conceptually:
+
+```text
+Application
+    |
+    v
+applicationConfig
+    |
+    v
+createTemplateApp(applicationConfig)
+    |
+    v
+TemplateApp
+```
+
+The current application bootstrap is registered through Expo.
+
+When adding new functionality, ownership should be determined before choosing
+the physical location.
+
+A useful rule is:
+
+```text
+Product-specific?
+    -> Application
+
+Reusable application-shell behavior?
+    -> Template
+
+Focused technical capability without UI/application ownership?
+    -> Core
+```
+
+Optionality does not define an architecture layer.
+
+An optional feature can still belong to Application, Template or Core.
+
+---
+
+## Build and Deployment
+
+The repository currently contains GitHub Actions workflows for production and
+test releases.
+
+Release and deployment workflows currently still live in `web.template` during
+the architecture migration.
+
+Long term, concrete product release and deployment configuration belongs to the
+respective Application repository.
+
+Reusable build tooling may remain part of the Base Template.
+
+---
+
+## Manual Web Build
+
+Before creating a manual web export, generate the Application configuration:
+
+```bash
+npm run config:generate
+```
+
+Then export the Expo web application:
+
+```bash
+npx expo export -p web
+```
+
+The generated web application is written to:
+
+```text
+dist/
+```
+
+The exported files can then be served through a suitable web server.
+
+A recommended local validation sequence is:
+
+```bash
+npm run config:generate
+npx tsc --noEmit
+npx expo export -p web
+```
+
+Run relevant automated tests before creating a release.
+
+---
+
+## Production Release
+
+The current production workflow is located at:
+
+```text
+.github/workflows/export-put-release.yml
+```
+
+Workflow name:
+
+```text
+Export Put Release
+```
+
+It is started manually through GitHub Actions using:
+
+```text
+workflow_dispatch
+```
+
+The verified workflow currently performs:
+
+```text
+Checkout
+    |
+    v
+Setup Node.js 20
+    |
+    v
+Install npm 10
+    |
+    v
+npm ci
+    |
+    v
+Read package version
+    |
+    v
+Generate timestamp
+    |
+    v
+npx expo export -p web
+    |
+    v
+ZIP dist/
+    |
+    v
+FTP upload
+    |
+    v
+GitHub release
+```
+
+The workflow uses the following repository secrets:
+
+```text
+FTP_UPLOAD_URL
+FTP_USER
+FTP_PSWD
+PROJECT_NAME
+PROJECT_PATH
+```
+
+The ZIP naming pattern is:
+
+```text
+<PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
+```
+
+The production GitHub release tag is:
+
+```text
+v<package.version>
+```
+
+### Current configuration-generation gap
+
+The production workflow currently executes:
+
+```bash
+npx expo export -p web
+```
+
+directly.
+
+It does not currently explicitly run:
+
+```bash
+npm run config:generate
+```
+
+immediately before the export.
+
+Because direct Expo commands bypass npm lifecycle hooks, this is a known
+transitional build integration issue.
+
+The desired sequence is:
+
+```text
+npm ci
+    |
+    v
+npm run config:generate
+    |
+    v
+npx expo export -p web
+    |
+    v
+package
+    |
+    v
+publish
+```
+
+This workflow change should be implemented and tested separately.
+
+See:
+
+```text
+doc/release-workflow.md
+```
+
+for the detailed production release documentation.
+
+---
+
+## Test Release
+
+The test release workflow is located at:
+
+```text
+.github/workflows/export-put-test-release.yml
+```
+
+It provides a separate release path for testing and internal validation.
+
+Production and test release workflows should remain clearly distinguishable.
+
+See:
+
+```text
+doc/test-release.md
+```
+
+for detailed information.
+
+---
+
+## Project Structure
+
+The main source structure currently is:
+
+```text
+src/
+├── api/
+├── application/
+│   ├── config/
+│   ├── generated/
+│   └── state/
+├── core/
+│   ├── authentication/
+│   ├── runtime/
+│   ├── server/
+│   └── update/
+└── template/
+    ├── application/
+    ├── authentication/
+    ├── components/
+    ├── config/
+    ├── hooks/
+    ├── navigation/
+    ├── permissions/
+    ├── runtime/
+    ├── screens/
+    ├── state/
+    ├── styles/
+    └── update/
+```
+
+### `src/api`
+
+Contains API definitions and generated API implementations.
+
+Generated API code should not be moved or rewritten through broad automated
+refactoring scripts without carefully reviewing the result.
+
+### `src/application`
+
+Contains concrete Application integration.
+
+Current areas include:
+
+```text
+src/application/config/
+src/application/generated/
+src/application/state/
+```
+
+`config` contains developer-facing Application configuration.
+
+`generated` contains generated TypeScript configuration.
+
+`state` contains Application-owned Redux integration.
+
+### `src/core`
+
+Contains focused reusable technical capabilities.
+
+Current areas include:
+
+```text
+src/core/authentication/
+src/core/runtime/
+src/core/server/
+src/core/update/
+```
+
+Core must remain independent from Template and Application.
+
+### `src/template`
+
+Contains reusable application-shell functionality.
+
+Current areas include:
+
+```text
+src/template/application/
+src/template/authentication/
+src/template/components/
+src/template/config/
+src/template/hooks/
+src/template/navigation/
+src/template/permissions/
+src/template/runtime/
+src/template/screens/
+src/template/state/
+src/template/styles/
+src/template/update/
+```
+
+### `src/template/application`
+
+Contains the reusable application bootstrap and Application integration
+contract.
+
+Important files include:
+
+```text
+ApplicationConfig.ts
+ApplicationConfigContext.tsx
+createTemplateApp.tsx
+TemplateApp.tsx
+```
+
+### `src/template/components`
+
+Contains reusable React Native components.
+
+Important areas include:
+
+```text
+design-system/
+developer-tools/
+dynamic-content/
+layout/
+localization/
+notifications/
+rich-text-editor/
+```
+
+### `src/template/components/design-system`
+
+Contains reusable UI primitives and presentation components.
+
+Important areas include:
+
+```text
+icons/
+stylistic/
+themed/
+ui-elements/
+```
+
+### `src/template/navigation`
+
+Contains reusable navigation, menu and tab infrastructure.
+
+Concrete Application menu and tab configuration should be supplied by the
+Application layer.
+
+### `src/template/state`
+
+Contains Redux infrastructure and Template-owned Redux state.
+
+Redux is a technology and not an architecture layer.
+
+State belongs to the layer that owns the corresponding responsibility.
+
+### `src/template/state/store`
+
+Contains the current Redux store infrastructure.
+
+The existing runtime store and root reducer remain active.
+
+The repository also contains a prepared extensible store composition for
+combining Template reducers with Application reducers.
+
+That new store factory is currently prepared infrastructure and should not be
+treated as the active runtime store until it has been intentionally connected
+and tested.
+
+### `src/template/styles`
+
+Contains reusable theme and styling infrastructure.
+
+### `src/template/update`
+
+Contains reusable update orchestration and update watchers.
+
+---
+
+## Styling
+
+The project uses Unistyles for reusable theme-aware styling.
+
+Styling responsibilities are separated between reusable theme definitions,
+themed primitives and higher-level stylistic components.
+
+---
+
+## Theme Structure
+
+Reusable styling infrastructure is located under:
+
+```text
+src/template/styles/
+```
+
+Theme-specific values such as colors, typography and other global visual
+properties should be defined at the theme level where appropriate.
+
+Component-specific layout properties such as local spacing, alignment or
+component composition remain close to the corresponding component.
+
+For example, layout behavior for the reusable header is located with the
+header implementation under:
+
+```text
+src/template/components/layout/Header.tsx
+```
+
+---
+
+## Design System
+
+The reusable design system is located at:
+
+```text
+src/template/components/design-system/
+```
+
+Important areas include:
+
+```text
+design-system/
+├── icons/
+├── stylistic/
+├── themed/
+└── ui-elements/
+```
+
+Theme-aware base components are located under:
+
+```text
+src/template/components/design-system/themed/
+```
+
+Stylistic components are located under:
+
+```text
+src/template/components/design-system/stylistic/
+```
+
+Reusable UI elements are located under:
+
+```text
+src/template/components/design-system/ui-elements/
+```
+
+Examples include reusable buttons, cards, dialogs, dropdowns, tables, tabs,
+inputs and other common UI building blocks.
+
+For a more detailed component overview, see:
+
+```text
+doc/components.md
+```
+
+---
+
+## Unistyles
+
+The project uses Unistyles as its current styling solution.
+
+Theme-aware styles can be declared using the Unistyles `StyleSheet` API.
+
+Example:
+
 ```ts
-// src/template/styles/darkTheme.ts
-import { fonts } from "./fonts";
-
-export const darkTheme = {
-    dark: true,
-    colors: {
-        // ...
-        backgroundColorForSidebar: 'darkblue',
-    },
-    // ....
-} as const
-
-import { fonts } from "./fonts";
-
-export const lightTheme = {
-    dark: false,
-    colors: {
-      // ..
-      backgroundColorForSidebar: 'red' // <-- Important that the properties have the same name. Otherwise the automatic type deduction does not work
-    },
-    // ....
-} as const
-```
-# Components
-
-This document describes reusable frontend components used in the web.template project.
-
-The goal is to make common UI building blocks easier to understand, reuse and extend.
-
-## UI Elements
-
-The `ui-elements` folder contains reusable UI primitives that should be used across screens, dialogs and feature modules.
-
-### Overview
-
-- [ActionButton](#actionbutton)
-- [Card](#card)
-- [InfoBox](#infobox)
-- [ConfirmDialog](#confirmdialog)
-- [Dropdown](#dropdown)
-- [Table](#table)
-- [ToolBox](#toolbox)
-
-### <a id="HowItIsActuallyImplemented">How it is actually implemented</a>
-
-To answer the question of how this styling information is actually processed and used at a project wide scope, you just have to look at `src/components/themed/*` and `src/components/stylistic/*`.
-
-Components inside of the `themed` folder implement the theme-based colors.
-They use a StyleSheet that depends on unistyle's theme to get their respective fontColor, backgroundColor, etc.
-If unistyle's theme ever changes, the components detect this change and adjust their colors, which in turn adjusts the project wide look.
-
-Components inside of the `stylistic` folder build upon the themed components and implement all the other information. e.g. fontSize, fontFamily.
-
-Thus, we have a collection of "prestyled" (stylistic) components e.g. `<H1 />`, `<H2 />`, `<StylisticTextInput />` that match their appearance to the current theme at all times and all use the same underlying basic components.
-
-### <a id="UnistylesVSLegacy">Unistyles vs Legacy</a>
-
-With unistyles there is almost no difference in syntax when it comes to defining styles.
-The Legacy and unistyles approach define styles like so:
-```ts
-const stylesF = createThematicallyDependentStyle((theme) => ({
-  // ...
-}))
-
 const styles = StyleSheet.create((theme) => ({
-  // ...
-}))
+  container: {
+    backgroundColor: theme.colors.background,
+  },
+}));
 ```
 
-The two big advantages of unistyles over the legacy approach (at least for me) were:
+The current application imports the Unistyles configuration during bootstrap.
 
-- You can access defined styles directly (with `styles.class`), instead of always having to first call `const styles = useThematicallyDependentStyles(stylesF)`
-- You can more easily define variants of styles. See the unistyles documentation for that.
+When changing global visual behavior, prefer extending the reusable theme and
+design-system infrastructure instead of duplicating styles across screens.
 
-Besides those changes, we also removed the provider (as it was no longer necessary) and instead include `unistyles.ts` inside of `index.tsx` which then calls `StyleSheet.configure`
+---
 
-### <a id="api"> Working with the Agent.Workbench API </a>
-A fundamental task of developing a project for the web group is to work with the api that Agent.Workbench provides.
+## API
 
-All OpenAPI specification can be found [here](https://github.com/EnFlexIT/RestAPIs).
-For actually working with the api, this project and any project derived from this include a git submodule under `src/api/definiton` that is linked to the actual api specifications.
-Further, this project includes the [@openapitools/openapi-generator-cli](https://www.npmjs.com/package/@openapitools/openapi-generator-cli) dependency which allows us to generate code from an openapi specification.
+The repository contains API-related code below:
 
-So the usual workflow would go something like this:
-- An Api is specified inside of [RestAPIs Repo](https://github.com/EnFlexIT/RestAPIs)
-- You pull the api by updating the git submodule inside of your respective project
-- You use `openapi-generator-cli` to generate an implementation of the api.
+```text
+src/api/
+```
 
-This way, the need to write boilerplate to interface with apis is eliminated and the generated boilerplate 100% fullfills our agreement (assuming the generator is correctly implemented)
+OpenAPI-based integrations are generated where appropriate.
 
-`package.json` already provided two scripts: `AWB-RestAPI` and `AWB-RestAPI` which build their respective api as well as `api` which just calls the two scripts consecutevly.
-## <a id="Additional-Documentation">Additional Documentation</a>
+The OpenAPI specifications are maintained separately by EnFlexIT and generated
+implementations are consumed by the application.
 
-The template contains additional application infrastructure that is documented in the `doc` folder.
+When updating generated APIs:
 
+1. Update the relevant API definition.
+2. Regenerate the implementation using the repository's API scripts.
+3. Review generated changes carefully.
+4. Avoid manually editing generated files unless explicitly required.
+
+API ownership should follow the architecture model:
+
+```text
+Generic technical API capability
+        -> Core or Template, depending on responsibility
+
+Product-specific backend integration
+        -> Application
+```
+
+Concrete ownership should be determined by responsibility rather than by the
+fact that code communicates with a backend.
+
+---
+
+## State Management
+
+The project uses Redux Toolkit.
+
+Redux itself is not an architecture layer.
+
+State belongs to the layer that owns the corresponding functionality.
+
+Conceptually:
+
+```text
+Template-owned feature
+        |
+        v
+Template Redux state
+
+Application-owned feature
+        |
+        v
+Application Redux state
+```
+
+The current runtime store is still based on the existing Template store and
+root reducer.
+
+A new extensible store factory has been prepared to allow Template and
+Application reducers to be composed safely.
+
+The prepared composition includes infrastructure for:
+
+```text
+Template reducers
+        +
+Application reducers
+        |
+        v
+Combined store
+```
+
+This new composition should not be connected to the runtime until the related
+state typing and hook integration are ready and tested.
+
+See:
+
+```text
+doc/redux-state-management.md
+```
+
+for detailed information.
+
+---
+
+## Architecture Decisions
+
+Architecture Decision Records are stored under:
+
+```text
+doc/architecture/decisions/
+```
+
+Current ADRs:
+
+```text
+ADR-0001-core-first.md
+ADR-0002-redux-root-reducer.md
+ADR-0003-core-base-template-and-product-applications.md
+ADR-0004-separate-menu-engine-and-application-menu.md
+ADR-0005-navigation-infrastructure-in-template.md
+```
+
+Current status:
+
+```text
+ADR-0001 -> Accepted
+ADR-0002 -> Accepted
+ADR-0003 -> Accepted
+ADR-0004 -> Superseded
+ADR-0005 -> Accepted
+```
+
+ADR-0004 originally assigned reusable menu infrastructure to Core.
+
+ADR-0005 supersedes that ownership decision and assigns reusable React
+navigation infrastructure to Template while keeping concrete product
+navigation configuration in Application.
+
+---
+
+## Additional Documentation
+
+More detailed documentation is available in the `doc` directory.
+
+### Architecture
+
+- [Architecture Vision](doc/architecture/00-vision.md)
+- [Core](doc/architecture/01-core-platform.md)
+- [Current Architecture State](doc/architecture/05-current-state.md)
+- [Application Contract](doc/architecture/application-contract.md)
+- [Platform Architecture](doc/architecture/platform-architecture.md)
+- [Application Separation](doc/application-separation.md)
 - [Project Structure](doc/project-structure.md)
-- [Release Workflow](doc/release-workflow.md)
-- [Test Release](doc/test-release.md)
+
+### Runtime and Features
+
 - [Authentication](doc/authentication.md)
 - [Server Check and Server Switching](doc/server-check-and-switching.md)
 - [Update System](doc/update-system.md)
 - [File Configuration Upload](doc/file-configuration-upload.md)
 - [Redux State Management](doc/redux-state-management.md)
 - [Components](doc/components.md)
+
+### Build and Release
+
+- [Production Release Workflow](doc/release-workflow.md)
+- [Test Release](doc/test-release.md)
+
+### Development and Review
+
 - [Review Notes](doc/review-notes.md)
 - [AI Context](doc/ai-context.md)
+
+---
+
+## Architecture Summary
+
+The central architecture rule is:
+
+```text
+Application --> Template --> Core
+```
+
+The Base Template contains:
+
+```text
+Template
+Core
+```
+
+Concrete products contain:
+
+```text
+Application
+```
+
+The intended long-term repository structure is:
+
+```text
+Base Template Repository
+├── Template
+└── Core
+
+Agent.Workbench Repository
+└── Application
+
+HEMS Repository
+└── Application
+
+Future Application Repository
+└── Application
+```
+
+The migration is incremental.
+
+Existing functionality should first be assigned clear ownership and stable
+contracts before it is physically moved between repositories.
