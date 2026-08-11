@@ -7,7 +7,7 @@ import type {
 
 export const applicationConfig: ApplicationConfig = {
   id: "agent-workbench",
-  displayName: "Agent.Workbenchtest",
+  displayName: "Agent.Workbench",
 
   navigation: {
     menu: {
