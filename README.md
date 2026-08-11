@@ -6,16 +6,21 @@ The repository provides reusable technical capabilities and application-shell
 functionality for concrete products such as Agent.Workbench, HEMS and future
 EnFlexIT applications.
 
-The current architecture follows the dependency direction:
+The central architecture follows the dependency direction:
 
 ```text
 Application --> Template --> Core
 ```
 
-The Base Template consists of Template and Core.
+The Base Template consists of:
 
-Concrete products are represented by their own Application layer and are
-intended to live in separate Application repositories.
+```text
+Template
+Core
+```
+
+Concrete products provide their own Application layer and are intended to live
+in separate Application repositories.
 
 ---
 
@@ -25,7 +30,10 @@ intended to live in separate Application repositories.
 - [Architecture](#architecture)
 - [Repository Responsibilities](#repository-responsibilities)
 - [Requirements](#requirements)
-- [Setup](#setup)
+- [Working with web.template](#working-with-webtemplate)
+- [Creating a New Application](#creating-a-new-application)
+- [Connecting an Application to web.template](#connecting-an-application-to-webtemplate)
+- [Updating an Application from web.template](#updating-an-application-from-webtemplate)
 - [Application Configuration](#application-configuration)
 - [Development](#development)
 - [Build and Deployment](#build-and-deployment)
@@ -41,6 +49,7 @@ intended to live in separate Application repositories.
 - [State Management](#state-management)
 - [Architecture Decisions](#architecture-decisions)
 - [Additional Documentation](#additional-documentation)
+- [Architecture Summary](#architecture-summary)
 
 ---
 
@@ -64,11 +73,14 @@ Examples include:
 - Runtime utilities
 - Technical Core helpers
 
-The repository is currently also capable of running as a standalone project
-during the architecture migration.
+The repository can currently also be developed and executed as a standalone
+project.
 
-Long term, concrete products such as Agent.Workbench and HEMS should consume the
-Base Template from their own Application repositories.
+At the same time, it acts as the Base Template for concrete applications such
+as Agent.Workbench and HEMS.
+
+The goal is to keep reusable functionality in one common place while concrete
+products remain independently configurable and developable.
 
 ---
 
@@ -175,13 +187,17 @@ Future Applications follow the same model.
 The Base Template does not contain a runtime mechanism that selects between
 multiple products.
 
-Each concrete Application supplies its own configuration and product
-functionality to Template through explicit contracts.
+Each concrete Application supplies its own product configuration and
+functionality through explicit contracts.
 
 The current repository is still in an incremental migration phase.
 
 Some Agent.Workbench-specific functionality may therefore still physically
-exist below `src/template`.
+exist below:
+
+```text
+src/template/
+```
 
 Its temporary physical location does not automatically define its final
 architectural ownership.
@@ -190,7 +206,8 @@ architectural ownership.
 
 ## Requirements
 
-To install and run the project locally, the following tools are required:
+To download, install and run the project locally, the following tools are
+required:
 
 - Git
 - Node.js
@@ -203,31 +220,36 @@ Node.js 20
 npm 10
 ```
 
-After installing Node.js and npm, verify the installation:
+After installing the required software, verify the installation:
 
 ```bash
+git --version
 node -v
 npm -v
-git --version
 ```
+
+All three commands should return an installed version.
 
 ---
 
-## Setup
+## Working with web.template
+
+The Base Template repository can be cloned and executed directly on a
+developer PC.
 
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone git@github.com:EnFlexIT/web.template.git
 ```
 
-Enter the repository:
+Enter the project directory:
 
 ```bash
 cd web.template
 ```
 
-Install dependencies:
+Install all dependencies:
 
 ```bash
 npm install
@@ -235,10 +257,7 @@ npm install
 
 The project uses generated Application configuration.
 
-For normal development, prefer the npm scripts because the corresponding npm
-lifecycle hooks generate the Application configuration automatically.
-
-For web development:
+For normal web development, start the application with:
 
 ```bash
 npm run web
@@ -250,14 +269,360 @@ Alternatively:
 npm start
 ```
 
-The normal npm startup path should be preferred over directly running:
+The npm commands should be preferred because npm lifecycle hooks automatically
+generate the Application configuration before startup.
+
+The application configuration can also be generated manually:
+
+```bash
+npm run config:generate
+```
+
+TypeScript can be checked without generating build output using:
+
+```bash
+npx tsc --noEmit
+```
+
+### Normal local development flow
+
+A typical local setup therefore looks like:
+
+```bash
+git clone git@github.com:EnFlexIT/web.template.git
+cd web.template
+npm install
+npm run web
+```
+
+After Metro/Expo has started, the application can be opened in the browser.
+
+The exact development URL is displayed by Expo.
+
+### Direct Expo startup
+
+Directly running:
 
 ```bash
 npx expo start
 ```
 
-because direct Expo commands bypass npm lifecycle hooks such as `prestart` and
-`preweb`.
+is not the preferred normal startup path.
+
+The reason is that direct Expo commands bypass npm lifecycle hooks such as:
+
+```text
+prestart
+preweb
+```
+
+These hooks currently ensure that the Application configuration is generated
+before startup.
+
+---
+
+## Creating a New Application
+
+Concrete products should live in their own Application repositories while
+using `web.template` as their shared Base Template.
+
+Examples are:
+
+```text
+Agent.Workbench
+HEMS
+Future Application
+```
+
+Conceptually:
+
+```text
+web.template
+├── Template
+└── Core
+
+Agent.Workbench
+└── Application
+
+HEMS
+└── Application
+```
+
+### Create the repository on GitHub
+
+If the `web.template` repository provides the GitHub template functionality,
+a new Application can initially be created through:
+
+```text
+GitHub
+    |
+    v
+web.template
+    |
+    v
+Use this template
+    |
+    v
+Create new repository
+```
+
+The newly created repository is the concrete product repository.
+
+For example:
+
+```text
+Agent.Workbench
+```
+
+or:
+
+```text
+HEMS
+```
+
+The new repository contains the initial Base Template source while its normal
+Git remote:
+
+```text
+origin
+```
+
+points to the concrete Application repository.
+
+### Clone the new Application
+
+After creating the Application repository, clone it locally:
+
+```bash
+git clone <application-repository-url>
+```
+
+Enter the project:
+
+```bash
+cd <application-repository-directory>
+```
+
+Install its dependencies:
+
+```bash
+npm install
+```
+
+Generate the Application configuration:
+
+```bash
+npm run config:generate
+```
+
+Start the Application:
+
+```bash
+npm run web
+```
+
+At this point the Application repository can be developed independently.
+
+The next step is to connect it to the shared `web.template` repository.
+
+---
+
+## Connecting an Application to web.template
+
+An Application repository uses two Git remotes with different
+responsibilities.
+
+Conceptually:
+
+```text
+Application Repository
+|
++-- origin
+|   |
+|   +-- concrete Application repository
+|
++-- template
+    |
+    +-- shared web.template repository
+```
+
+### `origin`
+
+`origin` points to the concrete product.
+
+For example:
+
+```text
+origin -> Agent.Workbench
+```
+
+or:
+
+```text
+origin -> HEMS
+```
+
+Application-specific development is pushed to this repository.
+
+### `template`
+
+`template` points to the shared Base Template:
+
+```text
+EnFlexIT/web.template
+```
+
+Reusable Template and Core changes can be fetched from this repository.
+
+### Configure the Template remote
+
+Add `web.template` as an additional Git remote:
+
+```bash
+git remote add template git@github.com:EnFlexIT/web.template.git
+```
+
+Fetch the Base Template repository:
+
+```bash
+git fetch template
+```
+
+Create a local `template` branch based on the remote Base Template `master`
+branch:
+
+```bash
+git branch template template/master
+```
+
+These are the three essential commands for connecting an Application
+repository with the Base Template:
+
+```bash
+git remote add template git@github.com:EnFlexIT/web.template.git
+git fetch template
+git branch template template/master
+```
+
+No additional setup script is required for this.
+
+### Verify the remotes
+
+Check the configured Git remotes:
+
+```bash
+git remote -v
+```
+
+A correctly configured Application repository should conceptually contain:
+
+```text
+origin    -> concrete Application repository
+template  -> EnFlexIT/web.template
+```
+
+You can also inspect all branches:
+
+```bash
+git branch -a
+```
+
+The Git setup now separates product development from shared Base Template
+development:
+
+```text
+origin
+  = Application repository
+
+template
+  = Base Template repository
+```
+
+---
+
+## Updating an Application from web.template
+
+When reusable functionality changes in `web.template`, an Application can
+retrieve those changes through the `template` remote.
+
+First fetch the newest Base Template state:
+
+```bash
+git fetch template
+```
+
+Switch to the local Template branch:
+
+```bash
+git switch template
+```
+
+Integrate the newest remote Template state:
+
+```bash
+git merge template/master
+```
+
+The local Template branch now contains the latest fetched Base Template state.
+
+Return to the Application branch.
+
+For example:
+
+```bash
+git switch master
+```
+
+If the concrete Application uses another development branch, switch to that
+branch instead.
+
+Then merge the Template changes into the Application:
+
+```bash
+git merge template
+```
+
+Conceptually:
+
+```text
+web.template
+      |
+      | git fetch template
+      v
+template/master
+      |
+      v
+local template branch
+      |
+      | git merge template
+      v
+Application branch
+```
+
+Template changes should always be reviewed before completing the merge.
+
+The Application may contain:
+
+- Product-specific configuration
+- Product-specific screens
+- Product-specific Redux state
+- Branding
+- Backend integrations
+- Build configuration
+- Deployment configuration
+
+Merge conflicts therefore have to be resolved according to architectural
+ownership.
+
+The Git `template` branch is only a synchronization mechanism.
+
+It is not an additional architecture layer.
+
+The architecture remains:
+
+```text
+Application --> Template --> Core
+```
 
 ---
 
@@ -283,8 +648,10 @@ LegalImprintCompanyName=
 LegalImprintEmail=admin@xxx
 ```
 
-The configuration is intentionally developer-facing and uses simple
-key-value properties rather than JSON or TypeScript configuration files.
+The configuration intentionally uses simple key-value properties.
+
+Developers should not need to modify TypeScript or JSON files just to configure
+basic Application metadata.
 
 The configuration generator is located at:
 
@@ -298,7 +665,7 @@ It generates:
 src/application/generated/applicationConfig.generated.ts
 ```
 
-The configuration can be generated manually with:
+Generate the configuration manually with:
 
 ```bash
 npm run config:generate
@@ -339,8 +706,8 @@ Application supplies the concrete values.
 
 ## Development
 
-The application entry point composes the concrete Application configuration
-with the reusable Template.
+The application entry point combines concrete Application configuration with
+the reusable Template.
 
 Conceptually:
 
@@ -359,25 +726,36 @@ TemplateApp
 
 The current application bootstrap is registered through Expo.
 
-When adding new functionality, ownership should be determined before choosing
-the physical location.
+When implementing functionality, architectural ownership should be determined
+before choosing its physical location.
 
 A useful rule is:
 
 ```text
 Product-specific?
-    -> Application
+    |
+    +--> Application
 
 Reusable application-shell behavior?
-    -> Template
+    |
+    +--> Template
 
-Focused technical capability without UI/application ownership?
-    -> Core
+Focused technical capability without UI or product ownership?
+    |
+    +--> Core
 ```
 
-Optionality does not define an architecture layer.
+Optionality does not create another architecture layer.
 
-An optional feature can still belong to Application, Template or Core.
+An optional feature may still belong to:
+
+```text
+Application
+Template
+Core
+```
+
+Ownership is determined by responsibility.
 
 ---
 
@@ -386,11 +764,11 @@ An optional feature can still belong to Application, Template or Core.
 The repository currently contains GitHub Actions workflows for production and
 test releases.
 
-Release and deployment workflows currently still live in `web.template` during
-the architecture migration.
+Release and deployment workflows currently still live in `web.template`
+during the architecture migration.
 
-Long term, concrete product release and deployment configuration belongs to the
-respective Application repository.
+Long term, concrete product release and deployment configuration belongs to
+the respective Application repository.
 
 Reusable build tooling may remain part of the Base Template.
 
@@ -404,21 +782,25 @@ Before creating a manual web export, generate the Application configuration:
 npm run config:generate
 ```
 
+Check TypeScript:
+
+```bash
+npx tsc --noEmit
+```
+
 Then export the Expo web application:
 
 ```bash
 npx expo export -p web
 ```
 
-The generated web application is written to:
+Expo writes the generated web application to:
 
 ```text
 dist/
 ```
 
-The exported files can then be served through a suitable web server.
-
-A recommended local validation sequence is:
+A recommended local validation sequence is therefore:
 
 ```bash
 npm run config:generate
@@ -426,7 +808,8 @@ npx tsc --noEmit
 npx expo export -p web
 ```
 
-Run relevant automated tests before creating a release.
+Relevant automated tests should also be executed before producing a final
+release.
 
 ---
 
@@ -450,7 +833,7 @@ It is started manually through GitHub Actions using:
 workflow_dispatch
 ```
 
-The verified workflow currently performs:
+The currently verified workflow performs:
 
 ```text
 Checkout
@@ -483,7 +866,7 @@ FTP upload
 GitHub release
 ```
 
-The workflow uses the following repository secrets:
+The production workflow currently requires the following repository secrets:
 
 ```text
 FTP_UPLOAD_URL
@@ -493,16 +876,38 @@ PROJECT_NAME
 PROJECT_PATH
 ```
 
-The ZIP naming pattern is:
+### Archive naming
+
+The generated ZIP archive follows this pattern:
 
 ```text
 <PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
 ```
 
-The production GitHub release tag is:
+For example:
+
+```text
+Agent.Workbench_0.0.4_20260811-0915.zip
+```
+
+The actual project name is supplied through:
+
+```text
+PROJECT_NAME
+```
+
+### GitHub release tag
+
+The GitHub release uses:
 
 ```text
 v<package.version>
+```
+
+For example:
+
+```text
+v0.0.4
 ```
 
 ### Current configuration-generation gap
@@ -515,7 +920,7 @@ npx expo export -p web
 
 directly.
 
-It does not currently explicitly run:
+It does not currently explicitly execute:
 
 ```bash
 npm run config:generate
@@ -523,10 +928,12 @@ npm run config:generate
 
 immediately before the export.
 
-Because direct Expo commands bypass npm lifecycle hooks, this is a known
-transitional build integration issue.
+Direct Expo commands do not invoke npm lifecycle hooks.
 
-The desired sequence is:
+Therefore the generated Application configuration is not currently guaranteed
+to be refreshed immediately before the production export.
+
+The desired production sequence is:
 
 ```text
 npm ci
@@ -546,13 +953,11 @@ publish
 
 This workflow change should be implemented and tested separately.
 
-See:
+Detailed production release documentation is available at:
 
 ```text
 doc/release-workflow.md
 ```
-
-for the detailed production release documentation.
 
 ---
 
@@ -566,21 +971,19 @@ The test release workflow is located at:
 
 It provides a separate release path for testing and internal validation.
 
-Production and test release workflows should remain clearly distinguishable.
+Production and test releases must remain clearly distinguishable.
 
-See:
+Detailed documentation is available at:
 
 ```text
 doc/test-release.md
 ```
 
-for detailed information.
-
 ---
 
 ## Project Structure
 
-The main source structure currently is:
+The current main source structure is:
 
 ```text
 src/
@@ -613,8 +1016,8 @@ src/
 
 Contains API definitions and generated API implementations.
 
-Generated API code should not be moved or rewritten through broad automated
-refactoring scripts without carefully reviewing the result.
+Generated API code should not be broadly moved or rewritten without carefully
+reviewing the resulting changes.
 
 ### `src/application`
 
@@ -672,8 +1075,7 @@ src/template/update/
 
 ### `src/template/application`
 
-Contains the reusable application bootstrap and Application integration
-contract.
+Contains the reusable Application bootstrap and integration contract.
 
 Important files include:
 
@@ -726,7 +1128,7 @@ Contains Redux infrastructure and Template-owned Redux state.
 
 Redux is a technology and not an architecture layer.
 
-State belongs to the layer that owns the corresponding responsibility.
+State belongs to the architectural owner of the corresponding functionality.
 
 ### `src/template/state/store`
 
@@ -737,9 +1139,8 @@ The existing runtime store and root reducer remain active.
 The repository also contains a prepared extensible store composition for
 combining Template reducers with Application reducers.
 
-That new store factory is currently prepared infrastructure and should not be
-treated as the active runtime store until it has been intentionally connected
-and tested.
+This new store factory is prepared infrastructure and must not be treated as
+the active runtime store until it has intentionally been connected and tested.
 
 ### `src/template/styles`
 
@@ -755,8 +1156,15 @@ Contains reusable update orchestration and update watchers.
 
 The project uses Unistyles for reusable theme-aware styling.
 
-Styling responsibilities are separated between reusable theme definitions,
-themed primitives and higher-level stylistic components.
+Styling responsibilities are separated between:
+
+```text
+Theme definitions
+Themed primitives
+Stylistic components
+Reusable UI elements
+Component-specific layout
+```
 
 ---
 
@@ -768,14 +1176,25 @@ Reusable styling infrastructure is located under:
 src/template/styles/
 ```
 
-Theme-specific values such as colors, typography and other global visual
-properties should be defined at the theme level where appropriate.
+Theme-specific values such as:
 
-Component-specific layout properties such as local spacing, alignment or
-component composition remain close to the corresponding component.
+- Colors
+- Typography
+- Global visual properties
 
-For example, layout behavior for the reusable header is located with the
-header implementation under:
+should be defined at the theme level where appropriate.
+
+Component-specific layout properties such as:
+
+- Margin
+- Padding
+- Alignment
+- Flex behavior
+- Local component composition
+
+remain close to their corresponding component.
+
+For example, layout behavior for the reusable header is located under:
 
 ```text
 src/template/components/layout/Header.tsx
@@ -819,10 +1238,19 @@ Reusable UI elements are located under:
 src/template/components/design-system/ui-elements/
 ```
 
-Examples include reusable buttons, cards, dialogs, dropdowns, tables, tabs,
-inputs and other common UI building blocks.
+Examples include:
 
-For a more detailed component overview, see:
+- Buttons
+- Cards
+- Dialogs
+- Dropdowns
+- Tables
+- Tabs
+- Inputs
+- Modals
+- Common visual building blocks
+
+Detailed component documentation is available at:
 
 ```text
 doc/components.md
@@ -834,7 +1262,7 @@ doc/components.md
 
 The project uses Unistyles as its current styling solution.
 
-Theme-aware styles can be declared using the Unistyles `StyleSheet` API.
+Theme-aware styles can be declared through the Unistyles `StyleSheet` API.
 
 Example:
 
@@ -848,14 +1276,15 @@ const styles = StyleSheet.create((theme) => ({
 
 The current application imports the Unistyles configuration during bootstrap.
 
-When changing global visual behavior, prefer extending the reusable theme and
-design-system infrastructure instead of duplicating styles across screens.
+When changing global visual behavior, prefer extending the reusable theme or
+design-system infrastructure instead of duplicating equivalent styles across
+screens.
 
 ---
 
 ## API
 
-The repository contains API-related code below:
+API-related source code is located below:
 
 ```text
 src/api/
@@ -863,28 +1292,44 @@ src/api/
 
 OpenAPI-based integrations are generated where appropriate.
 
-The OpenAPI specifications are maintained separately by EnFlexIT and generated
-implementations are consumed by the application.
+A typical API development workflow is:
 
-When updating generated APIs:
+```text
+API specification
+      |
+      v
+Update local API definition
+      |
+      v
+Generate API implementation
+      |
+      v
+Review generated changes
+      |
+      v
+Use generated client
+```
 
-1. Update the relevant API definition.
-2. Regenerate the implementation using the repository's API scripts.
-3. Review generated changes carefully.
-4. Avoid manually editing generated files unless explicitly required.
+Generated API files should be reviewed carefully after regeneration.
 
-API ownership should follow the architecture model:
+Broad automated refactoring of generated files should be avoided.
+
+API ownership follows the architecture responsibility model.
+
+Conceptually:
 
 ```text
 Generic technical API capability
-        -> Core or Template, depending on responsibility
+        |
+        +--> Core or Template
 
 Product-specific backend integration
-        -> Application
+        |
+        +--> Application
 ```
 
-Concrete ownership should be determined by responsibility rather than by the
-fact that code communicates with a backend.
+The correct owner depends on responsibility, not simply on whether code
+communicates with a backend.
 
 ---
 
@@ -894,7 +1339,8 @@ The project uses Redux Toolkit.
 
 Redux itself is not an architecture layer.
 
-State belongs to the layer that owns the corresponding functionality.
+State belongs to the architectural layer that owns the corresponding
+functionality.
 
 Conceptually:
 
@@ -903,7 +1349,11 @@ Template-owned feature
         |
         v
 Template Redux state
+```
 
+and:
+
+```text
 Application-owned feature
         |
         v
@@ -916,7 +1366,7 @@ root reducer.
 A new extensible store factory has been prepared to allow Template and
 Application reducers to be composed safely.
 
-The prepared composition includes infrastructure for:
+Conceptually:
 
 ```text
 Template reducers
@@ -927,16 +1377,16 @@ Application reducers
 Combined store
 ```
 
-This new composition should not be connected to the runtime until the related
-state typing and hook integration are ready and tested.
+This new composition is currently prepared infrastructure.
 
-See:
+It must not be connected to the runtime until the related typing and hook
+integration are ready and tested.
+
+Detailed Redux documentation is available at:
 
 ```text
 doc/redux-state-management.md
 ```
-
-for detailed information.
 
 ---
 
@@ -970,15 +1420,21 @@ ADR-0005 -> Accepted
 
 ADR-0004 originally assigned reusable menu infrastructure to Core.
 
-ADR-0005 supersedes that ownership decision and assigns reusable React
-navigation infrastructure to Template while keeping concrete product
-navigation configuration in Application.
+ADR-0005 supersedes that ownership decision.
+
+Reusable React navigation infrastructure now belongs to Template.
+
+Concrete product navigation configuration belongs to Application.
 
 ---
 
 ## Additional Documentation
 
-More detailed documentation is available in the `doc` directory.
+More detailed documentation is available inside:
+
+```text
+doc/
+```
 
 ### Architecture
 
@@ -1032,7 +1488,7 @@ Concrete products contain:
 Application
 ```
 
-The intended long-term repository structure is:
+The intended repository structure is:
 
 ```text
 Base Template Repository
@@ -1049,7 +1505,36 @@ Future Application Repository
 └── Application
 ```
 
-The migration is incremental.
+A concrete Application repository is connected to the Base Template through
+two Git remotes:
 
-Existing functionality should first be assigned clear ownership and stable
-contracts before it is physically moved between repositories.
+```text
+origin
+    |
+    +--> Application repository
+
+template
+    |
+    +--> web.template repository
+```
+
+The initial Git setup is:
+
+```bash
+git remote add template git@github.com:EnFlexIT/web.template.git
+git fetch template
+git branch template template/master
+```
+
+The architecture migration is incremental.
+
+Existing functionality should first receive:
+
+```text
+clear ownership
+stable contracts
+clear dependency boundaries
+safe extension points
+```
+
+before it is physically moved between repositories.
