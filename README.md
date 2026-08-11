@@ -48,7 +48,7 @@ in separate Application repositories.
 - [API](#api)
 - [State Management](#state-management)
 - [Architecture Decisions](#architecture-decisions)
-- [Additional Documentation](#additional-documentation)
+- [Documentation](#documentation)
 - [Architecture Summary](#architecture-summary)
 
 ---
@@ -1428,9 +1428,15 @@ Concrete product navigation configuration belongs to Application.
 
 ---
 
-## Additional Documentation
+## Documentation
 
-More detailed documentation is available inside:
+The official project documentation is maintained in the `doc` directory.
+
+The README provides the main developer entry point and an overview of the
+architecture, setup and development workflow.
+
+Detailed architecture, runtime, feature and release documentation is maintained
+in the documents listed below.
 
 ```text
 doc/
