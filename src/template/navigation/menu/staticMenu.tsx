@@ -22,7 +22,7 @@ export type { StaticMenuItem,} from "@/template/navigation/menu/types";
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { withAutoTabs } from "@/template/navigation/tabs/withAutoTabs";
 import { isMenuEnabled } from "./featureFlags";
-
+import {hasTabsForMenu,} from "@/template/navigation/tabs/staticTabs";
 
 export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuItem[]
 {
@@ -127,5 +127,5 @@ export function getStaticMenu(authenticationMethod?: AuthMethod,): StaticMenuIte
     isMenuEnabled(item.menuID, authenticationMethod),
   );
 
-  return withAutoTabs(enabled);
+  return withAutoTabs(enabled, hasTabsForMenu);
 }
