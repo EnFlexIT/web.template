@@ -1,6 +1,6 @@
 export {
   applicationConfig,
-} from "./applicationConfig";
+} from "./generated/applicationConfig.generated";
 
 export {
   applicationReducers,
