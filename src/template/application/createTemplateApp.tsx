@@ -14,9 +14,13 @@ import {
   createLegacyNavigationConfig,
 } from "@/template/navigation/legacyNavigationConfig";
 
+import {
+  withAutoTabs,
+} from "@/template/navigation/tabs/withAutoTabs";
+
 /**
  * Connects a concrete application configuration with the
- * reusable template shell.
+ * reusable Template shell.
  */
 export function createTemplateApp<
   TState = unknown,
@@ -29,17 +33,41 @@ export function createTemplateApp<
 
   const navigation =
     hasConfiguredNavigation
-      ? config.navigation
+      ? {
+          menu: {
+            ...config.navigation.menu,
+
+            items: withAutoTabs(
+              [
+                ...config.navigation.menu.items,
+              ],
+              (menuID) =>
+                config.navigation.tabs.items.some(
+                  (tab) =>
+                    tab.menuID ===
+                    menuID,
+                ),
+            ),
+          },
+
+          tabs: config.navigation.tabs,
+        }
       : createLegacyNavigationConfig<TState>();
 
   configureNavigationRuntime<TState>(
     navigation,
   );
 
+  const resolvedConfig:
+    ApplicationConfig<TState> = {
+    ...config,
+    navigation,
+  };
+
   function ConfiguredTemplateApp() {
     return (
       <TemplateApp
-        config={config}
+        config={resolvedConfig}
       />
     );
   }
