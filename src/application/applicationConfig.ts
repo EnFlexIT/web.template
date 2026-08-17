@@ -23,18 +23,21 @@ import {
   type ApplicationNavigationState,
 } from "@/application/config/tabFeatureFlags.config";
 
-export const applicationConfig: ApplicationConfig<ApplicationNavigationState> = {
+export const applicationConfig:
+  ApplicationConfig<ApplicationNavigationState> = {
   ...generatedApplicationConfig,
 
   navigation: {
     menu: {
       items: applicationMenuItems,
-      isEnabled: isApplicationMenuEnabled,
+      isEnabled:
+        isApplicationMenuEnabled,
     },
 
     tabs: {
       items: applicationTabItems,
-      isEnabled: isApplicationTabEnabled,
+      isEnabled:
+        isApplicationTabEnabled,
     },
   },
 };
