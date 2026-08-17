@@ -10,7 +10,9 @@ import type {
   StaticTabItem,
 } from "@/template/navigation/tabs/types";
 
-export type MenuVisibilityContext = {authenticationMethod?: AuthMethod;};
+export type MenuVisibilityContext = {
+  authenticationMethod?: AuthMethod;
+};
 
 export type TabVisibilityContext<
   TState = unknown,
