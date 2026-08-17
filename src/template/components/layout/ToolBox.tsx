@@ -28,8 +28,8 @@ import { useJwtSessionTimerWeb } from "@/template/authentication/session/useJwtS
 import { useOidcSessionTimerWeb} from "@/template/authentication/session/useOidcSessionTimerWeb";
 import {extendSessionTime, selectSessionTime,} from "@/template/state/session/sessionTimeSlice";
 import { LogoutDialog } from "@/template/screens/Logout/LogoutDialog";
-import { Text } from "@/template/components/design-system/stylistic/Text";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { Text } from "@design-system";
+import { ActionButton } from "@design-system";
 
 type LogoutDialogProps = {
   visible: boolean;
