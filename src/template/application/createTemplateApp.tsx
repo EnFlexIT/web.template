@@ -10,6 +10,10 @@ import {
   configureNavigationRuntime,
 } from "@/template/navigation/navigationRuntime";
 
+import {
+  createLegacyNavigationConfig,
+} from "@/template/navigation/legacyNavigationConfig";
+
 /**
  * Connects a concrete application configuration with the
  * reusable template shell.
@@ -19,8 +23,17 @@ export function createTemplateApp<
 >(
   config: ApplicationConfig<TState>,
 ): React.ComponentType {
+  const hasConfiguredNavigation =
+    config.navigation.menu.items.length > 0 ||
+    config.navigation.tabs.items.length > 0;
+
+  const navigation =
+    hasConfiguredNavigation
+      ? config.navigation
+      : createLegacyNavigationConfig<TState>();
+
   configureNavigationRuntime<TState>(
-    config.navigation,
+    navigation,
   );
 
   function ConfiguredTemplateApp() {

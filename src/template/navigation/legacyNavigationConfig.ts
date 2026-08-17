@@ -26,12 +26,12 @@ import type {
  * Temporary compatibility adapter for the existing
  * static Template navigation.
  *
- * This adapter will be removed once the Application
- * configuration is fully supplied through the generated
- * ApplicationConfig.
+ * This adapter will be removed once navigation is generated
+ * from the Application properties configuration.
  */
-export function createLegacyNavigationConfig():
-  ApplicationConfig<RootState>["navigation"] {
+export function createLegacyNavigationConfig<
+  TState = RootState,
+>(): ApplicationConfig<TState>["navigation"] {
   return {
     menu: {
       items: getStaticMenu(),
@@ -55,7 +55,7 @@ export function createLegacyNavigationConfig():
       ) =>
         isTabEnabled(
           featureID,
-          context.state,
+          context.state as RootState | undefined,
         ),
     },
   };
