@@ -1,52 +1,165 @@
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  createDrawerNavigator,
+} from "@react-navigation/drawer";
+
+import {
+  NavigationContainer,
+} from "@react-navigation/native";
+
 import * as Linking from "expo-linking";
-import React, {useEffect,useMemo,useRef, useState,} from "react";
-import {ActivityIndicator, StyleSheet, View,} from "react-native";
-import { Provider } from "react-redux";
-import { useUnistyles } from "react-native-unistyles";import { useAppDispatch, useAppSelector,useSessionActivityWeb,} from "@core";
-import { DataPermissionsDialog } from "@design-system";
-import { AppSessionGuard } from "@/template/authentication/session/AppSessionGuard";
-import { DeveloperConsole, DeveloperConsoleConnection,DynamicScreen,Footer, Header,InitialPasswordChangeDialog,LoginScreen, Navigation, NotAvailableScreen, NotificationPopup, OfflineOverlay, ServerSwitchOverlay, buildMenuPaths,checkAlive, hasId,initializeDataPermissions, initializeLanguage, initializeMenu,initializeOrganizations,initializeServers,initializeTheme,isDynamicMenuItem,isMenuEnabled, selectMenu,setActiveMenuId,useIsWide,} from "@template";
-import { initializeApi,selectAuthenticationMethod,selectIsLoggedIn,} from "@/template/state/api/apiSlice";
-import { store } from "@/template/state/store/store";
-import { PostLoginUpdateWatcher } from "@/template/update/watchers/PostLoginUpdateWatcher";
-import { UpdateNotificationWatcher } from "@/template/update/watchers/UpdateNotificationWatcher";
-import type {ApplicationConfig,} from "@/template/application/ApplicationConfig";
-import {ApplicationConfigProvider,} from "@/template/application/ApplicationConfigContext";
+
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  ActivityIndicator,
+  StyleSheet,
+  View,
+} from "react-native";
+
+import {
+  Provider,
+} from "react-redux";
+
+import {
+  useUnistyles,
+} from "react-native-unistyles";
+
+import {
+  useAppDispatch,
+  useAppSelector,
+  useSessionActivityWeb,
+} from "@core";
+
+import {
+  DataPermissionsDialog,
+} from "@design-system";
+
+import {
+  AppSessionGuard,
+} from "@/template/authentication/session/AppSessionGuard";
+
+import {
+  DeveloperConsole,
+  DeveloperConsoleConnection,
+  DynamicScreen,
+  Footer,
+  Header,
+  InitialPasswordChangeDialog,
+  LoginScreen,
+  Navigation,
+  NotAvailableScreen,
+  NotificationPopup,
+  OfflineOverlay,
+  ServerSwitchOverlay,
+  buildMenuPaths,
+  checkAlive,
+  hasId,
+  initializeDataPermissions,
+  initializeLanguage,
+  initializeMenu,
+  initializeOrganizations,
+  initializeServers,
+  initializeTheme,
+  isDynamicMenuItem,
+  selectMenu,
+  setActiveMenuId,
+  useIsWide,
+} from "@template";
+
+import {
+  initializeApi,
+  selectAuthenticationMethod,
+  selectIsLoggedIn,
+} from "@/template/state/api/apiSlice";
+
+import {
+  store,
+} from "@/template/state/store/store";
+
+import {
+  PostLoginUpdateWatcher,
+} from "@/template/update/watchers/PostLoginUpdateWatcher";
+
+import {
+  UpdateNotificationWatcher,
+} from "@/template/update/watchers/UpdateNotificationWatcher";
+
+import type {
+  ApplicationConfig,
+} from "@/template/application/ApplicationConfig";
+
+import {
+  ApplicationConfigProvider,
+} from "@/template/application/ApplicationConfigContext";
+
 type TemplateAppProps<
   TState = unknown,
 > = {
   config: ApplicationConfig<TState>;
 };
-const Drawer = createDrawerNavigator();
 
-function normalizePath(p: string) {
-  if (!p) return "/";
+const Drawer =
+  createDrawerNavigator();
 
-  let out = p.trim();
-
-  if (!out.startsWith("/")) {
-    out = "/" + out;
+function normalizePath(
+  path: string,
+) {
+  if (!path) {
+    return "/";
   }
 
-  if (out.length > 1) {
-    out = out.replace(/\/+$/g, "");
+  let normalized =
+    path.trim();
+
+  if (
+    !normalized.startsWith("/")
+  ) {
+    normalized =
+      `/${normalized}`;
   }
 
-  return out;
+  if (
+    normalized.length > 1
+  ) {
+    normalized =
+      normalized.replace(
+        /\/+$/g,
+        "",
+      );
+  }
+
+  return normalized;
 }
 
-function getNumericIdFromPath(pathname: string): number | null {
-  const seg = String(pathname ?? "")
-    .split("?")[0]
-    .split("#")[0]
-    .replace(/^\/+/, "")
-    .split("/")[0];
+function getNumericIdFromPath(
+  pathname: string,
+): number | null {
+  const segment =
+    String(
+      pathname ?? "",
+    )
+      .split("?")[0]
+      .split("#")[0]
+      .replace(/^\/+/, "")
+      .split("/")[0];
 
-  const n = Number(seg);
+  const numericId =
+    Number(segment);
 
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return (
+    Number.isFinite(
+      numericId,
+    ) &&
+    numericId > 0
+  )
+    ? numericId
+    : null;
 }
 
 function RootStack<
@@ -54,80 +167,191 @@ function RootStack<
 >({
   config,
 }: TemplateAppProps<TState>) {
-  const dispatch = useAppDispatch();
-  const { theme } = useUnistyles();
+  const dispatch =
+    useAppDispatch();
 
-  const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const authenticationMethod = useAppSelector(selectAuthenticationMethod);
+  const { theme } =
+    useUnistyles();
 
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoggedIn =
+    useAppSelector(
+      selectIsLoggedIn,
+    );
 
-  /*
-   * Wichtig:
-   * Der Activity-Hook ruft /api/user/sessionTime/extend auf.
-   * Das darf nur bei OIDC laufen.
+  const authenticationMethod =
+    useAppSelector(
+      selectAuthenticationMethod,
+    );
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+
+  /**
+   * The session activity endpoint is used only
+   * for OIDC authentication.
    *
-   * JWT/Base nutzt weiterhin den alten JWT-Renew-Weg.
+   * JWT/Base authentication keeps using the
+   * existing JWT renewal flow.
    */
   useSessionActivityWeb({
-    enabled: !isLoading && isLoggedIn && authenticationMethod === "oidc",
+    enabled:
+      !isLoading &&
+      isLoggedIn &&
+      authenticationMethod ===
+        "oidc",
   });
 
-  const isWide = useIsWide();
-  const { menu, activeMenuId, rawMenu } = useAppSelector(selectMenu);
+  const isWide =
+    useIsWide();
 
-  const didBootRef = useRef(false);
-  const didHandleUrlRef = useRef(false);
+  const {
+    menu,
+    activeMenuId,
+    rawMenu,
+  } = useAppSelector(
+    selectMenu,
+  );
 
-  const { pathById, idByPath } = useMemo(
-    () => buildMenuPaths(rawMenu),
+  const didBootRef =
+    useRef(false);
+
+  const didHandleUrlRef =
+    useRef(false);
+
+  /**
+   * Resolves menu visibility through the
+   * active ApplicationConfig.
+   *
+   * TemplateApp no longer depends on the
+   * legacy Template feature flag module.
+   */
+  const isConfiguredMenuEnabled =
+    useCallback(
+      (
+        menuID: number,
+      ): boolean =>
+        config.navigation.menu.isEnabled(
+          menuID,
+          {
+            authenticationMethod,
+          },
+        ),
+      [
+        config.navigation.menu,
+        authenticationMethod,
+      ],
+    );
+
+  const {
+    pathById,
+    idByPath,
+  } = useMemo(
+    () =>
+      buildMenuPaths(
+        rawMenu,
+      ),
     [rawMenu],
   );
 
-  const screensConfig = useMemo(() => {
-    const out: Record<string, string> = {};
+  const screensConfig =
+    useMemo(() => {
+      const result:
+        Record<
+          string,
+          string
+        > = {};
 
-    for (const m of rawMenu) {
-      if (!m.menuID) continue;
+      for (
+        const item of
+        rawMenu
+      ) {
+        if (
+          !item.menuID
+        ) {
+          continue;
+        }
 
-      const p = pathById[m.menuID];
+        const path =
+          pathById[
+            item.menuID
+          ];
 
-      if (p) {
-        out[String(m.menuID)] = p;
+        if (path) {
+          result[
+            String(
+              item.menuID,
+            )
+          ] = path;
+        }
       }
-    }
 
-    return out;
-  }, [rawMenu, pathById]);
+      return result;
+    }, [
+      rawMenu,
+      pathById,
+    ]);
 
   useEffect(() => {
-    if (didBootRef.current) return;
+    if (
+      didBootRef.current
+    ) {
+      return;
+    }
 
-    didBootRef.current = true;
+    didBootRef.current =
+      true;
 
     let alive = true;
 
-    (async () => {
-      try {
-        await dispatch(initializeServers()).unwrap?.();
+    const boot =
+      async () => {
+        try {
+          await dispatch(
+            initializeServers(),
+          ).unwrap?.();
 
-        await Promise.all([
-          dispatch(initializeLanguage()).unwrap?.(),
-          dispatch(initializeTheme()).unwrap?.(),
-          dispatch(initializeApi()).unwrap?.(),
-          dispatch(initializeDataPermissions()).unwrap?.(),
-          dispatch(initializeOrganizations()).unwrap?.(),
-        ]);
+          await Promise.all([
+            dispatch(
+              initializeLanguage(),
+            ).unwrap?.(),
 
-        await dispatch(initializeMenu()).unwrap?.();
-      } catch (e) {
-        console.error("BOOT ERROR:", e);
-      } finally {
-        if (alive) {
-          setIsLoading(false);
+            dispatch(
+              initializeTheme(),
+            ).unwrap?.(),
+
+            dispatch(
+              initializeApi(),
+            ).unwrap?.(),
+
+            dispatch(
+              initializeDataPermissions(),
+            ).unwrap?.(),
+
+            dispatch(
+              initializeOrganizations(),
+            ).unwrap?.(),
+          ]);
+
+          await dispatch(
+            initializeMenu(),
+          ).unwrap?.();
+        } catch (error) {
+          console.error(
+            "BOOT ERROR:",
+            error,
+          );
+        } finally {
+          if (alive) {
+            setIsLoading(
+              false,
+            );
+          }
         }
-      }
-    })();
+      };
+
+    void boot();
 
     return () => {
       alive = false;
@@ -135,135 +359,310 @@ function RootStack<
   }, [dispatch]);
 
   useEffect(() => {
-    if (didHandleUrlRef.current) return;
-    if (!rawMenu || rawMenu.length === 0) return;
-
-    didHandleUrlRef.current = true;
-
-    const pathname = normalizePath(window.location.pathname || "/");
-
-    if (pathname === "/login" || pathname === "/base-login") {
-      window.history.replaceState(null, "", "/");
+    if (
+      didHandleUrlRef.current
+    ) {
       return;
     }
 
-    const slugId = idByPath[pathname];
-
-    if (slugId && isMenuEnabled(slugId)) {
-      dispatch(setActiveMenuId(slugId));
+    if (
+      !rawMenu ||
+      rawMenu.length === 0
+    ) {
       return;
     }
 
-    const numericId = getNumericIdFromPath(pathname);
+    didHandleUrlRef.current =
+      true;
 
-    if (numericId && isMenuEnabled(numericId)) {
-      const slugPath = pathById[numericId];
-
-      if (slugPath) {
-        window.history.replaceState(null, "", slugPath);
-      }
-
-      dispatch(setActiveMenuId(numericId));
-    }
-  }, [dispatch, rawMenu, pathById, idByPath]);
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (!isLoggedIn) return;
-    if (!rawMenu || rawMenu.length === 0) return;
-
-    const pathname = normalizePath(window.location.pathname || "/");
+    const pathname =
+      normalizePath(
+        window.location
+          .pathname || "/",
+      );
 
     if (
       pathname === "/login" ||
-      pathname === "/base-login" ||
+      pathname ===
+        "/base-login"
+    ) {
+      window.history
+        .replaceState(
+          null,
+          "",
+          "/",
+        );
+
+      return;
+    }
+
+    const slugId =
+      idByPath[pathname];
+
+    if (
+      slugId &&
+      isConfiguredMenuEnabled(
+        slugId,
+      )
+    ) {
+      dispatch(
+        setActiveMenuId(
+          slugId,
+        ),
+      );
+
+      return;
+    }
+
+    const numericId =
+      getNumericIdFromPath(
+        pathname,
+      );
+
+    if (
+      numericId &&
+      isConfiguredMenuEnabled(
+        numericId,
+      )
+    ) {
+      const slugPath =
+        pathById[
+          numericId
+        ];
+
+      if (slugPath) {
+        window.history
+          .replaceState(
+            null,
+            "",
+            slugPath,
+          );
+      }
+
+      dispatch(
+        setActiveMenuId(
+          numericId,
+        ),
+      );
+    }
+  }, [
+    dispatch,
+    rawMenu,
+    pathById,
+    idByPath,
+    isConfiguredMenuEnabled,
+  ]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!isLoggedIn) {
+      return;
+    }
+
+    if (
+      !rawMenu ||
+      rawMenu.length === 0
+    ) {
+      return;
+    }
+
+    const pathname =
+      normalizePath(
+        window.location
+          .pathname || "/",
+      );
+
+    if (
+      pathname === "/login" ||
+      pathname ===
+        "/base-login" ||
       pathname === "/"
     ) {
-      const fallbackId = rawMenu.find(
-        (m) => m.menuID && isMenuEnabled(m.menuID),
-      )?.menuID;
+      const fallbackId =
+        rawMenu.find(
+          (item) =>
+            Boolean(
+              item.menuID,
+            ) &&
+            isConfiguredMenuEnabled(
+              item.menuID,
+            ),
+        )?.menuID;
 
       const targetId =
-        activeMenuId && isMenuEnabled(activeMenuId)
+        activeMenuId &&
+        isConfiguredMenuEnabled(
+          activeMenuId,
+        )
           ? activeMenuId
           : fallbackId;
 
-      if (!targetId) return;
+      if (!targetId) {
+        return;
+      }
 
-      const targetPath = pathById[targetId];
+      const targetPath =
+        pathById[
+          targetId
+        ];
 
-      if (!targetPath) return;
+      if (!targetPath) {
+        return;
+      }
 
-      window.history.replaceState(null, "", targetPath);
-      dispatch(setActiveMenuId(targetId));
+      window.history
+        .replaceState(
+          null,
+          "",
+          targetPath,
+        );
+
+      dispatch(
+        setActiveMenuId(
+          targetId,
+        ),
+      );
     }
-  }, [isLoading, isLoggedIn, rawMenu, activeMenuId, pathById, dispatch]);
+  }, [
+    isLoading,
+    isLoggedIn,
+    rawMenu,
+    activeMenuId,
+    pathById,
+    dispatch,
+    isConfiguredMenuEnabled,
+  ]);
 
   useEffect(() => {
-    if (isLoading) return;
-    if (!isLoggedIn) return;
+    if (isLoading) {
+      return;
+    }
+
+    if (!isLoggedIn) {
+      return;
+    }
 
     let active = true;
 
-    const runCheck = async () => {
-      if (!active) return;
+    const runCheck =
+      async () => {
+        if (!active) {
+          return;
+        }
 
-      try {
-        await dispatch(checkAlive({ silent: true })).unwrap();
-      } catch {
-        /*
-         * Absichtlich leer:
-         * OfflineOverlay liest den Redux-State.
-         */
-      }
-    };
+        try {
+          await dispatch(
+            checkAlive({
+              silent: true,
+            }),
+          ).unwrap();
+        } catch {
+          /**
+           * OfflineOverlay consumes
+           * the corresponding Redux state.
+           */
+        }
+      };
 
     void runCheck();
 
-    const intervalId = setInterval(() => {
-      void runCheck();
-    }, 40_000);
+    const intervalId =
+      setInterval(
+        () => {
+          void runCheck();
+        },
+        40_000,
+      );
 
     const onFocus = () => {
       void runCheck();
     };
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("focus", onFocus);
+    if (
+      typeof window !==
+      "undefined"
+    ) {
+      window.addEventListener(
+        "focus",
+        onFocus,
+      );
     }
 
     return () => {
       active = false;
-      clearInterval(intervalId);
 
-      if (typeof window !== "undefined") {
-        window.removeEventListener("focus", onFocus);
+      clearInterval(
+        intervalId,
+      );
+
+      if (
+        typeof window !==
+        "undefined"
+      ) {
+        window.removeEventListener(
+          "focus",
+          onFocus,
+        );
       }
     };
-  }, [dispatch, isLoading, isLoggedIn]);
+  }, [
+    dispatch,
+    isLoading,
+    isLoggedIn,
+  ]);
 
   const navigationMenu =
-    menu.find((node) => hasId(node, activeMenuId)) ?? menu[0];
+    menu.find(
+      (node) =>
+        hasId(
+          node,
+          activeMenuId,
+        ),
+    ) ??
+    menu[0];
 
-  const navTheme = useMemo(
-    () => ({
-      colors: {
-        background: theme.colors.background,
-        border: theme.colors.border,
-        card: theme.colors.card,
-        notification: theme.colors.notification,
-        primary: theme.colors.primary,
-        text: theme.colors.text,
-      },
-      dark: false,
-      fonts: theme.fonts,
-    }),
-    [theme],
-  );
+  const navTheme =
+    useMemo(
+      () => ({
+        colors: {
+          background:
+            theme.colors
+              .background,
+
+          border:
+            theme.colors.border,
+
+          card:
+            theme.colors.card,
+
+          notification:
+            theme.colors
+              .notification,
+
+          primary:
+            theme.colors
+              .primary,
+
+          text:
+            theme.colors.text,
+        },
+
+        dark: false,
+        fonts: theme.fonts,
+      }),
+      [theme],
+    );
 
   if (isLoading) {
     return (
-      <View style={styles.loadingScreen}>
+      <View
+        style={
+          styles.loadingScreen
+        }
+      >
         <ActivityIndicator />
       </View>
     );
@@ -273,45 +672,100 @@ function RootStack<
     <NavigationContainer
       theme={navTheme}
       linking={{
-        prefixes: [Linking.createURL("/")],
+        prefixes: [
+          Linking.createURL(
+            "/",
+          ),
+        ],
+
         config: {
           screens: {
             ...screensConfig,
-            Login: "/login",
-            BaseLogin: "/base-login",
+
+            Login:
+              "/login",
+
+            BaseLogin:
+              "/base-login",
+
             NotFound: "*",
           },
         },
       }}
       fallback={
-        <View style={styles.loadingScreen}>
+        <View
+          style={
+            styles.loadingScreen
+          }
+        >
           <ActivityIndicator />
         </View>
       }
     >
       <AppSessionGuard />
-      <PostLoginUpdateWatcher enabled={!isLoading && isLoggedIn}/>
-    <UpdateNotificationWatcher enabled={!isLoading && isLoggedIn}/>
+
+      <PostLoginUpdateWatcher
+        enabled={
+          !isLoading &&
+          isLoggedIn
+        }
+      />
+
+      <UpdateNotificationWatcher
+        enabled={
+          !isLoading &&
+          isLoggedIn
+        }
+      />
+
       <Drawer.Navigator
         screenOptions={{
-          drawerType: isWide ? "permanent" : "front",
-          drawerStyle: styles.drawer,
-          header: (props) => <Header {...props} />,
+          drawerType:
+            isWide
+              ? "permanent"
+              : "front",
+
+          drawerStyle:
+            styles.drawer,
+
+          header: (
+            props,
+          ) => (
+            <Header
+              {...props}
+            />
+          ),
         }}
-        drawerContent={(props) => {
-          if (!isLoggedIn) return undefined;
+        drawerContent={(
+          props,
+        ) => {
+          if (!isLoggedIn) {
+            return undefined;
+          }
 
           return (
             <Navigation
               {...props}
-              isWide={isWide}
-              isLoggedIn={isLoggedIn}
-              menu={navigationMenu}
+              isWide={
+                isWide
+              }
+              isLoggedIn={
+                isLoggedIn
+              }
+              menu={
+                navigationMenu
+              }
             />
           );
         }}
-       screenLayout={({ children }) => (
-          <View style={styles.layoutContainer}>
+        screenLayout={({
+          children,
+        }) => (
+          <View
+            style={
+              styles.layoutContainer
+            }
+          >
             <DataPermissionsDialog />
             <OfflineOverlay />
             <ServerSwitchOverlay />
@@ -319,7 +773,9 @@ function RootStack<
             <NotificationPopup />
 
             <DeveloperConsole
-              enabled={isLoggedIn}
+              enabled={
+                isLoggedIn
+              }
             >
               {children}
             </DeveloperConsole>
@@ -328,96 +784,163 @@ function RootStack<
       >
         {isLoggedIn ? (
           <Drawer.Group>
-            {rawMenu.map((node, i) => (
-              <Drawer.Screen
-                key={i}
-                name={String(node.menuID!)}
-                children={() => {
-                  if (!isMenuEnabled(node.menuID!)) {
-                    return <NotAvailableScreen />;
+            {rawMenu.map(
+              (
+                node,
+                index,
+              ) => (
+                <Drawer.Screen
+                  key={
+                    node.menuID ??
+                    index
                   }
+                  name={String(
+                    node.menuID,
+                  )}
+                  children={() => {
+                    if (
+                      !isConfiguredMenuEnabled(
+                        node.menuID,
+                      )
+                    ) {
+                      return (
+                        <NotAvailableScreen />
+                      );
+                    }
 
-                  if (!isDynamicMenuItem(node) && node.Screen) {
-                    const ScreenComp = node.Screen;
-                    return <ScreenComp />;
-                  }
+                    if (
+                      !isDynamicMenuItem(
+                        node,
+                      ) &&
+                      node.Screen
+                    ) {
+                      const ScreenComp =
+                        node.Screen;
 
-                  return <DynamicScreen node={node} />;
-                }}
-                options={{
-                  title: config.displayName,
-                }}
-              />
-            ))}
+                      return (
+                        <ScreenComp />
+                      );
+                    }
+
+                    return (
+                      <DynamicScreen
+                        node={
+                          node
+                        }
+                      />
+                    );
+                  }}
+                  options={{
+                    title:
+                      config.displayName,
+                  }}
+                />
+              ),
+            )}
 
             <Drawer.Screen
               name="NotFound"
-              component={NotAvailableScreen}
+              component={
+                NotAvailableScreen
+              }
               options={{
-                title: config.displayName,
+                title:
+                  config.displayName,
               }}
             />
           </Drawer.Group>
         ) : (
           <Drawer.Group
             screenOptions={{
-              swipeEnabled: false,
-              drawerStyle: { display: "none" },
-              headerShown: false,
+              swipeEnabled:
+                false,
+
+              drawerStyle: {
+                display:
+                  "none",
+              },
+
+              headerShown:
+                false,
             }}
           >
-            <Drawer.Screen name="Login" component={LoginScreen} />
+            <Drawer.Screen
+              name="Login"
+              component={
+                LoginScreen
+              }
+            />
           </Drawer.Group>
         )}
       </Drawer.Navigator>
     </NavigationContainer>
   );
 }
+
 export default function TemplateApp<
   TState = unknown,
 >({
   config,
 }: TemplateAppProps<TState>) {
- return (
-  <ApplicationConfigProvider config={config}>
-    <Provider store={store}>
-      <DeveloperConsoleConnection />
+  return (
+    <ApplicationConfigProvider
+      config={config}
+    >
+      <Provider
+        store={store}
+      >
+        <DeveloperConsoleConnection />
 
-      <View style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
-          <RootStack config={config} />
+        <View
+          style={{
+            flex: 1,
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+            }}
+          >
+            <RootStack
+              config={
+                config
+              }
+            />
+          </View>
+
+          <Footer />
         </View>
-
-        <Footer />
-      </View>
-    </Provider>
-  </ApplicationConfigProvider>
-);
+      </Provider>
+    </ApplicationConfigProvider>
+  );
 }
 
-const styles = StyleSheet.create({
-  appContainer: {
-    flex: 1,
-  },
+const styles =
+  StyleSheet.create({
+    appContainer: {
+      flex: 1,
+    },
 
-  appContent: {
-    flex: 1,
-    minHeight: 0,
-  },
+    appContent: {
+      flex: 1,
+      minHeight: 0,
+    },
 
-  drawer: {
-    width: 200,
-  },
+    drawer: {
+      width: 200,
+    },
 
-  layoutContainer: {
-  flex: 1,
-  minHeight: 0,
-  overflow: "hidden",
-},
+    layoutContainer: {
+      flex: 1,
+      minHeight: 0,
+      overflow: "hidden",
+    },
 
-  loadingScreen: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+    loadingScreen: {
+      flex: 1,
+      justifyContent:
+        "center",
+      alignItems:
+        "center",
+    },
+  });
