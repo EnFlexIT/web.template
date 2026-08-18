@@ -11,10 +11,6 @@ import {
 } from "@/template/navigation/navigationRuntime";
 
 import {
-  createLegacyNavigationConfig,
-} from "@/template/navigation/legacyNavigationConfig";
-
-import {
   withAutoTabs,
 } from "@/template/navigation/tabs/withAutoTabs";
 
@@ -27,32 +23,24 @@ export function createTemplateApp<
 >(
   config: ApplicationConfig<TState>,
 ): React.ComponentType {
-  const hasConfiguredNavigation =
-    config.navigation.menu.items.length > 0 ||
-    config.navigation.tabs.items.length > 0;
+  const navigation = {
+    menu: {
+      ...config.navigation.menu,
 
-  const navigation =
-    hasConfiguredNavigation
-      ? {
-          menu: {
-            ...config.navigation.menu,
+      items: withAutoTabs(
+        [
+          ...config.navigation.menu.items,
+        ],
+        (menuID) =>
+          config.navigation.tabs.items.some(
+            (tab) =>
+              tab.menuID === menuID,
+          ),
+      ),
+    },
 
-            items: withAutoTabs(
-              [
-                ...config.navigation.menu.items,
-              ],
-              (menuID) =>
-                config.navigation.tabs.items.some(
-                  (tab) =>
-                    tab.menuID ===
-                    menuID,
-                ),
-            ),
-          },
-
-          tabs: config.navigation.tabs,
-        }
-      : createLegacyNavigationConfig<TState>();
+    tabs: config.navigation.tabs,
+  };
 
   configureNavigationRuntime<TState>(
     navigation,
