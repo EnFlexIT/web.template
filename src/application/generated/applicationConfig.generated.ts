@@ -3,21 +3,358 @@
 
 import type {
   ApplicationConfig,
+  MenuVisibilityResolver,
+  TabVisibilityResolver,
 } from "@/template/application/ApplicationConfig";
 
-export const applicationConfig: ApplicationConfig = {
+import type {
+  StaticMenuItem,
+} from "@/template/navigation/menu/types";
+
+import type {
+  StaticTabItem,
+} from "@/template/navigation/tabs/types";
+
+import {
+  resolveApplicationScreen,
+} from "@/application/registry/applicationScreenRegistry";
+
+type MenuFeatureRule = {
+  enabled?: boolean;
+  authInclude?: readonly string[];
+  authExclude?: readonly string[];
+};
+
+type TabFeatureRule = {
+  enabled?: boolean;
+  type?: "stateEquals";
+  statePath?: string;
+  value?: string;
+};
+
+const menuItems:
+  readonly StaticMenuItem[] = [
+  {
+    caption: "settings",
+    menuID: 3003,
+    Screen: resolveApplicationScreen("settings"),
+  },
+  {
+    caption: "notifications",
+    menuID: 3015,
+    parentID: 3003,
+    Screen: resolveApplicationScreen("notifications"),
+  },
+  {
+    caption: "SystemSettings",
+    menuID: 3021,
+    parentID: 3003,
+    Screen: resolveApplicationScreen("menu-hub"),
+  },
+  {
+    caption: "personalSettings",
+    menuID: 3022,
+    parentID: 3003,
+    Screen: resolveApplicationScreen("menu-hub"),
+  },
+  {
+    caption: "Appearance",
+    menuID: 3004,
+    parentID: 3022,
+    Screen: resolveApplicationScreen("unauthenticated-settings"),
+  },
+  {
+    caption: "privacysettings",
+    menuID: 3005,
+    parentID: 3022,
+    Screen: resolveApplicationScreen("privacy-settings"),
+  },
+  {
+    caption: "UserProfile",
+    menuID: 3025,
+    parentID: 3022,
+    Screen: resolveApplicationScreen("user-profile"),
+  },
+  {
+    caption: "changePassword",
+    menuID: 3013,
+    parentID: 3022,
+    Screen: resolveApplicationScreen("change-password"),
+  },
+  {
+    caption: "serverSettings",
+    menuID: 3012,
+    parentID: 3021,
+    Screen: resolveApplicationScreen("server-settings"),
+  },
+  {
+    caption: "appInfo",
+    menuID: 3014,
+    parentID: 3021,
+    Screen: resolveApplicationScreen("update-web-app"),
+  },
+  {
+    caption: "options",
+    menuID: 3023,
+    parentID: 3021,
+    position: 1,
+    Screen: resolveApplicationScreen("program-start"),
+  },
+  {
+    caption: "liveConsole",
+    menuID: 3026,
+    parentID: 3021,
+    Screen: resolveApplicationScreen("live-console"),
+  },
+  {
+    caption: "databaseConnectionsAndSettings",
+    menuID: 3010,
+    parentID: 3021,
+    Screen: resolveApplicationScreen("server-settings"),
+  },
+  {
+    caption: "devHome",
+    menuID: 3011,
+    parentID: 3003,
+    Screen: resolveApplicationScreen("dev-home"),
+  },
+  {
+    caption: "settingsFileUpload",
+    menuID: 3024,
+    parentID: 3021,
+    Screen: resolveApplicationScreen("settings-file-upload"),
+  },
+];
+
+const tabItems:
+  readonly StaticTabItem[] = [
+  {
+    menuID: 3010,
+    tabKey: "general",
+    caption: "General",
+    position: 1,
+    Content: resolveApplicationScreen("general-settings"),
+  },
+  {
+    menuID: 3010,
+    tabKey: "factory",
+    caption: "Factory Settings",
+    position: 2,
+    featureID: 5001,
+    Content: resolveApplicationScreen("factory-settings"),
+  },
+  {
+    menuID: 3010,
+    tabKey: "derby",
+    caption: "Derby Network Server",
+    position: 3,
+    Content: resolveApplicationScreen("derby-network-server"),
+  },
+  {
+    menuID: 3014,
+    tabKey: "general",
+    caption: "General",
+    position: 1,
+    Content: resolveApplicationScreen("update-general"),
+  },
+  {
+    menuID: 3014,
+    tabKey: "webapp",
+    caption: "Web-App",
+    position: 2,
+    Content: resolveApplicationScreen("update-web-app"),
+  },
+  {
+    menuID: 3014,
+    tabKey: "backend",
+    caption: "Backend",
+    position: 3,
+    featureID: 3111,
+    Content: resolveApplicationScreen("update-backend"),
+  },
+  {
+    menuID: 3023,
+    tabKey: "program-start",
+    caption: "Program Start",
+    position: 1,
+    Content: resolveApplicationScreen("program-start"),
+  },
+  {
+    menuID: 3023,
+    tabKey: "data-analyzing",
+    caption: "Data Analyzing",
+    position: 2,
+    featureID: 3000,
+    Content: resolveApplicationScreen("data-analyzing"),
+  },
+];
+
+const menuFeatureRules:
+  Readonly<
+    Record<
+      number,
+      MenuFeatureRule
+    >
+  > = {
+  3011: { enabled: false },
+  3012: { enabled: true },
+  3013: { enabled: true, authExclude: ["oidc"] },
+  3014: { enabled: true },
+  3010: { enabled: true },
+  3024: { enabled: true },
+  3025: { enabled: true, authInclude: ["oidc","unset"] },
+};
+
+const tabFeatureRules:
+  Readonly<
+    Record<
+      number,
+      TabFeatureRule
+    >
+  > = {
+  5001: { enabled: true },
+  3111: { enabled: true },
+  3000: { type: "stateEquals", statePath: "execSettings.appliedStartAs", value: "SERVER_MASTER" },
+};
+
+function readStatePath(
+  state: unknown,
+  statePath: string,
+): unknown {
+  let current:
+    unknown = state;
+
+  for (
+    const segment of
+    statePath.split(".")
+  ) {
+    if (
+      typeof current !==
+        "object" ||
+      current === null
+    ) {
+      return undefined;
+    }
+
+    current =
+      (
+        current as
+          Record<
+            string,
+            unknown
+          >
+      )[segment];
+  }
+
+  return current;
+}
+
+const isApplicationMenuEnabled:
+  MenuVisibilityResolver = (
+    menuID,
+    context,
+  ) => {
+    const rule =
+      menuFeatureRules[
+        menuID
+      ];
+
+    if (!rule) {
+      return true;
+    }
+
+    if (
+      rule.enabled ===
+      false
+    ) {
+      return false;
+    }
+
+    const authenticationMethod =
+      context.authenticationMethod ??
+      "unset";
+
+    if (
+      rule.authInclude &&
+      !rule.authInclude.includes(
+        authenticationMethod,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      rule.authExclude?.includes(
+        authenticationMethod,
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
+const isApplicationTabEnabled:
+  TabVisibilityResolver = (
+    featureID,
+    context,
+  ) => {
+    const rule =
+      tabFeatureRules[
+        featureID
+      ];
+
+    if (!rule) {
+      return true;
+    }
+
+    if (
+      rule.enabled ===
+      false
+    ) {
+      return false;
+    }
+
+    if (
+      rule.type ===
+      "stateEquals"
+    ) {
+      if (
+        !rule.statePath
+      ) {
+        return false;
+      }
+
+      return (
+        String(
+          readStatePath(
+            context.state,
+            rule.statePath,
+          ),
+        ) ===
+        rule.value
+      );
+    }
+
+    return true;
+  };
+
+export const applicationConfig:
+  ApplicationConfig = {
   id: "agent-workbench",
   displayName: "Agent.Workbench",
 
   navigation: {
     menu: {
-      items: [],
-      isEnabled: () => true,
+      items: menuItems,
+      isEnabled:
+        isApplicationMenuEnabled,
     },
 
     tabs: {
-      items: [],
-      isEnabled: () => true,
+      items: tabItems,
+      isEnabled:
+        isApplicationTabEnabled,
     },
   },
 };
