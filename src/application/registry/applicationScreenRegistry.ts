@@ -9,11 +9,11 @@ import {
 
 import {
   ProgramStartTab,
-} from "@/template/screens/AgentWorkbenchOptions/ProgramStartTab";
+} from "@/application/screens/agent-workbench/ProgramStartTab";
 
 import {
   DataAnalyzingTab,
-} from "@/template/screens/AgentWorkbenchOptions/DataAnalyzingTab";
+} from "@/application/screens/agent-workbench/DataAnalyzingTab";
 
 /**
  * Application-specific screen registry.
