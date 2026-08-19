@@ -78,9 +78,9 @@ import {
   selectIsLoggedIn,
 } from "@/template/state/api/apiSlice";
 
-import {
-  store,
-} from "@/template/state/store/store";
+import type {
+  TemplateStore,
+} from "@/template/state/store/types";
 
 import {
   PostLoginUpdateWatcher,
@@ -97,13 +97,17 @@ import type {
 import {
   ApplicationConfigProvider,
 } from "@/template/application/ApplicationConfigContext";
-
-type TemplateAppProps<
+type RootStackProps<
   TState = unknown,
 > = {
   config: ApplicationConfig<TState>;
 };
 
+type TemplateAppProps<
+  TState = unknown,
+> = RootStackProps<TState> & {
+  store: TemplateStore;
+};
 const Drawer =
   createDrawerNavigator();
 
@@ -166,7 +170,7 @@ function RootStack<
   TState = unknown,
 >({
   config,
-}: TemplateAppProps<TState>) {
+}: RootStackProps<TState>) {
   const dispatch =
     useAppDispatch();
 
@@ -881,6 +885,7 @@ export default function TemplateApp<
   TState = unknown,
 >({
   config,
+  store,
 }: TemplateAppProps<TState>) {
   return (
     <ApplicationConfigProvider
