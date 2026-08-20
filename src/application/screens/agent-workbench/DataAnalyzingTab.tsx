@@ -9,8 +9,10 @@ import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/template/state/store/useAppDispatch";
-import { useAppSelector } from "@/template/state/store/useAppSelector";
+import {
+  useApplicationDispatch,
+  useApplicationSelector,
+} from "@/application/state/hooks";
 import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
 import {
   fetchDataAnalysis,
@@ -45,11 +47,10 @@ function getPlatformRole(platform: BackgroundPlatform, t: any): string {
 
 export function DataAnalyzingTab() {
   const { t } = useTranslation(["programStart"]);
-  const dispatch = useAppDispatch();
-
-  const platforms = useAppSelector(selectDataAnalysisPlatforms);
-  const history = useAppSelector(selectDataAnalysisHistory);
-  const error = useAppSelector(selectDataAnalysisError);
+const dispatch = useApplicationDispatch();
+  const platforms = useApplicationSelector(selectDataAnalysisPlatforms);
+  const history = useApplicationSelector(selectDataAnalysisHistory);
+  const error = useApplicationSelector(selectDataAnalysisError);
 
   const [selectedPlatformName, setSelectedPlatformName] =
     useState<string | null>(null);
