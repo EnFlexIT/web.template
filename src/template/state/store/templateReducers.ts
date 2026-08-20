@@ -50,3 +50,14 @@ export const templateReducers = {
   liveConsole: liveConsoleReducer,
   developerConsole: developerConsoleReducer,
 };
+/**
+ * State owned by the reusable Base Template.
+ *
+ * Application-specific state is intentionally not included here.
+ */
+export type TemplateRootState = {
+  [K in keyof typeof templateReducers]:
+    ReturnType<
+      (typeof templateReducers)[K]
+    >;
+};
