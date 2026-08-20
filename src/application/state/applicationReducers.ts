@@ -1,15 +1,15 @@
-import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
-import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
+import dataAnalysisReducer from "@/application/state/agent-workbench/dataAnalysisSlice";
+import execSettingsReducer from "@/application/state/agent-workbench/execSettingsSlice";
 
 import type {
   ApplicationReducers,
 } from "@/template/state/store/types";
 
 /**
- * Redux reducers owned by the current application.
+ * Redux reducers owned by the concrete Application.
  *
- * These reducers are currently still located inside the template
- * repository and will later move to the Agent.Workbench repository.
+ * Agent.Workbench-specific state belongs to the Application
+ * and is injected into the reusable Base Template store.
  */
 export const applicationReducers = {
   execSettings: execSettingsReducer,
