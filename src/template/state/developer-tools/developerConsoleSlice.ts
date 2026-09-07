@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 export type DeveloperConsolePlacement =
   | "bottom"
@@ -94,7 +94,7 @@ export const {
 export default developerConsoleSlice.reducer;
 
 export const selectDeveloperConsole = (
-  state: RootState,
+  state: TemplateRootState,
 ) => state.developerConsole;
 
 export function persistDeveloperConsoleState(

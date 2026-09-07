@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 export type ServerStatusTone = "green" | "yellow" | "red";
 
 export type ServerStatusMeta = {
@@ -53,7 +53,7 @@ export const {
   clearAllServerStatuses,
 } = serverStatusSlice.actions;
 
-export const selectServerStatuses = (state: RootState) =>
+export const selectServerStatuses = (state: TemplateRootState) =>
   state.serverStatus.byServerId;
 
 export default serverStatusSlice.reducer;

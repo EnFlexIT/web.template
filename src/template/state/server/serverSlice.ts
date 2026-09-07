@@ -2,7 +2,7 @@
 
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 const STORAGE_KEY = "servers" as const;
 import type { ServerEnvironment } from "@/core/server/types";
 
@@ -252,14 +252,14 @@ export const {
 
 /** selectors */
 
-export const selectServers = (state: RootState) => state.servers;
+export const selectServers = (state: TemplateRootState) => state.servers;
 
-export const selectSelectedServer = (state: RootState) => {
+export const selectSelectedServer = (state: TemplateRootState) => {
   const s = state.servers;
   return s.servers.find((x) => x.id === s.selectedServerId) ?? s.servers[0];
 };
 
-export const selectActiveEnvironment = (state: RootState) =>
+export const selectActiveEnvironment = (state: TemplateRootState) =>
   state.servers.activeEnvironment;
 
 export default serversSlice.reducer;

@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import {
   normalizeServerKey,
   selectActiveServerKey,
@@ -120,10 +120,10 @@ export const {
   toggleNotificationPopup,
 } = notificationSlice.actions;
 
-export const selectNotificationsState = (state: RootState) =>
+export const selectNotificationsState = (state: TemplateRootState) =>
   state.notifications;
 
-export const selectAllNotifications = (state: RootState) => {
+export const selectAllNotifications = (state: TemplateRootState) => {
   const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
@@ -131,7 +131,7 @@ export const selectAllNotifications = (state: RootState) => {
   );
 };
 
-export const selectUnreadNotifications = (state: RootState) => {
+export const selectUnreadNotifications = (state: TemplateRootState) => {
   const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
@@ -140,7 +140,7 @@ export const selectUnreadNotifications = (state: RootState) => {
   );
 };
 
-export const selectUnreadNotificationCount = (state: RootState) => {
+export const selectUnreadNotificationCount = (state: TemplateRootState) => {
   const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
   return state.notifications.items.filter(
@@ -151,7 +151,7 @@ export const selectUnreadNotificationCount = (state: RootState) => {
 
 export const selectLatestNotifications =
   (limit = 5) =>
-  (state: RootState) => {
+  (state: TemplateRootState) => {
     const activeServerKey = normalizeServerKey(selectActiveServerKey(state));
 
     return state.notifications.items
@@ -162,7 +162,7 @@ export const selectLatestNotifications =
       .slice(0, limit);
   };
 
-export const selectNotificationPopupOpen = (state: RootState) =>
+export const selectNotificationPopupOpen = (state: TemplateRootState) =>
   state.notifications.popupOpen;
 
 export default notificationSlice.reducer;

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Data } from "./Data";
 
@@ -113,7 +113,7 @@ export const OrganizationsData = {
   dependencies: [],
 } satisfies Data<OrganizationsState>;
 
-export const selectOrganizations = (state: RootState) => state.organizations;
+export const selectOrganizations = (state: TemplateRootState) => state.organizations;
 
 export const { addOrganization, setCurrentOrganization } =
   OrganizationsData.slice.actions;

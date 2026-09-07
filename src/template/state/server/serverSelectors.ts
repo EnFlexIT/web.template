@@ -1,11 +1,11 @@
 // src/template/state/server/serverSelectors.ts
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 export function normalizeServerKey(url: string | null | undefined) {
   return (url ?? "").trim().replace(/\/+$/, "");
 }
 
-export function selectActiveServerKey(state: RootState) {
+export function selectActiveServerKey(state: TemplateRootState) {
   return normalizeServerKey(state.api.ip);
 }
 

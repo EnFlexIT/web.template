@@ -1,7 +1,7 @@
 
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import {
   DEFAULT_PERMISSION_VALUES,
   PermissionId,
@@ -96,7 +96,7 @@ export const {
   setHasSeenDialog,
 } = dataPermissionsSlice.actions;
 
-export const selectPermissionValues = (state: RootState) =>
+export const selectPermissionValues = (state: TemplateRootState) =>
   state.dataPermissions.values;
 
 export default dataPermissionsSlice.reducer;

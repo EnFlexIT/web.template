@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 export type WebAppReleaseType = "PRODUCTION_RELEASE" | "TEST_RELEASE" | "UNKNOWN";
 
@@ -41,7 +41,7 @@ const appReleaseSlice = createSlice({
 
 export const { setWebAppReleaseType } = appReleaseSlice.actions;
 
-export const selectIsTestRelease = (state: RootState) =>
+export const selectIsTestRelease = (state: TemplateRootState) =>
   state.appRelease.webAppReleaseType === "TEST_RELEASE";
 
 export default appReleaseSlice.reducer;
