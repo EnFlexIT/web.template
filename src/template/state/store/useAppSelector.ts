@@ -1,4 +1,15 @@
-import { useSelector } from 'react-redux'
-import type { RootState } from '@/template/state/store/store'
+import {
+  useSelector,
+} from "react-redux";
 
-export const useAppSelector = useSelector.withTypes<RootState>()
+import type {
+  TemplateRootState,
+} from "@/template/state/store/templateStoreTypes";
+
+/**
+ * Typed selector hook for reusable Template state.
+ */
+export const useAppSelector =
+  useSelector.withTypes<
+    TemplateRootState
+  >();

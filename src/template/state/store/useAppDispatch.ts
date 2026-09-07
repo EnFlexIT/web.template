@@ -1,5 +1,17 @@
-import { useDispatch } from 'react-redux'
-import type { AppDispatch } from '@/template/state/store/store'
+import {
+  useDispatch,
+} from "react-redux";
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch = useDispatch.withTypes<AppDispatch>()
+import type {
+  TemplateDispatch,
+} from "@/template/state/store/templateStoreTypes";
+
+/**
+ * Typed dispatch hook for reusable Template code.
+ *
+ * The concrete Application provides the runtime store.
+ */
+export const useAppDispatch =
+  useDispatch.withTypes<
+    TemplateDispatch
+  >();
