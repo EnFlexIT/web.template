@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { TemplateRootState } from "@/template/state/store/templatestoretypes";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 
 const baseModeKey = "baseModeLoggedIn" as const;
 

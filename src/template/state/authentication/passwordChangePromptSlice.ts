@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { TemplateRootState } from '@/template/state/store/templatestoretypes';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 type PasswordChangePromptState = {
   isOpen: boolean;

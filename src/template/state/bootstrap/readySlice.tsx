@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { TemplateRootState } from '@/template/state/store/templatestoretypes';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 export interface ReadyState {
   ready: boolean;

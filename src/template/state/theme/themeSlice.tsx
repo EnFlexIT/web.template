@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UnistylesRuntime } from "react-native-unistyles";
-import type { TemplateRootState } from "@/template/state/store/templatestoretypes";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 type ThemeName = "light" | "dark";
 
 export interface ThemeInfo {
