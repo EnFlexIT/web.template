@@ -7,7 +7,7 @@ import {
   getApplicationMode,
   type ApplicationMode,
 }  from "@/core/runtime/applicationMode";;
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { setReady } from "@/template/state/bootstrap/readySlice";
 import {
   AdminsApi,
@@ -580,7 +580,7 @@ export const setIpAsync = createAsyncThunk(
 export const refreshServerStatus = createAsyncThunk(
   "api/refreshServerStatus",
   async (_, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
+    const state = thunkAPI.getState() as TemplateRootState;
 
     if (state.api.isSwitchingServer) {
       return {
@@ -667,7 +667,7 @@ export async function loginWithBasic(params: {
 export const login = createAsyncThunk(
   "api/login",
   async (payload: { jwt: string; baseUrl?: string }, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
+    const state = thunkAPI.getState() as TemplateRootState;
     const currentIp = normalizeBaseUrl(payload.baseUrl ?? state.api.ip);
 
     await setJwtForServer(currentIp, payload.jwt);
@@ -724,7 +724,7 @@ async function logoutFromServer(params: {
 export const logoutAsync = createAsyncThunk(
   "api/logoutAsync",
   async (_, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
+    const state = thunkAPI.getState() as TemplateRootState;
 
     const currentIp = normalizeBaseUrl(state.api.ip);
     const jwt = state.api.jwt;
@@ -807,7 +807,7 @@ export const logoutAsync = createAsyncThunk(
 export const resetAuthAfterConfigurationChange = createAsyncThunk(
   "api/resetAuthAfterConfigurationChange",
   async (payload: { baseUrl?: string } | undefined, thunkAPI) => {
-    const state = thunkAPI.getState() as RootState;
+    const state = thunkAPI.getState() as TemplateRootState;
 
     const currentIp = normalizeBaseUrl(state.api.ip);
     const targetIp = normalizeBaseUrl(payload?.baseUrl ?? state.api.ip);
@@ -1083,26 +1083,26 @@ const initialState: ApiState = {
     setIsLogoutDialogOpen,
   } = apiSlice.actions;
 
-  export const selectApi = (state: RootState) => state.api;
-  export const selectJwt = (state: RootState) => state.api.jwt;
-  export const selectIp = (state: RootState) => state.api.ip;
-  export const selectAuthenticationMethod = (state: RootState) =>
+  export const selectApi = (state: TemplateRootState) => state.api;
+  export const selectJwt = (state: TemplateRootState) => state.api.jwt;
+  export const selectIp = (state: TemplateRootState) => state.api.ip;
+  export const selectAuthenticationMethod = (state: TemplateRootState) =>
     state.api.authenticationMethod;
 
-  export const selectIsLoggedIn = (state: RootState) => state.api.isLoggedIn;
-  export const selectIsPointingToServer = (state: RootState) =>
+  export const selectIsLoggedIn = (state: TemplateRootState) => state.api.isLoggedIn;
+  export const selectIsPointingToServer = (state: TemplateRootState) =>
     state.api.isPointingToServer;
-  export const selectIsBaseMode = (state: RootState) => state.api.isBaseMode;
-  export const selectIsSwitchingServer = (state: RootState) =>
+  export const selectIsBaseMode = (state: TemplateRootState) => state.api.isBaseMode;
+  export const selectIsSwitchingServer = (state: TemplateRootState) =>
     state.api.isSwitchingServer;
-  export const selectIsLoggingOut = (state: RootState) => state.api.isLoggingOut;
-  export const selectIsLogoutDialogOpen = (state: RootState) =>
+  export const selectIsLoggingOut = (state: TemplateRootState) => state.api.isLoggingOut;
+  export const selectIsLogoutDialogOpen = (state: TemplateRootState) =>
     state.api.isLogoutDialogOpen;
 
-  export const selectIsBaseModule = (state: RootState) =>
+  export const selectIsBaseModule = (state: TemplateRootState) =>
     state.api.isPointingToServer && state.api.isBaseMode;
 
-  export const selectIsCustomerModule = (state: RootState) =>
+  export const selectIsCustomerModule = (state: TemplateRootState) =>
     state.api.isPointingToServer &&
     state.api.isLoggedIn &&
     !state.api.isBaseMode;

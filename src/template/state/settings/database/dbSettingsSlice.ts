@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 
 type PropertyEntry = {
   key: string;
@@ -117,7 +117,7 @@ const initialState: DbSettingsState = {
 };
 
 function getApi(thunkAPI: { getState: () => unknown }) {
-  const state = thunkAPI.getState() as RootState;
+  const state = thunkAPI.getState() as TemplateRootState;
   return state.api.awb_rest_api.infoApi;
 }
 
@@ -899,25 +899,25 @@ export const {
   clearDbSettingsError,
 } = dbSettingsSlice.actions;
 
-export const selectDbSystems = (state: RootState) => state.dbSettings.dbSystems;
-export const selectDbSystemParameters = (state: RootState) =>
+export const selectDbSystems = (state: TemplateRootState) => state.dbSettings.dbSystems;
+export const selectDbSystemParameters = (state: TemplateRootState) =>
   state.dbSettings.dbSystemParameters;
-export const selectFactories = (state: RootState) => state.dbSettings.factories;
-export const selectFactoryStates = (state: RootState) =>
+export const selectFactories = (state: TemplateRootState) => state.dbSettings.factories;
+export const selectFactoryStates = (state: TemplateRootState) =>
   state.dbSettings.factoryStates;
-export const selectDerbyNetworkServer = (state: RootState) =>
+export const selectDerbyNetworkServer = (state: TemplateRootState) =>
   state.dbSettings.derbyNetworkServer;
-export const selectGeneralConnection = (state: RootState) =>
+export const selectGeneralConnection = (state: TemplateRootState) =>
   state.dbSettings.generalConnection;
-export const selectSelectedFactoryConnection = (state: RootState) =>
+export const selectSelectedFactoryConnection = (state: TemplateRootState) =>
   state.dbSettings.selectedFactoryConnection;
-export const selectSelectedFactoryId = (state: RootState) =>
+export const selectSelectedFactoryId = (state: TemplateRootState) =>
   state.dbSettings.selectedFactoryId;
-export const selectDbSettingsLoading = (state: RootState) =>
+export const selectDbSettingsLoading = (state: TemplateRootState) =>
   state.dbSettings.isLoading;
-export const selectDbSettingsSaving = (state: RootState) =>
+export const selectDbSettingsSaving = (state: TemplateRootState) =>
   state.dbSettings.isSaving;
-export const selectDbSettingsError = (state: RootState) =>
+export const selectDbSettingsError = (state: TemplateRootState) =>
   state.dbSettings.error;
 
 export default dbSettingsSlice.reducer;

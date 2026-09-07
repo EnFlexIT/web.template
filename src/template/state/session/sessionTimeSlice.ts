@@ -1,7 +1,7 @@
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templateStoreTypes';
 import { normalizeBaseUrl,selectApi } from "@/template/state/api/apiSlice";
 
 export type SessionTimes = {
@@ -72,7 +72,7 @@ function validateSessionTimes(data: unknown): SessionTimes {
 }
 
 async function requestSessionTimes(params: {
-  state: RootState;
+  state: TemplateRootState;
   path: string;
   errorMessage: string;
 }): Promise<SessionTimes> {
@@ -115,7 +115,7 @@ async function requestSessionTimes(params: {
 export const loadSessionTime = createAsyncThunk<
   SessionTimes,
   { silent?: boolean } | undefined,
-  { state: RootState }
+  { state: TemplateRootState }
 >("sessionTime/loadSessionTime", async (_, thunkAPI) => {
   return requestSessionTimes({
     state: thunkAPI.getState(),
@@ -127,7 +127,7 @@ export const loadSessionTime = createAsyncThunk<
 export const extendSessionTime = createAsyncThunk<
   SessionTimes,
   void,
-  { state: RootState }
+  { state: TemplateRootState }
 >("sessionTime/extendSessionTime", async (_, thunkAPI) => {
   return requestSessionTimes({
     state: thunkAPI.getState(),
@@ -222,7 +222,7 @@ const sessionTimeSlice = createSlice({
 
 export const { clearSessionTime } = sessionTimeSlice.actions;
 
-export const selectSessionTime = (state: RootState) =>
+export const selectSessionTime = (state: TemplateRootState) =>
   state.sessionTime;
 
 export default sessionTimeSlice.reducer;

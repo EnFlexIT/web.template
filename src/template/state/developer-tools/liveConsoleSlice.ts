@@ -1,6 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from '@/template/state/store/store';
-import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
+import type {
+  TemplateDispatch,
+  TemplateRootState,
+} from "@/template/state/store/templateStoreTypes";import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
 import type { AuthMethod } from "@/core/authentication/types";
 const LIVE_CONSOLE_PERFORMATIVE =
   process.env.EXPO_PUBLIC_LIVE_CONSOLE_PERFORMATIVE ??
@@ -180,7 +182,7 @@ function clearPendingFlush(): void {
   pendingLines = [];
 }
 
-function flushPendingLines(dispatch: AppDispatch): void {
+function flushPendingLines(dispatch: TemplateDispatch): void {
   if (flushTimer) {
     clearTimeout(flushTimer);
     flushTimer = null;
@@ -194,7 +196,7 @@ function flushPendingLines(dispatch: AppDispatch): void {
   dispatch(linesReceived(batch));
 }
 
-function queueLines(dispatch: AppDispatch, text: string): void {
+function queueLines(dispatch: TemplateDispatch, text: string): void {
   const normalized = text
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n");
@@ -438,8 +440,8 @@ function closeCurrentSocket(): void {
 export const connectLiveConsole =
   () =>
   async (
-    dispatch: AppDispatch,
-    getState: () => RootState,
+    dispatch: TemplateDispatch,
+    getState: () => TemplateRootState,
   ): Promise<void> => {
     const performative =
       LIVE_CONSOLE_PERFORMATIVE.trim();
@@ -603,7 +605,7 @@ export const connectLiveConsole =
 
 export const disconnectLiveConsole =
   () =>
-  (dispatch: AppDispatch): void => {
+  (dispatch: TemplateDispatch): void => {
     ++activeGeneration;
 
     dispatch(disconnectRequested());
@@ -636,13 +638,13 @@ export const disconnectLiveConsole =
   };
 
 export const selectLiveConsole = (
-  state: RootState,
+  state: TemplateRootState,
 ) => state.liveConsole;
 
 export const selectLiveConsoleLines = (
-  state: RootState,
+  state: TemplateRootState,
 ) => state.liveConsole.lines;
 
 export const selectLiveConsoleStatus = (
-  state: RootState,
+  state: TemplateRootState,
 ) => state.liveConsole.status;

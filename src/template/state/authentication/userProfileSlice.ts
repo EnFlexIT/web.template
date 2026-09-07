@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import type { AuthMethod } from "@/core/authentication/types";
 import { normalizeBaseUrl } from "@/template/state/api/apiSlice";
 
@@ -52,7 +52,7 @@ const mapUserProfile = (entries: PropertyEntry[]): UserProfile => ({
 export const loadUserProfile = createAsyncThunk<
   UserProfile,
   void,
-  { state: RootState; rejectValue: string }
+  { state: TemplateRootState; rejectValue: string }
 >("userProfile/loadUserProfile", async (_, thunkAPI) => {
   const state = thunkAPI.getState();
 
@@ -122,13 +122,13 @@ const userProfileSlice = createSlice({
 
 export const { clearUserProfile } = userProfileSlice.actions;
 
-export const selectUserProfile = (state: RootState) =>
+export const selectUserProfile = (state: TemplateRootState) =>
   state.userProfile.profile;
 
-export const selectIsUserProfileLoading = (state: RootState) =>
+export const selectIsUserProfileLoading = (state: TemplateRootState) =>
   state.userProfile.isLoading;
 
-export const selectUserProfileError = (state: RootState) =>
+export const selectUserProfileError = (state: TemplateRootState) =>
   state.userProfile.error;
 
 export default userProfileSlice.reducer;

@@ -1,7 +1,7 @@
 
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { normalizeBaseUrl, selectIp } from "@/template/state/api/apiSlice";
 
 type ConnectivityState = {
@@ -44,7 +44,7 @@ function getErrorMessage(error: unknown): string {
 export const checkAlive = createAsyncThunk<
   CheckAliveResult,
   { silent?: boolean; force?: boolean } | undefined,
-  { state: RootState }
+  { state: TemplateRootState }
 >("connectivity/checkAlive", async (arg, thunkAPI) => {
   const state = thunkAPI.getState();
 
@@ -185,7 +185,7 @@ const connectivitySlice = createSlice({
 export const { dismissBackOnline, setOfflineLocal } =
   connectivitySlice.actions;
 
-export const selectConnectivity = (state: RootState) =>
+export const selectConnectivity = (state: TemplateRootState) =>
   state.connectivity;
 
 export default connectivitySlice.reducer;

@@ -3,7 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Buffer } from "buffer";
 
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import {
   setJwtLocal,
   logoutAsync,
@@ -117,7 +117,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
     force?: boolean;
   },
   {
-    state: RootState;
+    state: TemplateRootState;
   }
 >(
   "api/renewJwtForSpecificServer",
@@ -330,7 +330,7 @@ export const renewAllServerJwtsIfNeeded = createAsyncThunk<
     force?: boolean;
   } | undefined,
   {
-    state: RootState;
+    state: TemplateRootState;
   }
 >(
   "api/renewAllServerJwtsIfNeeded",
@@ -386,7 +386,7 @@ export const renewJwtIfNeeded = createAsyncThunk<
     force?: boolean;
   } | undefined,
   {
-    state: RootState;
+    state: TemplateRootState;
   }
 >(
   "api/renewJwtIfNeeded",

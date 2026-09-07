@@ -5,8 +5,8 @@ import {
 } from "@reduxjs/toolkit";
 
 import type {
-  RootState,
-} from "@/template/state/store/store";
+  TemplateRootState,
+} from "@/template/state/store/templateStoreTypes";
 
 import type {
   MenuItem as ApiMenuItem,
@@ -331,7 +331,7 @@ export const initializeMenu =
     "menu/initialize",
     async (_, thunkAPI) => {
       const state =
-        thunkAPI.getState() as RootState;
+        thunkAPI.getState() as TemplateRootState;
 
       const lang =
         state.language.language;
@@ -472,7 +472,7 @@ export const updateMenu =
     "menu/update",
     async (_, thunkAPI) => {
       const state =
-        thunkAPI.getState() as RootState;
+        thunkAPI.getState() as TemplateRootState;
 
       const previousActiveMenuId =
         state.menu.activeMenuId;
@@ -482,7 +482,7 @@ export const updateMenu =
       );
 
       const nextState =
-        thunkAPI.getState() as RootState;
+        thunkAPI.getState() as TemplateRootState;
 
       const stillValid =
         nextState.menu.rawMenu.some(
@@ -635,7 +635,7 @@ export function clearMenu(
 }
 
 export const selectMenu = (
-  state: RootState,
+  state: TemplateRootState,
 ) => state.menu;
 
 export default menuSlice.reducer;
