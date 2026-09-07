@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templatestoretypes';
 
 export interface ReadyState {
   ready: boolean;
@@ -21,6 +21,6 @@ export const readySlice = createSlice({
 
 export const { setReady } = readySlice.actions;
 
-export const selectReady = (state: RootState) => state.ready.ready;
+export const selectReady = (state: TemplateRootState) => state.ready.ready;
 
 export default readySlice.reducer;

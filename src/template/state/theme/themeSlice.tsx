@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UnistylesRuntime } from "react-native-unistyles";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templatestoretypes";
 type ThemeName = "light" | "dark";
 
 export interface ThemeInfo {
@@ -100,6 +100,6 @@ export const themeSlice = createSlice({
 export const { setTheme, setThemeState } = themeSlice.actions;
 
 
-export const selectThemeInfo = (state: RootState) => state.theme?.val ?? DEFAULT_THEME;
+export const selectThemeInfo = (state: TemplateRootState) => state.theme?.val ?? DEFAULT_THEME;
 
 export default themeSlice.reducer;

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templatestoretypes";
 
 const baseModeKey = "baseModeLoggedIn" as const;
 
@@ -33,6 +33,6 @@ export const baseModeSlice = createSlice({
 
 export const { setBaseModeLoggedIn, logoutBaseMode } = baseModeSlice.actions;
 
-export const selectBaseMode = (state: RootState) => state.baseMode;
+export const selectBaseMode = (state: TemplateRootState) => state.baseMode;
 
 export default baseModeSlice.reducer;

@@ -7,7 +7,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import i18next from "i18next";
 
-import type { RootState } from "@/template/state/store/store";
+import type { TemplateRootState } from "@/template/state/store/templatestoretypes";
 import { updateMenu } from "@/template/state/navigation/menuSlice";
 
 const key = "lng" as const;
@@ -59,6 +59,6 @@ export const setLanguage = createAsyncThunk(
 
 export const { internalSetLanguage } = languageSlice.actions;
 
-export const selectLanguage = (state: RootState) => state.language;
+export const selectLanguage = (state: TemplateRootState) => state.language;
 
 export default languageSlice.reducer;

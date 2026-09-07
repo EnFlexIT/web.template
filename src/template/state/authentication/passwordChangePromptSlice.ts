@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { RootState } from '@/template/state/store/store';
+import type { TemplateRootState } from '@/template/state/store/templatestoretypes';
 
 type PasswordChangePromptState = {
   isOpen: boolean;
@@ -27,7 +27,7 @@ export const {
   closeInitialPasswordChangeDialog,
 } = passwordChangePromptSlice.actions;
 
-export const selectInitialPasswordChangeDialogOpen = (state: RootState) =>
+export const selectInitialPasswordChangeDialogOpen = (state: TemplateRootState) =>
   state.passwordChangePrompt.isOpen;
 
 export default passwordChangePromptSlice.reducer;
