@@ -12,7 +12,7 @@ import reducer, {
   fetchProjects,
   fetchProjectSetups,
   fetchAvailableExecAgents,
-} from "../src/template/state/agent-workbench/execSettingsSlice";
+} from  "../src/application/state/agent-workbench/execSettingsSlice";
 
 describe("execSettingsSlice", () => {
   it("should return the initial state", () => {

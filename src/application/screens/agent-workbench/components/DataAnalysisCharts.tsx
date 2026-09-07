@@ -7,7 +7,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
 import { createEnFlexChart } from "@/template/styles/charttheme";
-import type { DataAnalysisHistoryEntry } from "@/template/state/agent-workbench/dataAnalysisSlice";
+import type { DataAnalysisHistoryEntry } from "@/application/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {
   history: DataAnalysisHistoryEntry[];
