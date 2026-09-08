@@ -17,7 +17,7 @@ import type {
 
 import {
   resolveApplicationScreen,
-} from "@/application/registry/applicationScreenRegistry";
+} from "../registry/applicationScreenRegistry";
 
 type MenuFeatureRule = {
   enabled?: boolean;
