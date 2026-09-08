@@ -31,10 +31,16 @@ import {
 } from "react-native-unistyles";
 
 import {
-  useAppDispatch,
-  useAppSelector,
   useSessionActivityWeb,
-} from "@core";
+} from "@/template/authentication/session/useSessionActivityWeb";
+
+import {
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
 
 import {
   DataPermissionsDialog,
