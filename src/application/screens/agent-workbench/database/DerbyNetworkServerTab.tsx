@@ -7,8 +7,10 @@ import { TextInput } from "@/template/components/design-system/ui-elements/TextI
 import { H2 } from "@/template/components/design-system/stylistic/H2";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { useAppDispatch } from "@/template/state/store/useAppDispatch";
-import { useAppSelector } from "@/template/state/store/useAppSelector";
+import {
+  useApplicationDispatch as useAppDispatch,
+  useApplicationSelector as useAppSelector,
+} from "@/application/state/hooks";
 import {
   clearDbSettingsError,
   fetchDbSettings,

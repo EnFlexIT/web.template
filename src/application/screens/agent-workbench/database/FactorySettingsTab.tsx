@@ -11,8 +11,10 @@ import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdo
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H2 } from "@/template/components/design-system/stylistic/H2";
 import { useTranslation } from "react-i18next";
-import { useAppDispatch } from "@/template/state/store/useAppDispatch";
-import { useAppSelector } from "@/template/state/store/useAppSelector";
+import {
+  useApplicationDispatch as useAppDispatch,
+  useApplicationSelector as useAppSelector,
+} from "@/application/state/hooks";
 import { clearDbSettingsError, fetchDbSystemParameters,fetchFactoryDbConnectionSettings,fetchGeneralDbConnectionSettings,saveFactoryDbConnectionSettings,testFactoryDbConnection,selectDbSettingsError,selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters,selectDbSystems,selectFactories,selectFactoryStates, selectGeneralConnection,selectSelectedFactoryConnection,selectSelectedFactoryId,setSelectedFactoryConnectionField,setSelectedFactoryId,fetchDbSettings,} from "@/application/state/agent-workbench/dbSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
