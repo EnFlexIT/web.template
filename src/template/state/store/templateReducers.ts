@@ -4,13 +4,14 @@ import apiReducer from "@/template/state/api/apiSlice";
 import dataPermissionsReducer from "@/template/state/privacy/dataPermissionsSlice";
 import menuReducer from "@/template/state/navigation/menuSlice";
 import readyReducer from "@/template/state/bootstrap/readySlice";
+
 import {
   OrganizationsData,
 } from "@/template/state/organizations/organizationsSlice";
+
 import baseModeReducer from "@/template/state/mode/baseModeSlice";
 import serversReducer from "@/template/state/server/serverSlice";
 import connectivityReducer from "@/template/state/connectivity/connectivitySlice";
-import dbSettingsReducer from "@/template/state/settings/database/dbSettingsSlice";
 import passwordChangePromptReducer from "@/template/state/authentication/passwordChangePromptSlice";
 import notificationsReducer from "@/template/state/notifications/notificationSlice";
 import updateReducer from "@/template/state/update/updateSlice";
@@ -38,7 +39,6 @@ export const templateReducers = {
   baseMode: baseModeReducer,
   servers: serversReducer,
   connectivity: connectivityReducer,
-  dbSettings: dbSettingsReducer,
   passwordChangePrompt: passwordChangePromptReducer,
   notifications: notificationsReducer,
   update: updateReducer,
@@ -50,6 +50,7 @@ export const templateReducers = {
   liveConsole: liveConsoleReducer,
   developerConsole: developerConsoleReducer,
 };
+
 /**
  * State owned by the reusable Base Template.
  *

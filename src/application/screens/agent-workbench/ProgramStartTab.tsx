@@ -53,7 +53,7 @@ import {
   fetchDbSettings,
   selectFactories,
   selectFactoryStates,
-} from "@/template/state/settings/database/dbSettingsSlice";
+} from "@/application/state/agent-workbench/dbSettingsSlice";
 
 import {
   useApplicationDispatch,

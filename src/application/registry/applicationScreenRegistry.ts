@@ -15,14 +15,23 @@ import {
   DataAnalyzingTab,
 } from "@/application/screens/agent-workbench/DataAnalyzingTab";
 
+import {
+  GeneralSettingsTab,
+} from "@/application/screens/agent-workbench/database/GeneralSettingsTab";
+
+import {
+  FactorySettingsTab,
+} from "@/application/screens/agent-workbench/database/FactorySettingsTab";
+
+import {
+  DerbyNetworkServerTab,
+} from "@/application/screens/agent-workbench/database/DerbyNetworkServerTab";
+
 /**
  * Application-specific screen registry.
  *
- * Agent.Workbench screens are still physically located
- * in the Template repository during the migration.
- *
- * They will later move into the Application layer without
- * changing the properties-based navigation protocol.
+ * The Application extends the reusable Template registry
+ * with its own product-specific screens.
  */
 export const applicationScreenRegistry:
   ScreenRegistry = {
@@ -33,6 +42,15 @@ export const applicationScreenRegistry:
 
   "data-analyzing":
     DataAnalyzingTab,
+
+  "general-settings":
+    GeneralSettingsTab,
+
+  "factory-settings":
+    FactorySettingsTab,
+
+  "derby-network-server":
+    DerbyNetworkServerTab,
 };
 
 export function resolveApplicationScreen(

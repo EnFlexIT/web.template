@@ -11,7 +11,7 @@ import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
-import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/template/state/settings/database/dbSettingsSlice";
+import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/application/state/agent-workbench/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/template/components/design-system/ui-elements/Icon/Icon";
 import Feather from "@expo/vector-icons/Feather";

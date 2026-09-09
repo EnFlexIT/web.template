@@ -47,18 +47,6 @@ import {
 } from "@/template/screens/liveConsole/LiveConsoleScreen";
 
 import {
-  GeneralSettingsTab,
-} from "@/template/screens/settings/database/GeneralSettingsTab";
-
-import {
-  FactorySettingsTab,
-} from "@/template/screens/settings/database/FactorySettingsTab";
-
-import {
-  DerbyNetworkServerTab,
-} from "@/template/screens/settings/database/DerbyNetworkServerTab";
-
-import {
   UpdateGeneralTab,
 } from "@/template/screens/update/tabs/UpdateGeneralTab";
 
@@ -113,13 +101,4 @@ export const templateScreenRegistry:
 
   "settings-file-upload":
     AppSettingsFileUploadScreen,
-
-  "general-settings":
-    GeneralSettingsTab,
-
-  "factory-settings":
-    FactorySettingsTab,
-
-  "derby-network-server":
-    DerbyNetworkServerTab,
 };

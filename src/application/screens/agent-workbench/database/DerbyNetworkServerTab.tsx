@@ -13,7 +13,7 @@ import {
   clearDbSettingsError,
   fetchDbSettings,
   saveDerbyNetworkServerSettings,
-  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "@/template/state/settings/database/dbSettingsSlice";
+  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "@/application/state/agent-workbench/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import Feather from "@expo/vector-icons/Feather";
 
