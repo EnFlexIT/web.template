@@ -1,10 +1,10 @@
 import {
   createTemplateStore,
-} from "@/template/state/store/createTemplateStore";
+} from "@template";
 
 import type {
   TemplateRootState,
-} from "@/template/state/store/templateReducers";
+} from "@template";
 
 import {
   applicationReducers,

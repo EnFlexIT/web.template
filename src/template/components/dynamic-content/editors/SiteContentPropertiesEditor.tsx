@@ -3,7 +3,7 @@ import React, { Dispatch, SetStateAction, useState } from "react";
 //Dynamic-Content-Api
 import { AbstractSiteContent as AbstractSiteContentType, SiteContentProperties, PropertyEntry } from "@/api/implementation/Dynamic-Content-Api";
 //Elemente
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 
 //Style
 import { StyleSheet, useUnistyles } from "react-native-unistyles";

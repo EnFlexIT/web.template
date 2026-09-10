@@ -4,7 +4,7 @@ import execSettingsReducer from "@/application/state/agent-workbench/execSetting
 
 import type {
   ApplicationReducers,
-} from "@/template/state/store/types";
+} from "@template";
 
 /**
  * Redux state owned by the concrete Application.

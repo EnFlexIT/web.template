@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 
 import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";

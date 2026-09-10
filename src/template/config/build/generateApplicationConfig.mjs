@@ -902,15 +902,15 @@ import type {
   ApplicationConfig,
   MenuVisibilityResolver,
   TabVisibilityResolver,
-} from "@/template/application/ApplicationConfig";
+} from "@template";
 
 import type {
   StaticMenuItem,
-} from "@/template/navigation/menu/types";
+} from "@template";
 
 import type {
   StaticTabItem,
-} from "@/template/navigation/tabs/types";
+} from "@template";
 
 import {
   resolveApplicationScreen,

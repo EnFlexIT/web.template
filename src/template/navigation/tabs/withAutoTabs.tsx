@@ -2,7 +2,7 @@ import React from "react";
 
 import type {
   StaticMenuItem,
-} from "@/template/navigation/menu/types";
+} from "@template";
 
 import {
   MenuHubScreen,

@@ -3,13 +3,13 @@ import { View } from "react-native";
 import AntDesign_ from "@expo/vector-icons/AntDesign";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import Feather from "@expo/vector-icons/Feather";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { H4 } from "@/template/components/design-system/stylistic/H4";
-import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { H2 } from "@/template/components/design-system/stylistic/H2";
+import { ActionButton } from "@design-system";
+import { TextInput } from "@design-system";
+import { H4 } from "@design-system";
+import { Card } from "@design-system";
+import { Dropdown } from "@design-system";
+import { ThemedText } from "@design-system";
+import { H2 } from "@design-system";
 import { useTranslation } from "react-i18next";
 import {
   useApplicationDispatch as useAppDispatch,

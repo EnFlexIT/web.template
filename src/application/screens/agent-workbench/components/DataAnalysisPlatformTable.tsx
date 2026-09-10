@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 
 import { Table } from "@design-system";
-import { H4 } from "@/template/components/design-system/stylistic/H4";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { H4 } from "@design-system";
+import { ThemedText } from "@design-system";
 import type { BackgroundPlatform } from "@/application/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {

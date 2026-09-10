@@ -20,7 +20,7 @@ import {
 
 import {
   ActionButton,
-} from "@/template/components/design-system/ui-elements/ActionButton";
+} from "@design-system";
 
 import {
   ThemedText,

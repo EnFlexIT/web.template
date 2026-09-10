@@ -19,35 +19,32 @@ import AntDesign_ from "@expo/vector-icons/AntDesign";
 
 import {
   ActionButton,
-} from "@/template/components/design-system/ui-elements/ActionButton";
+} from "@design-system";
 
 import {
   Dropdown,
-} from "@/template/components/design-system/ui-elements/Dropdown";
+} from "@design-system";
 
 import {
   TextInput,
-} from "@/template/components/design-system/ui-elements/TextInput";
+} from "@design-system";
 
 import {
   Card,
-} from "@/template/components/design-system/ui-elements/Card";
+} from "@design-system";
 
 import {
   H4,
-} from "@/template/components/design-system/stylistic/H4";
+} from "@design-system";
 
 import {
   ThemedText,
-} from "@/template/components/design-system/themed/ThemedText";
+} from "@design-system";
 
 import {
   SelectableList,
-} from "@/template/components/design-system/ui-elements/SelectableList";
-
-import type {
   SelectableItem,
-} from "@/template/components/design-system/ui-elements/SelectableList";
+} from "@design-system";
 
 import {
   fetchDbSettings,

@@ -2,11 +2,11 @@
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { H4 } from "@/template/components/design-system/stylistic/H4";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { Card } from "@design-system";
+import { H4 } from "@design-system";
+import { ThemedText } from "@design-system";
 import { VictoryArea, VictoryChart } from "enflex.it-graph";
-import { createEnFlexChart } from "@/template/styles/charttheme";
+import { createEnFlexChart } from "@template";
 import type { DataAnalysisHistoryEntry } from "@/application/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {

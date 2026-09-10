@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { useFileDropWeb } from "@/template/hooks/useFileDropWeb";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { H3 } from "@/template/components/design-system/stylistic/H3";

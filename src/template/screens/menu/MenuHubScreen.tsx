@@ -26,7 +26,7 @@ import {
 
 import type {
   StaticMenuItem,
-} from "@/template/navigation/menu/types";
+} from "@template";
 
 import {
   getNavigationRuntime,

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { Checkbox } from "@/template/components/design-system/ui-elements/Checkbox";
-import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { H2 } from "@/template/components/design-system/stylistic/H2";
-import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { ActionButton } from "@design-system";
+import { Checkbox } from "@design-system";
+import { TextInput } from "@design-system";
+import { H2 } from "@design-system";
+import { Card } from "@design-system";
+import { ThemedText } from "@design-system";
 import {
   useApplicationDispatch as useAppDispatch,
   useApplicationSelector as useAppSelector,

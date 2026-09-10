@@ -12,7 +12,7 @@ import * as DocumentPicker from "expo-document-picker";
 
 // UI Elements
 import { XButton } from "./XButton";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 
 // Styling
 import { StyleSheet } from "react-native-unistyles";

@@ -6,7 +6,7 @@ import {useApplicationConfig,} from "@/template/application/ApplicationConfigCon
 import { Logo } from "@/template/components/layout/Logo";
 import { Screen } from "@/template/components/layout/Screen";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";

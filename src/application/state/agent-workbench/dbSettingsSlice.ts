@@ -6,7 +6,7 @@ import {
 
 import type {
   TemplateRootState,
-} from "@/template/state/store/templateStoreTypes";
+} from "@template";
 
 type PropertyEntry = {
   key: string;

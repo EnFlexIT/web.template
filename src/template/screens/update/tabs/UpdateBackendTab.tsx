@@ -32,7 +32,7 @@ import {
   UpdateProgressPhase,
 } from "@/template/components/design-system/ui-elements/UpdateProgressDialog";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import {
   SelectableItem,

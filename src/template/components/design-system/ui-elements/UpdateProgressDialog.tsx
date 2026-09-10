@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import Feather from "@expo/vector-icons/Feather";
 
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 
 export type UpdateProgressPhase =
   | "installing"

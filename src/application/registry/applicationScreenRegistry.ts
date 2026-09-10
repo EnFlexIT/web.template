@@ -1,11 +1,11 @@
 import type {
   RegisteredScreen,
   ScreenRegistry,
-} from "@/template/navigation/registry/types";
+} from "@template";
 
 import {
   templateScreenRegistry,
-} from "@/template/navigation/registry/templateScreenRegistry";
+} from "@template";
 
 import {
   ProgramStartTab,

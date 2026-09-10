@@ -4,11 +4,11 @@ import type {
 
 import type {
   StaticMenuItem,
-} from "@/template/navigation/menu/types";
+} from "@template";
 
 import type {
   StaticTabItem,
-} from "@/template/navigation/tabs/types";
+} from "@template";
 
 export type MenuVisibilityContext = {
   authenticationMethod?: AuthMethod;

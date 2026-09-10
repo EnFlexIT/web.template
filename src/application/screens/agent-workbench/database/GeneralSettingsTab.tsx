@@ -1,21 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { Card } from "@/template/components/design-system/ui-elements/Card";
-import { Checkbox } from "@/template/components/design-system/ui-elements/Checkbox";
-import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
-import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
-import { H2 } from "@/template/components/design-system/stylistic/H2";
-import { H4 } from "@/template/components/design-system/stylistic/H4";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import { Card } from "@design-system";
+import { Checkbox } from "@design-system";
+import { Dropdown } from "@design-system";
+import { TextInput } from "@design-system";
+import { ActionButton } from "@design-system";
+import { H2 } from "@design-system";
+import { H4 } from "@design-system";
+import { ThemedText } from "@design-system";
 import {
   useApplicationDispatch as useAppDispatch,
   useApplicationSelector as useAppSelector,
 } from "@/application/state/hooks";
 import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/application/state/agent-workbench/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
-import { Icon } from "@/template/components/design-system/ui-elements/Icon/Icon";
+import { Icon } from "@design-system";
 import Feather from "@expo/vector-icons/Feather";
 
 // Local type for messages displayed in the feedback area, can be an info, success, or error message, or null if no message should be displayed

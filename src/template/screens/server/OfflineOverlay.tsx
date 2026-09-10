@@ -24,7 +24,7 @@ import {
 } from "@/template/state/api/apiSlice";
 
 import { Infobox } from "@/template/components/design-system/ui-elements/Infobox";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ServerModal } from "../login/ServerModal";
 

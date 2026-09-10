@@ -24,7 +24,7 @@ import { selectLanguage, setLanguage } from "@/template/state/localization/langu
 import { selectThemeInfo, setTheme } from "@/template/state/theme/themeSlice";
 import { styles } from "./styles";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
 import {

@@ -5,7 +5,7 @@ import { addNotification } from "@/template/state/notifications/notificationSlic
 import { Card } from "@/template/components/design-system/ui-elements/Card";
 import { H4 } from "@/template/components/design-system/stylistic/H4";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { useTranslation } from "react-i18next";
 import { selectApi } from "@/template/state/api/apiSlice";
 import { normalizeServerKey } from "@/template/state/server/serverSelectors";

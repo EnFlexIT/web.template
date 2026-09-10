@@ -5,7 +5,7 @@ import { useUnistyles } from "react-native-unistyles";
 import { Logo } from "@/template/components/layout/Logo";
 import { H1 } from "@/template/components/design-system/stylistic/H1";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
+import { ActionButton } from "@design-system";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import type { AuthMethod } from "@/template/state/api/apiSlice";
 import { openInitialPasswordChangeDialog } from "@/template/state/authentication/passwordChangePromptSlice";
