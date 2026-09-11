@@ -50,12 +50,14 @@ import {
   fetchDbSettings,
   selectFactories,
   selectFactoryStates,
-} from "@/application/state/agent-workbench/dbSettingsSlice";
+} from "@/template/state/agent-workbench/dbSettingsSlice";
+import {
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
 
 import {
-  useApplicationDispatch,
-  useApplicationSelector,
-} from "@/application/state/hooks";
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
 
 import {
   addEmbeddedSystemAgent,
@@ -76,7 +78,7 @@ import {
   selectLocalIpSelections,
   setEmbeddedSystemAgentField,
   setExecSettingsField,
-} from "@/application/state/agent-workbench/execSettingsSlice";
+} from "@/template/state/agent-workbench/execSettingsSlice";
 
 const AntDesign =
   withUnistyles(
@@ -376,55 +378,55 @@ function getFactoryStateMeta(
 
 export function ProgramStartTab() {
   const dispatch =
-    useApplicationDispatch();
+    useAppDispatch();
 
   const factories =
-    useApplicationSelector(
+    useAppSelector(
       selectFactories,
     );
 
   const factoryStates =
-    useApplicationSelector(
+    useAppSelector(
       selectFactoryStates,
     );
 
   const settings =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettings,
     );
 
   const projects =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettingsProjects,
     );
 
   const projectSetups =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettingsProjectSetups,
     );
 
   const availableAgents =
-    useApplicationSelector(
+    useAppSelector(
       selectAvailableExecAgents,
     );
 
   const localIpSelections =
-    useApplicationSelector(
+    useAppSelector(
       selectLocalIpSelections,
     );
 
   const isLoading =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettingsLoading,
     );
 
   const isSaving =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettingsSaving,
     );
 
   const error =
-    useApplicationSelector(
+    useAppSelector(
       selectExecSettingsError,
     );
 

@@ -23,10 +23,14 @@ import userProfileReducer from "@/template/state/authentication/userProfileSlice
 import liveConsoleReducer from "@/template/state/developer-tools/liveConsoleSlice";
 import developerConsoleReducer from "@/template/state/developer-tools/developerConsoleSlice";
 
+import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
+import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
+import dbSettingsReducer from "@/template/state/agent-workbench/dbSettingsSlice";
 /**
  * Reducers owned by the reusable Base Template.
  *
- * Application-specific reducers must not be added here.
+ * Agent.Workbench functionality is part of the Template.
+ * Concrete Applications may add additional reducers separately.
  */
 export const templateReducers = {
   language: languageReducer,
@@ -49,12 +53,14 @@ export const templateReducers = {
   userProfile: userProfileReducer,
   liveConsole: liveConsoleReducer,
   developerConsole: developerConsoleReducer,
+
+  dataAnalysis: dataAnalysisReducer,
+  execSettings: execSettingsReducer,
+  dbSettings: dbSettingsReducer,
 };
 
 /**
  * State owned by the reusable Base Template.
- *
- * Application-specific state is intentionally not included here.
  */
 export type TemplateRootState = {
   [K in keyof typeof templateReducers]:

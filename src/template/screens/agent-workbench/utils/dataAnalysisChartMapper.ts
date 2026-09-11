@@ -1,6 +1,6 @@
 ﻿import type {
   DataAnalysisHistoryEntry,
-} from "@/application/state/agent-workbench/dataAnalysisSlice";
+} from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 export function createCpuChartContent(
   history: DataAnalysisHistoryEntry[],

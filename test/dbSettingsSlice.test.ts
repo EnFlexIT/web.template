@@ -15,7 +15,7 @@ import reducer, {
   saveDerbyNetworkServerSettings,
   testGeneralDbConnection,
   testFactoryDbConnection,
-} from "../src/application/state/agent-workbench/dbSettingsSlice";
+} from "../src/template/state/agent-workbench/dbSettingsSlice";
 
 describe("dbSettingsSlice", () => {
   it("should return the initial state", () => {

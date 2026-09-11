@@ -12,10 +12,13 @@ import { ThemedText } from "@design-system";
 import { H2 } from "@design-system";
 import { useTranslation } from "react-i18next";
 import {
-  useApplicationDispatch as useAppDispatch,
-  useApplicationSelector as useAppSelector,
-} from "@/application/state/hooks";
-import { clearDbSettingsError, fetchDbSystemParameters,fetchFactoryDbConnectionSettings,fetchGeneralDbConnectionSettings,saveFactoryDbConnectionSettings,testFactoryDbConnection,selectDbSettingsError,selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters,selectDbSystems,selectFactories,selectFactoryStates, selectGeneralConnection,selectSelectedFactoryConnection,selectSelectedFactoryId,setSelectedFactoryConnectionField,setSelectedFactoryId,fetchDbSettings,} from "@/application/state/agent-workbench/dbSettingsSlice";
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
+import { clearDbSettingsError, fetchDbSystemParameters,fetchFactoryDbConnectionSettings,fetchGeneralDbConnectionSettings,saveFactoryDbConnectionSettings,testFactoryDbConnection,selectDbSettingsError,selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters,selectDbSystems,selectFactories,selectFactoryStates, selectGeneralConnection,selectSelectedFactoryConnection,selectSelectedFactoryId,setSelectedFactoryConnectionField,setSelectedFactoryId,fetchDbSettings,} from "@/template/state/agent-workbench/dbSettingsSlice";
 
 const AntDesign = withUnistyles(AntDesign_);
 

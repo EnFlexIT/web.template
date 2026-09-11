@@ -10,10 +10,13 @@ import { H2 } from "@design-system";
 import { H4 } from "@design-system";
 import { ThemedText } from "@design-system";
 import {
-  useApplicationDispatch as useAppDispatch,
-  useApplicationSelector as useAppSelector,
-} from "@/application/state/hooks";
-import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/application/state/agent-workbench/dbSettingsSlice";
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
+import {clearDbSettingsError,fetchDbSystemParameters,fetchGeneralDbConnectionSettings,saveGeneralDbConnectionSettings,testGeneralDbConnection,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,selectDbSystemParameters, selectDbSystems,selectGeneralConnection,  setGeneralConnectionField,} from "@/template/state/agent-workbench/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@design-system";
 import Feather from "@expo/vector-icons/Feather";

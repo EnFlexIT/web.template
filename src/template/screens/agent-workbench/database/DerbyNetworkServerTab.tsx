@@ -8,14 +8,17 @@ import { H2 } from "@design-system";
 import { Card } from "@design-system";
 import { ThemedText } from "@design-system";
 import {
-  useApplicationDispatch as useAppDispatch,
-  useApplicationSelector as useAppSelector,
-} from "@/application/state/hooks";
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
 import {
   clearDbSettingsError,
   fetchDbSettings,
   saveDerbyNetworkServerSettings,
-  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "@/application/state/agent-workbench/dbSettingsSlice";
+  selectDerbyNetworkServer,selectDbSettingsError, selectDbSettingsLoading,selectDbSettingsSaving,setDerbyField,} from "@/template/state/agent-workbench/dbSettingsSlice";
 import { useTranslation } from "react-i18next";
 import Feather from "@expo/vector-icons/Feather";
 

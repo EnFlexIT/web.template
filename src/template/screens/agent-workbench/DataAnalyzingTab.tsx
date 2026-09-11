@@ -16,20 +16,23 @@ import { H4 } from "@design-system";
 import { ThemedText } from "@design-system";
 
 import {
-  useApplicationDispatch,
-  useApplicationSelector,
-} from "@/application/state/hooks";
+  useAppDispatch,
+} from "@/template/state/store/useAppDispatch";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
 
 import type {
   BackgroundPlatform,
-} from "@/application/state/agent-workbench/dataAnalysisSlice";
+} from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 import {
   fetchDataAnalysis,
   selectDataAnalysisError,
   selectDataAnalysisHistory,
   selectDataAnalysisPlatforms,
-} from "@/application/state/agent-workbench/dataAnalysisSlice";
+} from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 function safeText(value: unknown, fallback = "-"): string {
   if (value === undefined || value === null || value === "") return fallback;
@@ -56,10 +59,10 @@ function getPlatformRole(platform: BackgroundPlatform, t: any): string {
 
 export function DataAnalyzingTab() {
   const { t } = useTranslation(["programStart"]);
-const dispatch = useApplicationDispatch();
-  const platforms = useApplicationSelector(selectDataAnalysisPlatforms);
-  const history = useApplicationSelector(selectDataAnalysisHistory);
-  const error = useApplicationSelector(selectDataAnalysisError);
+const dispatch = useAppDispatch();
+  const platforms = useAppSelector(selectDataAnalysisPlatforms);
+  const history = useAppSelector(selectDataAnalysisHistory);
+  const error = useAppSelector(selectDataAnalysisError);
 
   const [selectedPlatformName, setSelectedPlatformName] =
     useState<string | null>(null);

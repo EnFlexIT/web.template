@@ -7,7 +7,7 @@ import { Card } from "@design-system";
 import { H4 } from "@design-system";
 import { ThemedText } from "@design-system";
 
-import type { BackgroundPlatform } from "@/application/state/agent-workbench/dataAnalysisSlice";
+import type { BackgroundPlatform } from "@/template/state/agent-workbench/dataAnalysisSlice";
 
 type Props = {
   platforms: BackgroundPlatform[];

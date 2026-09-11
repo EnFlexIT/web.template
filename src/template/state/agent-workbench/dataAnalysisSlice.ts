@@ -7,7 +7,7 @@ import {
   BGPLATFORM,
   DATA_ANALYZING_PERFORMATIVE,
   bgPlatformKey,
-} from "@/application/state/agent-workbench/dataAnalyzingConstants";
+} from "@/template/state/agent-workbench/dataAnalyzingConstants";
 
 type PropertyEntry = {
   key: string;
