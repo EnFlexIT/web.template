@@ -58,6 +58,26 @@ import {
   UpdateBackendTab,
 } from "@/template/screens/update/tabs/UpdateBackendTab";
 
+import {
+  ProgramStartTab,
+} from "@/template/screens/agent-workbench/ProgramStartTab";
+
+import {
+  DataAnalyzingTab,
+} from "@/template/screens/agent-workbench/DataAnalyzingTab";
+
+import {
+  GeneralSettingsTab,
+} from "@/template/screens/agent-workbench/database/GeneralSettingsTab";
+
+import {
+  FactorySettingsTab,
+} from "@/template/screens/agent-workbench/database/FactorySettingsTab";
+
+import {
+  DerbyNetworkServerTab,
+} from "@/template/screens/agent-workbench/database/DerbyNetworkServerTab";
+
 export const templateScreenRegistry:
   ScreenRegistry = {
   "settings":
@@ -101,4 +121,19 @@ export const templateScreenRegistry:
 
   "settings-file-upload":
     AppSettingsFileUploadScreen,
+
+  "program-start":
+    ProgramStartTab,
+
+  "data-analyzing":
+    DataAnalyzingTab,
+
+  "general-settings":
+    GeneralSettingsTab,
+
+  "factory-settings":
+    FactorySettingsTab,
+
+  "derby-network-server":
+    DerbyNetworkServerTab,
 };
