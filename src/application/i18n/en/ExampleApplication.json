@@ -1,0 +1,5 @@
+{
+  "title": "Example Application",
+  "description": "This screen is provided by the Application.",
+  "extensionHint": "It demonstrates how a concrete Application can extend the Base Template with its own screens."
+}

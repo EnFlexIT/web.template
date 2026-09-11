@@ -7,15 +7,22 @@ import {
   templateScreenRegistry,
 } from "@template";
 
+import {
+  ExampleScreen,
+} from "@/application/screens/ExampleScreen";
+
 /**
  * Application-specific screen registry.
  *
- * The Application extends the reusable Template registry
- * with optional application-specific screens.
+ * The Application inherits all screens provided by the
+ * Base Template and may register additional screens here.
  */
 export const applicationScreenRegistry:
   ScreenRegistry = {
   ...templateScreenRegistry,
+
+  "example-screen":
+    ExampleScreen,
 };
 
 export function resolveApplicationScreen(

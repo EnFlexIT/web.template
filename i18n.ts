@@ -1,5 +1,11 @@
 import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
+import {
+  initReactI18next,
+} from "react-i18next";
+
+import {
+  applicationI18nResources,
+} from "./src/application/i18n";
 
 const resources = {
   en: {
@@ -16,12 +22,12 @@ const resources = {
     Update: require("./assets/locales/en/Update.json"),
     Notifications: require("./assets/locales/en/Notification.json"),
     DataBase: require("./assets/locales/en/DataBase.json"),
-    programStart : require("./assets/locales/en/ProgramStartTab.json"),
+    programStart: require("./assets/locales/en/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/en/FileConfiguration.json"),
     UserProfile: require("./assets/locales/en/UserProfile.json"),
     liveConsole: require("./assets/locales/en/LiveConsole.json"),
+  },
 
-    },
   de: {
     Login: require("./assets/locales/de/Login.json"),
     Drawer: require("./assets/locales/de/Drawer.json"),
@@ -36,7 +42,7 @@ const resources = {
     Update: require("./assets/locales/de/Update.json"),
     Notifications: require("./assets/locales/de/Notification.json"),
     DataBase: require("./assets/locales/de/DataBase.json"),
-    programStart : require("./assets/locales/de/ProgramStartTab.json"),
+    programStart: require("./assets/locales/de/ProgramStartTab.json"),
     FileConfiguration: require("./assets/locales/de/FileConfiguration.json"),
     UserProfile: require("./assets/locales/de/UserProfile.json"),
     liveConsole: require("./assets/locales/de/LiveConsole.json"),
@@ -49,12 +55,38 @@ i18n
     resources,
     lng: "de",
     fallbackLng: "de",
-    supportedLngs: ["en", "de"],
+    supportedLngs: [
+      "en",
+      "de",
+    ],
     compatibilityJSON: "v4",
     interpolation: {
       escapeValue: false,
     },
     debug: true,
   });
+
+Object.entries(
+  applicationI18nResources,
+).forEach(
+  ([language, namespaces]) => {
+    Object.entries(
+      namespaces,
+    ).forEach(
+      ([
+        namespace,
+        resource,
+      ]) => {
+        i18n.addResourceBundle(
+          language,
+          namespace,
+          resource,
+          true,
+          true,
+        );
+      },
+    );
+  },
+);
 
 export default i18n;

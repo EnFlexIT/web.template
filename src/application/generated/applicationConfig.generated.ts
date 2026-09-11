@@ -35,6 +35,13 @@ type TabFeatureRule = {
 const menuItems:
   readonly StaticMenuItem[] = [
   {
+    caption: "exampleApplication",
+    menuID: 3900,
+    parentID: 3003,
+    position: 99,
+    Screen: resolveApplicationScreen("example-screen"),
+  },
+  {
     caption: "settings",
     menuID: 3003,
     Screen: resolveApplicationScreen("settings"),

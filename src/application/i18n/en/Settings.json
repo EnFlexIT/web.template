@@ -1,0 +1,10 @@
+{
+  "Drawer": {
+    "exampleApplication": "Example Application"
+  },
+  "cards": {
+    "exampleApplication": {
+      "description": "Example of an application-specific screen."
+    }
+  }
+}

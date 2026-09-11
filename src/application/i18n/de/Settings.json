@@ -1,0 +1,10 @@
+{
+  "Drawer": {
+    "exampleApplication": "Beispielanwendung"
+  },
+  "cards": {
+    "exampleApplication": {
+      "description": "Beispiel für einen anwendungsspezifischen Screen."
+    }
+  }
+}
