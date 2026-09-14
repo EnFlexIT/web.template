@@ -1,6 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  templateMenuCatalog,
+  templateMenuRuntimeRules,
+  templateTabCatalog,
+  templateTabRuntimeRules,
+} from "./templateNavigationCatalog.mjs";
+
 const rootDirectory =
   process.cwd();
 
@@ -18,22 +25,16 @@ const applicationPropertiesPath =
     "application.properties",
   );
 
-const menuPropertiesPath =
+const featuresPropertiesPath =
   path.join(
     configDirectory,
-    "menu.properties",
+    "features.properties",
   );
 
-const tabsPropertiesPath =
+const navigationPropertiesPath =
   path.join(
     configDirectory,
-    "tabs.properties",
-  );
-
-const featureFlagsPropertiesPath =
-  path.join(
-    configDirectory,
-    "featureFlags.properties",
+    "navigation.properties",
   );
 
 const generatedDirectory =
@@ -49,6 +50,8 @@ const generatedFilePath =
     generatedDirectory,
     "applicationConfig.generated.ts",
   );
+
+const customMenuIdStart = 3900;
 
 /**
  * Parses the simple key=value subset of the
@@ -134,6 +137,25 @@ function readPropertiesFile(
   );
 }
 
+function readOptionalPropertiesFile(
+  filePath,
+) {
+  if (
+    !fs.existsSync(
+      filePath,
+    )
+  ) {
+    return {};
+  }
+
+  return parseProperties(
+    fs.readFileSync(
+      filePath,
+      "utf8",
+    ),
+  );
+}
+
 function requireProperty(
   properties,
   key,
@@ -191,259 +213,123 @@ function parseBoolean(
   );
 }
 
-function parseList(
-  value,
-) {
-  return value
-    .split(",")
-    .map(
-      (entry) =>
-        entry.trim(),
+function getKnownFeatureNames() {
+  const featureNames =
+    new Set();
+
+  for (
+    const definition of
+    Object.values(
+      templateMenuCatalog,
     )
-    .filter(Boolean);
+  ) {
+    if (
+      definition.feature
+    ) {
+      featureNames.add(
+        definition.feature,
+      );
+    }
+
+    for (
+      const feature of
+      definition.features ?? []
+    ) {
+      featureNames.add(
+        feature,
+      );
+    }
+  }
+
+  for (
+    const definition of
+    Object.values(
+      templateTabCatalog,
+    )
+  ) {
+    if (
+      definition.feature
+    ) {
+      featureNames.add(
+        definition.feature,
+      );
+    }
+  }
+
+  return featureNames;
 }
 
-function parseMenuConfiguration(
+const knownFeatureNames =
+  getKnownFeatureNames();
+
+function parseTemplateFeatureConfiguration(
+  properties,
+) {
+  const enabledFeatures =
+    new Map();
+
+  const pattern =
+    /^feature\.(.+)\.enabled$/;
+
+  for (
+    const [
+      key,
+      value,
+    ] of
+    Object.entries(
+      properties,
+    )
+  ) {
+    const match =
+      key.match(
+        pattern,
+      );
+
+    if (!match) {
+      throw new Error(
+        `Unknown template feature property: "${key}".`,
+      );
+    }
+
+    const featureName =
+      match[1];
+
+    if (
+      !knownFeatureNames.has(
+        featureName,
+      )
+    ) {
+      throw new Error(
+        `Unknown template feature: "${featureName}".`,
+      );
+    }
+
+    enabledFeatures.set(
+      featureName,
+      parseBoolean(
+        value,
+        key,
+      ),
+    );
+  }
+
+  return enabledFeatures;
+}
+
+function parseApplicationNavigation(
   properties,
 ) {
   const menuItems =
     new Map();
 
-  const pattern =
-    /^menu\.(\d+)\.(caption|parentId|position|screen)$/;
-
-  for (
-    const [
-      key,
-      value,
-    ] of
-    Object.entries(
-      properties,
-    )
-  ) {
-    const match =
-      key.match(pattern);
-
-    if (!match) {
-      throw new Error(
-        `Unknown menu property: "${key}".`,
-      );
-    }
-
-    const menuID =
-      parseInteger(
-        match[1],
-        `${key} menu id`,
-      );
-
-    const propertyName =
-      match[2];
-
-    const item =
-      menuItems.get(
-        menuID,
-      ) ?? {
-        menuID,
-      };
-
-    switch (
-      propertyName
-    ) {
-      case "caption":
-        item.caption =
-          value;
-        break;
-
-      case "parentId":
-        item.parentID =
-          parseInteger(
-            value,
-            key,
-          );
-        break;
-
-      case "position":
-        item.position =
-          parseInteger(
-            value,
-            key,
-          );
-        break;
-
-      case "screen":
-        item.screen =
-          value;
-        break;
-
-      default:
-        throw new Error(
-          `Unsupported menu property: "${key}".`,
-        );
-    }
-
-    menuItems.set(
-      menuID,
-      item,
-    );
-  }
-
-  for (
-    const item of
-    menuItems.values()
-  ) {
-    if (
-      !item.caption
-    ) {
-      throw new Error(
-        `Menu ${item.menuID} is missing caption.`,
-      );
-    }
-
-    if (
-      !item.screen
-    ) {
-      throw new Error(
-        `Menu ${item.menuID} is missing screen.`,
-      );
-    }
-  }
-
-  return [
-    ...menuItems.values(),
-  ];
-}
-
-function parseTabConfiguration(
-  properties,
-) {
-  const tabs =
-    new Map();
-
-  const pattern =
-    /^tab\.(\d+)\.([^.]+)\.(caption|position|screen|featureId)$/;
-
-  for (
-    const [
-      key,
-      value,
-    ] of
-    Object.entries(
-      properties,
-    )
-  ) {
-    const match =
-      key.match(pattern);
-
-    if (!match) {
-      throw new Error(
-        `Unknown tab property: "${key}".`,
-      );
-    }
-
-    const menuID =
-      parseInteger(
-        match[1],
-        `${key} menu id`,
-      );
-
-    const tabKey =
-      match[2];
-
-    const propertyName =
-      match[3];
-
-    const internalKey =
-      `${menuID}:${tabKey}`;
-
-    const tab =
-      tabs.get(
-        internalKey,
-      ) ?? {
-        menuID,
-        tabKey,
-      };
-
-    switch (
-      propertyName
-    ) {
-      case "caption":
-        tab.caption =
-          value;
-        break;
-
-      case "position":
-        tab.position =
-          parseInteger(
-            value,
-            key,
-          );
-        break;
-
-      case "screen":
-        tab.screen =
-          value;
-        break;
-
-      case "featureId":
-        tab.featureID =
-          parseInteger(
-            value,
-            key,
-          );
-        break;
-
-      default:
-        throw new Error(
-          `Unsupported tab property: "${key}".`,
-        );
-    }
-
-    tabs.set(
-      internalKey,
-      tab,
-    );
-  }
-
-  for (
-    const tab of
-    tabs.values()
-  ) {
-    if (
-      !tab.caption
-    ) {
-      throw new Error(
-        `Tab ${tab.menuID}.${tab.tabKey} is missing caption.`,
-      );
-    }
-
-    if (
-      !tab.screen
-    ) {
-      throw new Error(
-        `Tab ${tab.menuID}.${tab.tabKey} is missing screen.`,
-      );
-    }
-  }
-
-  return [
-    ...tabs.values(),
-  ];
-}
-
-function parseFeatureConfiguration(
-  properties,
-) {
-  const menuRules =
-    new Map();
-
-  const tabRules =
+  const tabItems =
     new Map();
 
   const menuPattern =
-    /^feature\.menu\.(\d+)\.(enabled|authInclude|authExclude)$/;
+    /^menu\.([A-Za-z0-9_-]+)\.(enabled|caption|parent|position|screen)$/;
 
   const tabPattern =
-    /^feature\.tab\.(\d+)\.(enabled|type|statePath|value)$/;
+    /^tab\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\.(enabled|caption|position|screen)$/;
 
   for (
     const [
@@ -460,54 +346,62 @@ function parseFeatureConfiguration(
       );
 
     if (menuMatch) {
-      const menuID =
-        parseInteger(
-          menuMatch[1],
-          `${key} menu id`,
-        );
+      const menuKey =
+        menuMatch[1];
 
       const propertyName =
         menuMatch[2];
 
-      const rule =
-        menuRules.get(
-          menuID,
-        ) ?? {};
+      const item =
+        menuItems.get(
+          menuKey,
+        ) ?? {
+          key: menuKey,
+        };
 
       switch (
         propertyName
       ) {
         case "enabled":
-          rule.enabled =
+          item.enabled =
             parseBoolean(
               value,
               key,
             );
           break;
 
-        case "authInclude":
-          rule.authInclude =
-            parseList(
+        case "caption":
+          item.caption =
+            value;
+          break;
+
+        case "parent":
+          item.parent =
+            value;
+          break;
+
+        case "position":
+          item.position =
+            parseInteger(
               value,
+              key,
             );
           break;
 
-        case "authExclude":
-          rule.authExclude =
-            parseList(
-              value,
-            );
+        case "screen":
+          item.screen =
+            value;
           break;
 
         default:
           throw new Error(
-            `Unsupported menu feature property: "${key}".`,
+            `Unsupported application menu property: "${key}".`,
           );
       }
 
-      menuRules.set(
-        menuID,
-        rule,
+      menuItems.set(
+        menuKey,
+        item,
       );
 
       continue;
@@ -519,106 +413,137 @@ function parseFeatureConfiguration(
       );
 
     if (tabMatch) {
-      const featureID =
-        parseInteger(
-          tabMatch[1],
-          `${key} feature id`,
-        );
+      const menuKey =
+        tabMatch[1];
 
-      const propertyName =
+      const tabKey =
         tabMatch[2];
 
-      const rule =
-        tabRules.get(
-          featureID,
-        ) ?? {};
+      const propertyName =
+        tabMatch[3];
+
+      const internalKey =
+        `${menuKey}:${tabKey}`;
+
+      const item =
+        tabItems.get(
+          internalKey,
+        ) ?? {
+          menuKey,
+          tabKey,
+        };
 
       switch (
         propertyName
       ) {
         case "enabled":
-          rule.enabled =
+          item.enabled =
             parseBoolean(
               value,
               key,
             );
           break;
 
-        case "type":
-          if (
-            value !==
-            "stateEquals"
-          ) {
-            throw new Error(
-              `Unsupported tab feature type for ${key}: "${value}".`,
+        case "caption":
+          item.caption =
+            value;
+          break;
+
+        case "position":
+          item.position =
+            parseInteger(
+              value,
+              key,
             );
-          }
-
-          rule.type =
-            value;
           break;
 
-        case "statePath":
-          rule.statePath =
-            value;
-          break;
-
-        case "value":
-          rule.value =
+        case "screen":
+          item.screen =
             value;
           break;
 
         default:
           throw new Error(
-            `Unsupported tab feature property: "${key}".`,
+            `Unsupported application tab property: "${key}".`,
           );
       }
 
-      tabRules.set(
-        featureID,
-        rule,
+      tabItems.set(
+        internalKey,
+        item,
       );
 
       continue;
     }
 
     throw new Error(
-      `Unknown feature flag property: "${key}".`,
+      `Unknown application navigation property: "${key}".`,
     );
   }
 
   for (
-    const [
-      featureID,
-      rule,
-    ] of tabRules
+    const item of
+    menuItems.values()
   ) {
     if (
-      rule.type ===
-      "stateEquals"
+      item.enabled ===
+      false
     ) {
-      if (
-        !rule.statePath
-      ) {
-        throw new Error(
-          `Tab feature ${featureID} uses stateEquals but has no statePath.`,
-        );
-      }
+      continue;
+    }
 
-      if (
-        rule.value ===
-        undefined
-      ) {
-        throw new Error(
-          `Tab feature ${featureID} uses stateEquals but has no value.`,
-        );
-      }
+    if (
+      !item.caption
+    ) {
+      throw new Error(
+        `Application menu "${item.key}" is missing caption.`,
+      );
+    }
+
+    if (
+      !item.screen
+    ) {
+      throw new Error(
+        `Application menu "${item.key}" is missing screen.`,
+      );
+    }
+  }
+
+  for (
+    const item of
+    tabItems.values()
+  ) {
+    if (
+      item.enabled ===
+      false
+    ) {
+      continue;
+    }
+
+    if (
+      !item.caption
+    ) {
+      throw new Error(
+        `Application tab "${item.menuKey}.${item.tabKey}" is missing caption.`,
+      );
+    }
+
+    if (
+      !item.screen
+    ) {
+      throw new Error(
+        `Application tab "${item.menuKey}.${item.tabKey}" is missing screen.`,
+      );
     }
   }
 
   return {
-    menuRules,
-    tabRules,
+    menuItems: [
+      ...menuItems.values(),
+    ],
+    tabItems: [
+      ...tabItems.values(),
+    ],
   };
 }
 
@@ -704,15 +629,6 @@ function renderMenuRule(
   const properties = [];
 
   if (
-    rule.enabled !==
-    undefined
-  ) {
-    properties.push(
-      `enabled: ${rule.enabled}`,
-    );
-  }
-
-  if (
     rule.authInclude
   ) {
     properties.push(
@@ -738,15 +654,8 @@ function renderTabRule(
   const properties = [];
 
   if (
-    rule.enabled !==
-    undefined
+    rule.type
   ) {
-    properties.push(
-      `enabled: ${rule.enabled}`,
-    );
-  }
-
-  if (rule.type) {
     properties.push(
       `type: ${JSON.stringify(rule.type)}`,
     );
@@ -777,19 +686,14 @@ const applicationProperties =
     applicationPropertiesPath,
   );
 
-const menuProperties =
-  readPropertiesFile(
-    menuPropertiesPath,
-  );
-
-const tabsProperties =
-  readPropertiesFile(
-    tabsPropertiesPath,
-  );
-
 const featureProperties =
   readPropertiesFile(
-    featureFlagsPropertiesPath,
+    featuresPropertiesPath,
+  );
+
+const navigationProperties =
+  readOptionalPropertiesFile(
+    navigationPropertiesPath,
   );
 
 const applicationId =
@@ -804,51 +708,412 @@ const applicationTitle =
     "ApplicationTitle",
   );
 
-const menuItems =
-  parseMenuConfiguration(
-    menuProperties,
-  );
-
-const tabItems =
-  parseTabConfiguration(
-    tabsProperties,
-  );
-
-const {
-  menuRules,
-  tabRules,
-} =
-  parseFeatureConfiguration(
+const enabledFeatures =
+  parseTemplateFeatureConfiguration(
     featureProperties,
   );
 
-const referencedTabFeatures =
-  new Set(
-    tabItems
-      .filter(
-        (tab) =>
-          tab.featureID !==
-          undefined,
-      )
-      .map(
-        (tab) =>
-          tab.featureID,
-      ),
+const {
+  menuItems:
+    applicationMenuDefinitions,
+  tabItems:
+    applicationTabDefinitions,
+} =
+  parseApplicationNavigation(
+    navigationProperties,
+  );
+
+function isFeatureEnabled(
+  featureName,
+) {
+  return (
+    enabledFeatures.get(
+      featureName,
+    ) === true
+  );
+}
+
+const enabledApplicationMenus =
+  applicationMenuDefinitions.filter(
+    (item) =>
+      item.enabled !== false,
+  );
+
+const enabledApplicationTabs =
+  applicationTabDefinitions.filter(
+    (item) =>
+      item.enabled !== false,
   );
 
 for (
-  const featureID of
-  referencedTabFeatures
+  const item of
+  enabledApplicationMenus
 ) {
   if (
-    !tabRules.has(
-      featureID,
+    Object.hasOwn(
+      templateMenuCatalog,
+      item.key,
     )
   ) {
     throw new Error(
-      `Tab feature ${featureID} is referenced by tabs.properties but has no rule in featureFlags.properties.`,
+      `Application menu key "${item.key}" conflicts with a Base Template menu key.`,
     );
   }
+}
+
+const customMenuIds =
+  new Map();
+
+for (
+  const [
+    index,
+    item,
+  ] of
+  enabledApplicationMenus.entries()
+) {
+  customMenuIds.set(
+    item.key,
+    customMenuIdStart +
+      index,
+  );
+}
+
+function getMenuId(
+  menuKey,
+) {
+  if (
+    Object.hasOwn(
+      templateMenuCatalog,
+      menuKey,
+    )
+  ) {
+    return templateMenuCatalog[
+      menuKey
+    ].menuID;
+  }
+
+  const customMenuID =
+    customMenuIds.get(
+      menuKey,
+    );
+
+  if (
+    customMenuID !==
+    undefined
+  ) {
+    return customMenuID;
+  }
+
+  throw new Error(
+    `Unknown menu reference: "${menuKey}".`,
+  );
+}
+
+function getMenuParent(
+  menuKey,
+) {
+  if (
+    Object.hasOwn(
+      templateMenuCatalog,
+      menuKey,
+    )
+  ) {
+    return templateMenuCatalog[
+      menuKey
+    ].parent;
+  }
+
+  const customMenu =
+    enabledApplicationMenus.find(
+      (item) =>
+        item.key === menuKey,
+    );
+
+  return customMenu?.parent;
+}
+
+const selectedMenuKeys =
+  new Set();
+
+for (
+  const [
+    menuKey,
+    definition,
+  ] of
+  Object.entries(
+    templateMenuCatalog,
+  )
+) {
+  const hasEnabledFeature =
+    definition.feature
+      ? isFeatureEnabled(
+          definition.feature,
+        )
+      : (
+          definition.features ?? []
+        ).some(
+          isFeatureEnabled,
+        );
+
+  if (
+    hasEnabledFeature
+  ) {
+    selectedMenuKeys.add(
+      menuKey,
+    );
+  }
+}
+
+for (
+  const item of
+  enabledApplicationMenus
+) {
+  selectedMenuKeys.add(
+    item.key,
+  );
+}
+
+for (
+  const item of
+  enabledApplicationTabs
+) {
+  selectedMenuKeys.add(
+    item.menuKey,
+  );
+}
+
+let parentAdded =
+  true;
+
+while (parentAdded) {
+  parentAdded =
+    false;
+
+  for (
+    const menuKey of
+    [...selectedMenuKeys]
+  ) {
+    const parent =
+      getMenuParent(
+        menuKey,
+      );
+
+    if (
+      parent &&
+      !selectedMenuKeys.has(
+        parent,
+      )
+    ) {
+      getMenuId(
+        parent,
+      );
+
+      selectedMenuKeys.add(
+        parent,
+      );
+
+      parentAdded =
+        true;
+    }
+  }
+}
+
+const menuItems = [];
+
+for (
+  const [
+    menuKey,
+    definition,
+  ] of
+  Object.entries(
+    templateMenuCatalog,
+  )
+) {
+  if (
+    !selectedMenuKeys.has(
+      menuKey,
+    )
+  ) {
+    continue;
+  }
+
+  menuItems.push({
+    caption:
+      definition.caption,
+    menuID:
+      definition.menuID,
+    parentID:
+      definition.parent
+        ? getMenuId(
+            definition.parent,
+          )
+        : undefined,
+    position:
+      definition.position,
+    screen:
+      definition.screen,
+  });
+}
+
+for (
+  const item of
+  enabledApplicationMenus
+) {
+  menuItems.push({
+    caption:
+      item.caption,
+    menuID:
+      getMenuId(
+        item.key,
+      ),
+    parentID:
+      item.parent
+        ? getMenuId(
+            item.parent,
+          )
+        : undefined,
+    position:
+      item.position,
+    screen:
+      item.screen,
+  });
+}
+
+const tabItems = [];
+
+const enabledTemplateTabKeys =
+  new Set();
+
+for (
+  const [
+    tabCatalogKey,
+    definition,
+  ] of
+  Object.entries(
+    templateTabCatalog,
+  )
+) {
+  if (
+    !isFeatureEnabled(
+      definition.feature,
+    )
+  ) {
+    continue;
+  }
+
+  if (
+    !selectedMenuKeys.has(
+      definition.menu,
+    )
+  ) {
+    continue;
+  }
+
+  const runtimeRule =
+    templateTabRuntimeRules[
+      tabCatalogKey
+    ];
+
+  tabItems.push({
+    menuID:
+      getMenuId(
+        definition.menu,
+      ),
+    tabKey:
+      definition.tabKey,
+    caption:
+      definition.caption,
+    position:
+      definition.position,
+    featureID:
+      runtimeRule?.featureID ??
+      definition.runtimeFeatureID,
+    screen:
+      definition.screen,
+  });
+
+  enabledTemplateTabKeys.add(
+    tabCatalogKey,
+  );
+}
+
+for (
+  const item of
+  enabledApplicationTabs
+) {
+  tabItems.push({
+    menuID:
+      getMenuId(
+        item.menuKey,
+      ),
+    tabKey:
+      item.tabKey,
+    caption:
+      item.caption,
+    position:
+      item.position,
+    screen:
+      item.screen,
+  });
+}
+
+const menuRules =
+  new Map();
+
+for (
+  const [
+    menuKey,
+    rule,
+  ] of
+  Object.entries(
+    templateMenuRuntimeRules,
+  )
+) {
+  if (
+    !selectedMenuKeys.has(
+      menuKey,
+    )
+  ) {
+    continue;
+  }
+
+  menuRules.set(
+    getMenuId(
+      menuKey,
+    ),
+    rule,
+  );
+}
+
+const tabRules =
+  new Map();
+
+for (
+  const [
+    tabCatalogKey,
+    rule,
+  ] of
+  Object.entries(
+    templateTabRuntimeRules,
+  )
+) {
+  if (
+    !enabledTemplateTabKeys.has(
+      tabCatalogKey,
+    )
+  ) {
+    continue;
+  }
+
+  const {
+    featureID,
+    ...runtimeRule
+  } = rule;
+
+  tabRules.set(
+    featureID,
+    runtimeRule,
+  );
 }
 
 const renderedMenuItems =
@@ -917,13 +1182,11 @@ import {
 } from "../registry/applicationScreenRegistry";
 
 type MenuFeatureRule = {
-  enabled?: boolean;
   authInclude?: readonly string[];
   authExclude?: readonly string[];
 };
 
 type TabFeatureRule = {
-  enabled?: boolean;
   type?: "stateEquals";
   statePath?: string;
   value?: string;
@@ -1005,13 +1268,6 @@ const isApplicationMenuEnabled:
       return true;
     }
 
-    if (
-      rule.enabled ===
-      false
-    ) {
-      return false;
-    }
-
     const authenticationMethod =
       context.authenticationMethod ??
       "unset";
@@ -1048,13 +1304,6 @@ const isApplicationTabEnabled:
 
     if (!rule) {
       return true;
-    }
-
-    if (
-      rule.enabled ===
-      false
-    ) {
-      return false;
     }
 
     if (
@@ -1120,7 +1369,7 @@ console.log(
     `Generated application configuration for "${applicationTitle}" (${applicationId}).`,
     `${menuItems.length} menu items.`,
     `${tabItems.length} tabs.`,
-    `${menuRules.size} menu feature rules.`,
-    `${tabRules.size} tab feature rules.`,
+    `${menuRules.size} menu runtime rules.`,
+    `${tabRules.size} tab runtime rules.`,
   ].join(" "),
 );

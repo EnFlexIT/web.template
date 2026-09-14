@@ -20,13 +20,11 @@ import {
 } from "../registry/applicationScreenRegistry";
 
 type MenuFeatureRule = {
-  enabled?: boolean;
   authInclude?: readonly string[];
   authExclude?: readonly string[];
 };
 
 type TabFeatureRule = {
-  enabled?: boolean;
   type?: "stateEquals";
   statePath?: string;
   value?: string;
@@ -34,13 +32,6 @@ type TabFeatureRule = {
 
 const menuItems:
   readonly StaticMenuItem[] = [
-  {
-    caption: "exampleApplication",
-    menuID: 3900,
-    parentID: 3003,
-    position: 99,
-    Screen: resolveApplicationScreen("example-screen"),
-  },
   {
     caption: "settings",
     menuID: 3003,
@@ -120,16 +111,17 @@ const menuItems:
     Screen: resolveApplicationScreen("server-settings"),
   },
   {
-    caption: "devHome",
-    menuID: 3011,
-    parentID: 3003,
-    Screen: resolveApplicationScreen("dev-home"),
-  },
-  {
     caption: "settingsFileUpload",
     menuID: 3024,
     parentID: 3021,
     Screen: resolveApplicationScreen("settings-file-upload"),
+  },
+  {
+    caption: "exampleApplication",
+    menuID: 3900,
+    parentID: 3003,
+    position: 99,
+    Screen: resolveApplicationScreen("example-screen"),
   },
 ];
 
@@ -147,7 +139,6 @@ const tabItems:
     tabKey: "factory",
     caption: "Factory Settings",
     position: 2,
-    featureID: 5001,
     Content: resolveApplicationScreen("factory-settings"),
   },
   {
@@ -176,7 +167,6 @@ const tabItems:
     tabKey: "backend",
     caption: "Backend",
     position: 3,
-    featureID: 3111,
     Content: resolveApplicationScreen("update-backend"),
   },
   {
@@ -203,13 +193,8 @@ const menuFeatureRules:
       MenuFeatureRule
     >
   > = {
-  3011: { enabled: false },
-  3012: { enabled: true },
-  3013: { enabled: true, authExclude: ["oidc"] },
-  3014: { enabled: true },
-  3010: { enabled: true },
-  3024: { enabled: true },
-  3025: { enabled: true, authInclude: ["oidc","unset"] },
+  3013: { authExclude: ["oidc"] },
+  3025: { authInclude: ["oidc","unset"] },
 };
 
 const tabFeatureRules:
@@ -219,8 +204,6 @@ const tabFeatureRules:
       TabFeatureRule
     >
   > = {
-  5001: { enabled: true },
-  3111: { enabled: true },
   3000: { type: "stateEquals", statePath: "execSettings.appliedStartAs", value: "SERVER_MASTER" },
 };
 
@@ -270,13 +253,6 @@ const isApplicationMenuEnabled:
       return true;
     }
 
-    if (
-      rule.enabled ===
-      false
-    ) {
-      return false;
-    }
-
     const authenticationMethod =
       context.authenticationMethod ??
       "unset";
@@ -313,13 +289,6 @@ const isApplicationTabEnabled:
 
     if (!rule) {
       return true;
-    }
-
-    if (
-      rule.enabled ===
-      false
-    ) {
-      return false;
     }
 
     if (
