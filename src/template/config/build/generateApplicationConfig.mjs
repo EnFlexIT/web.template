@@ -8,6 +8,11 @@ import {
   templateTabRuntimeRules,
 } from "./templateNavigationCatalog.mjs";
 
+import {
+  discoverApplicationScreens,
+  writeGeneratedApplicationScreenRegistry,
+} from "./applicationScreenDiscovery.mjs";
+
 const rootDirectory =
   process.cwd();
 
@@ -106,6 +111,17 @@ function parseProperties(
     if (!key) {
       throw new Error(
         `Invalid properties line: "${rawLine}". Property key is empty.`,
+      );
+    }
+
+    if (
+      Object.hasOwn(
+        properties,
+        key,
+      )
+    ) {
+      throw new Error(
+        `Duplicate property key: "${key}".`,
       );
     }
 
@@ -541,6 +557,7 @@ function parseApplicationNavigation(
     menuItems: [
       ...menuItems.values(),
     ],
+
     tabItems: [
       ...tabItems.values(),
     ],
@@ -716,12 +733,71 @@ const enabledFeatures =
 const {
   menuItems:
     applicationMenuDefinitions,
+
   tabItems:
     applicationTabDefinitions,
 } =
   parseApplicationNavigation(
     navigationProperties,
   );
+
+/**
+ * Discover Application-owned screens automatically.
+ *
+ * Example:
+ *
+ * ExampleScreen.tsx
+ * -> example-screen
+ *
+ * ExampleScreen2.tsx
+ * -> example-screen2
+ */
+const applicationScreens =
+  discoverApplicationScreens(
+    rootDirectory,
+  );
+
+const applicationScreenKeys =
+  new Set(
+    applicationScreens.map(
+      (screen) =>
+        screen.registryKey,
+    ),
+  );
+
+/**
+ * Validate all Application navigation references at build
+ * time instead of failing later in the browser.
+ */
+for (
+  const item of [
+    ...applicationMenuDefinitions,
+    ...applicationTabDefinitions,
+  ]
+) {
+  if (
+    item.enabled ===
+    false
+  ) {
+    continue;
+  }
+
+  if (
+    !applicationScreenKeys.has(
+      item.screen,
+    )
+  ) {
+    throw new Error(
+      [
+        `Unknown Application screen "${item.screen}".`,
+        "Create a matching screen file in",
+        "src/application/screens.",
+      ].join(
+        " ",
+      ),
+    );
+  }
+}
 
 function isFeatureEnabled(
   featureName,
@@ -745,9 +821,13 @@ const enabledApplicationTabs =
       item.enabled !== false,
   );
 
+/**
+ * Application menu keys must not shadow Base Template
+ * menu keys.
+ */
 for (
   const item of
-  enabledApplicationMenus
+  applicationMenuDefinitions
 ) {
   if (
     Object.hasOwn(
@@ -761,6 +841,14 @@ for (
   }
 }
 
+/**
+ * Assign internal IDs to Application menus.
+ *
+ * IDs are intentionally hidden from Application developers.
+ * All declared Application menus participate in ID allocation
+ * so that disabling one menu does not shift the IDs of the
+ * remaining menus.
+ */
 const customMenuIds =
   new Map();
 
@@ -769,7 +857,7 @@ for (
     index,
     item,
   ] of
-  enabledApplicationMenus.entries()
+  applicationMenuDefinitions.entries()
 ) {
   customMenuIds.set(
     item.key,
@@ -809,6 +897,18 @@ function getMenuId(
   );
 }
 
+function getApplicationMenu(
+  menuKey,
+) {
+  return (
+    applicationMenuDefinitions.find(
+      (item) =>
+        item.key ===
+        menuKey,
+    )
+  );
+}
+
 function getMenuParent(
   menuKey,
 ) {
@@ -823,18 +923,80 @@ function getMenuParent(
     ].parent;
   }
 
-  const customMenu =
-    enabledApplicationMenus.find(
-      (item) =>
-        item.key === menuKey,
+  return getApplicationMenu(
+    menuKey,
+  )?.parent;
+}
+
+/**
+ * Prevent an enabled Application menu from depending on
+ * an explicitly disabled Application parent.
+ */
+for (
+  const item of
+  enabledApplicationMenus
+) {
+  if (
+    !item.parent
+  ) {
+    continue;
+  }
+
+  const customParent =
+    getApplicationMenu(
+      item.parent,
     );
 
-  return customMenu?.parent;
+  if (
+    customParent?.enabled ===
+    false
+  ) {
+    throw new Error(
+      [
+        `Application menu "${item.key}" uses disabled`,
+        `parent menu "${item.parent}".`,
+      ].join(
+        " ",
+      ),
+    );
+  }
+}
+
+/**
+ * Prevent enabled tabs from pointing to disabled
+ * Application menus.
+ */
+for (
+  const item of
+  enabledApplicationTabs
+) {
+  const customMenu =
+    getApplicationMenu(
+      item.menuKey,
+    );
+
+  if (
+    customMenu?.enabled ===
+    false
+  ) {
+    throw new Error(
+      [
+        `Application tab "${item.menuKey}.${item.tabKey}"`,
+        `belongs to disabled menu "${item.menuKey}".`,
+      ].join(
+        " ",
+      ),
+    );
+  }
 }
 
 const selectedMenuKeys =
   new Set();
 
+/**
+ * Select Template menus when at least one associated
+ * Template feature is enabled.
+ */
 for (
   const [
     menuKey,
@@ -864,6 +1026,9 @@ for (
   }
 }
 
+/**
+ * Add enabled Application-owned menus.
+ */
 for (
   const item of
   enabledApplicationMenus
@@ -873,6 +1038,10 @@ for (
   );
 }
 
+/**
+ * An Application tab may also extend a Template menu.
+ * In that case the referenced menu must be selected.
+ */
 for (
   const item of
   enabledApplicationTabs
@@ -882,6 +1051,9 @@ for (
   );
 }
 
+/**
+ * Automatically add all required parent menus.
+ */
 let parentAdded =
   true;
 
@@ -920,6 +1092,9 @@ while (parentAdded) {
 
 const menuItems = [];
 
+/**
+ * Materialize selected Template menus.
+ */
 for (
   const [
     menuKey,
@@ -940,21 +1115,28 @@ for (
   menuItems.push({
     caption:
       definition.caption,
+
     menuID:
       definition.menuID,
+
     parentID:
       definition.parent
         ? getMenuId(
             definition.parent,
           )
         : undefined,
+
     position:
       definition.position,
+
     screen:
       definition.screen,
   });
 }
 
+/**
+ * Materialize enabled Application-owned menus.
+ */
 for (
   const item of
   enabledApplicationMenus
@@ -962,18 +1144,22 @@ for (
   menuItems.push({
     caption:
       item.caption,
+
     menuID:
       getMenuId(
         item.key,
       ),
+
     parentID:
       item.parent
         ? getMenuId(
             item.parent,
           )
         : undefined,
+
     position:
       item.position,
+
     screen:
       item.screen,
   });
@@ -984,6 +1170,9 @@ const tabItems = [];
 const enabledTemplateTabKeys =
   new Set();
 
+/**
+ * Materialize enabled Template tabs.
+ */
 for (
   const [
     tabCatalogKey,
@@ -1019,15 +1208,20 @@ for (
       getMenuId(
         definition.menu,
       ),
+
     tabKey:
       definition.tabKey,
+
     caption:
       definition.caption,
+
     position:
       definition.position,
+
     featureID:
       runtimeRule?.featureID ??
       definition.runtimeFeatureID,
+
     screen:
       definition.screen,
   });
@@ -1037,6 +1231,9 @@ for (
   );
 }
 
+/**
+ * Materialize Application-owned tabs.
+ */
 for (
   const item of
   enabledApplicationTabs
@@ -1046,12 +1243,16 @@ for (
       getMenuId(
         item.menuKey,
       ),
+
     tabKey:
       item.tabKey,
+
     caption:
       item.caption,
+
     position:
       item.position,
+
     screen:
       item.screen,
   });
@@ -1060,6 +1261,9 @@ for (
 const menuRules =
   new Map();
 
+/**
+ * Add internal Template menu runtime restrictions.
+ */
 for (
   const [
     menuKey,
@@ -1088,6 +1292,9 @@ for (
 const tabRules =
   new Map();
 
+/**
+ * Add internal Template tab runtime restrictions.
+ */
 for (
   const [
     tabCatalogKey,
@@ -1351,6 +1558,15 @@ export const applicationConfig:
 };
 `.trimStart();
 
+/**
+ * Generate the Application-owned screen registry before
+ * writing the final ApplicationConfig.
+ */
+writeGeneratedApplicationScreenRegistry(
+  rootDirectory,
+  applicationScreens,
+);
+
 fs.mkdirSync(
   generatedDirectory,
   {
@@ -1369,6 +1585,7 @@ console.log(
     `Generated application configuration for "${applicationTitle}" (${applicationId}).`,
     `${menuItems.length} menu items.`,
     `${tabItems.length} tabs.`,
+    `${applicationScreens.length} application screens.`,
     `${menuRules.size} menu runtime rules.`,
     `${tabRules.size} tab runtime rules.`,
   ].join(" "),

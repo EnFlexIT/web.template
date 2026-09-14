@@ -8,21 +8,20 @@ import {
 } from "@template";
 
 import {
-  ExampleScreen,
-} from "@/application/screens/ExampleScreen";
+  generatedApplicationScreenRegistry,
+} from "../generated/applicationScreenRegistry.generated";
 
 /**
- * Application-specific screen registry.
+ * Complete screen registry of the concrete Application.
  *
- * The Application inherits all screens provided by the
- * Base Template and may register additional screens here.
+ * Template screens are inherited from the Base Template.
+ * Application-owned screens are discovered and registered
+ * automatically by the configuration generator.
  */
 export const applicationScreenRegistry:
   ScreenRegistry = {
   ...templateScreenRegistry,
-
-  "example-screen":
-    ExampleScreen,
+  ...generatedApplicationScreenRegistry,
 };
 
 export function resolveApplicationScreen(
@@ -35,7 +34,7 @@ export function resolveApplicationScreen(
 
   if (!screen) {
     throw new Error(
-      `Unknown application screen registry key: "${key}".`,
+      `Unknown screen registry key: "${key}".`,
     );
   }
 
