@@ -324,32 +324,32 @@ export function DeveloperConsole({
             </ThemedText>
           </Pressable>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t(
-              "closeDeveloperConsole",
-              {
-                defaultValue:
-                  "Developer Console schlieÃŸen",
-              },
-            )}
-            onPress={() => {
-              dispatch(
-                closeDeveloperConsole(),
-              );
-            }}
-            style={({ pressed }) => [
-              s.closeButton,
-              pressed &&
-                s.buttonPressed,
-            ]}
-          >
-            <ThemedText
-              style={s.closeButtonText}
-            >
-              Ã—
-            </ThemedText>
-          </Pressable>
+         <Pressable
+  accessibilityRole="button"
+  accessibilityLabel={t(
+    "closeDeveloperConsole",
+    {
+      defaultValue:
+        "Close Developer Console",
+    },
+  )}
+  onPress={() => {
+    dispatch(
+      closeDeveloperConsole(),
+    );
+  }}
+  style={({ pressed }) => [
+    s.closeButton,
+    pressed &&
+      s.buttonPressed,
+  ]}
+>
+  <ThemedText
+    style={s.closeButtonText}
+  >
+    {"\u00D7"}
+  </ThemedText>
+</Pressable>
         </View>
       </View>
     );
