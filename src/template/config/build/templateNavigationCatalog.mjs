@@ -6,8 +6,10 @@
  *
  * Applications only enable or disable semantic features
  * through features.properties.
+ *
+ * Menu positions are derived automatically from the order
+ * of entries within the same parent.
  */
-
 export const templateMenuCatalog = {
   settings: {
     menuID: 3003,
@@ -95,7 +97,6 @@ export const templateMenuCatalog = {
     menuID: 3023,
     caption: "options",
     parent: "systemSettings",
-    position: 1,
     screen: "program-start",
     features: [
       "programStart",
@@ -211,7 +212,6 @@ export const templateTabCatalog = {
     position: 2,
     screen: "data-analyzing",
     feature: "dataAnalyzing",
-
     runtimeFeatureID: 3000,
   },
 };

@@ -1089,6 +1089,51 @@ while (parentAdded) {
     }
   }
 }
+/**
+ * Creates stable positions for Template menus automatically.
+ *
+ * The order of sibling entries in templateMenuCatalog defines
+ * their visual order in the generated navigation.
+ */
+const automaticTemplateMenuPositions =
+  new Map();
+
+const templateSiblingCounters =
+  new Map();
+
+for (
+  const [
+    menuKey,
+    definition,
+  ] of
+  Object.entries(
+    templateMenuCatalog,
+  )
+) {
+  if (
+    !definition.parent
+  ) {
+    continue;
+  }
+
+  const nextPosition =
+    (
+      templateSiblingCounters.get(
+        definition.parent,
+      ) ?? 0
+    ) + 1;
+
+  templateSiblingCounters.set(
+    definition.parent,
+    nextPosition,
+  );
+
+  automaticTemplateMenuPositions.set(
+    menuKey,
+    nextPosition,
+  );
+}
+
 
 const menuItems = [];
 
@@ -1111,27 +1156,29 @@ for (
   ) {
     continue;
   }
+menuItems.push({
+  caption:
+    definition.caption,
 
-  menuItems.push({
-    caption:
-      definition.caption,
+  menuID:
+    definition.menuID,
 
-    menuID:
-      definition.menuID,
+  parentID:
+    definition.parent
+      ? getMenuId(
+          definition.parent,
+        )
+      : undefined,
 
-    parentID:
-      definition.parent
-        ? getMenuId(
-            definition.parent,
-          )
-        : undefined,
+  position:
+    definition.position ??
+    automaticTemplateMenuPositions.get(
+      menuKey,
+    ),
 
-    position:
-      definition.position,
-
-    screen:
-      definition.screen,
-  });
+  screen:
+    definition.screen,
+});
 }
 
 /**

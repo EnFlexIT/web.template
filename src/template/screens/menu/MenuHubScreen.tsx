@@ -1,12 +1,27 @@
-import React, { useEffect, useMemo,useState,} from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-import {Platform,Pressable,View,} from "react-native";
+import {
+  Platform,
+  Pressable,
+  View,
+} from "react-native";
 
-import {useTranslation,} from "react-i18next";
+import {
+  useTranslation,
+} from "react-i18next";
 
-import {StyleSheet,useUnistyles,} from "react-native-unistyles";
+import {
+  StyleSheet,
+  useUnistyles,
+} from "react-native-unistyles";
 
-import { Screen,} from "@/template/components/layout/Screen";
+import {
+  Screen,
+} from "@/template/components/layout/Screen";
 
 import {
   Card,
@@ -53,15 +68,31 @@ import {
   useMenuNavigation,
 } from "@/template/navigation/routing/useMenuNavigation";
 
-type ChildItem = StaticMenuItem;
+type ChildItem =
+  StaticMenuItem;
 
+/**
+ * Sorts menu items by their generated position.
+ *
+ * Template menu positions are generated automatically
+ * from the order defined in templateNavigationCatalog.
+ *
+ * Items without an explicit position are placed after
+ * positioned items instead of being moved to the front.
+ */
 function sortByPosition(
   a: StaticMenuItem,
   b: StaticMenuItem,
 ) {
   return (
-    (a.position ?? 0) -
-    (b.position ?? 0)
+    (
+      a.position ??
+      Number.MAX_SAFE_INTEGER
+    ) -
+    (
+      b.position ??
+      Number.MAX_SAFE_INTEGER
+    )
   );
 }
 
@@ -85,22 +116,30 @@ function MenuHubCard({
     <Pressable
       onPress={onPress}
       onHoverIn={() =>
-        setIsHovered(true)
+        setIsHovered(
+          true,
+        )
       }
       onHoverOut={() =>
-        setIsHovered(false)
+        setIsHovered(
+          false,
+        )
       }
-      style={({ pressed }) => [
+      style={({
+        pressed,
+      }) => [
         styles.cardPressable,
 
-        Platform.OS === "web" &&
+        Platform.OS ===
+          "web" &&
           styles.cardWebTransition,
 
         {
           transform: [
             {
               translateY:
-                Platform.OS === "web" &&
+                Platform.OS ===
+                  "web" &&
                 isHovered &&
                 !pressed
                   ? -3
@@ -118,13 +157,16 @@ function MenuHubCard({
           ],
         },
 
-        Platform.OS === "web" &&
+        Platform.OS ===
+          "web" &&
           isHovered &&
           styles.cardHovered,
       ]}
     >
       <Card padding="lg">
-        <H4>{title}</H4>
+        <H4>
+          {title}
+        </H4>
 
         <ThemedText
           style={{
@@ -139,10 +181,14 @@ function MenuHubCard({
 }
 
 export function MenuHubScreen() {
-  const { theme } =
+  const {
+    theme,
+  } =
     useUnistyles();
 
-  const { t } =
+  const {
+    t,
+  } =
     useTranslation([
       "Settings",
       "Drawer",
@@ -151,7 +197,9 @@ export function MenuHubScreen() {
   const dispatch =
     useAppDispatch();
 
-  const { goTo } =
+  const {
+    goTo,
+  } =
     useMenuNavigation();
 
   const authenticationMethod =
@@ -161,16 +209,21 @@ export function MenuHubScreen() {
 
   const {
     activeMenuId,
-  } = useAppSelector(
-    selectMenu,
-  );
+  } =
+    useAppSelector(
+      selectMenu,
+    );
 
   const {
-    menu: menuConfiguration,
-  } = getNavigationRuntime();
+    menu:
+      menuConfiguration,
+  } =
+    getNavigationRuntime();
 
   useEffect(() => {
-    if (activeMenuId) {
+    if (
+      activeMenuId
+    ) {
       dispatch(
         setActiveMenuId(
           activeMenuId,
@@ -192,13 +245,14 @@ export function MenuHubScreen() {
                 item.menuID,
               ),
           )
-          .filter((item) =>
-            menuConfiguration.isEnabled(
-              item.menuID,
-              {
-                authenticationMethod,
-              },
-            ),
+          .filter(
+            (item) =>
+              menuConfiguration.isEnabled(
+                item.menuID,
+                {
+                  authenticationMethod,
+                },
+              ),
           ),
       [
         menuConfiguration,
@@ -223,7 +277,9 @@ export function MenuHubScreen() {
   const children:
     ChildItem[] =
     useMemo(() => {
-      if (!activeMenuId) {
+      if (
+        !activeMenuId
+      ) {
         return [];
       }
 
@@ -314,7 +370,9 @@ export function MenuHubScreen() {
             </Card>
           ) : (
             children.map(
-              (child) => (
+              (
+                child,
+              ) => (
                 <MenuHubCard
                   key={
                     child.menuID
@@ -341,43 +399,49 @@ export function MenuHubScreen() {
 }
 
 const styles =
-  StyleSheet.create(() => ({
-    container: {
-      flex: 1,
-      padding: 24,
-      gap: 24,
-    },
-
-    cardsRow: {
-      gap: 12,
-      flexDirection:
-        "column",
-      flexWrap: "wrap",
-    },
-
-    cardPressable: {
-      width: "100%",
-      borderRadius: 2,
-    },
-
-    cardWebTransition: {
-      cursor: "pointer",
-      transitionProperty:
-        "transform, box-shadow",
-      transitionDuration:
-        "160ms",
-      transitionTimingFunction:
-        "ease-out",
-    } as any,
-
-    cardHovered: {
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 6,
+  StyleSheet.create(
+    () => ({
+      container: {
+        flex: 1,
+        padding: 24,
+        gap: 24,
       },
-      shadowOpacity: 0.16,
-      shadowRadius: 12,
-      elevation: 4,
-    },
-  }));
+
+      cardsRow: {
+        gap: 12,
+        flexDirection:
+          "column",
+        flexWrap:
+          "wrap",
+      },
+
+      cardPressable: {
+        width: "100%",
+        borderRadius: 2,
+      },
+
+      cardWebTransition: {
+        cursor:
+          "pointer",
+        transitionProperty:
+          "transform, box-shadow",
+        transitionDuration:
+          "160ms",
+        transitionTimingFunction:
+          "ease-out",
+      } as any,
+
+      cardHovered: {
+        shadowColor:
+          "#000",
+        shadowOffset: {
+          width: 0,
+          height: 6,
+        },
+        shadowOpacity:
+          0.16,
+        shadowRadius: 12,
+        elevation: 4,
+      },
+    }),
+  );
