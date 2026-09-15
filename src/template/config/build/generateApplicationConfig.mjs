@@ -12,7 +12,10 @@ import {
   discoverApplicationScreens,
   writeGeneratedApplicationScreenRegistry,
 } from "./applicationScreenDiscovery.mjs";
-
+import {
+  discoverApplicationAssets,
+  writeGeneratedApplicationAssets,
+} from "./applicationAssetDiscovery.mjs";
 const rootDirectory =
   process.cwd();
 
@@ -754,6 +757,10 @@ const {
  */
 const applicationScreens =
   discoverApplicationScreens(
+    rootDirectory,
+  );
+  const applicationAssets =
+  discoverApplicationAssets(
     rootDirectory,
   );
 
@@ -1609,9 +1616,9 @@ export const applicationConfig:
  * Generate the Application-owned screen registry before
  * writing the final ApplicationConfig.
  */
-writeGeneratedApplicationScreenRegistry(
+writeGeneratedApplicationAssets(
   rootDirectory,
-  applicationScreens,
+  applicationAssets,
 );
 
 fs.mkdirSync(

@@ -1,4 +1,5 @@
 import {
+  Image,
   View,
 } from "react-native";
 
@@ -16,12 +17,16 @@ import {
   ThemedText,
 } from "@design-system";
 
+import {
+  ApplicationImages,
+} from "../generated/applicationAssets.generated";
+
 /**
  * Minimal example of an Application-owned screen.
  *
  * The screen is not part of the Base Template.
  * It demonstrates how an Application can provide
- * its own screen and translations.
+ * its own screen, translations and assets.
  */
 export function ExampleScreen() {
   const {
@@ -48,6 +53,16 @@ export function ExampleScreen() {
         <ThemedText>
           {t("extensionHint")}
         </ThemedText>
+
+        <Image
+          source={
+            ApplicationImages.solar
+          }
+          style={
+            styles.image
+          }
+          resizeMode="contain"
+        />
       </Card>
     </View>
   );
@@ -58,5 +73,11 @@ const styles =
     container: {
       width: "100%",
       padding: 16,
+    },
+
+    image: {
+      width: "100%",
+      height: 220,
+      marginTop: 16,
     },
   }));
