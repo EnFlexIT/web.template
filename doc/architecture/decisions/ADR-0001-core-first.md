@@ -14,29 +14,68 @@ Accepted
 
 ## Context
 
-The current web.template project evolved into a reusable platform.
+`web.template` evolved into a reusable platform.
 
-Introducing an application layer before defining the Core would likely lead to unnecessary restructuring and duplicate work.
+Before introducing concrete Application integration, the project required clear technical boundaries for reusable Core functionality.
+
+Without those boundaries, Application, Template and technical infrastructure responsibilities could become mixed and lead to unnecessary restructuring.
 
 ---
 
 ## Decision
 
-The Core architecture will be defined first.
+Core boundaries are defined before concrete Application concerns are introduced.
 
-Applications will be introduced only after the Core boundaries have been established.
+The architecture follows:
+
+```text
+Application --> Template --> Core
+```
+
+Core contains focused reusable technical capabilities.
+
+Template provides the reusable application platform.
+
+Application contains concrete product composition.
+
+Core must remain independent from Template and Application.
 
 ---
 
 ## Consequences
 
-Advantages
+### Advantages
 
-- Cleaner architecture
-- Less refactoring
-- Better separation of responsibilities
-- Easier onboarding
+* clear responsibility boundaries
+* reduced architectural coupling
+* fewer unnecessary refactorings
+* easier reuse of technical capabilities
+* clearer dependency direction
+* easier onboarding
 
-Disadvantages
+### Tradeoffs
 
-- Slightly more upfront planning
+* requires explicit architectural ownership decisions
+* some technical boundaries must be established before higher-level product composition
+
+---
+
+## Result
+
+The Core-first principle remains valid in the current architecture.
+
+It does not mean that all reusable functionality belongs in Core.
+
+Reusable React, Redux, navigation and application-shell behavior belongs to Template.
+
+The resulting dependency direction is:
+
+```text
+Application
+    |
+    v
+Template
+    |
+    v
+Core
+```

@@ -1,94 +1,104 @@
 # web.template
 
-Base Template for reusable EnFlexIT web applications.
+Reusable Base Template for EnFlexIT web applications.
 
-The repository provides reusable technical capabilities and application-shell
-functionality for concrete products such as Agent.Workbench, HEMS and future
-EnFlexIT applications.
+`web.template` provides:
 
-The central architecture follows the dependency direction:
+* reusable technical capabilities
+* reusable React application-platform functionality
+* standard Agent.Workbench functionality
+* an explicit integration contract for concrete Applications
 
-```text
+The authoritative dependency direction is:
+
+```text id="n1d9oc"
 Application --> Template --> Core
 ```
 
-The Base Template consists of:
+Standard Agent.Workbench functionality belongs to the Base Template.
 
-```text
-Template
-Core
-```
-
-Concrete products provide their own Application layer and are intended to live
-in separate Application repositories.
+Concrete products such as HEMS are Applications that consume the Base Template.
 
 ---
 
 ## Table of Contents
 
-- [About](#about)
-- [Architecture](#architecture)
-- [Repository Responsibilities](#repository-responsibilities)
-- [Requirements](#requirements)
-- [Working with web.template](#working-with-webtemplate)
-- [Creating a New Application](#creating-a-new-application)
-- [Connecting an Application to web.template](#connecting-an-application-to-webtemplate)
-- [Updating an Application from web.template](#updating-an-application-from-webtemplate)
-- [Application Configuration](#application-configuration)
-- [Development](#development)
-- [Build and Deployment](#build-and-deployment)
-  - [Manual Web Build](#manual-web-build)
-  - [Production Release](#production-release)
-  - [Test Release](#test-release)
-- [Project Structure](#project-structure)
-- [Styling](#styling)
-  - [Theme Structure](#theme-structure)
-  - [Design System](#design-system)
-  - [Unistyles](#unistyles)
-- [API](#api)
-- [State Management](#state-management)
-- [Architecture Decisions](#architecture-decisions)
-- [Documentation](#documentation)
-- [Architecture Summary](#architecture-summary)
+* [About](#about)
+* [Architecture](#architecture)
+* [AgentWorkbench Ownership](#agentworkbench-ownership)
+* [Repository Model](#repository-model)
+* [Requirements](#requirements)
+* [Local Development](#local-development)
+* [Application Configuration](#application-configuration)
+* [Feature Selection](#feature-selection)
+* [Application Navigation](#application-navigation)
+* [Application Screens](#application-screens)
+* [Creating a Concrete Application](#creating-a-concrete-application)
+* [Application Integration](#application-integration)
+* [Project Structure](#project-structure)
+* [State Management](#state-management)
+* [Navigation](#navigation)
+* [Authentication](#authentication)
+* [Server Infrastructure](#server-infrastructure)
+* [Update System](#update-system)
+* [Design System](#design-system)
+* [API Ownership](#api-ownership)
+* [Build and Deployment](#build-and-deployment)
+* [Manual Web Build](#manual-web-build)
+* [Production Release](#production-release)
+* [Test Release](#test-release)
+* [Architecture Validation](#architecture-validation)
+* [Architecture Decisions](#architecture-decisions)
+* [Documentation](#documentation)
+* [Architecture Summary](#architecture-summary)
 
 ---
 
-## About
+# About
 
-`web.template` provides reusable functionality for EnFlexIT web applications.
+`web.template` is the reusable EnFlexIT web application platform.
 
-Examples include:
+The repository contains two reusable architecture layers:
 
-- Application bootstrap
-- Authentication and session handling
-- Server selection and server checks
-- Navigation infrastructure
-- Menu and tab infrastructure
-- Redux infrastructure
-- Design system
-- Notifications
-- Update infrastructure
-- Dynamic content
-- Reusable screens
-- Runtime utilities
-- Technical Core helpers
+```text id="3qo612"
+Template
+Core
+```
 
-The repository can currently also be developed and executed as a standalone
-project.
+and the in-repository Agent.Workbench Application composition under:
 
-At the same time, it acts as the Base Template for concrete applications such
-as Agent.Workbench and HEMS.
+```text id="4lf6pv"
+src/application/
+```
 
-The goal is to keep reusable functionality in one common place while concrete
-products remain independently configurable and developable.
+The current Agent.Workbench Application composition validates the Application integration contract.
+
+It is not Agent.Workbench.
+
+Reusable platform functionality includes areas such as:
+
+* Application bootstrap
+* authentication and session handling
+* server selection
+* technical server checks
+* navigation
+* Redux infrastructure
+* design system
+* notifications
+* update infrastructure
+* dynamic content
+* reusable screens
+* runtime utilities
+* technical Core capabilities
+* standard Agent.Workbench functionality
 
 ---
 
-## Architecture
+# Architecture
 
 The authoritative dependency direction is:
 
-```text
+```text id="v1ovp4"
 Application
     |
     v
@@ -98,589 +108,661 @@ Template
 Core
 ```
 
-### Application
+The layers represent architectural responsibility.
 
-Application contains concrete product functionality.
+They are not merely directory names.
 
-Examples include:
+---
 
-- Application identity
-- Application configuration
-- Menus
-- Tabs
-- Product-specific screens
-- Product-specific Redux state
-- Branding
-- Business logic
-- Product-specific backend integration
-- Product build configuration
-- Product deployment configuration
+## Application
 
-Application may depend on Template and Core.
+Application contains concrete product composition.
 
-### Template
+Typical responsibilities include:
 
-Template contains the reusable application shell.
+* Application identity
+* Application metadata
+* semantic Template feature selection
+* Application-specific navigation extensions
+* Application-specific screens
+* Application translations
+* optional Application-specific Redux state
+* concrete product business logic
+* concrete product backend integration
+* product branding
+* product-specific build configuration
+* product-specific deployment configuration
 
-Examples include:
+Application may use supported Template and Core surfaces.
 
-- `TemplateApp`
-- `createTemplateApp`
-- `ApplicationConfig`
-- Navigation infrastructure
-- Menu and tab infrastructure
-- Redux infrastructure
-- Authentication orchestration
-- Session handling
-- Server-selection behavior
-- Design system
-- Notifications
-- Update orchestration
-- Reusable screens
-- Reusable React hooks and components
+Template and Core must not depend on concrete Application implementation.
+
+---
+
+## Template
+
+Template contains the reusable application platform.
+
+Typical responsibilities include:
+
+* `TemplateApp`
+* `createTemplateApp`
+* `ApplicationConfig`
+* `ApplicationConfigContext`
+* React application shell
+* navigation infrastructure
+* Template navigation definitions
+* Template screen registry
+* Redux infrastructure
+* authentication and session orchestration
+* server selection
+* settings
+* design system
+* notifications
+* update orchestration
+* localization infrastructure
+* reusable screens
+* reusable hooks
+* reusable components
+* standard Agent.Workbench functionality
+* Agent.Workbench state
+* reusable Agent.Workbench API integration where appropriate
 
 Template may depend on Core.
 
 Template must not depend on a concrete Application.
 
-### Core
+---
+
+## Core
 
 Core contains focused reusable technical capabilities.
 
+Current high-level areas include:
+
+```text id="2dxk29"
+src/core/authentication/
+src/core/runtime/
+src/core/server/
+src/core/update/
+```
+
+Typical Core responsibilities include:
+
+* technical authentication helpers
+* authentication-related technical types
+* runtime helpers
+* server normalization
+* server validation
+* technical server checks
+* environment detection
+* technical update helpers
+* framework-independent technical behavior
+
+Core must not depend on:
+
+```text id="c9n2xu"
+Template
+Application
+```
+
+React presentation and Redux application orchestration generally do not belong in Core.
+
+---
+
+# Agent.Workbench Ownership
+
+Standard Agent.Workbench functionality is intentionally part of the Base Template.
+
+The ownership decision is:
+
+```text id="z64oqp"
+Agent.Workbench standard functionality
+    -> Template
+```
+
 Examples include:
 
-- Technical authentication helpers
-- Technical runtime utilities
-- Server normalization and validation
-- Technical server detection
-- Pure update helpers
-- Technical types and utilities
+```text id="gac8qw"
+Program Start
+Data Analyzing
+Database configuration
+Server configuration
+Live Console
+Settings
+Agent.Workbench navigation
+Agent.Workbench state
+reusable Agent.Workbench API integration
+```
 
-Core must not depend on Template or Application.
+Agent.Workbench is **not** a separate concrete Application in the accepted architecture.
+
+The architecture therefore does not require:
+
+```text id="p6dt2j"
+a separate Agent.Workbench Application
+a separate Agent.Workbench Application repository
+Agent.Workbench state extraction
+Agent.Workbench screen extraction
+Agent.Workbench navigation extraction
+```
+
+Agent.Workbench-related naming alone does not make functionality Application-owned.
+
+Ownership follows responsibility.
 
 ---
 
-## Repository Responsibilities
+# Repository Model
 
-The target repository model is:
+The current repository contains:
 
-```text
-                 Base Template Repository
-                 +------------------------+
-                 | Template               |
-                 |        |               |
-                 |        v               |
-                 | Core                   |
-                 +-----------+------------+
-                             ^
-                             |
-              +--------------+--------------+
-              |                             |
-+--------------------------+   +--------------------------+
-| Agent.Workbench          |   | HEMS                     |
-| Application Repository   |   | Application Repository   |
-+--------------------------+   +--------------------------+
+```text id="mnedw1"
+web.template
+|
++-- src/application/
+|
++-- src/template/
+|
++-- src/core/
 ```
 
-Future Applications follow the same model.
+Responsibilities are:
 
-The Base Template does not contain a runtime mechanism that selects between
-multiple products.
+```text id="aujmdf"
+src/application/
+    Agent.Workbench Application composition
 
-Each concrete Application supplies its own product configuration and
-functionality through explicit contracts.
-
-The current repository is still in an incremental migration phase.
-
-Some Agent.Workbench-specific functionality may therefore still physically
-exist below:
-
-```text
 src/template/
+    reusable Base Template
+    including standard Agent.Workbench functionality
+
+src/core/
+    reusable technical capabilities
 ```
 
-Its temporary physical location does not automatically define its final
-architectural ownership.
+Future concrete Applications such as HEMS may consume the Base Template from their own repositories.
+
+Conceptually:
+
+```text id="cppmc7"
+                 web.template
+                 Base Template
+                      ^
+                      |
+              +-------+-------+
+              |               |
+            HEMS        Future Application
+```
+
+Agent.Workbench is not shown as a separate consumer because its standard functionality is already part of the Base Template.
 
 ---
 
-## Requirements
+# Requirements
 
-To download, install and run the project locally, the following tools are
-required:
+Local development requires:
 
-- Git
-- Node.js
-- npm
+* Git
+* Node.js
+* npm
 
-The GitHub Actions release workflows currently use:
+Verify the installed tools with:
 
-```text
-Node.js 20
-npm 10
-```
-
-After installing the required software, verify the installation:
-
-```bash
+```bash id="pxexkt"
 git --version
 node -v
 npm -v
 ```
 
-All three commands should return an installed version.
+The committed GitHub Actions workflows define the Node.js and npm versions used for automated builds.
+
+When changing release infrastructure, always verify the current workflow YAML rather than relying only on documentation.
 
 ---
 
-## Working with web.template
-
-The Base Template repository can be cloned and executed directly on a
-developer PC.
+# Local Development
 
 Clone the repository:
 
-```bash
+```bash id="y00ns9"
 git clone git@github.com:EnFlexIT/web.template.git
 ```
 
-Enter the project directory:
+Enter the repository:
 
-```bash
+```bash id="mmpoqq"
 cd web.template
 ```
 
-Install all dependencies:
+Install dependencies:
 
-```bash
+```bash id="3ux4ko"
 npm install
 ```
 
-The project uses generated Application configuration.
+Generate Application configuration:
 
-For normal web development, start the application with:
+```bash id="tj7wja"
+npm run config:generate
+```
 
-```bash
+Start web development:
+
+```bash id="vyn8gc"
 npm run web
 ```
 
-Alternatively:
+or:
 
-```bash
+```bash id="zzdnmj"
 npm start
 ```
 
-The npm commands should be preferred because npm lifecycle hooks automatically
-generate the Application configuration before startup.
+Normal npm startup commands are preferred because project lifecycle hooks may perform required setup before Expo starts.
 
-The application configuration can also be generated manually:
+---
 
-```bash
-npm run config:generate
-```
+## TypeScript Validation
 
-TypeScript can be checked without generating build output using:
+Run:
 
-```bash
+```bash id="0wx3af"
 npx tsc --noEmit
 ```
 
-### Normal local development flow
+---
 
-A typical local setup therefore looks like:
+## Tests
 
-```bash
-git clone git@github.com:EnFlexIT/web.template.git
-cd web.template
-npm install
-npm run web
+Run the test suite with:
+
+```bash id="tofj8j"
+npm test -- --runInBand
 ```
 
-After Metro/Expo has started, the application can be opened in the browser.
-
-The exact development URL is displayed by Expo.
-
-### Direct Expo startup
-
-Directly running:
-
-```bash
-npx expo start
-```
-
-is not the preferred normal startup path.
-
-The reason is that direct Expo commands bypass npm lifecycle hooks such as:
-
-```text
-prestart
-preweb
-```
-
-These hooks currently ensure that the Application configuration is generated
-before startup.
+Run targeted tests when working on a specific subsystem.
 
 ---
 
-## Creating a New Application
+## Standard Validation Sequence
 
-Concrete products should live in their own Application repositories while
-using `web.template` as their shared Base Template.
+A useful validation sequence is:
 
-Examples are:
-
-```text
-Agent.Workbench
-HEMS
-Future Application
-```
-
-Conceptually:
-
-```text
-web.template
-├── Template
-└── Core
-
-Agent.Workbench
-└── Application
-
-HEMS
-└── Application
-```
-
-### Create the repository on GitHub
-
-If the `web.template` repository provides the GitHub template functionality,
-a new Application can initially be created through:
-
-```text
-GitHub
-    |
-    v
-web.template
-    |
-    v
-Use this template
-    |
-    v
-Create new repository
-```
-
-The newly created repository is the concrete product repository.
-
-For example:
-
-```text
-Agent.Workbench
-```
-
-or:
-
-```text
-HEMS
-```
-
-The new repository contains the initial Base Template source while its normal
-Git remote:
-
-```text
-origin
-```
-
-points to the concrete Application repository.
-
-### Clone the new Application
-
-After creating the Application repository, clone it locally:
-
-```bash
-git clone <application-repository-url>
-```
-
-Enter the project:
-
-```bash
-cd <application-repository-directory>
-```
-
-Install its dependencies:
-
-```bash
-npm install
-```
-
-Generate the Application configuration:
-
-```bash
+```bash id="e2jp2m"
 npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+git diff --check
+git status --short
 ```
-
-Start the Application:
-
-```bash
-npm run web
-```
-
-At this point the Application repository can be developed independently.
-
-The next step is to connect it to the shared `web.template` repository.
 
 ---
 
-## Connecting an Application to web.template
+# Application Configuration
 
-An Application repository uses two Git remotes with different
-responsibilities.
+Developer-facing Application configuration is located under:
+
+```text id="ggkcsh"
+src/application/config/
+```
+
+The current configuration consists of:
+
+```text id="qvwj5r"
+application.properties
+features.properties
+navigation.properties
+```
+
+These files have different responsibilities.
+
+---
+
+## application.properties
+
+Contains Application identity and metadata.
 
 Conceptually:
 
-```text
-Application Repository
-|
-+-- origin
-|   |
-|   +-- concrete Application repository
-|
-+-- template
-    |
-    +-- shared web.template repository
+```properties id="yma4zy"
+ApplicationId=example-application
+ApplicationTitle=Application composition example
+ApplicationLogo=../assets/bild.png
+ApplicationContact=admin@example.com
+ApplicationOwner=EnFlexIT
 ```
 
-### `origin`
+The exact supported property set is defined by the configuration tooling.
 
-`origin` points to the concrete product.
-
-For example:
-
-```text
-origin -> Agent.Workbench
-```
-
-or:
-
-```text
-origin -> HEMS
-```
-
-Application-specific development is pushed to this repository.
-
-### `template`
-
-`template` points to the shared Base Template:
-
-```text
-EnFlexIT/web.template
-```
-
-Reusable Template and Core changes can be fetched from this repository.
-
-### Configure the Template remote
-
-Add `web.template` as an additional Git remote:
-
-```bash
-git remote add template git@github.com:EnFlexIT/web.template.git
-```
-
-Fetch the Base Template repository:
-
-```bash
-git fetch template
-```
-
-Create a local `template` branch based on the remote Base Template `master`
-branch:
-
-```bash
-git branch template template/master
-```
-
-These are the three essential commands for connecting an Application
-repository with the Base Template:
-
-```bash
-git remote add template git@github.com:EnFlexIT/web.template.git
-git fetch template
-git branch template template/master
-```
-
-No additional setup script is required for this.
-
-### Verify the remotes
-
-Check the configured Git remotes:
-
-```bash
-git remote -v
-```
-
-A correctly configured Application repository should conceptually contain:
-
-```text
-origin    -> concrete Application repository
-template  -> EnFlexIT/web.template
-```
-
-You can also inspect all branches:
-
-```bash
-git branch -a
-```
-
-The Git setup now separates product development from shared Base Template
-development:
-
-```text
-origin
-  = Application repository
-
-template
-  = Base Template repository
-```
+Application developers should not need to edit TypeScript or JSON for normal metadata configuration.
 
 ---
 
-## Updating an Application from web.template
+## features.properties
 
-When reusable functionality changes in `web.template`, an Application can
-retrieve those changes through the `template` remote.
+Controls reusable Template capabilities semantically.
 
-First fetch the newest Base Template state:
+Examples:
 
-```bash
-git fetch template
+```properties id="zusakd"
+feature.notifications.enabled=true
+feature.appearance.enabled=true
+feature.serverSettings.enabled=true
+feature.liveConsole.enabled=true
+feature.programStart.enabled=true
+feature.dataAnalyzing.enabled=true
+feature.database.general.enabled=true
 ```
 
-Switch to the local Template branch:
+Application selects the capability.
 
-```bash
-git switch template
-```
-
-Integrate the newest remote Template state:
-
-```bash
-git merge template/master
-```
-
-The local Template branch now contains the latest fetched Base Template state.
-
-Return to the Application branch.
-
-For example:
-
-```bash
-git switch master
-```
-
-If the concrete Application uses another development branch, switch to that
-branch instead.
-
-Then merge the Template changes into the Application:
-
-```bash
-git merge template
-```
-
-Conceptually:
-
-```text
-web.template
-      |
-      | git fetch template
-      v
-template/master
-      |
-      v
-local template branch
-      |
-      | git merge template
-      v
-Application branch
-```
-
-Template changes should always be reviewed before completing the merge.
-
-The Application may contain:
-
-- Product-specific configuration
-- Product-specific screens
-- Product-specific Redux state
-- Branding
-- Backend integrations
-- Build configuration
-- Deployment configuration
-
-Merge conflicts therefore have to be resolved according to architectural
-ownership.
-
-The Git `template` branch is only a synchronization mechanism.
-
-It is not an additional architecture layer.
-
-The architecture remains:
-
-```text
-Application --> Template --> Core
-```
+Template owns the implementation.
 
 ---
 
-## Application Configuration
+## navigation.properties
 
-Application-specific developer configuration is stored in:
-
-```text
-src/application/config/application.properties
-```
+Contains Application-specific navigation extensions.
 
 Example:
 
-```properties
-ApplicationId=agent-workbench
-ApplicationTitle=Agent.Workbench
-ApplicationLogo=../assets/bild.png
-ApplicationContact=admin@xxx
-ApplicationOwner=EnFlex.IT
-
-LegalImprintCompanyHomepage=
-LegalImprintCompanyName=
-LegalImprintEmail=admin@xxx
+```properties id="cruidc"
+menu.example.enabled=true
+menu.example.caption=exampleApplication
+menu.example.parent=settings
+menu.example.position=99
+menu.example.screen=example-screen
 ```
 
-The configuration intentionally uses simple key-value properties.
+Application navigation extends Template navigation.
 
-Developers should not need to modify TypeScript or JSON files just to configure
-basic Application metadata.
+It does not replace the complete Template navigation tree.
 
-The configuration generator is located at:
+---
 
-```text
+## Configuration Generation
+
+Configuration tooling is located under:
+
+```text id="pqp3t1"
+src/template/config/build/
+```
+
+A central generator is:
+
+```text id="g41zrd"
 src/template/config/build/generateApplicationConfig.mjs
 ```
 
-It generates:
+Generated Application artifacts are written under:
 
-```text
-src/application/generated/applicationConfig.generated.ts
+```text id="6y6zmw"
+src/application/generated/
 ```
 
-Generate the configuration manually with:
+Generate them with:
 
-```bash
+```bash id="ydwz1c"
 npm run config:generate
 ```
 
 Conceptually:
 
-```text
+```text id="uo46gs"
+Application .properties
+        |
+        v
+Template configuration tooling
+        |
+        v
+generated runtime configuration
+        |
+        v
+Application composition
+        |
+        v
+Template runtime
+```
+
+Generated TypeScript is runtime/build output.
+
+It is not the normal developer-facing configuration surface.
+
+---
+
+# Feature Selection
+
+Feature ownership and feature enablement are separate concepts.
+
+For example:
+
+```text id="58ly2c"
+Live Console
+    -> Template-owned
+
+feature.liveConsole.enabled=false
+    -> Application selection
+```
+
+Disabling a Template feature does not make it Application-owned.
+
+Likewise, enabling a feature does not move its implementation into Application.
+
+---
+
+# Application Navigation
+
+Template owns reusable navigation.
+
+Application owns only concrete Application extensions.
+
+The ownership model is:
+
+```text id="kg2kcz"
+Template
+|
++-- routing
++-- menu rendering
++-- menu tree construction
++-- Template navigation definitions
++-- Template screen registry
++-- visibility integration
++-- standard Agent.Workbench navigation
++-- Template menu ordering
+
+Application
+|
++-- Application-specific navigation extensions
++-- Application-specific screen references
++-- optional custom ordering
+```
+
+Conceptually:
+
+```text id="3zqsx7"
+Template navigation
+        +
+Application navigation extensions
+        |
+        v
+runtime navigation
+```
+
+Applications must not reproduce the complete Template menu structure.
+
+---
+
+## Internal Navigation IDs
+
+Application configuration must not depend on Template-internal numeric IDs.
+
+Application should express semantic intent.
+
+For example:
+
+```properties id="f58ki6"
+menu.example.parent=settings
+menu.example.screen=example-screen
+```
+
+rather than referencing unstable internal implementation details.
+
+The general rule is:
+
+```text id="q0nomb"
+Application describes intent.
+
+Template resolves implementation details.
+```
+
+---
+
+## Menu Ordering
+
+Normal Template menu positions are derived from sibling order in the Template menu catalog.
+
+Application custom navigation may optionally provide a position.
+
+When no custom position exists, MenuHub uses a deterministic fallback.
+
+Relevant implementation:
+
+```text id="75tg0n"
+src/template/screens/menu/MenuHubScreen.tsx
+```
+
+---
+
+# Application Screens
+
+Application-specific screens live under:
+
+```text id="ql7w4g"
+src/application/screens/
+```
+
+The current Agent.Workbench Application composition contains:
+
+```text id="164zyv"
+src/application/screens/ExampleScreen.tsx
+```
+
+Application screens are discovered automatically.
+
+Discovery implementation:
+
+```text id="n2tggl"
+src/template/config/build/applicationScreenDiscovery.mjs
+```
+
+Examples:
+
+```text id="viykqi"
+ExampleScreen.tsx
+    -> example-screen
+
+ExampleScreen2.tsx
+    -> example-screen2
+
+HemsOverviewScreen.tsx
+    -> hems-overview-screen
+```
+
+The generated registry is:
+
+```text id="6bk0gl"
+src/application/generated/applicationScreenRegistry.generated.ts
+```
+
+Template must not manually import concrete Application screens.
+
+---
+
+# Creating a Concrete Application
+
+A concrete Application focuses on product-specific composition while consuming reusable Base Template functionality.
+
+HEMS is the primary concrete example.
+
+Conceptually:
+
+```text id="vi78gq"
+HEMS Application
+        |
+        v
+web.template
+        |
+        +-- Template
+        |
+        +-- Core
+```
+
+A concrete Application may provide:
+
+```text id="vxj1fp"
 application.properties
-        |
-        v
-configuration generator
-        |
-        v
-applicationConfig.generated.ts
+features.properties
+navigation.properties
+Application-specific screens
+Application translations
+optional Application-specific Redux state
+product business logic
+product-specific APIs
+product branding
+product build/deployment configuration
+```
+
+The Base Template should not require HEMS-specific implementation.
+
+---
+
+## Consumer Repository Model
+
+A future consumer repository may conceptually contain:
+
+```text id="f496mc"
+HEMS Repository
+|
++-- Application configuration
++-- Application screens
++-- Application translations
++-- optional Application state
++-- product business logic
++-- product branding
++-- build/deployment
+```
+
+and consume:
+
+```text id="l81ybk"
+web.template
+|
++-- Template
++-- Core
+```
+
+The exact repository integration mechanism should be validated with a real consumer rather than inferred from an old Agent.Workbench extraction model.
+
+---
+
+# Application Integration
+
+Template exposes explicit integration contracts.
+
+Important files include:
+
+```text id="arij86"
+src/template/application/ApplicationConfig.ts
+src/template/application/ApplicationConfigContext.tsx
+src/template/application/createTemplateApp.tsx
+src/template/application/TemplateApp.tsx
+```
+
+Conceptually:
+
+```text id="0m7dxk"
+Concrete Application
         |
         v
 ApplicationConfig
@@ -690,307 +772,56 @@ createTemplateApp(...)
         |
         v
 TemplateApp
+        |
+        v
+Template runtime
 ```
 
-The current central Application integration contract is:
+Template defines the reusable contract.
 
-```text
-ApplicationConfig
-```
-
-Template defines the contract.
-
-Application supplies the concrete values.
+Application provides concrete composition.
 
 ---
 
-## Development
+## No Runtime Product Resolver
 
-The application entry point combines concrete Application configuration with
-the reusable Template.
+Template does not decide which concrete Application is active.
 
-Conceptually:
+The following model is intentionally avoided:
 
-```text
-Application
-    |
-    v
-applicationConfig
-    |
-    v
-createTemplateApp(applicationConfig)
-    |
-    v
-TemplateApp
-```
-
-The current application bootstrap is registered through Expo.
-
-When implementing functionality, architectural ownership should be determined
-before choosing its physical location.
-
-A useful rule is:
-
-```text
-Product-specific?
-    |
-    +--> Application
-
-Reusable application-shell behavior?
-    |
-    +--> Template
-
-Focused technical capability without UI or product ownership?
-    |
-    +--> Core
-```
-
-Optionality does not create another architecture layer.
-
-An optional feature may still belong to:
-
-```text
-Application
+```text id="pjfcc4"
 Template
-Core
+|
++-- detect HEMS
++-- detect Product A
++-- detect Product B
++-- select Application
 ```
 
-Ownership is determined by responsibility.
+Instead:
+
+```text id="omr05v"
+Concrete Application
+        |
+        v
+Base Template
+```
+
+Agent.Workbench is not part of product resolution because standard Agent.Workbench functionality already belongs to Template.
 
 ---
 
-## Build and Deployment
+# Project Structure
 
-The repository currently contains GitHub Actions workflows for production and
-test releases.
+The current main source structure is conceptually:
 
-Release and deployment workflows currently still live in `web.template`
-during the architecture migration.
-
-Long term, concrete product release and deployment configuration belongs to
-the respective Application repository.
-
-Reusable build tooling may remain part of the Base Template.
-
----
-
-## Manual Web Build
-
-Before creating a manual web export, generate the Application configuration:
-
-```bash
-npm run config:generate
-```
-
-Check TypeScript:
-
-```bash
-npx tsc --noEmit
-```
-
-Then export the Expo web application:
-
-```bash
-npx expo export -p web
-```
-
-Expo writes the generated web application to:
-
-```text
-dist/
-```
-
-A recommended local validation sequence is therefore:
-
-```bash
-npm run config:generate
-npx tsc --noEmit
-npx expo export -p web
-```
-
-Relevant automated tests should also be executed before producing a final
-release.
-
----
-
-## Production Release
-
-The current production workflow is located at:
-
-```text
-.github/workflows/export-put-release.yml
-```
-
-Workflow name:
-
-```text
-Export Put Release
-```
-
-It is started manually through GitHub Actions using:
-
-```text
-workflow_dispatch
-```
-
-The currently verified workflow performs:
-
-```text
-Checkout
-    |
-    v
-Setup Node.js 20
-    |
-    v
-Install npm 10
-    |
-    v
-npm ci
-    |
-    v
-Read package version
-    |
-    v
-Generate timestamp
-    |
-    v
-npx expo export -p web
-    |
-    v
-ZIP dist/
-    |
-    v
-FTP upload
-    |
-    v
-GitHub release
-```
-
-The production workflow currently requires the following repository secrets:
-
-```text
-FTP_UPLOAD_URL
-FTP_USER
-FTP_PSWD
-PROJECT_NAME
-PROJECT_PATH
-```
-
-### Archive naming
-
-The generated ZIP archive follows this pattern:
-
-```text
-<PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
-```
-
-For example:
-
-```text
-Agent.Workbench_0.0.4_20260811-0915.zip
-```
-
-The actual project name is supplied through:
-
-```text
-PROJECT_NAME
-```
-
-### GitHub release tag
-
-The GitHub release uses:
-
-```text
-v<package.version>
-```
-
-For example:
-
-```text
-v0.0.4
-```
-
-### Current configuration-generation gap
-
-The production workflow currently executes:
-
-```bash
-npx expo export -p web
-```
-
-directly.
-
-It does not currently explicitly execute:
-
-```bash
-npm run config:generate
-```
-
-immediately before the export.
-
-Direct Expo commands do not invoke npm lifecycle hooks.
-
-Therefore the generated Application configuration is not currently guaranteed
-to be refreshed immediately before the production export.
-
-The desired production sequence is:
-
-```text
-npm ci
-    |
-    v
-npm run config:generate
-    |
-    v
-npx expo export -p web
-    |
-    v
-package
-    |
-    v
-publish
-```
-
-This workflow change should be implemented and tested separately.
-
-Detailed production release documentation is available at:
-
-```text
-doc/release-workflow.md
-```
-
----
-
-## Test Release
-
-The test release workflow is located at:
-
-```text
-.github/workflows/export-put-test-release.yml
-```
-
-It provides a separate release path for testing and internal validation.
-
-Production and test releases must remain clearly distinguishable.
-
-Detailed documentation is available at:
-
-```text
-doc/test-release.md
-```
-
----
-
-## Project Structure
-
-The current main source structure is:
-
-```text
+```text id="yrb739"
 src/
 ├── api/
 ├── application/
 │   ├── config/
 │   ├── generated/
+│   ├── screens/
 │   └── state/
 ├── core/
 │   ├── authentication/
@@ -1012,38 +843,50 @@ src/
     └── update/
 ```
 
-### `src/api`
+Detailed structure documentation is maintained in:
+
+```text id="wig3fw"
+doc/project-structure.md
+```
+
+---
+
+## src/api
 
 Contains API definitions and generated API implementations.
 
-Generated API code should not be broadly moved or rewritten without carefully
-reviewing the resulting changes.
+Generated API code must not be broadly rewritten during architecture cleanup.
 
-### `src/application`
+Ownership depends on responsibility.
 
-Contains concrete Application integration.
+An Agent.Workbench-related API name does not automatically make code Application-owned.
 
-Current areas include:
+---
 
-```text
+## src/application
+
+Contains the in-repository Agent.Workbench Application composition and Application integration.
+
+Important areas include:
+
+```text id="xayr7s"
 src/application/config/
 src/application/generated/
+src/application/screens/
 src/application/state/
 ```
 
-`config` contains developer-facing Application configuration.
+The current Agent.Workbench Application composition is not Agent.Workbench.
 
-`generated` contains generated TypeScript configuration.
+---
 
-`state` contains Application-owned Redux integration.
-
-### `src/core`
+## src/core
 
 Contains focused reusable technical capabilities.
 
 Current areas include:
 
-```text
+```text id="3lt5jk"
 src/core/authentication/
 src/core/runtime/
 src/core/server/
@@ -1052,13 +895,15 @@ src/core/update/
 
 Core must remain independent from Template and Application.
 
-### `src/template`
+---
 
-Contains reusable application-shell functionality.
+## src/template
 
-Current areas include:
+Contains the reusable Base Template platform.
 
-```text
+Important areas include:
+
+```text id="5meq4i"
 src/template/application/
 src/template/authentication/
 src/template/components/
@@ -1073,200 +918,260 @@ src/template/styles/
 src/template/update/
 ```
 
-### `src/template/application`
+Standard Agent.Workbench functionality belongs here where it is part of the reusable Base Template platform.
 
-Contains the reusable Application bootstrap and integration contract.
+---
 
-Important files include:
+# State Management
 
-```text
-ApplicationConfig.ts
-ApplicationConfigContext.tsx
-createTemplateApp.tsx
-TemplateApp.tsx
+The project uses Redux Toolkit.
+
+Redux is an implementation technology, not an architecture layer.
+
+State ownership follows responsibility.
+
+```text id="38rr60"
+Template
+|
++-- reusable Template state
++-- Agent.Workbench state
++-- Redux infrastructure
+
+Application
+|
++-- optional concrete product-specific state
 ```
 
-### `src/template/components`
+Core does not own the application Redux store.
 
-Contains reusable React Native components.
+---
+
+## Template Redux Infrastructure
+
+Known store infrastructure includes:
+
+```text id="f6fq3d"
+src/template/state/store/
+├── createTemplateStore.ts
+├── rootReducer.ts
+├── store.ts
+├── templateReducers.ts
+├── types.ts
+├── useAppDispatch.ts
+└── useAppSelector.ts
+```
+
+Standard Agent.Workbench state belongs to Template.
+
+Known area:
+
+```text id="k99tmp"
+src/template/state/agent-workbench/
+```
+
+This state is not waiting for extraction into a separate Agent.Workbench Application.
+
+---
+
+## Application Redux Extension
+
+Applications may optionally provide product-specific reducers through:
+
+```text id="q9ixsj"
+src/application/state/applicationReducers.ts
+```
+
+The current Agent.Workbench Application composition does not require meaningful product-specific Redux state.
+
+That is valid.
+
+Application reducers must not override Template-owned reducer keys.
+
+Detailed documentation:
+
+```text id="jjmc1b"
+doc/redux-state-management.md
+```
+
+---
+
+# Navigation
+
+Reusable React navigation belongs to Template.
+
+Core does not own React navigation infrastructure.
+
+Current navigation ownership is defined by:
+
+```text id="4jehyq"
+doc/architecture/decisions/ADR-0005-navigation-infrastructure-in-template.md
+```
+
+Template owns:
+
+* navigation infrastructure
+* Template navigation definitions
+* standard Agent.Workbench navigation
+* Template screen registration
+* reusable visibility integration
+* menu ordering
+
+Application owns:
+
+* Application-specific navigation extensions
+* Application-specific screens
+
+---
+
+# Authentication
+
+Authentication responsibilities are split.
+
+```text id="xga4cz"
+Core
+|
++-- technical authentication helpers
++-- technical auth types
++-- technical request integration
+
+Template
+|
++-- login experience
++-- session orchestration
++-- reusable auth state
++-- logout orchestration
+
+Application
+|
++-- concrete product-specific auth behavior where required
+```
+
+Detailed documentation:
+
+```text id="bytsl0"
+doc/authentication.md
+```
+
+---
+
+# Server Infrastructure
+
+Server responsibilities are also split.
+
+```text id="kwue01"
+Core
+|
++-- normalization
++-- validation
++-- technical checks
++-- environment detection
+
+Template
+|
++-- server-selection state
++-- connectivity state
++-- server-selection UI
++-- reconnect orchestration
+
+Application
+|
++-- product-specific server configuration where required
+```
+
+Detailed documentation:
+
+```text id="z6nzha"
+doc/server-check-and-switching.md
+```
+
+---
+
+# Update System
+
+Update ownership follows the same architecture.
+
+```text id="shoznv"
+Core
+|
++-- technical update helpers
+
+Template
+|
++-- update state
++-- hooks
++-- watchers
++-- notifications
++-- dialogs
++-- reusable update orchestration
+
+Application
+|
++-- product-specific update behavior where genuinely required
+```
+
+Detailed documentation:
+
+```text id="y95v0c"
+doc/update-system.md
+```
+
+---
+
+# Design System
+
+Reusable React presentation belongs to Template.
+
+The design system lives under:
+
+```text id="f1tbp7"
+src/template/components/design-system/
+```
 
 Important areas include:
 
-```text
-design-system/
-developer-tools/
-dynamic-content/
-layout/
-localization/
-notifications/
-rich-text-editor/
-```
-
-### `src/template/components/design-system`
-
-Contains reusable UI primitives and presentation components.
-
-Important areas include:
-
-```text
+```text id="u7g4ib"
 icons/
 stylistic/
 themed/
 ui-elements/
 ```
 
-### `src/template/navigation`
+Reusable UI elements include components such as:
 
-Contains reusable navigation, menu and tab infrastructure.
+* buttons
+* cards
+* dialogs
+* dropdowns
+* tables
+* tabs
+* inputs
+* modals
+* typography
+* icons
 
-Concrete Application menu and tab configuration should be supplied by the
-Application layer.
+Core must not import React presentation components.
 
-### `src/template/state`
+Detailed documentation:
 
-Contains Redux infrastructure and Template-owned Redux state.
-
-Redux is a technology and not an architecture layer.
-
-State belongs to the architectural owner of the corresponding functionality.
-
-### `src/template/state/store`
-
-Contains the current Redux store infrastructure.
-
-The existing runtime store and root reducer remain active.
-
-The repository also contains a prepared extensible store composition for
-combining Template reducers with Application reducers.
-
-This new store factory is prepared infrastructure and must not be treated as
-the active runtime store until it has intentionally been connected and tested.
-
-### `src/template/styles`
-
-Contains reusable theme and styling infrastructure.
-
-### `src/template/update`
-
-Contains reusable update orchestration and update watchers.
-
----
-
-## Styling
-
-The project uses Unistyles for reusable theme-aware styling.
-
-Styling responsibilities are separated between:
-
-```text
-Theme definitions
-Themed primitives
-Stylistic components
-Reusable UI elements
-Component-specific layout
-```
-
----
-
-## Theme Structure
-
-Reusable styling infrastructure is located under:
-
-```text
-src/template/styles/
-```
-
-Theme-specific values such as:
-
-- Colors
-- Typography
-- Global visual properties
-
-should be defined at the theme level where appropriate.
-
-Component-specific layout properties such as:
-
-- Margin
-- Padding
-- Alignment
-- Flex behavior
-- Local component composition
-
-remain close to their corresponding component.
-
-For example, layout behavior for the reusable header is located under:
-
-```text
-src/template/components/layout/Header.tsx
-```
-
----
-
-## Design System
-
-The reusable design system is located at:
-
-```text
-src/template/components/design-system/
-```
-
-Important areas include:
-
-```text
-design-system/
-├── icons/
-├── stylistic/
-├── themed/
-└── ui-elements/
-```
-
-Theme-aware base components are located under:
-
-```text
-src/template/components/design-system/themed/
-```
-
-Stylistic components are located under:
-
-```text
-src/template/components/design-system/stylistic/
-```
-
-Reusable UI elements are located under:
-
-```text
-src/template/components/design-system/ui-elements/
-```
-
-Examples include:
-
-- Buttons
-- Cards
-- Dialogs
-- Dropdowns
-- Tables
-- Tabs
-- Inputs
-- Modals
-- Common visual building blocks
-
-Detailed component documentation is available at:
-
-```text
+```text id="cu30in"
 doc/components.md
 ```
 
 ---
 
-## Unistyles
+## Styling
 
-The project uses Unistyles as its current styling solution.
+Reusable theme infrastructure is located under:
 
-Theme-aware styles can be declared through the Unistyles `StyleSheet` API.
+```text id="wljcsb"
+src/template/styles/
+```
+
+The project uses Unistyles for theme-aware styling.
 
 Example:
 
-```ts
+```ts id="0wpq3s"
 const styles = StyleSheet.create((theme) => ({
   container: {
     backgroundColor: theme.colors.background,
@@ -1274,133 +1179,208 @@ const styles = StyleSheet.create((theme) => ({
 }));
 ```
 
-The current application imports the Unistyles configuration during bootstrap.
+Global visual behavior should be implemented through the reusable theme/design-system infrastructure where appropriate.
 
-When changing global visual behavior, prefer extending the reusable theme or
-design-system infrastructure instead of duplicating equivalent styles across
-screens.
+Component-specific layout should remain near the owning component.
 
 ---
 
-## API
+# API Ownership
 
-API-related source code is located below:
-
-```text
-src/api/
-```
-
-OpenAPI-based integrations are generated where appropriate.
-
-A typical API development workflow is:
-
-```text
-API specification
-      |
-      v
-Update local API definition
-      |
-      v
-Generate API implementation
-      |
-      v
-Review generated changes
-      |
-      v
-Use generated client
-```
-
-Generated API files should be reviewed carefully after regeneration.
-
-Broad automated refactoring of generated files should be avoided.
-
-API ownership follows the architecture responsibility model.
+API ownership follows responsibility.
 
 Conceptually:
 
-```text
-Generic technical API capability
-        |
-        +--> Core or Template
+```text id="txvlrf"
+generic technical communication
+    -> Core where appropriate
 
-Product-specific backend integration
-        |
-        +--> Application
+reusable Base Template / Agent.Workbench integration
+    -> Template where appropriate
+
+concrete product business API
+    -> Application
 ```
 
-The correct owner depends on responsibility, not simply on whether code
-communicates with a backend.
+Generated API implementation should be treated carefully.
+
+Do not broadly move or rewrite generated files during unrelated architecture cleanup.
 
 ---
 
-## State Management
+# Build and Deployment
 
-The project uses Redux Toolkit.
+Concrete consumer Applications should own their product-specific build and deployment configuration.
 
-Redux itself is not an architecture layer.
+For example, a future HEMS consumer may own:
 
-State belongs to the architectural layer that owns the corresponding
-functionality.
-
-Conceptually:
-
-```text
-Template-owned feature
-        |
-        v
-Template Redux state
+```text id="epmgiq"
+HEMS release configuration
+HEMS deployment destination
+HEMS infrastructure configuration
+HEMS build workflow
 ```
 
-and:
+The Base Template may provide reusable tooling.
 
-```text
-Application-owned feature
-        |
-        v
-Application Redux state
+The current `web.template` repository also contains release workflows because it remains runnable and testable itself.
+
+This does not require a separate Agent.Workbench Application repository.
+
+---
+
+# Manual Web Build
+
+Before exporting the web application, generate the Application configuration:
+
+```bash id="xwmu6z"
+npm run config:generate
 ```
 
-The current runtime store is still based on the existing Template store and
-root reducer.
+Run TypeScript validation:
 
-A new extensible store factory has been prepared to allow Template and
-Application reducers to be composed safely.
-
-Conceptually:
-
-```text
-Template reducers
-        +
-Application reducers
-        |
-        v
-Combined store
+```bash id="53p5qk"
+npx tsc --noEmit
 ```
 
-This new composition is currently prepared infrastructure.
+Run relevant tests:
 
-It must not be connected to the runtime until the related typing and hook
-integration are ready and tested.
+```bash id="2tzp87"
+npm test -- --runInBand
+```
 
-Detailed Redux documentation is available at:
+Export:
 
-```text
-doc/redux-state-management.md
+```bash id="im92l7"
+npx expo export -p web
+```
+
+Expo writes the web export to:
+
+```text id="s9r12k"
+dist/
+```
+
+Recommended local sequence:
+
+```bash id="f16h28"
+npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+npx expo export -p web
 ```
 
 ---
 
-## Architecture Decisions
+# Production Release
+
+The production workflow is located at:
+
+```text id="5fs919"
+.github/workflows/export-put-release.yml
+```
+
+Detailed documentation:
+
+```text id="7jnu72"
+doc/release-workflow.md
+```
+
+Before relying on documentation, verify the committed workflow.
+
+A release build should deterministically generate Application configuration before Expo export.
+
+Desired sequence:
+
+```text id="2a2vtv"
+npm ci
+    |
+    v
+npm run config:generate
+    |
+    v
+npx expo export -p web
+    |
+    v
+package
+    |
+    v
+publish
+```
+
+If the current workflow does not contain the explicit generation step, it should be handled as a release-workflow improvement.
+
+---
+
+# Test Release
+
+The test workflow is located at:
+
+```text id="l2wcb9"
+.github/workflows/export-put-test-release.yml
+```
+
+Detailed documentation:
+
+```text id="odk092"
+doc/test-release.md
+```
+
+Production and test deployment behavior must remain distinguishable.
+
+The backend/frontend release-type workflow is independent from whether Agent.Workbench is a separate Application.
+
+---
+
+# Architecture Validation
+
+Useful architecture checks include:
+
+```bash id="pxt7sr"
+git grep -n "@/application/" -- src/template
+```
+
+Template must not import concrete Application implementation.
+
+Review Application imports with:
+
+```bash id="qmrtrt"
+git grep -n "@/template/" -- src/application
+```
+
+Application may use supported Template integration surfaces.
+
+Do not remove imports blindly based only on grep output.
+
+---
+
+## Full Validation
+
+Before an architecture checkpoint:
+
+```bash id="mrkujh"
+npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+git diff --check
+git status --short
+```
+
+Runtime validation should also be performed when implementation behavior changed.
+
+---
+
+# Architecture Decisions
 
 Architecture Decision Records are stored under:
 
-```text
+```text id="1p6af5"
 doc/architecture/decisions/
 ```
 
-Current ADRs:
+Current ADRs include:
 
-```text
+```text id="5mtlm4"
 ADR-0001-core-first.md
 ADR-0002-redux-root-reducer.md
 ADR-0003-core-base-template-and-product-applications.md
@@ -1410,7 +1390,7 @@ ADR-0005-navigation-infrastructure-in-template.md
 
 Current status:
 
-```text
+```text id="ff2wxk"
 ADR-0001 -> Accepted
 ADR-0002 -> Accepted
 ADR-0003 -> Accepted
@@ -1418,129 +1398,163 @@ ADR-0004 -> Superseded
 ADR-0005 -> Accepted
 ```
 
-ADR-0004 originally assigned reusable menu infrastructure to Core.
+Important architectural decisions include:
 
-ADR-0005 supersedes that ownership decision.
+```text id="8b231o"
+Application --> Template --> Core
 
-Reusable React navigation infrastructure now belongs to Template.
+Agent.Workbench standard functionality -> Template
 
-Concrete product navigation configuration belongs to Application.
+HEMS -> concrete Application
+
+Navigation infrastructure -> Template
+
+Application navigation -> extensions only
+
+Application screens -> automatic discovery
+
+Application-specific Redux state -> optional
+```
+
+ADR-0004 remains as historical context.
+
+ADR-0005 is authoritative for current navigation ownership.
 
 ---
 
-## Documentation
+# Documentation
 
-The official project documentation is maintained in the `doc` directory.
+Project documentation is maintained under:
 
-The README provides the main developer entry point and an overview of the
-architecture, setup and development workflow.
-
-Detailed architecture, runtime, feature and release documentation is maintained
-in the documents listed below.
-
-```text
+```text id="j3hzbb"
 doc/
 ```
 
-### Architecture
+---
 
-- [Architecture Vision](doc/architecture/00-vision.md)
-- [Core](doc/architecture/01-core-platform.md)
-- [Current Architecture State](doc/architecture/05-current-state.md)
-- [Application Contract](doc/architecture/application-contract.md)
-- [Platform Architecture](doc/architecture/platform-architecture.md)
-- [Application Separation](doc/application-separation.md)
-- [Project Structure](doc/project-structure.md)
+## Architecture
 
-### Runtime and Features
-
-- [Authentication](doc/authentication.md)
-- [Server Check and Server Switching](doc/server-check-and-switching.md)
-- [Update System](doc/update-system.md)
-- [File Configuration Upload](doc/file-configuration-upload.md)
-- [Redux State Management](doc/redux-state-management.md)
-- [Components](doc/components.md)
-
-### Build and Release
-
-- [Production Release Workflow](doc/release-workflow.md)
-- [Test Release](doc/test-release.md)
-
-### Development and Review
-
-- [Review Notes](doc/review-notes.md)
-- [AI Context](doc/ai-context.md)
+* [Architecture Vision](doc/architecture/00-vision.md)
+* [Core Platform](doc/architecture/01-core-platform.md)
+* [Current Architecture State](doc/architecture/05-current-state.md)
+* [Application Contract](doc/architecture/application-contract.md)
+* [Platform Architecture](doc/architecture/platform-architecture.md)
+* [Application Separation](doc/application-separation.md)
+* [Project Structure](doc/project-structure.md)
 
 ---
 
-## Architecture Summary
+## Runtime and Features
+
+* [Authentication](doc/authentication.md)
+* [Server Check and Switching](doc/server-check-and-switching.md)
+* [Update System](doc/update-system.md)
+* [File Configuration Upload](doc/file-configuration-upload.md)
+* [Redux State Management](doc/redux-state-management.md)
+* [Components](doc/components.md)
+
+---
+
+## Build and Release
+
+* [Production Release Workflow](doc/release-workflow.md)
+* [Test Release](doc/test-release.md)
+
+---
+
+## Development and Review
+
+* [Review Notes](doc/review-notes.md)
+* [AI Context](doc/ai-context.md)
+
+---
+
+# Legacy Architecture That Must Not Be Reintroduced
+
+The following statements do not describe the accepted architecture:
+
+```text id="3olqah"
+"Agent.Workbench is a concrete Application."
+
+"Agent.Workbench requires its own Application repository."
+
+"Agent.Workbench state inside Template is transitional."
+
+"Agent.Workbench screens must move into Application."
+
+"Agent.Workbench navigation must move into Application."
+
+"Application owns all menu definitions."
+
+"Application owns all tab definitions."
+
+"menu.properties is planned Application configuration."
+
+"tabs.properties is planned Application configuration."
+
+"featureFlags.properties is planned Application configuration."
+
+"menuFeatureFlags.properties defines menu visibility."
+
+"tabFeatureFlags.properties defines tab visibility."
+```
+
+The current developer-facing configuration is:
+
+```text id="o9nkcx"
+application.properties
+features.properties
+navigation.properties
+```
+
+---
+
+# Architecture Summary
 
 The central architecture rule is:
 
-```text
+```text id="o9q07i"
 Application --> Template --> Core
 ```
 
-The Base Template contains:
+Core provides reusable technical capabilities.
 
-```text
-Template
-Core
+Template provides the reusable application platform.
+
+Standard Agent.Workbench functionality belongs to Template.
+
+Application provides concrete product composition.
+
+The current repository contains:
+
+```text id="wbscrq"
+src/application/
+    Agent.Workbench Application composition
+
+src/template/
+    reusable Base Template
+    standard Agent.Workbench functionality
+
+src/core/
+    reusable technical capabilities
 ```
 
-Concrete products contain:
+Developer-facing Application configuration uses:
 
-```text
-Application
+```text id="t9nbq6"
+application.properties
+features.properties
+navigation.properties
 ```
 
-The intended repository structure is:
+Application navigation extends Template navigation.
 
-```text
-Base Template Repository
-├── Template
-└── Core
+Application screens are discovered automatically.
 
-Agent.Workbench Repository
-└── Application
+Application-specific Redux state is optional.
 
-HEMS Repository
-└── Application
+HEMS is a concrete consumer Application.
 
-Future Application Repository
-└── Application
-```
+Future concrete consumer repositories may consume the Base Template without requiring Template to import their implementation.
 
-A concrete Application repository is connected to the Base Template through
-two Git remotes:
-
-```text
-origin
-    |
-    +--> Application repository
-
-template
-    |
-    +--> web.template repository
-```
-
-The initial Git setup is:
-
-```bash
-git remote add template git@github.com:EnFlexIT/web.template.git
-git fetch template
-git branch template template/master
-```
-
-The architecture migration is incremental.
-
-Existing functionality should first receive:
-
-```text
-clear ownership
-stable contracts
-clear dependency boundaries
-safe extension points
-```
-
-before it is physically moved between repositories.
+A separate Agent.Workbench Application repository is not part of the accepted architecture.

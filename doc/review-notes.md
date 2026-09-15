@@ -1,23 +1,28 @@
 # Review Notes
 
-This document contains current repository review notes and remaining technical
-cleanup items for `web.template`.
+## Purpose
 
-It is not a historical review of an exported project ZIP.
+This document contains current repository review notes and remaining technical cleanup items for `web.template`.
 
-The architecture follows:
+It is not a historical review of an exported project snapshot.
+
+The current architecture is:
 
 ```text
 Application --> Template --> Core
 ```
 
-Only currently relevant observations should remain in this document.
+Standard Agent.Workbench functionality belongs to Template.
+
+HEMS is a concrete Application.
+
+Only observations that are still relevant to the current repository should remain in this document.
 
 ---
 
 ## 1. Repository Hygiene
 
-Local and generated development directories must not be committed.
+Local and generated development directories must not be committed unless explicitly required by the repository.
 
 Typical examples include:
 
@@ -27,14 +32,15 @@ Typical examples include:
 node_modules/
 ```
 
-Local configuration containing machine-specific or internal values should
-also be handled carefully.
+Machine-specific configuration and files containing internal or sensitive values must be handled carefully.
+
+Repository cleanup should avoid unrelated formatting or generated-code changes.
 
 ---
 
-## 2. Current .env Handling
+## 2. Environment File Handling
 
-The repository currently contains this `.gitignore` rule:
+The repository currently contains a `.gitignore` rule for:
 
 ```gitignore
 .env*.local
@@ -46,32 +52,32 @@ A plain:
 .env
 ```
 
-is therefore not explicitly ignored by the current rule.
+is therefore not covered by that rule alone.
 
-This should be reviewed before final repository cleanup.
+This should be consciously reviewed.
 
-Possible approaches include:
+Possible repository policies include explicitly ignoring `.env` and providing a documented example file where appropriate.
+
+Example:
 
 ```gitignore
 .env
 .env*.local
 ```
 
-or using a documented example file such as:
+and optionally:
 
 ```text
 .env.example
 ```
 
-for values that developers need to configure locally.
-
-Do not commit secrets or internal server information.
+Do not commit secrets, credentials or internal infrastructure information.
 
 ---
 
 ## 3. Current Environment Variables
 
-The currently observed `.env` variable names are:
+Observed environment-variable responsibilities include technical runtime configuration such as:
 
 ```text
 EXPO_PUBLIC_DEFAULT_LANGUAGE
@@ -83,62 +89,96 @@ EXPO_PUBLIC_OIDC_SCOPES
 EXPO_PUBLIC_LIVE_CONSOLE_PERFORMATIVE
 ```
 
-The previous variable:
+Application identity must not be reintroduced as a direct Template environment dependency.
+
+The former pattern based on:
 
 ```text
 EXPO_PUBLIC_APPLICATION_TITLE
 ```
 
-is no longer part of the current `.env` configuration.
+has been replaced by the Application configuration architecture.
 
-Application identity is now handled through the Application configuration
-architecture.
+Application identity belongs to Application configuration.
 
 ---
 
 ## 4. Application Configuration
 
-Concrete Application configuration now starts from:
+Developer-facing Application configuration uses:
 
 ```text
-src/application/config/application.properties
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
 ```
 
-The Template-side generator is:
+Responsibilities are:
+
+```text
+application.properties
+    Application identity and metadata
+
+features.properties
+    semantic activation or deactivation
+    of reusable Template features
+
+navigation.properties
+    Application-specific navigation extensions
+```
+
+Generated TypeScript configuration is implementation output.
+
+Developers should not need to modify generated TypeScript for normal Application configuration.
+
+---
+
+## 5. Legacy Configuration Names
+
+The following names are obsolete and must not be reintroduced as active or planned configuration:
+
+```text
+menu.properties
+tabs.properties
+featureFlags.properties
+menuFeatureFlags.properties
+tabFeatureFlags.properties
+```
+
+The active configuration model is:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
+
+---
+
+## 6. Configuration Generation
+
+The current configuration tooling includes:
 
 ```text
 src/template/config/build/generateApplicationConfig.mjs
 ```
 
-The generated TypeScript configuration is written to:
+Generated Application artifacts are written under:
 
 ```text
-src/application/generated/applicationConfig.generated.ts
+src/application/generated/
 ```
 
-The generated configuration is exported through:
-
-```text
-src/application/index.ts
-```
-
-Application title and identity must not be reintroduced as direct Template
-environment-variable dependencies.
-
----
-
-## 5. Configuration Generation
-
-The project currently provides:
+The project provides:
 
 ```bash
 npm run config:generate
 ```
 
-Normal npm startup commands execute configuration generation through lifecycle
-scripts.
+Normal startup should use npm scripts so configuration generation is not unintentionally bypassed.
 
-Examples include:
+Typical commands include:
 
 ```bash
 npm start
@@ -147,83 +187,106 @@ npm run android
 npm run ios
 ```
 
-Direct Expo commands can bypass those lifecycle hooks.
-
-Therefore normal development startup should prefer the npm scripts.
+When configuration has changed, generation should occur before TypeScript validation.
 
 ---
 
-## 6. Release Build Configuration Risk
+## 7. Automatic Application Screen Discovery
 
-The current test-release workflow still executes:
+Application-owned screens are discovered automatically.
 
-```bash
-npx expo export -p web
+The discovery implementation is:
+
+```text
+src/template/config/build/applicationScreenDiscovery.mjs
 ```
 
-directly.
+The generated registry is:
 
-It does not currently execute:
-
-```bash
-npm run config:generate
+```text
+src/application/generated/applicationScreenRegistry.generated.ts
 ```
 
-as an explicit build step.
+The current Agent.Workbench Application composition contains:
 
-This means release automation currently relies on the generated Application
-configuration already being present and current.
+```text
+src/application/screens/ExampleScreen.tsx
+```
 
-Before final Application repository extraction, release builds should
-explicitly guarantee configuration generation.
+Concrete Applications should not require manual screen registration inside Template.
 
-See:
+---
+
+## 8. Release Build Configuration
+
+Release workflows must deterministically use current generated Application configuration.
+
+The current release documentation should be reviewed together with:
 
 ```text
 doc/test-release.md
 ```
 
----
+If a workflow calls Expo directly, verify whether it explicitly performs:
 
-## 7. Configuration Generator Ownership
-
-The current generator lives in Template:
-
-```text
-src/template/config/build/generateApplicationConfig.mjs
+```bash
+npm run config:generate
 ```
 
-but currently works with concrete Application paths.
+before export or build.
 
-During the current single-repository migration this is acceptable.
+Release automation must not rely accidentally on stale generated files.
 
-For the future architecture with separate repositories, the generator should
-be reviewed so that reusable Template tooling does not permanently depend on a
-specific concrete Application repository layout.
-
-A possible future direction is a generic generator receiving explicit input
-and output locations.
-
-This is not required before the current documentation/master checkpoint.
+This should be verified from the actual workflow implementation before changing documentation or build scripts.
 
 ---
 
-## 8. Redux Migration
+## 9. Configuration Tooling Ownership
 
-The current Redux store remains active under:
+Configuration tooling currently lives under Template build infrastructure:
 
 ```text
+src/template/config/build/
+```
+
+This is appropriate because the tooling supports the Base Template/Application integration contract.
+
+Future separate consumer repositories may require the tooling interface to accept explicit input and output locations.
+
+Any such change should be driven by real consumer integration requirements rather than by speculative repository restructuring.
+
+---
+
+## 10. Redux Architecture
+
+Reusable Redux infrastructure belongs to Template.
+
+Important areas include:
+
+```text
+src/template/state/
 src/template/state/store/
 ```
 
-The extensible store factory has been prepared in parallel.
+Agent.Workbench state is intentionally Template-owned.
 
-Application reducer registration also exists for the ongoing separation work.
+Known area:
 
-The new factory must not be connected prematurely.
+```text
+src/template/state/agent-workbench/
+```
 
-The migration should continue only after state typing, hooks and runtime
-composition are safe.
+Application-specific Redux state is optional.
+
+The current Application extension point is:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+The current Agent.Workbench Application composition does not require meaningful product-specific Redux state.
+
+This is valid and is not an incomplete Agent.Workbench extraction.
 
 See:
 
@@ -233,40 +296,59 @@ doc/redux-state-management.md
 
 ---
 
-## 9. Transitional Agent.Workbench State
+## 11. No Agent.Workbench Extraction
 
-Some Agent.Workbench-specific state and screens still physically exist under
-Template during the migration.
+The previous plan to extract Agent.Workbench into a separate Application repository is no longer part of the architecture.
 
-This is intentional until the separate Agent.Workbench Application repository
-and ownership boundaries are ready.
+Do not treat the following as outstanding cleanup:
 
-Physical location during migration must not be interpreted as final
-architectural ownership.
+```text
+Agent.Workbench state extraction
+Agent.Workbench screen extraction
+Agent.Workbench navigation extraction
+separate Agent.Workbench Application repository
+```
 
-Do not move these areas prematurely.
+The current ownership is:
+
+```text
+Agent.Workbench standard functionality
+    -> Template
+
+HEMS
+    -> concrete Application
+```
 
 ---
 
-## 10. File Configuration Ownership
+## 12. File Configuration Ownership
 
-The file-configuration feature currently resides in Template.
+The file-configuration functionality currently resides primarily in Template.
 
-However, parts of the feature depend on backend behavior such as:
-
-```text
-/api/app/settings/*
-JettyConfiguration
-```
-
-This may represent Agent.Workbench-specific behavior.
-
-Before final repository separation, review whether ownership should become:
+Known related areas include:
 
 ```text
-generic file infrastructure --> Template
-product configuration flow  --> Application
+src/template/screens/settings/
+src/template/hooks/
+src/template/state/settings/
+src/template/components/design-system/
 ```
+
+Some behavior may interact with backend-specific endpoints or configuration formats.
+
+Ownership should therefore continue to follow responsibility:
+
+```text
+reusable file/configuration infrastructure
+    -> Template
+
+concrete product-only behavior
+    -> Application
+```
+
+Do not move functionality merely because it is currently used by Agent.Workbench.
+
+Review actual reuse and responsibility before changing ownership.
 
 See:
 
@@ -276,86 +358,91 @@ doc/file-configuration-upload.md
 
 ---
 
-## 11. Developer Console Ownership
+## 13. Developer Console
 
-Developer tools currently live under:
+Developer tooling belongs to Template under the current architecture when it is reusable Base Template functionality.
+
+Current area:
 
 ```text
 src/template/components/developer-tools/
 ```
 
-The Developer Console is currently implemented at:
+Developer Console implementation:
 
 ```text
 src/template/components/developer-tools/developer-console/DeveloperConsole.tsx
 ```
 
-Its final ownership should be determined based on whether it is reusable
-across applications.
+The close button currently uses:
 
-Technical functionality does not automatically belong to Core.
+```tsx
+{"\u00D7"}
+```
+
+to avoid encoding corruption of the multiplication sign.
+
+The Developer Console should not be treated as an Agent.Workbench extraction candidate merely because it is primarily useful during Agent.Workbench development.
 
 ---
 
-## 12. Dynamic Content Ownership
+## 14. Dynamic Content
 
-Dynamic-content infrastructure currently lives under:
+Dynamic-content infrastructure currently exists under:
 
 ```text
 src/template/components/dynamic-content/
 ```
 
-Its final ownership should also be reviewed based on reuse across applications.
+Its current location is consistent with reusable Template ownership.
 
-Do not move it into Application or Core without an explicit ownership
-decision.
+A future ownership change should only occur if concrete evidence shows that functionality is specific to one consumer Application.
+
+Do not move it into Core or Application based only on naming or historical usage.
 
 ---
 
-## 13. Source Comment Cleanup
+## 15. Source Comment Cleanup
 
-A historical source comment remains in:
+A historical source-path comment may remain in:
 
 ```text
 src/template/hooks/useFileDropWeb.ts
 ```
 
-The file currently contains an old path comment similar to:
+For example:
 
 ```ts
 // src/hooks/useFileDropWeb.ts
 ```
 
-The implementation itself is already located correctly under Template.
+If still present, it can be corrected during small source-cleanup work.
 
-This comment can be cleaned up during final source cleanup.
+This is not an architectural issue.
 
-It does not require architectural work.
+Verify the current file before changing it.
 
 ---
 
-## 14. Old Test Directory Note
+## 16. Test Directory Documentation
 
-The previous review documentation referenced:
+Historical documentation referenced:
 
 ```text
 src/testes
 ```
 
-No matching top-level test directory under `src` was found during the current
-review.
+This should not be treated as a current repository path unless it is confirmed in the source tree.
 
-The old rename recommendation is therefore obsolete and has been removed from
-the active review notes.
+Test documentation must reflect the actual current repository structure.
 
-Test organization should only be documented based on the current repository
-structure.
+Use source inspection before updating paths.
 
 ---
 
-## 15. PWA Status
+## 17. PWA Status
 
-No dedicated files were found during the current review for:
+Previous review work did not identify dedicated files such as:
 
 ```text
 manifest.json
@@ -366,51 +453,53 @@ sw.js
 sw.ts
 ```
 
-Therefore PWA support should not currently be documented as an implemented
-project feature.
+Therefore PWA functionality should not be documented as implemented without current source verification.
 
-If PWA support is introduced later, implementation and documentation should be
-added together.
+If PWA support is introduced, implementation and documentation should be updated together.
 
 ---
 
-## 16. Documentation Status
+## 18. Documentation Consistency
 
-The project documentation is currently being aligned with the architecture:
+Architecture documentation must consistently describe:
 
 ```text
 Application --> Template --> Core
 ```
 
-Important documentation areas include:
+with:
 
 ```text
-application separation
-authentication
-components
-file configuration
-project structure
-Redux state management
-server checking and switching
-test releases
-update system
-architecture decisions
+Agent.Workbench standard functionality
+    -> Template
+
+HEMS
+    -> concrete Application
 ```
 
-Historical paths should only remain when explicitly identified as historical
-or removed architecture.
+The following must not reappear as active architecture:
+
+```text
+Agent.Workbench is a concrete Application
+Agent.Workbench is transitional inside Template
+Agent.Workbench requires its own Application repository
+Agent.Workbench state must move to Application
+Agent.Workbench screens must move to Application
+```
+
+Documentation should also use the current Application configuration model:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
 
 ---
 
-## 17. Documentation Validation
+## 19. Documentation Search
 
-Useful final documentation checks include:
-
-```bash
-git diff --check
-```
-
-and searches for outdated paths:
+Useful documentation searches include:
 
 ```bash
 git grep -n -i \
@@ -421,100 +510,221 @@ git grep -n -i \
   -- doc README.md
 ```
 
-Hits must be reviewed individually.
+Search hits must be reviewed individually.
 
-A search hit is not automatically an error because current documentation may
-intentionally describe a removed path.
+A hit is not automatically wrong because documentation may intentionally describe historical paths or removed behavior.
+
+Architecture-specific searches should also review outdated Agent.Workbench assumptions and legacy configuration names.
 
 ---
 
-## 18. Encoding Validation
+## 20. Encoding Validation
 
-Documentation must remain valid UTF-8.
+Documentation and source files should remain valid UTF-8.
 
-A PowerShell scan can be used to detect common mojibake markers:
+A PowerShell scan can help detect common mojibake markers:
 
 ```powershell
 Get-ChildItem ".\doc" -Recurse -File |
   Select-String -Pattern "â","Ã","ï»¿","�"
 ```
 
-No automatic repository-wide encoding rewrite should be performed.
+Do not perform automatic repository-wide encoding rewrites.
 
-If corruption is found, fix the affected file explicitly.
+If corruption is found, fix the affected file explicitly and validate the resulting diff.
 
 ---
 
-## 19. Current Priority
+## 21. Architecture Dependency Validation
+
+Useful dependency checks include:
+
+```bash
+git grep -n "@/application/" -- src/template
+```
+
+Template must not import concrete Application implementation.
+
+Application imports can be reviewed with:
+
+```bash
+git grep -n "@/template/" -- src/application
+```
+
+Unexpected direct Template imports should be reviewed against the intended public integration surface.
+
+Do not change code solely to remove a grep result without understanding the dependency.
+
+---
+
+## 22. Current Documentation Priority
 
 The current priority is:
 
 ```text
-1. Finish documentation review
-2. Review architecture documents and ADRs
-3. Review README
-4. Validate questionable documented source paths
-5. Run TypeScript/tests/config generation
-6. Validate runtime
-7. Prepare clean documentation/source commits
-8. Determine branch/master integration strategy
+1. Finish architecture documentation cleanup.
+2. Review remaining documentation for obsolete ownership statements.
+3. Review architecture ADRs.
+4. Review README.
+5. Validate questionable documented source paths.
+6. Run configuration generation.
+7. Run TypeScript validation.
+8. Run tests.
+9. Validate runtime behavior.
+10. Prepare a clean documentation checkpoint.
 ```
 
-Do not perform broad structural refactoring while preparing this checkpoint.
+New feature development should follow after the documentation is internally consistent.
 
 ---
 
-## 20. Remaining Technical Review
+## 23. Remaining Technical Review
 
-Before final repository separation, the following topics still require an
-explicit decision or validation:
+Current technical review topics include:
 
 ```text
 Application configuration generator interface
 release workflow configuration generation
-Redux runtime composition
-Agent.Workbench-specific state extraction
-Agent.Workbench-specific screen extraction
-file-configuration ownership
-developer-console ownership
-dynamic-content ownership
+file-configuration ownership details
+consumer-facing public Template API
 Application branding contract
-final build/deployment ownership
+consumer build/deployment ownership
+HEMS consumer integration
 ```
 
-These are architecture migration topics, not blockers for keeping the current
-Template application operational.
+These are not Agent.Workbench extraction tasks.
+
+They should be addressed when required by actual implementation or consumer integration.
 
 ---
 
-## 21. Safety Rules
+## 24. HEMS Consumer Validation
+
+A future HEMS or equivalent consumer repository should validate the current Base Template contract.
+
+The consumer should be able to provide:
+
+```text
+application.properties
+features.properties
+navigation.properties
+Application-specific screens
+Application translations
+optional Application-specific Redux state
+product-specific behavior
+```
+
+without requiring Template to import HEMS implementation.
+
+This is the relevant future repository-separation test.
+
+A separate Agent.Workbench consumer repository is not required by the current architecture.
+
+---
+
+## 25. Safety Rules
 
 Repository cleanup should follow these rules:
 
 1. Do not run broad write scripts across `src` or `doc`.
 2. Change explicit files only.
-3. Do not rewrite generated API files during architecture cleanup.
-4. Do not connect the new Redux store factory prematurely.
-5. Do not move Agent.Workbench code before ownership is clear.
-6. Do not introduce new concrete Application imports into Template.
-7. Keep Core independent from Template and Application.
-8. Validate old-path search hits instead of blindly replacing them.
+3. Do not rewrite generated API files during unrelated cleanup.
+4. Do not move Agent.Workbench standard functionality into Application.
+5. Do not introduce concrete Application imports into Template.
+6. Keep Core independent from Template and Application.
+7. Search usages before moving or renaming source files.
+8. Validate old-path search hits rather than replacing them blindly.
 9. Use npm lifecycle commands for normal runtime validation.
-10. Keep documentation synchronized with actual implementation.
+10. Keep documentation synchronized with current implementation.
+11. Verify uncertain implementation details from source instead of guessing.
+12. Keep changes small and reviewable.
 
 ---
 
-## 22. Success Criteria
+## 26. Validation Workflow
+
+After documentation or architecture-related cleanup, use:
+
+```bash
+npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+git diff --check
+git status --short
+```
+
+Run architecture dependency checks where relevant.
+
+Runtime validation should use the normal npm startup path when behavior has changed.
+
+---
+
+## 27. Incorrect Legacy Review Items
+
+The following must not be listed as remaining migration work:
+
+```text
+separate Agent.Workbench repository
+Agent.Workbench state extraction
+Agent.Workbench screen extraction
+Agent.Workbench menu/tab extraction
+removal of Agent.Workbench standard functionality from Template
+```
+
+Likewise, the following must not be listed as future configuration work:
+
+```text
+menu.properties
+tabs.properties
+featureFlags.properties
+menuFeatureFlags.properties
+tabFeatureFlags.properties
+```
+
+The correct architecture is already established.
+
+---
+
+## 28. Success Criteria
 
 The repository review is complete when:
 
 1. Documentation reflects the current architecture.
-2. Historical paths are clearly marked as historical.
-3. Environment configuration is separated from Application identity.
-4. Plain `.env` handling has been consciously reviewed.
-5. Release configuration generation is deterministic.
-6. Transitional Redux behavior remains stable.
-7. Remaining Application-specific ownership questions are documented.
-8. README and architecture documents agree with the detailed documentation.
-9. TypeScript and tests pass.
-10. The application starts successfully before the master checkpoint.
+2. Historical paths are clearly marked as historical where retained.
+3. Application identity remains separated from direct Template environment dependencies.
+4. Developer-facing Application configuration uses the current `.properties` model.
+5. Release builds deterministically use current generated configuration.
+6. Agent.Workbench standard functionality remains correctly documented as Template-owned.
+7. HEMS is documented as a concrete Application.
+8. Remaining ownership questions are based on real implementation responsibilities.
+9. README and architecture documents agree.
+10. Configuration generation succeeds.
+11. TypeScript validation succeeds.
+12. Tests pass.
+13. Dependency boundaries remain clean.
+14. Runtime behavior remains stable.
+15. The working tree contains only intentional changes before the documentation checkpoint.
+
+---
+
+## 29. Current Review Summary
+
+The repository architecture is:
+
+```text
+Application --> Template --> Core
+```
+
+Core contains reusable technical capabilities.
+
+Template contains the reusable application platform and standard Agent.Workbench functionality.
+
+Application contains concrete product composition.
+
+The current `src/application/` directory is the in-repository Agent.Workbench Application composition.
+
+HEMS is a future concrete consumer Application.
+
+The current review should focus on documentation consistency, deterministic build/configuration behavior and real consumer integration requirements.
+
+It should not restart the previous Agent.Workbench extraction plan.

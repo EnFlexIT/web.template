@@ -1,33 +1,39 @@
 ﻿# Authentication
 
-This document describes the authentication architecture of `web.template`,
-including JWT authentication, OpenID Connect (OIDC), session handling,
-logout behavior, architectural ownership, and the current migration state.
+## Purpose
 
-The Template supports two authentication mechanisms against an
-Agent.Workbench backend:
+This document describes the authentication architecture of `web.template`, including:
+
+* JWT authentication
+* OpenID Connect (OIDC)
+* session handling
+* logout behavior
+* server switching
+* architectural ownership
+* current technical decomposition areas
+
+The Template supports two authentication mechanisms against compatible Agent.Workbench backend servers:
 
 ```text
 JWT / Basic login
 OIDC / browser-cookie authentication
 ```
 
-Authentication is separated according to responsibility rather than being
-treated as one monolithic feature.
+Authentication is separated by responsibility.
 
----
-
-## 1. Architecture
-
-The general dependency direction is:
+The architecture follows:
 
 ```text
 Application --> Template --> Core
 ```
 
-Authentication follows the same rule.
+Standard Agent.Workbench authentication behavior belongs to the reusable Base Template.
 
-Conceptually:
+---
+
+# 1. Architecture
+
+Authentication follows the general dependency direction:
 
 ```text
 Application
@@ -45,63 +51,99 @@ Server and HTTP communication
 General ownership:
 
 ```text
-Technical authentication capability --> Core
-Reusable authentication UI/state    --> Template
-Product-specific configuration       --> Application
+Technical authentication capability
+    -> Core
+
+Reusable authentication UI/state/orchestration
+    -> Template
+
+Concrete product-specific authentication configuration
+    -> Application
 ```
 
-Core must not import Template or Application code.
+Core must not import Template or Application.
+
+Template must not import concrete Application implementation.
 
 ---
 
-## 2. Authentication Responsibilities
+# 2. Agent.Workbench Authentication Ownership
 
-### Core
+Standard Agent.Workbench authentication behavior is Template-owned.
 
-Core owns authentication functionality that is reusable without depending on
-React UI, Redux composition, or concrete application state.
+This includes reusable behavior such as:
 
-Examples include:
+```text
+Login UI
+JWT login orchestration
+OIDC browser-session orchestration
+session guards
+session timers
+logout orchestration
+server-aware authentication state
+password-change UI
+authenticated-user profile state
+```
 
-- Shared authentication types
-- Technical HTTP authentication behavior
-- Authentication-related transport helpers
-- Logout-flow protection
-- Server authentication detection
-- Reusable technical utilities
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
 
-### Template
-
-Template owns reusable authentication behavior that depends on the
-application shell, Redux state, React hooks, or reusable UI.
-
-Examples include:
-
-- Login screens
-- Password-change dialogs
-- Session guards
-- JWT renewal orchestration
-- OIDC session timers
-- Session activity tracking
-- Logout orchestration
-- Authentication Redux state
-- User profile state
-
-### Application
-
-Application owns product-specific authentication configuration when such
-configuration is required.
-
-The Base Template must not import authentication configuration from a
-concrete application.
+Therefore standard Agent.Workbench authentication must not be classified as functionality waiting to move into a separate Agent.Workbench Application repository.
 
 ---
 
-## 3. Current Authentication Structure
+# 3. Authentication Responsibilities
+
+## Core
+
+Core owns authentication functionality that can operate without depending on React UI, Template Redux state or concrete product composition.
+
+Examples include:
+
+* shared authentication types
+* technical HTTP authentication behavior
+* authentication-related transport helpers
+* logout-flow protection
+* server authentication detection
+* reusable technical utilities
+
+## Template
+
+Template owns reusable authentication behavior that depends on the application shell, Redux state, React hooks or reusable UI.
+
+Examples include:
+
+* Login screens
+* password-change dialogs
+* session guards
+* JWT renewal orchestration
+* OIDC session timers
+* session activity tracking
+* logout orchestration
+* authentication Redux state
+* user-profile state
+* active authentication mechanism coordination
+
+## Application
+
+Application owns concrete product-specific authentication behavior only when genuinely required.
+
+Examples may include:
+
+```text
+product-specific authentication metadata
+consumer-specific identity-provider configuration
+consumer-only authentication rules
+```
+
+The Base Template must not import authentication configuration from a concrete Application.
+
+---
+
+# 4. Current Authentication Structure
 
 The current authentication implementation is split between Core and Template.
 
-### Core
+## Core
 
 ```text
 src/core/authentication/
@@ -114,8 +156,7 @@ src/core/authentication/
 +-- types.ts
 ```
 
-Server-side authentication detection is part of the reusable server
-infrastructure:
+Server-side authentication detection is part of reusable server infrastructure:
 
 ```text
 src/core/server/
@@ -124,7 +165,7 @@ src/core/server/
 +-- ...
 ```
 
-### Template
+## Template
 
 ```text
 src/template/authentication/
@@ -158,7 +199,7 @@ src/template/screens/login/
 
 ---
 
-## 4. Shared Authentication Type
+# 5. Shared Authentication Type
 
 The canonical shared authentication type is defined in:
 
@@ -175,17 +216,15 @@ export type AuthMethod =
   | "unknown";
 ```
 
-Technical code should use the shared Core type where possible.
+Technical code should use the shared Core type where appropriate.
 
-Template state may expose or reuse this type as part of its public state
-contract.
+Template state may expose or reuse this type as part of its state contract.
 
-The long-term goal is to avoid defining competing authentication-method types
-in multiple layers.
+Competing authentication-method types should not be introduced in multiple layers without a clear reason.
 
 ---
 
-## 5. Authentication Detection
+# 6. Authentication Detection
 
 Authentication information is detected when checking the selected backend.
 
@@ -216,40 +255,37 @@ oidc
 unknown
 ```
 
-The reusable server detection belongs to:
+Reusable server authentication detection belongs to:
 
 ```text
 src/core/server/serverCheck.ts
 ```
 
-The selected authentication method is stored in the Template API state.
+The selected authentication method is then consumed by Template state and orchestration.
 
 ---
 
-## 6. Detection Fallbacks
+# 7. Detection Fallbacks
 
-Authentication detection must also handle backend behavior where the
-authentication method is not available as one explicit setting.
+Authentication detection must support backend behavior where the method is not available through one explicit setting.
 
 OIDC may also be recognized through signals such as:
 
-- HTTP redirect responses
-- OIDC-related backend settings
-- Session-related settings
-- OIDC bearer information
-- A non-JSON authentication response
+* HTTP redirects
+* OIDC-related backend settings
+* session-related settings
+* OIDC bearer information
+* non-JSON authentication responses
 
-JWT authentication may be recognized through authentication settings or
-authorization-related backend responses.
+JWT authentication may be recognized through authentication settings or authorization-related backend responses.
 
-Detection logic must remain centralized.
+Detection must remain centralized.
 
-Screens should not independently implement their own authentication-method
-detection.
+Screens must not independently reimplement authentication-method detection.
 
 ---
 
-## 7. JWT Login
+# 8. JWT Login
 
 JWT authentication uses the backend login endpoint.
 
@@ -267,7 +303,7 @@ Authorization: Basic <base64(username:password)>
 
 After successful authentication, the backend provides a JWT.
 
-The frontend uses the JWT for subsequent authenticated API calls:
+Subsequent authenticated API requests use:
 
 ```text
 Authorization: Bearer <jwt>
@@ -277,7 +313,7 @@ JWT login is frontend-managed authentication.
 
 ---
 
-## 8. JWT Storage
+# 9. JWT Storage
 
 JWTs are stored per normalized server.
 
@@ -289,20 +325,23 @@ jwtByServer = {
 }
 ```
 
-This allows the user to switch between configured Agent.Workbench servers
-without automatically losing authenticated JWT sessions for other servers.
+This allows switching between configured backend servers without automatically discarding authenticated JWT sessions for other servers.
 
 The currently selected server determines which JWT becomes active.
 
-When the selected server uses OIDC, its frontend JWT must not be treated as
-the active authentication mechanism.
+When the selected server uses OIDC, stored JWT state must not become the active authentication mechanism.
 
 ---
 
-## 9. JWT API Configuration
+# 10. JWT API Configuration
 
-Generated API clients receive an authorization header when JWT authentication
-is active and a JWT is available.
+Generated API clients receive an authorization header when:
+
+```text
+authentication method = JWT
+and
+JWT is available
+```
 
 Conceptually:
 
@@ -310,8 +349,7 @@ Conceptually:
 Authorization: Bearer <jwt>
 ```
 
-The active API clients are rebuilt when relevant authentication or server
-state changes.
+Active API clients are rebuilt when relevant server or authentication state changes.
 
 JWT handling currently participates in:
 
@@ -319,12 +357,15 @@ JWT handling currently participates in:
 src/template/state/api/apiSlice.tsx
 ```
 
-This module remains a complex transitional module because it combines several
-responsibilities.
+`apiSlice.tsx` still combines several technical and application-platform responsibilities.
+
+This is a technical decomposition concern.
+
+It does not imply that the slice is concrete Agent.Workbench Application state.
 
 ---
 
-## 10. OIDC Login
+# 11. OIDC Login
 
 OIDC authentication starts through:
 
@@ -334,18 +375,15 @@ OIDC authentication starts through:
 
 OIDC is browser-oriented authentication.
 
-For same-origin deployments, the browser can navigate directly to the server
-login endpoint.
+For same-origin deployments, the browser may navigate directly to the server login endpoint.
 
-During local Expo Web development, authentication may use browser navigation
-or a popup-based flow while the frontend checks whether the backend session
-has become authenticated.
+During local Expo Web development, authentication may use browser navigation or a popup-based flow while the frontend checks whether the backend session has become authenticated.
 
 OIDC authentication is primarily cookie-based.
 
 ---
 
-## 11. OIDC API Communication
+# 12. OIDC API Communication
 
 OIDC generated API clients use browser credentials.
 
@@ -355,44 +393,43 @@ Conceptually:
 withCredentials: true
 ```
 
-The browser manages the authentication cookies.
+The browser manages authentication cookies.
 
-The frontend must not require an application-managed JWT when the active
-authentication method is OIDC.
+The frontend must not require an Application-managed JWT when the active authentication method is OIDC.
 
-When switching to an OIDC server, stale JWT state for that server must not
-become the active authentication mechanism.
+When switching to an OIDC server, stale JWT state must not become the active authentication mechanism.
 
 ---
 
-## 12. Authentication State
+# 13. Authentication State
 
-The main API and authentication state currently lives in:
+The main API/authentication coordination currently lives in:
 
 ```text
 src/template/state/api/apiSlice.tsx
 ```
 
-Important responsibilities currently include:
+Current responsibilities include:
 
-- Active server URL
-- Authentication method
-- JWT state
-- Login state
-- Generated API clients
-- JWT persistence
-- Server switching
-- Logout-related state
-- Runtime API configuration
+* active server URL
+* authentication method
+* JWT state
+* login state
+* generated API clients
+* JWT persistence
+* server switching
+* logout-related state
+* runtime API configuration
 
-This is still a broad responsibility set.
+This is a broad responsibility set.
 
-The module should not be moved into Core unchanged because it depends on
-Template state and application-shell orchestration.
+Further technical decomposition may be useful.
+
+The module must not be moved unchanged into Core because it depends on Template state and application-platform orchestration.
 
 ---
 
-## 13. Session State
+# 14. Session State
 
 OIDC session state currently lives in:
 
@@ -400,20 +437,21 @@ OIDC session state currently lives in:
 src/template/state/session/sessionTimeSlice.ts
 ```
 
-The `sessionTime` reducer is part of the current Template store composition.
+The `sessionTime` reducer belongs to Template state.
 
-Session state includes information required to track the currently active
-backend session.
+Session state contains information required to track the active backend session.
 
-The current session slice may still combine Redux state with backend
-communication.
+The slice may still combine state with backend communication.
 
-Further separation should be based on responsibility rather than moving the
-whole slice into Core.
+Any future separation should follow responsibility.
+
+Reusable Redux state remains Template-owned.
+
+Pure technical communication may move only if it can be separated without introducing upward dependencies.
 
 ---
 
-## 14. Session Endpoints
+# 15. Session Endpoints
 
 OIDC session information is loaded through:
 
@@ -427,38 +465,40 @@ The backend session can be extended through:
 GET /api/user/sessionTime/extend
 ```
 
-The session state is used by the reusable Template session orchestration.
+The session state is consumed by reusable Template session orchestration.
 
 ---
 
-## 15. Application Session Guard
+# 16. Application Session Guard
 
-The reusable application session guard is located at:
+The reusable session guard is located at:
 
 ```text
 src/template/authentication/session/AppSessionGuard.tsx
 ```
 
-It belongs to Template because it coordinates application-shell behavior and
-Redux state.
+It belongs to Template because it coordinates:
 
-Its responsibility is to prevent the application from continuing normally
-when authentication or session state is no longer valid.
+* application-shell behavior
+* authentication state
+* session state
+* Redux state
 
-The guard must distinguish authentication failure from connectivity failure.
+The guard prevents normal application operation when authentication or session state is no longer valid.
+
+It must distinguish authentication failure from connectivity failure.
 
 ---
 
-## 16. JWT Session Timer
+# 17. JWT Session Timer
 
-JWT session handling is coordinated by:
+JWT session behavior is coordinated by:
 
 ```text
 src/template/authentication/session/useJwtSessionTimerWeb.ts
 ```
 
-JWT sessions use token lifetime and renewal behavior rather than the OIDC
-browser-session mechanism.
+JWT sessions use token lifetime and renewal behavior rather than the OIDC browser-session model.
 
 JWT renewal orchestration currently lives under:
 
@@ -466,15 +506,13 @@ JWT renewal orchestration currently lives under:
 src/template/authentication/jwt/jwtRenewThunks.ts
 ```
 
-It belongs to Template because it participates in Redux and application-shell
-state.
+It belongs to Template because it depends on Redux/application state.
 
-Pure JWT utilities may still belong in Core when they have no Template
-dependency.
+Pure JWT utilities may belong to Core when they have no Template dependency.
 
 ---
 
-## 17. OIDC Session Timer
+# 18. OIDC Session Timer
 
 OIDC session timing is coordinated by:
 
@@ -482,17 +520,15 @@ OIDC session timing is coordinated by:
 src/template/authentication/session/useOidcSessionTimerWeb.ts
 ```
 
-The hook works with the Template session state.
+The hook works with Template session state.
 
-OIDC session expiration must not be treated as a generic connectivity
-failure.
+OIDC session expiration must not be treated as a generic connectivity failure.
 
-The backend may still be reachable even when the browser authentication
-session has expired.
+The backend may remain reachable even after browser authentication expires.
 
 ---
 
-## 18. Session Activity
+# 19. Session Activity
 
 Meaningful user activity is handled through:
 
@@ -504,22 +540,20 @@ The activity hook may extend the OIDC session after meaningful interaction.
 
 Examples include:
 
-- Button interaction
-- Navigation
-- Keyboard input
-- Other intentional user interaction
+* button interaction
+* navigation
+* keyboard input
+* other intentional user interaction
 
-Passive rendering should not continuously extend the session.
+Passive rendering must not continuously extend the session.
 
-Logout actions and logout dialogs may intentionally be excluded from
-automatic session extension.
+Logout actions and logout dialogs may intentionally be excluded from automatic session extension.
 
 ---
 
-## 19. TemplateApp Integration
+# 20. TemplateApp Integration
 
-Authentication and session orchestration are integrated into the reusable
-Template application shell.
+Authentication and session orchestration are integrated into the reusable Template application platform.
 
 Conceptually:
 
@@ -533,17 +567,16 @@ TemplateApp
     +-- OIDC session timer
     |
     v
-Reusable application shell
+Reusable application platform
 ```
 
-This is one reason why these orchestration components belong to Template
-instead of Core.
+This is why these orchestration components belong to Template rather than Core.
 
 ---
 
-## 20. Password Change State
+# 21. Password Change State
 
-The reusable initial-password-change state lives at:
+Reusable initial-password-change state lives at:
 
 ```text
 src/template/state/authentication/passwordChangePromptSlice.ts
@@ -558,12 +591,11 @@ ServerLoginModal
 Footer
 ```
 
-The state belongs to Template because it controls reusable application-shell
-UI.
+This state belongs to Template because it controls reusable application-platform UI.
 
 ---
 
-## 21. User Profile State
+# 22. User Profile State
 
 Reusable authenticated-user profile state lives at:
 
@@ -571,24 +603,21 @@ Reusable authenticated-user profile state lives at:
 src/template/state/authentication/userProfileSlice.ts
 ```
 
-The final ownership should remain based on whether the profile represents
-generic authenticated-user information or product-specific user data.
+Generic authenticated-user information can remain Template-owned.
 
-Generic authenticated-user state can remain Template-owned.
+Concrete product-specific profile extensions belong to Application.
 
-Product-specific profile extensions belong to Application.
+Ownership follows responsibility rather than the word `profile`.
 
 ---
 
-## 22. Logout
+# 23. Logout
 
-Logout behavior differs between JWT and OIDC.
+Logout differs between JWT and OIDC.
 
-### JWT logout
+## JWT Logout
 
-JWT logout performs backend logout while the current JWT is still available.
-
-After backend logout, local JWT and authentication state can be cleared.
+JWT logout performs backend logout while the current JWT remains available.
 
 Conceptually:
 
@@ -602,75 +631,82 @@ remove stored JWT
 clear local authentication state
 ```
 
-### OIDC logout
+The JWT must remain available long enough to perform the authenticated backend logout request.
+
+## OIDC Logout
 
 OIDC logout uses real browser navigation.
 
-The target is:
+Target:
 
 ```text
 <server-base-url>/api/user/logout
 ```
 
-Browser navigation is important because the identity provider may need to
-perform redirects during logout.
+Browser navigation is important because the identity provider may require redirects during logout.
 
-A simple background `fetch` is not always sufficient for the OIDC logout
-flow.
+A background `fetch` is not always sufficient.
 
 ---
 
-## 23. Logout Infrastructure
+# 24. Logout Infrastructure
 
-Reusable logout orchestration currently includes:
+Reusable logout orchestration includes:
 
 ```text
 src/template/authentication/logout/logoutServers.ts
 ```
 
-Technical protection against unwanted logout side effects is located in:
+Technical logout protection exists in:
 
 ```text
 src/core/authentication/logout/logoutFlowGuard.ts
 ```
 
-This separation reflects the architecture:
+Ownership:
 
 ```text
-Technical logout protection --> Core
-Redux/application orchestration --> Template
-Logout presentation --> Template UI
+Technical logout protection
+    -> Core
+
+Redux/application orchestration
+    -> Template
+
+Logout presentation
+    -> Template
 ```
 
 ---
 
-## 24. Connectivity and Authentication
+# 25. Connectivity and Authentication
 
-Connectivity and authentication must remain separate concepts.
+Connectivity and authentication are separate concepts.
 
 Important rules:
 
 ```text
 Server unreachable != user logged out
+
 Authentication expired != network offline
+
 OIDC redirect != connectivity failure
 ```
 
-Connectivity checks must never perform logout merely because a backend
-request fails.
+Connectivity checks must not trigger logout merely because a backend request fails.
 
-Authentication state should be changed only by authentication or session
-logic.
+Authentication state should be changed by authentication/session logic.
 
-This separation is particularly important for server switching and temporary
-network interruptions.
+This distinction is especially important during:
+
+* server switching
+* backend restart
+* temporary network interruption
 
 ---
 
-## 25. Server Switching
+# 26. Server Switching
 
-When switching servers, the Template must rebuild the active API
-configuration using the selected server.
+When switching servers, Template rebuilds the active API configuration for the selected server.
 
 Conceptually:
 
@@ -692,9 +728,13 @@ JWT sessions are stored per normalized server.
 
 OIDC authentication relies on the browser session of the selected backend.
 
+Server-selection orchestration belongs to Template.
+
+Technical server detection belongs to Core.
+
 ---
 
-## 26. API Client Rebuild
+# 27. API Client Rebuild
 
 Generated API clients depend on:
 
@@ -717,14 +757,13 @@ For OIDC:
 withCredentials: true
 ```
 
-The API clients must always represent the currently selected server and its
-active authentication mechanism.
+API clients must represent the currently selected server and active authentication mechanism.
 
 ---
 
-## 27. Current Ownership Summary
+# 28. Current Ownership Summary
 
-Current authentication ownership is approximately:
+Authentication ownership is:
 
 ```text
 Core
@@ -737,85 +776,157 @@ Core
 Template
 |
 +-- Login UI
-+-- Authentication Redux state
-+-- User profile state
-+-- Password-change state
-+-- Session state
-+-- Session guards
++-- authentication Redux state
++-- user-profile state
++-- password-change state
++-- session state
++-- session guards
 +-- JWT renewal orchestration
 +-- OIDC session orchestration
-+-- Session activity
-+-- Logout orchestration
++-- session activity
++-- logout orchestration
++-- API-client coordination
 
 Application
 |
-+-- Product-specific authentication configuration
++-- concrete product-specific authentication configuration
+   where genuinely required
 ```
 
-This structure is preferable to placing all authentication code inside Core.
-
-Anything that depends on Redux, Template UI, or the Template application shell
-should not be moved into Core merely because it is related to authentication.
+Anything that depends on Redux, Template UI or application-platform orchestration must not be moved into Core merely because it is authentication-related.
 
 ---
 
-## 28. Current Transitional Areas
+# 29. Technical Decomposition Areas
 
-Authentication separation is not fully complete.
+Authentication ownership is established, but some modules still combine multiple technical responsibilities.
 
-### apiSlice
+This is technical decomposition work, not Agent.Workbench Application extraction.
 
-`src/template/state/api/apiSlice.tsx` still combines multiple concerns:
+## apiSlice
 
-- Authentication state
-- Active server state
-- Generated API clients
-- JWT persistence
-- Server switching
-- Login state
-- Logout state
-- Runtime API configuration
+```text
+src/template/state/api/apiSlice.tsx
+```
 
-These responsibilities may be separated further.
+currently combines:
+
+* authentication state
+* active server state
+* generated API clients
+* JWT persistence
+* server switching
+* login state
+* logout state
+* runtime API configuration
+
+These responsibilities may be separated incrementally.
 
 The slice must not be moved unchanged into Core.
 
-### sessionTimeSlice
+## sessionTimeSlice
 
-`src/template/state/session/sessionTimeSlice.ts` combines session state with
-session operations.
+```text
+src/template/state/session/sessionTimeSlice.ts
+```
 
-Future refactoring may extract pure HTTP communication while keeping reusable
-Redux state in Template.
+combines session state with session operations.
 
-### JWT renewal
+A future refactoring may isolate pure HTTP communication while leaving reusable Redux state in Template.
 
-JWT renewal currently lives under Template because it depends on the active
-Redux/application state.
+## JWT Renewal
 
-Any future extraction into Core must first remove those upward dependencies.
+JWT renewal currently remains in Template because it depends on active Redux/application state.
+
+A technical helper may move to Core only after removing upward Template dependencies.
 
 ---
 
-## 29. Important Architecture Rules
+# 30. What Technical Decomposition Does Not Mean
 
-Authentication changes must respect the following rules:
+The following conclusions must not be drawn from the decomposition work:
+
+```text
+apiSlice must move into Application
+
+sessionTimeSlice is Agent.Workbench Application state
+
+authentication UI should move out of Template
+
+Agent.Workbench authentication requires a separate repository
+
+standard authentication functionality is transitional Application code
+```
+
+Standard Agent.Workbench authentication remains Template-owned.
+
+---
+
+# 31. Authentication and Concrete Applications
+
+A concrete Application such as HEMS may consume the reusable authentication platform.
+
+Conceptually:
+
+```text
+HEMS Application
+        |
+        v
+Template authentication platform
+        |
+        v
+Core authentication capabilities
+```
+
+HEMS-specific authentication behavior belongs to HEMS only when it is genuinely product-specific.
+
+Template must not import HEMS authentication implementation.
+
+---
+
+# 32. Application Configuration
+
+Developer-facing Application configuration is located under:
+
+```text
+src/application/config/
+```
+
+The current general configuration model is:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
+
+Authentication configuration should only become Application-owned when it represents a concrete consumer requirement.
+
+Do not introduce product-specific authentication configuration into Template merely to support one future consumer.
+
+---
+
+# 33. Architecture Rules
+
+Authentication changes must respect these rules:
 
 1. Core must not import Template or Application.
-2. Authentication screens belong to Template.
-3. Redux-dependent authentication orchestration belongs to Template.
-4. Pure reusable authentication capabilities may belong to Core.
-5. Product-specific authentication configuration belongs to Application.
-6. Connectivity checks must not cause logout.
-7. OIDC redirects must not be treated as connectivity failures.
-8. JWT renewal must not run as the active authentication mechanism for an
-   OIDC server.
-9. Server switching must rebuild authentication-aware API clients.
-10. Screens must not duplicate reusable authentication detection logic.
+2. Template must not import concrete Application implementation.
+3. Authentication screens belong to Template.
+4. Redux-dependent authentication orchestration belongs to Template.
+5. Pure technical authentication capabilities may belong to Core.
+6. Concrete product-specific authentication behavior belongs to Application.
+7. Standard Agent.Workbench authentication remains Template-owned.
+8. Connectivity checks must not cause logout.
+9. OIDC redirects must not be treated as connectivity failures.
+10. JWT renewal must not act as the active authentication mechanism for an OIDC server.
+11. Server switching must rebuild authentication-aware API clients.
+12. Screens must not duplicate reusable authentication detection logic.
+13. Technical module decomposition must not reverse architecture dependencies.
 
 ---
 
-## 30. Validation
+# 34. Validation
 
 After changing authentication code, search relevant dependencies.
 
@@ -829,13 +940,19 @@ git grep -n "useOidcSessionTimerWeb" -- src
 git grep -n "useJwtSessionTimerWeb" -- src
 ```
 
+Run configuration generation when relevant:
+
+```bash
+npm run config:generate
+```
+
 Run TypeScript validation:
 
 ```bash
 npx tsc --noEmit
 ```
 
-Run targeted tests for affected authentication or API modules.
+Run targeted authentication/API tests.
 
 For example:
 
@@ -847,9 +964,10 @@ Validate the patch:
 
 ```bash
 git diff --check
+git status --short
 ```
 
-When runtime authentication behavior changes, start the application through:
+When runtime authentication behavior changes, start through the normal npm path:
 
 ```bash
 npm start
@@ -857,43 +975,90 @@ npm start
 
 ---
 
-## 31. Next Steps
+# 35. Future Technical Work
 
-The authentication architecture should continue incrementally.
+Potential future work includes:
 
-Planned work includes:
+* further separate `apiSlice` responsibilities
+* review session HTTP communication separately from session Redux state
+* keep shared authentication types independent from Template
+* keep Redux-dependent session orchestration inside Template
+* define supported public authentication APIs for concrete consumers
+* review consumer-specific authentication configuration when required
+* maintain dependency-boundary checks
+* ensure Core never imports Template
+* validate JWT and OIDC behavior through a concrete consumer such as HEMS
 
-- Further separate `apiSlice` responsibilities.
-- Review session HTTP communication separately from session Redux state.
-- Keep shared authentication types independent of Template.
-- Keep Redux-dependent session orchestration inside Template.
-- Define supported public authentication APIs for the Base Template.
-- Review application-specific authentication configuration.
-- Maintain automated dependency-boundary checks.
-- Ensure Core never imports Template.
-- Preserve JWT and OIDC behavior during repository separation.
+Do not move authentication modules simply to produce a visually cleaner directory tree.
 
-Do not move authentication modules simply to achieve a visually clean folder
-tree.
-
-Move them only when their dependencies and responsibilities support the
-target architecture.
+Move functionality only when responsibility and dependencies justify it.
 
 ---
 
-## 32. Success Criteria
+# 36. Incorrect Legacy Interpretation
 
-Authentication separation is complete when:
+The following statements do not describe the accepted architecture:
+
+```text
+"Agent.Workbench authentication must move into Application."
+
+"Authentication inside Template is transitional Agent.Workbench code."
+
+"apiSlice is waiting to move into an Agent.Workbench repository."
+
+"Login screens are concrete Agent.Workbench screens."
+
+"Session state belongs to Application because it is used by Agent.Workbench."
+```
+
+The correct ownership is:
+
+```text
+technical authentication capability
+    -> Core
+
+standard reusable authentication platform
+    -> Template
+
+concrete consumer-only authentication behavior
+    -> Application
+```
+
+---
+
+# 37. Success Criteria
+
+Authentication architecture is correct when:
 
 1. Core authentication code has no Template dependencies.
-2. Reusable authentication UI and Redux orchestration are clearly
-   Template-owned.
-3. Product-specific authentication configuration is Application-owned.
-4. JWT and OIDC remain supported through one reusable Base Template.
-5. Connectivity and authentication state remain independent.
-6. Server switching preserves the correct authentication mechanism.
-7. JWT state remains server-specific.
-8. OIDC uses browser-session authentication correctly.
-9. Session guards and timers do not create upward architecture dependencies.
-10. A concrete application can consume authentication through supported Base
-    Template APIs without modifying internal Template code.
+2. Reusable authentication UI and Redux orchestration are clearly Template-owned.
+3. Standard Agent.Workbench authentication remains Template-owned.
+4. Concrete product-specific authentication behavior remains Application-owned.
+5. JWT and OIDC remain supported through one reusable Base Template.
+6. Connectivity and authentication state remain independent.
+7. Server switching preserves the correct authentication mechanism.
+8. JWT state remains server-specific.
+9. OIDC uses browser-session authentication correctly.
+10. Session guards and timers do not introduce upward dependencies.
+11. Technical decomposition does not become Application extraction.
+12. A concrete consumer can use authentication through supported Base Template APIs without modifying Template internals.
+
+---
+
+# 38. Summary
+
+Authentication follows:
+
+```text
+Application --> Template --> Core
+```
+
+Core owns technical authentication capabilities.
+
+Template owns reusable authentication UI, state and orchestration.
+
+Standard Agent.Workbench authentication belongs to Template.
+
+Concrete Applications may add product-specific authentication behavior where required.
+
+`apiSlice.tsx` and related state may still benefit from technical decomposition, but this does not make them transitional Application code and does not require a separate Agent.Workbench Application repository.

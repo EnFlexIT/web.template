@@ -1,11 +1,22 @@
 ﻿# Server Check and Server Switching
 
-This document describes server configuration, reachability checks, server
-validation, authentication detection, runtime server switching, and the
-architectural ownership of these responsibilities in `web.template`.
+## Purpose
 
-The Template supports multiple Agent.Workbench backend servers and can switch
-between them at runtime.
+This document describes the server architecture of `web.template`, including:
+
+* server configuration
+* URL normalization
+* backend reachability
+* connectivity state
+* server validation
+* authentication detection
+* server environment detection
+* runtime server switching
+* API-client rebuilding
+* architectural ownership
+* current technical decomposition areas
+
+The Template supports multiple compatible Agent.Workbench backend servers and can switch between them at runtime.
 
 The architecture follows:
 
@@ -13,11 +24,13 @@ The architecture follows:
 Application --> Template --> Core
 ```
 
-Server functionality is separated according to responsibility.
+Standard Agent.Workbench server behavior belongs to the reusable Base Template.
+
+Concrete Applications such as HEMS may provide additional product-specific server configuration when genuinely required.
 
 ---
 
-## 1. Architecture
+# 1. Architecture
 
 Conceptually:
 
@@ -25,10 +38,10 @@ Conceptually:
 Application-specific server configuration
                 |
                 v
-Template server UI and state
+Template server UI, state and orchestration
                 |
                 v
-Core server validation and technical logic
+Core server validation and technical capability
                 |
                 v
 Backend endpoints
@@ -37,29 +50,67 @@ Backend endpoints
 General ownership:
 
 ```text
-Technical server capability --> Core
-Reusable server UI/state    --> Template
-Product-specific definition --> Application
+Technical server capability
+    -> Core
+
+Reusable server UI/state/orchestration
+    -> Template
+
+Concrete product-specific server configuration
+    -> Application
 ```
 
-Core must not import Template or Application code.
+Core must not import Template or Application.
+
+Template must not import concrete Application implementation.
 
 ---
 
-## 2. Core Responsibilities
+# 2. Agent.Workbench Server Ownership
 
-Reusable technical server logic belongs to Core when it does not depend on
-Template UI, Redux composition, or concrete product behavior.
+Standard Agent.Workbench server behavior is intentionally Template-owned.
 
-Important Core responsibilities include:
+This includes reusable behavior such as:
 
-- Server URL normalization
-- Server reachability checks
-- Server validation
-- Authentication-method detection
-- Backend settings parsing
-- Server environment detection
-- Shared server types
+```text
+configured server management
+active server selection
+server-selection UI
+connectivity presentation
+authentication-aware switching
+API-client rebuilding
+server persistence
+standard server settings
+```
+
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
+
+Therefore these responsibilities are not waiting to move into a separate Agent.Workbench Application repository.
+
+Technical server primitives remain Core-owned where appropriate.
+
+---
+
+# 3. Core Responsibilities
+
+Reusable technical server logic belongs to Core when it does not depend on:
+
+```text
+Template UI
+Template Redux state
+navigation
+concrete Application behavior
+```
+
+Core responsibilities include:
+
+* server URL normalization
+* server reachability checks
+* technical server validation
+* authentication-method detection support
+* backend settings parsing
+* server environment detection
+* shared technical server types
 
 Important files include:
 
@@ -72,14 +123,15 @@ src/core/server/
 +-- types.ts
 ```
 
-The exact internal structure may evolve, but the architectural ownership
-remains the same.
+The internal structure may evolve.
+
+The ownership boundary must remain stable.
 
 ---
 
-## 3. Template Responsibilities
+# 4. Template Responsibilities
 
-Reusable server state and reusable server-selection UI belong to Template.
+Reusable server state and server-selection behavior belong to Template.
 
 Important Template areas include:
 
@@ -92,36 +144,44 @@ src/template/screens/server/
 
 Template responsibilities include:
 
-- Configured server state
-- Active server selection
-- Server persistence
-- Per-server UI status
-- Connectivity state
-- Server-selection UI
-- Offline presentation
-- Authentication-aware API integration
-- Application-shell orchestration after a server switch
+* configured server state
+* active server selection
+* server persistence
+* server status metadata
+* connectivity state
+* server-selection UI
+* offline presentation
+* authentication-aware API integration
+* API-client rebuilding
+* application-platform orchestration after server switching
+
+These responsibilities remain Template-owned even when they are primarily used with Agent.Workbench backends.
 
 ---
 
-## 4. Application Responsibilities
+# 5. Application Responsibilities
 
-Concrete applications may eventually provide application-specific server
-configuration or restrictions.
+Concrete Applications may provide additional server configuration when the requirement is genuinely product-specific.
 
-Possible Application responsibilities include:
+Examples may include:
 
-- Product-specific default servers
-- Product-specific allowed server environments
-- Product-specific server configuration
-- Product-specific server-related feature rules
+```text
+HEMS-specific default backend
+HEMS-only server restrictions
+consumer-specific environment restrictions
+consumer-specific server metadata
+consumer-specific server feature rules
+```
 
-The Base Template must not depend on a concrete application's server
-configuration.
+The Base Template must not import concrete Application server implementation.
+
+Application-specific configuration extends the reusable server platform.
+
+It does not replace standard Template server functionality.
 
 ---
 
-## 5. Important Files
+# 6. Important Files
 
 Current important files include:
 
@@ -141,12 +201,15 @@ src/template/components/layout/Footer.tsx
 src/template/screens/server/
 ```
 
-`apiSlice.tsx` remains transitional because it still combines several
-responsibilities.
+`apiSlice.tsx` still combines several technical and Template orchestration responsibilities.
+
+This is a technical decomposition concern.
+
+It does not make the module concrete Application state.
 
 ---
 
-## 6. Shared Server Types
+# 7. Shared Server Types
 
 Shared technical server types belong to Core.
 
@@ -165,10 +228,11 @@ export type ServerEnvironment =
   | "PROD";
 ```
 
-Template state may use this type, but Core code must not import the type from
-Template.
+Template may consume this type.
 
-A configured server conceptually contains information such as:
+Core must not import an equivalent type from Template.
+
+A configured server may conceptually contain:
 
 ```ts
 type SavedServer = {
@@ -179,16 +243,15 @@ type SavedServer = {
 };
 ```
 
-The exact application state type may contain additional fields.
+The actual Template state may contain additional fields.
 
 ---
 
-## 7. Server Persistence
+# 8. Server Persistence
 
-Configured servers are persisted so that users do not need to re-enter their
-server list on every application start.
+Configured servers are persisted so users do not need to recreate their server list on every start.
 
-Persistence is handled through the Template server state.
+Persistence belongs to Template server state.
 
 Conceptually:
 
@@ -202,28 +265,27 @@ initializeServers
 Template server state
 ```
 
-If no server configuration exists, the application may initialize a default
-server.
+When no persisted configuration exists, Template may establish an initial server according to the supported runtime/configuration rules.
 
-For deployed web environments, the runtime origin may participate in
-determining the initial backend location.
+For deployed web environments, runtime origin may participate in determining the initial backend location.
 
-This behavior should remain centralized instead of being duplicated in
-screens.
+Initialization must remain centralized.
+
+Screens must not independently implement server initialization.
 
 ---
 
-## 8. URL Normalization
+# 9. URL Normalization
 
-Server URLs must be normalized through shared Core infrastructure.
+Server URLs must use the shared Core normalization implementation.
 
-The relevant implementation is located under:
+Relevant file:
 
 ```text
 src/core/server/normalizeServerInputs.ts
 ```
 
-Do not introduce additional local implementations such as:
+Do not create parallel helpers such as:
 
 ```text
 normalizeBaseUrl
@@ -233,18 +295,19 @@ fixServerUrl
 
 unless they represent a genuinely different responsibility.
 
-A single shared normalization implementation avoids inconsistent behavior
-between:
+Centralized normalization avoids inconsistent behavior between:
 
-- Login
-- Server settings
-- Server switching
-- Connectivity checks
-- API-client configuration
+```text
+Login
+Server settings
+Server switching
+Connectivity checks
+API-client configuration
+```
 
 ---
 
-## 9. Reachability Check
+# 10. Reachability Check
 
 Backend reachability is checked through:
 
@@ -252,39 +315,42 @@ Backend reachability is checked through:
 GET /api/alive
 ```
 
-The purpose of this request is only to answer:
+The technical question is:
 
 ```text
 Can the frontend reach the backend?
 ```
 
-Reachability and authentication are separate concepts.
+Reachability is not authentication.
 
-An HTTP response can prove that the backend is reachable even when the
-response indicates:
+An HTTP response may demonstrate that a backend is reachable even when:
 
-- Authentication is required
-- Access is denied
-- A redirect is required
-- A backend error occurred
+```text
+authentication is required
+access is denied
+a redirect is required
+a backend error is returned
+```
 
 Therefore:
 
 ```text
 HTTP error != backend unreachable
+
 Authentication failure != connectivity failure
+
 OIDC redirect != connectivity failure
 ```
 
-Connectivity checks must not perform logout.
+Connectivity checks must not trigger logout.
 
 ---
 
-## 10. Connectivity State
+# 11. Connectivity State
 
 Reusable connectivity state belongs to Template.
 
-The current state is located under:
+Current location:
 
 ```text
 src/template/state/connectivity/connectivitySlice.tsx
@@ -292,52 +358,51 @@ src/template/state/connectivity/connectivitySlice.tsx
 
 Connectivity state represents whether the active backend is reachable.
 
-Connectivity checks may be triggered by application-shell behavior such as:
+Checks may occur during:
 
-- Initial application startup
-- After login
-- Periodic background checks
-- Returning to an active browser state
-- Server switching
+* initial application startup
+* after login
+* periodic runtime checks
+* returning to an active browser state
+* server switching
 
-The exact polling interval is an implementation detail and should not be
-treated as an architectural contract.
+Polling intervals and retry timing are implementation details rather than architectural contracts.
 
 ---
 
-## 11. Offline Presentation
+# 12. Offline Presentation
 
-The offline UI reads connectivity state and presents the current result.
-
-The presentation layer does not own the technical reachability algorithm.
+Offline UI consumes Template connectivity state.
 
 Conceptually:
 
 ```text
-Core reachability check
+Core reachability result
         |
         v
 Template connectivity state
         |
         v
-Offline UI
+Offline presentation
 ```
 
-The offline presentation must not decide authentication state.
+The UI does not own the technical reachability algorithm.
+
+Offline presentation must not independently modify authentication state.
 
 ---
 
-## 12. Authentication Detection
+# 13. Authentication Detection
 
-Authentication and relevant backend settings are read through:
+Authentication information and relevant backend settings are read through:
 
 ```text
 GET /api/app/settings/get
 ```
 
-The Core server infrastructure evaluates the response.
+Core server infrastructure evaluates technical response information.
 
-Relevant information may include:
+Relevant settings may include:
 
 ```text
 _AuthenticationMethod
@@ -347,7 +412,7 @@ _session.*
 _oidc.*
 ```
 
-Authentication is normalized to the shared authentication type:
+Authentication is normalized to:
 
 ```text
 jwt
@@ -363,68 +428,65 @@ src/core/authentication/types.ts
 
 ---
 
-## 13. Authentication and Connectivity Separation
+# 14. Authentication and Connectivity
 
-Server switching depends on both connectivity and authentication, but they
-must remain independent.
+Connectivity and authentication must remain separate.
 
 Conceptually:
 
 ```text
-Reachability
-    |
-    +-- backend reachable
-    |
-    +-- backend unreachable
+Connectivity
+|
++-- reachable
+|
++-- unreachable
 
 Authentication
-    |
-    +-- JWT
-    |
-    +-- OIDC
-    |
-    +-- unknown
+|
++-- JWT
+|
++-- OIDC
+|
++-- unknown
 ```
 
-A reachable server may still require authentication.
+A reachable backend may still require authentication.
 
-A valid authentication session may temporarily experience connectivity loss.
+A valid authenticated session may temporarily experience network loss.
 
 One state must not automatically overwrite the other.
 
 ---
 
-## 14. Server Validation
+# 15. Server Validation
 
-Reusable server validation belongs to Core.
+Reusable technical server validation belongs to Core.
 
-The relevant implementation is located at:
+Relevant implementation:
 
 ```text
 src/core/server/serverValidation.ts
 ```
 
-Validation may verify technical characteristics of a server before it becomes
-active.
+Validation may verify technical characteristics before a server becomes active.
 
-The validation mechanism must remain independent from concrete UI screens.
+Validation must remain independent from concrete React screens.
 
-Screens should call reusable validation infrastructure instead of
-implementing their own backend checks.
+Screens should consume reusable validation behavior rather than implement duplicate backend checks.
 
 ---
 
-## 15. Server Environment Detection
+# 16. Server Environment Detection
 
-Server environment detection belongs to Core.
+Environment detection belongs to Core.
 
-The relevant implementation is located at:
+Relevant implementation:
 
 ```text
 src/core/server/detectServerEnvironment.ts
 ```
 
-Conceptually, a backend may be classified as:
+A backend may conceptually be classified as:
 
 ```text
 DEV
@@ -432,14 +494,13 @@ TEST
 PROD
 ```
 
-The environment type belongs to Core because it is shared technical
-information.
+The environment value is reusable technical information.
 
-Template may use the detected environment for presentation and behavior.
+Template may consume it for presentation and runtime behavior.
 
 ---
 
-## 16. Saved Server State
+# 17. Saved Server State
 
 Configured server state belongs to:
 
@@ -447,30 +508,34 @@ Configured server state belongs to:
 src/template/state/server/serverSlice.ts
 ```
 
-Responsibilities include areas such as:
+Responsibilities may include:
 
-- Configured server list
-- Active server
-- Active environment
-- Initialization
-- Persistence
-- Server selection
+```text
+configured server list
+active server
+active environment
+initialization
+persistence
+server selection
+```
 
-The exact state shape may evolve during the architecture migration.
+The exact Redux state shape may evolve.
+
+The ownership remains Template.
 
 ---
 
-## 17. Server Status Metadata
+# 18. Server Status Metadata
 
-Presentation-oriented status metadata belongs to Template.
+Presentation-oriented server metadata belongs to Template.
 
-The relevant state is located under:
+Relevant state:
 
 ```text
 src/template/state/server/serverStatusSlice.ts
 ```
 
-Conceptually, status metadata may include information such as:
+Conceptually:
 
 ```ts
 type ServerStatusMeta = {
@@ -479,39 +544,45 @@ type ServerStatusMeta = {
 };
 ```
 
-This is UI-oriented state.
+This is presentation-oriented state.
 
 It does not belong in Core server validation.
 
 ---
 
-## 18. API State
+# 19. API State
 
-The active API configuration currently participates in:
+Active API configuration currently participates in:
 
 ```text
 src/template/state/api/apiSlice.tsx
 ```
 
-This module currently handles several concerns such as:
+The module coordinates multiple concerns, including:
 
-- Active server URL
-- Authentication state
-- Generated API clients
-- JWT persistence
-- Server switching
-- Runtime API configuration
-- Template orchestration
+```text
+active server URL
+authentication state
+generated API clients
+JWT persistence
+server switching
+runtime API configuration
+Template orchestration
+```
 
-This makes `apiSlice.tsx` a transitional module.
+This remains a broad responsibility set.
 
-It must not be moved unchanged into Core.
+Further technical decomposition may be appropriate.
+
+The module must not be moved unchanged into Core.
+
+It also must not be classified as concrete Agent.Workbench Application state.
 
 ---
 
-## 19. Server Switching Flow
+# 20. Server Switching Flow
 
-Conceptually, server switching follows this flow:
+Conceptually:
 
 ```text
 User selects server
@@ -541,53 +612,55 @@ Update active server/authentication state
 Run required Template orchestration
 ```
 
-The exact implementation may contain additional steps.
+The implementation may contain additional technical steps.
 
-The architectural responsibility of each step must remain clear.
+Architectural ownership must remain explicit throughout the flow.
 
 ---
 
-## 20. JWT Server Switching
+# 21. JWT Server Switching
 
 JWT authentication state is stored per normalized server.
 
 Conceptually:
 
 ```text
-server A --> JWT A
-server B --> JWT B
-server C --> no JWT
+server A -> JWT A
+server B -> JWT B
+server C -> no JWT
 ```
 
-Switching from one JWT server to another should restore the JWT belonging to
-the selected server when available.
+When switching between JWT servers, Template may restore the JWT associated with the selected server.
 
-A JWT belonging to one server must not be reused for another server.
+A JWT belonging to one backend must never be reused for another backend.
 
 ---
 
-## 21. OIDC Server Switching
+# 22. OIDC Server Switching
 
-OIDC authentication is based primarily on the browser session of the selected
-backend.
+OIDC authentication is primarily based on the browser session of the selected backend.
 
-When switching to an OIDC server:
+When switching to an OIDC backend:
 
 ```text
-selected authentication method = OIDC
+active authentication method = OIDC
 ```
 
-A stored frontend JWT must not become the active authentication mechanism for
-that server.
+Stored frontend JWT state must not become the active authentication mechanism.
 
-OIDC authentication and JWT authentication must remain explicitly separated.
+JWT and OIDC flows must remain explicitly separated.
 
 ---
 
-## 22. API Client Rebuild
+# 23. API Client Rebuild
 
-Generated API clients must represent the currently selected server and its
-authentication mechanism.
+Generated API clients must represent:
+
+```text
+selected server
+authentication method
+authentication credentials
+```
 
 For JWT:
 
@@ -601,50 +674,84 @@ For OIDC:
 withCredentials: true
 ```
 
-When the server changes, API clients must be rebuilt with the new base URL and
-correct authentication configuration.
+When the server changes, API clients must be rebuilt with:
+
+```text
+new base URL
+correct authentication mechanism
+correct credentials behavior
+```
 
 ---
 
-## 23. Menu and Application-Shell Orchestration
+# 24. Template Orchestration
 
-Some server switching behavior may trigger Template application-shell work
-after the technical switch succeeds.
+A successful server switch may require additional Template work.
 
 Examples may include:
 
-- Menu reload
-- Feature visibility recalculation
-- Session initialization
-- Notification context changes
-- Update checks
+```text
+navigation/menu refresh
+feature visibility recalculation
+session initialization
+notification-context changes
+update checks
+```
 
-These actions belong to Template orchestration.
+These are Template orchestration responsibilities.
 
-They must not be moved into Core server utilities.
+Core server utilities must not know about:
 
-This separation is important because Core must not know about Template
-navigation or UI state.
-
----
-
-## 24. Footer Integration
-
-The Template footer may expose server-related UI such as:
-
-- Active server information
-- Server switching
-- Connectivity information
-- Notifications
-- Release information
-
-The footer is a consumer of server state.
-
-It does not own server validation or connectivity algorithms.
+```text
+Template navigation
+Template Redux orchestration
+Template UI
+```
 
 ---
 
-## 25. Server Screens
+# 25. Feature Visibility
+
+Server changes may affect the availability or visibility of Template functionality.
+
+Application-facing feature selection remains semantic through:
+
+```text
+src/application/config/features.properties
+```
+
+Template owns the actual reusable feature implementation and runtime visibility logic.
+
+Server infrastructure must not require Application to know Template-internal navigation IDs.
+
+---
+
+# 26. Footer Integration
+
+The Template footer may expose:
+
+```text
+active server
+server switching
+connectivity status
+notifications
+release information
+```
+
+The footer consumes server state.
+
+It does not own:
+
+```text
+URL normalization
+server validation
+connectivity algorithms
+authentication detection
+```
+
+---
+
+# 27. Server Screens
 
 Reusable server-management screens live under:
 
@@ -652,51 +759,48 @@ Reusable server-management screens live under:
 src/template/screens/server/
 ```
 
-These screens may provide:
+They may provide:
 
-- Server configuration
-- Server selection
-- Server status
-- Offline information
+```text
+server configuration
+server selection
+server status
+offline information
+```
 
-They belong to Template because they are reusable UI.
+These screens belong to Template.
 
-Technical server validation remains in Core.
+They are standard reusable Base Template functionality.
+
+Their use with Agent.Workbench backends does not make them Application-owned.
 
 ---
 
-## 26. Initialization
+# 28. Initialization
 
-Server initialization happens early in application startup.
-
-This is important because other Template systems may depend on active server
-information.
+Server initialization occurs early during application startup.
 
 Conceptually:
 
 ```text
-initialize servers
+initialize server state
         |
         v
 initialize API/authentication
         |
         v
-initialize dependent Template state
+initialize dependent Template behavior
 ```
 
-The exact initialization sequence is documented separately in the state and
-application-shell documentation.
+Other Template systems may depend on active server information.
 
-Do not reorder server initialization without checking dependent state.
+Do not change initialization order without verifying dependent state and runtime behavior.
 
 ---
 
-## 27. Transitional apiSlice Responsibilities
+# 29. Technical Decomposition of apiSlice
 
-`src/template/state/api/apiSlice.tsx` currently combines multiple
-responsibilities.
-
-These include:
+`src/template/state/api/apiSlice.tsx` currently combines several responsibilities:
 
 ```text
 server selection
@@ -707,16 +811,44 @@ runtime configuration
 Template orchestration
 ```
 
-A future refactor should separate these responsibilities incrementally.
+These responsibilities may be separated incrementally.
 
-Do not perform a large rewrite simply to move the file.
+This work should:
 
-The correct sequence is to extract one clear responsibility at a time while
-preserving runtime behavior.
+```text
+identify one responsibility
+define its owner
+remove unnecessary coupling
+extract safely
+update imports
+test behavior
+```
+
+Do not perform a large rewrite simply to produce a cleaner directory structure.
 
 ---
 
-## 28. Core Boundary
+# 30. Technical Decomposition Is Not Application Extraction
+
+Further decomposition of `apiSlice.tsx` does not imply:
+
+```text
+apiSlice belongs to Application
+
+server switching belongs to Application
+
+standard server settings should leave Template
+
+Agent.Workbench server state should move to another repository
+
+Agent.Workbench server UI is transitional Application code
+```
+
+The purpose is technical responsibility separation within the accepted architecture.
+
+---
+
+# 31. Core Boundary
 
 Core server infrastructure may contain:
 
@@ -726,28 +858,69 @@ server validation
 environment detection
 reachability checks
 backend settings parsing
-shared technical types
+shared technical server types
 ```
 
 Core server infrastructure must not contain:
 
 ```text
-Template menu reload
+Template navigation reload
 Template Redux orchestration
 React UI
-application-specific screens
-application-specific configuration
+Application screens
+concrete product configuration
 ```
 
-This boundary must remain enforceable.
+The boundary must remain enforceable.
 
 ---
 
-## 29. Import Policy
+# 32. Application Configuration
 
-Prefer stable architectural imports.
+Developer-facing Application configuration uses:
 
-Examples:
+```text
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
+```
+
+Server-specific Application configuration should only be introduced when a concrete consumer requires it.
+
+For example, future HEMS requirements may justify additional consumer-specific server configuration.
+
+Do not add speculative Application configuration solely to mirror standard Agent.Workbench behavior.
+
+---
+
+# 33. HEMS Consumer Example
+
+A concrete HEMS Application may consume the reusable server platform:
+
+```text
+HEMS Application
+        |
+        v
+Template server UI/state/orchestration
+        |
+        v
+Core technical server capability
+```
+
+HEMS may add product-specific constraints where required.
+
+Template must not import HEMS implementation.
+
+Core must remain unaware of HEMS.
+
+---
+
+# 34. Import Policy
+
+Prefer stable architecture-aligned imports.
+
+Example:
 
 ```ts
 import type {
@@ -755,16 +928,16 @@ import type {
 } from "@/core/server/types";
 ```
 
-Do not duplicate technical server types inside Template.
+Do not duplicate technical Core server types in Template.
 
-Do not perform broad automated replacement of server-related imports across
-the entire repository.
+Do not perform broad automated replacements of server-related imports.
 
-Before moving server code:
+Before moving code:
 
 ```text
 search
 inspect
+identify owner
 move
 update imports
 search again
@@ -773,11 +946,77 @@ test
 
 ---
 
-## 30. Validation Workflow
+# 35. Current Status
 
-After server-related changes, search affected references.
+## Implemented
 
-Examples:
+Current server architecture includes:
+
+```text
+Template-owned configured server state
+Template-owned connectivity state
+Template-owned server UI
+Core server types
+shared URL normalization
+server reachability checks
+server validation
+environment detection
+authentication-method detection
+multiple configured servers
+runtime server switching
+authentication-aware API-client rebuilding
+server-specific JWT handling
+connectivity/authentication separation
+```
+
+## Technical Decomposition Area
+
+`apiSlice.tsx` still combines several responsibilities.
+
+Some server-switching behavior also remains coordinated through this broad API state module.
+
+This is technical decomposition work.
+
+It is not an architectural migration of Agent.Workbench functionality into Application.
+
+## Future Consumer Work
+
+Future work may include:
+
+```text
+stable public server integration APIs
+consumer-specific configuration where real requirements exist
+HEMS validation
+additional dependency-boundary checks
+```
+
+---
+
+# 36. Architecture Rules
+
+Server-related changes must preserve these rules:
+
+1. Core must not import Template or Application.
+2. Template must not import concrete Application implementation.
+3. Standard Agent.Workbench server behavior belongs to Template.
+4. Technical server capability belongs to Core.
+5. Concrete product-only server configuration belongs to Application.
+6. Connectivity must not perform logout.
+7. Authentication failure must not automatically mean offline.
+8. OIDC redirects must not be treated as connectivity failures.
+9. Server URL normalization must remain centralized.
+10. JWT state must remain server-specific.
+11. API clients must be rebuilt for the selected backend.
+12. Template UI must not duplicate Core validation logic.
+13. Template orchestration must not move into Core.
+14. Application must not depend on Template-internal navigation IDs.
+15. Technical decomposition must not be confused with Application extraction.
+
+---
+
+# 37. Validation
+
+After server-related implementation changes, useful searches include:
 
 ```bash
 git grep -n "serverSlice" -- src test
@@ -787,134 +1026,142 @@ git grep -n "serverCheck" -- src test
 git grep -n "normalizeServerInputs" -- src test
 ```
 
-Run TypeScript validation:
+Validate architecture boundaries:
 
 ```bash
+git grep -n "@/application/" -- src/template
+git grep -n "@/template/" -- src/application
+```
+
+Run:
+
+```bash
+npm run config:generate
 npx tsc --noEmit
-```
-
-Run targeted Jest tests for affected modules.
-
-For example:
-
-```bash
-npx jest --runTestsByPath test/connectivitySlice.test.ts
-```
-
-Validate the patch:
-
-```bash
+npm test -- --runInBand
 git diff --check
+git status --short
 ```
 
-When runtime behavior changes, start the application through:
+When runtime server behavior changes:
 
 ```bash
 npm start
 ```
 
-For a cleared cache while preserving npm lifecycle hooks:
+For a cleared cache while preserving npm lifecycle behavior:
 
 ```bash
 npm start -- --clear
 ```
 
-Do not use direct `npx expo start` as the normal startup path when application
-configuration may have changed.
+---
+
+# 38. Future Technical Work
+
+Potential server work includes:
+
+* separate clearly identifiable responsibilities inside `apiSlice`
+* review API-client construction independently from server state
+* keep authentication state separate from connectivity state
+* maintain one canonical URL normalization implementation
+* define stable Core technical server contracts where useful
+* define consumer server configuration only when real Application requirements exist
+* keep Template server UI reusable
+* validate a concrete consumer such as HEMS
+* maintain architecture-boundary checks
+
+Do not move modules merely to improve folder appearance.
+
+Responsibility and dependency direction determine ownership.
 
 ---
 
-## 31. Current Status
+# 39. Incorrect Legacy Interpretation
 
-### Implemented
+The following statements do not describe the accepted architecture:
 
-- Server state under Template ownership
-- Connectivity state under Template ownership
-- Shared Core server types
-- Shared URL normalization
-- Server reachability checks
-- Server validation
-- Environment detection
-- Authentication-method detection
-- Multiple configured servers
-- Runtime server switching
-- Authentication-aware API-client rebuilding
-- Server-specific JWT handling
-- Separation between connectivity and authentication concepts
+```text
+"Agent.Workbench server functionality should move into Application."
 
-### Transitional
+"Agent.Workbench server UI inside Template is transitional."
 
-- `apiSlice.tsx` still combines several responsibilities.
-- Server switching still participates in Template orchestration through the API
-  state.
-- Some concrete server behavior may still be product-specific.
-- Final public server extension APIs are not yet complete.
-- Concrete application server configuration is not yet fully externalized.
+"apiSlice is waiting for Agent.Workbench Application extraction."
 
-### Planned
+"Server switching belongs to a separate Agent.Workbench repository."
 
-- Further separate `apiSlice` responsibilities.
-- Define stable public Core server APIs.
-- Define supported Application server configuration where required.
-- Remove remaining mixed responsibility from server switching.
-- Maintain automated dependency-boundary validation.
-- Keep Core independent from Template navigation and Redux composition.
+"Concrete Application server configuration must replace Template server state."
+
+"All Agent.Workbench-specific server behavior is concrete product code."
+```
+
+The correct ownership is:
+
+```text
+technical reusable server capability
+    -> Core
+
+standard reusable server platform
+    -> Template
+
+concrete consumer-only server behavior
+    -> Application
+```
 
 ---
 
-## 32. Architecture Rules
+# 40. Success Criteria
 
-Server-related changes must preserve these rules:
+The server architecture is correct when:
 
-1. Core must not import Template or Application.
-2. Connectivity must not perform logout.
-3. Authentication failure must not automatically mean offline.
-4. OIDC redirect behavior must not be treated as connectivity failure.
-5. Server URL normalization must remain centralized.
-6. JWT state must remain server-specific.
-7. API clients must be rebuilt for the selected server.
-8. Template UI must not duplicate Core validation logic.
-9. Template orchestration must not be moved into Core.
-10. Product-specific server configuration belongs to Application.
-
----
-
-## 33. Next Steps
-
-Server architecture work should continue incrementally.
-
-Recommended next areas are:
-
-- Separate remaining server responsibilities inside `apiSlice`.
-- Review API-client construction independently from server state.
-- Review authentication state independently from connectivity state.
-- Keep normalization centralized.
-- Define a stable public Core server API.
-- Review which server defaults belong to Application.
-- Keep Template server UI reusable.
-- Add or maintain dependency-boundary checks.
-
-Do not move modules solely to achieve a cleaner folder structure.
-
-Move them only when their responsibility and dependencies match the target
-architecture.
+1. Core owns reusable technical server capability only.
+2. Template owns reusable server state, UI and orchestration.
+3. Standard Agent.Workbench server behavior remains Template-owned.
+4. Concrete product-only server behavior remains Application-owned.
+5. Core has no Template dependencies.
+6. Template has no concrete Application dependencies.
+7. Connectivity and authentication remain independent.
+8. Server switching rebuilds API clients correctly.
+9. JWT state remains server-specific.
+10. OIDC uses browser-session authentication correctly.
+11. URL normalization has one canonical implementation.
+12. Server validation remains reusable outside individual screens.
+13. Template orchestration does not leak into Core server utilities.
+14. Technical decomposition of `apiSlice` does not become Application extraction.
+15. A concrete consumer such as HEMS can use the server platform through supported Base Template contracts.
 
 ---
 
-## 34. Success Criteria
+# 41. Summary
 
-Server separation is complete when:
+Server functionality follows:
 
-1. Core owns reusable technical server capabilities only.
-2. Template owns reusable server UI and state.
-3. Application owns concrete product server configuration.
-4. Core has no Template dependencies.
-5. Connectivity and authentication remain independent.
-6. Server switching rebuilds API clients correctly.
-7. JWT state is preserved per server.
-8. OIDC uses browser-session authentication correctly.
-9. URL normalization has one canonical implementation.
-10. Server validation is reusable outside individual screens.
-11. Template orchestration does not leak into Core server utilities.
-12. A separate application repository can use the Base Template server
-    infrastructure without modifying internal Template code.
+```text
+Application --> Template --> Core
+```
+
+Core owns technical server capabilities such as:
+
+```text
+normalization
+validation
+reachability
+environment detection
+technical backend parsing
+```
+
+Template owns reusable server behavior such as:
+
+```text
+server state
+connectivity state
+server-selection UI
+server persistence
+authentication-aware switching
+API-client rebuilding
+standard Agent.Workbench server behavior
+```
+
+Application owns only concrete consumer-specific server behavior where required.
+
+`apiSlice.tsx` may still benefit from technical decomposition, but that does not make it transitional Application code and does not require a separate Agent.Workbench Application repository.

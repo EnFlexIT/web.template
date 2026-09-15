@@ -1,8 +1,18 @@
 # Update System
 
-This document describes the frontend and backend update architecture of
-`web.template`, including update checks, update state, notifications,
-watchers, user interaction, and frontend reload behavior.
+## Purpose
+
+This document describes the frontend and backend update architecture of `web.template`, including:
+
+* update checks
+* update state
+* update notifications
+* update watchers
+* user interaction
+* frontend reload behavior
+* backend restart handling
+* architectural ownership
+* current technical decomposition areas
 
 The architecture follows:
 
@@ -10,33 +20,35 @@ The architecture follows:
 Application --> Template --> Core
 ```
 
-Update functionality is separated according to responsibility.
+Standard Agent.Workbench update behavior belongs to the reusable Base Template.
+
+Concrete Applications such as HEMS may provide additional product-specific update behavior only when genuinely required.
 
 ---
 
-## 1. Purpose
+# 1. Update Responsibilities
 
-The update system checks whether updates are available for:
+The update system supports:
 
 ```text
-Frontend WebApp
-Backend server
+Frontend WebApp updates
+Backend server updates
 ```
 
-It supports:
+Current behavior includes:
 
-- Loading update configuration
-- Checking for frontend updates
-- Checking for backend updates
-- Publishing update notifications
-- Displaying update information
-- Starting explicitly requested updates
-- Tracking update progress
-- Tracking update errors
-- Reloading the WebApp after a frontend update
-- Reacting to backend restart and reconnect behavior
+* loading update configuration
+* checking for frontend updates
+* checking for backend updates
+* publishing update notifications
+* displaying update information
+* starting explicitly requested updates
+* tracking update progress
+* tracking update errors
+* reloading the WebApp after a frontend update
+* handling backend restart/reconnect behavior
 
-The update system must clearly distinguish:
+The system must distinguish:
 
 ```text
 checking for updates
@@ -48,16 +60,24 @@ from:
 installing updates
 ```
 
-Automatic checks must not automatically imply automatic installation unless
-that behavior is explicitly introduced and documented.
+Unless explicitly implemented and documented:
+
+```text
+automatic check != automatic installation
+```
 
 ---
 
-## 2. Architecture
+# 2. Architectural Ownership
 
-The current ownership is approximately:
+Update ownership follows responsibility.
 
 ```text
+Application
+|
++-- concrete consumer-specific update behavior
+    where genuinely required
+
 Template
 |
 +-- update Redux state
@@ -65,46 +85,77 @@ Template
 +-- update watchers
 +-- update UI
 +-- notifications
-+-- application-shell orchestration
++-- application-platform orchestration
++-- standard Agent.Workbench update behavior
 
 Core
 |
-+-- framework-independent frontend reload helper
++-- focused technical update capabilities
 ```
 
-The Template may use Core.
+Template may depend on Core.
 
-Core must not import Template or Application code.
+Core must not depend on Template or Application.
 
 ---
 
-## 3. Responsibility Rule
+# 3. Agent.Workbench Update Ownership
 
-Update functionality must not be moved into Core simply because it is
-technical.
+Standard Agent.Workbench update functionality is intentionally Template-owned.
 
-A module belongs to Core only when it is independent from:
+This includes reusable behavior such as:
 
-- Redux
-- Template UI
-- Template application lifecycle
-- Notifications
-- Navigation
-- Concrete application state
+```text
+frontend update checks
+backend update checks
+update Redux state
+update notifications
+update dialogs
+update watchers
+update progress
+post-login update handling
+backend restart coordination
+```
+
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
+
+Therefore standard Agent.Workbench update functionality is not waiting to move into another repository.
+
+---
+
+# 4. Responsibility Rule
+
+Update functionality does not belong in Core merely because it is technical.
+
+A module belongs to Core only when it can remain independent from:
+
+```text
+Redux
+Template UI
+Template application lifecycle
+notifications
+navigation
+concrete Application implementation
+```
 
 The ownership rule is:
 
 ```text
-Pure technical update capability --> Core
-Reusable update state/UI          --> Template
-Product-specific update behavior  --> Application
+Pure technical update capability
+    -> Core
+
+Reusable update state/UI/orchestration
+    -> Template
+
+Concrete consumer-only update behavior
+    -> Application
 ```
 
 ---
 
-## 4. Current Structure
+# 5. Current Structure
 
-Important update areas currently include:
+Important update areas include:
 
 ```text
 src/template/state/update/
@@ -132,107 +183,108 @@ src/
         +-- watchers/
 ```
 
-The exact internal file structure may continue to evolve, but the layer
-ownership must remain consistent.
+The internal structure may evolve.
+
+Architectural ownership must remain consistent.
 
 ---
 
-## 5. Update Redux State
+# 6. Update Redux State
 
-Reusable update state belongs to the Template.
+Reusable update state belongs to Template.
 
-The current update state lives under:
+Current location:
 
 ```text
 src/template/state/update/
 ```
 
-The update state may contain information such as:
+Update state may contain information such as:
 
-- Update configuration
-- Frontend update availability
-- Backend update availability
-- Current frontend version
-- Available frontend version
-- Current backend version
-- Available backend version
-- Update progress
-- Update status
-- Update errors
-- Active update operation
+* update configuration
+* frontend update availability
+* backend update availability
+* current frontend version
+* available frontend version
+* current backend version
+* available backend version
+* update progress
+* update status
+* update errors
+* active update operation
 
-Redux is a state-management technology and does not make this state Core-owned.
+Redux is a state-management technology.
 
-Because the state participates in the reusable application shell, it belongs
-to Template.
+It does not make state Core-owned.
 
 ---
 
-## 6. Why Update Redux State Is Not Core
+# 7. Why Update Redux State Is Not Core
 
-Core should remain independent from Redux application composition.
+Core must remain independent from the Template Redux store.
 
-The following is therefore not the target architecture:
+The following is not the architecture:
 
 ```text
 Core
+|
 +-- Redux update slice
-+-- Template notifications
-+-- Template update UI
++-- notification state
++-- update UI
 ```
 
-Instead:
+The correct separation is:
 
 ```text
 Template
-+-- Redux update state
+|
++-- update Redux state
 +-- update orchestration
 +-- update UI
 +-- notifications
 
 Core
-+-- reusable technical helper
+|
++-- focused technical helper
 ```
-
-This prevents Core from depending upward on Template infrastructure.
 
 ---
 
-## 7. Update Hooks
+# 8. Update Hooks
 
-Reusable update hooks that coordinate application-shell behavior belong to the
-Template.
+Reusable update hooks belong to Template when they coordinate:
 
-They currently live under:
+```text
+React lifecycle
+Template state
+authentication lifecycle
+application-platform behavior
+```
+
+Current location:
 
 ```text
 src/template/hooks/update/
 ```
 
-Known update hooks include functionality for:
-
-- Frontend version monitoring
-- Post-login frontend reload checks
-
-Examples include:
+Known hooks include:
 
 ```text
 useFrontendVersionReloadWeb.ts
 usePostLoginAutoReloadWeb.ts
 ```
 
-These hooks belong to Template because they coordinate React lifecycle,
-application state, or Template behavior.
+These are Template hooks.
 
-They must not be documented as Core hooks.
+They are not Core infrastructure.
 
 ---
 
-## 8. Update Watchers
+# 9. Update Watchers
 
-Runtime update watchers belong to the reusable Template application shell.
+Runtime update watchers belong to Template.
 
-They currently live under:
+Current location:
 
 ```text
 src/template/update/watchers/
@@ -245,25 +297,21 @@ PostLoginUpdateWatcher.tsx
 UpdateNotificationWatcher.tsx
 ```
 
-These components may:
+They may:
 
-- Observe Redux update state
-- Trigger update checks
-- Publish notifications
-- Coordinate update behavior after login
-- Integrate update state with the application lifecycle
+* observe update Redux state
+* trigger update checks
+* publish notifications
+* coordinate update behavior after login
+* integrate updates with the application lifecycle
 
-They are not Redux reducers.
-
-They are also not Core infrastructure because they depend on Template runtime
-behavior.
+They are application-platform orchestration and therefore Template-owned.
 
 ---
 
-## 9. Post-Login Update Watcher
+# 10. PostLoginUpdateWatcher
 
-`PostLoginUpdateWatcher` coordinates update behavior after successful
-authentication.
+`PostLoginUpdateWatcher` coordinates update behavior after successful authentication.
 
 Conceptually:
 
@@ -274,23 +322,21 @@ Login completed
 PostLoginUpdateWatcher
         |
         v
-Check relevant update state
+inspect update state
         |
         v
-Run required Template update behavior
+run required Template update behavior
 ```
 
-This behavior belongs to Template because it depends on the application
-lifecycle.
+Core must not know when a user has logged into the Template application.
 
-Core must not know when a user logs into the Template application.
+Therefore this watcher belongs to Template.
 
 ---
 
-## 10. Update Notification Watcher
+# 11. UpdateNotificationWatcher
 
-`UpdateNotificationWatcher` observes update information and integrates it with
-the reusable notification system.
+`UpdateNotificationWatcher` connects update state with reusable notification infrastructure.
 
 Conceptually:
 
@@ -301,19 +347,19 @@ Update state changes
 UpdateNotificationWatcher
         |
         v
-Template notification system
+Template notification state
         |
         v
-User notification
+Notification UI
 ```
 
-Notification orchestration belongs to Template.
+The update state should not contain presentation logic.
 
-The update slice should not need to know presentation details.
+The notification system should not own update business logic.
 
 ---
 
-## 11. Notifications
+# 12. Notifications
 
 Update notifications use the reusable Template notification infrastructure.
 
@@ -323,21 +369,20 @@ Notification state belongs under:
 src/template/state/notifications/
 ```
 
-The update system may publish notifications when:
+Update notifications may be created when:
 
-- A frontend update is available
-- A backend update is available
-- An update operation succeeds
-- An update operation fails
+* a frontend update becomes available
+* a backend update becomes available
+* an update succeeds
+* an update fails
 
-The exact notification behavior should remain separate from the technical
-update API implementation.
+Presentation remains separate from technical update communication.
 
 ---
 
-## 12. Frontend Update Flow
+# 13. Frontend Update Flow
 
-The frontend update flow conceptually looks like:
+Conceptually:
 
 ```text
 Check frontend version
@@ -361,27 +406,30 @@ Frontend update completes
 Reload WebApp
 ```
 
-The user interface remains responsible for explicit user interaction.
+The Template coordinates the workflow.
 
-The reload implementation itself should not be duplicated in screens.
+The technical browser reload mechanism belongs to Core.
 
 ---
 
-## 13. Frontend Reload Helper
+# 14. Frontend Reload Helper
 
-The reusable technical frontend reload implementation is located at:
+The technical reload helper is located at:
 
 ```text
 src/core/update/reloadUpdatedFrontendWebApp.ts
 ```
 
-This module belongs to Core because it represents a focused technical
-capability and does not need to own Template state or presentation.
+Its responsibility is focused:
+
+```text
+reload updated frontend WebApp
+```
 
 Conceptually:
 
 ```text
-Template decides reload is required
+Template determines reload is required
         |
         v
 Core reload helper
@@ -390,34 +438,31 @@ Core reload helper
 Browser reload
 ```
 
-Core provides the technical mechanism.
+Core provides the mechanism.
 
-Template decides when that mechanism should be used.
+Template decides when it is used.
 
 ---
 
-## 14. Frontend Version Monitoring
+# 15. Frontend Version Monitoring
 
-Frontend version monitoring is handled by Template update infrastructure.
+Frontend version monitoring belongs to Template update infrastructure.
 
-A known hook is:
+Known hook:
 
 ```text
 src/template/hooks/update/useFrontendVersionReloadWeb.ts
 ```
 
-Its responsibility is to observe the relevant update/version state and
-coordinate the reload decision.
-
-It may use:
+The hook may consume:
 
 ```text
 src/core/update/reloadUpdatedFrontendWebApp.ts
 ```
 
-for the actual browser reload.
+for the actual technical reload.
 
-This preserves the dependency direction:
+This preserves:
 
 ```text
 Template --> Core
@@ -425,33 +470,31 @@ Template --> Core
 
 ---
 
-## 15. Post-Login Reload Handling
+# 16. Post-Login Reload Handling
 
-Post-login frontend update behavior is coordinated through Template update
-infrastructure.
+Post-login update/reload behavior is coordinated through Template infrastructure.
 
-A known hook is:
+Known hook:
 
 ```text
 src/template/hooks/update/usePostLoginAutoReloadWeb.ts
 ```
 
-The corresponding application-shell behavior may also be coordinated by:
+Related watcher:
 
 ```text
 src/template/update/watchers/PostLoginUpdateWatcher.tsx
 ```
 
-The exact responsibilities between hook and watcher should remain explicit.
+The responsibilities between hook and watcher should remain explicit.
 
-Neither should duplicate the Core browser reload implementation.
+Neither should duplicate the Core reload implementation.
 
 ---
 
-## 16. Backend Update Flow
+# 17. Backend Update Flow
 
-Backend updates differ from frontend updates because the backend may become
-temporarily unavailable during restart.
+Backend updates differ from frontend updates because the backend may restart.
 
 Conceptually:
 
@@ -468,7 +511,7 @@ Store update state
 Notify user
         |
         v
-User starts backend update
+User starts update
         |
         v
 Backend restarts
@@ -477,20 +520,19 @@ Backend restarts
 Temporary connectivity loss
         |
         v
-Backend becomes reachable again
+Backend becomes reachable
         |
         v
 Authentication/session state is reevaluated
 ```
 
-Backend restart behavior must coordinate with existing server,
-connectivity, and authentication infrastructure.
+Backend update orchestration must reuse existing server and authentication infrastructure.
 
 ---
 
-## 17. Connectivity During Backend Update
+# 18. Connectivity During Backend Update
 
-A backend update may temporarily make the server unreachable.
+A backend update may temporarily make the backend unreachable.
 
 This does not automatically mean:
 
@@ -504,9 +546,6 @@ The architecture rule remains:
 Connectivity failure != authentication failure
 ```
 
-The update system must not introduce special connectivity logic that conflicts
-with the reusable server infrastructure.
-
 Connectivity state belongs to:
 
 ```text
@@ -519,11 +558,13 @@ Technical server checks belong to:
 src/core/server/
 ```
 
+The update system must not implement a second connectivity subsystem.
+
 ---
 
-## 18. Authentication After Backend Update
+# 19. Authentication After Backend Update
 
-After a backend update, authentication state may need to be reevaluated.
+After backend restart, authentication may need to be reevaluated.
 
 Possible outcomes include:
 
@@ -534,81 +575,88 @@ OIDC browser session remains valid
 OIDC browser session expires
 ```
 
-The update system should not implement a second authentication mechanism.
+The update system must reuse existing authentication/session infrastructure.
 
-It must reuse the existing authentication and session infrastructure.
+It must not implement duplicate:
+
+```text
+login logic
+logout logic
+JWT management
+OIDC session management
+```
 
 ---
 
-## 19. Automatic Update Checks
+# 20. Automatic Update Checks
 
-An update strategy may enable automatic checks.
+Update strategy may allow automatic checks.
 
 Conceptually:
 
 ```text
-autoUpdate enabled
+automatic checking enabled
         |
         v
-automatic update checks
+periodic/update-triggered check
 ```
 
-Automatic checking must be distinguished from installation.
+Automatic checking must remain separate from update installation.
 
-Unless explicitly defined otherwise:
+Unless explicitly configured otherwise:
 
 ```text
-automatic check != automatic installation
+automatic check
+    !=
+automatic installation
 ```
 
-Installation remains an explicit operation initiated through supported user
-interaction.
+---
+
+# 21. Manual Installation
+
+Reusable Template UI may allow a user to explicitly start an update.
+
+Template owns:
+
+* update information presentation
+* confirmation
+* install action handling
+* progress presentation
+* error presentation
+* completion presentation
+
+Technical communication and state mutation should remain outside purely presentational components.
 
 ---
 
-## 20. Manual Installation
-
-Frontend and backend update installation can be triggered through the reusable
-Template UI.
-
-The Template is responsible for:
-
-- Presenting available updates
-- Showing update information
-- Receiving user confirmation
-- Displaying progress
-- Displaying errors
-- Showing completion state
-
-Technical details should remain outside presentation components where
-possible.
-
----
-
-## 21. Update UI
+# 22. Update UI
 
 Reusable update screens and dialogs belong to Template.
 
-They may contain:
+They may present:
 
-- Frontend update information
-- Backend update information
-- Update strategy information
-- Check actions
-- Install actions
-- Confirmation dialogs
-- Progress state
-- Error state
+```text
+frontend update information
+backend update information
+update strategy information
+check actions
+install actions
+confirmation dialogs
+progress
+errors
+completion state
+```
 
 The UI consumes update state.
 
-It must not become the primary owner of update API logic.
+It must not become the primary owner of technical update APIs.
 
 ---
 
-## 22. Separation of Responsibilities
+# 23. Separation of Responsibilities
 
-The intended separation is:
+The intended relationship is:
 
 ```text
 Template update UI
@@ -620,16 +668,16 @@ Template update state/orchestration
 technical APIs/helpers
 ```
 
-For frontend reload:
+Frontend reload:
 
 ```text
-Template update orchestration
+Template orchestration
         |
         v
 Core reload helper
 ```
 
-For backend communication:
+Backend communication:
 
 ```text
 Template update orchestration
@@ -638,32 +686,11 @@ Template update orchestration
 existing API/server infrastructure
 ```
 
-This avoids duplicated technical behavior.
-
 ---
 
-## 23. Application Ownership
+# 24. Standard Base Template Responsibility
 
-A concrete application may eventually provide product-specific update
-configuration.
-
-Possible examples include:
-
-- Whether a product exposes backend updates
-- Product-specific release channels
-- Product-specific update policies
-- Product-specific visibility rules
-
-Such configuration belongs to Application.
-
-The Base Template must not directly import Agent.Workbench-specific update
-configuration.
-
----
-
-## 24. Base Template Responsibility
-
-The Base Template may provide reusable update capabilities such as:
+The Base Template owns reusable update capabilities including:
 
 ```text
 update state
@@ -672,19 +699,49 @@ update checks
 update watchers
 notifications
 update orchestration
+standard Agent.Workbench update behavior
 ```
 
-A concrete application should be able to consume these capabilities without
-modifying Template internals.
-
-Product-specific behavior should be introduced through supported extension or
-configuration mechanisms.
+This functionality does not become Application-owned simply because the current backend is an Agent.Workbench backend.
 
 ---
 
-## 25. Core Boundary
+# 25. Application Responsibility
 
-Core update infrastructure should remain small and technical.
+Concrete Applications own update behavior only when it is genuinely consumer-specific.
+
+Possible examples include:
+
+```text
+HEMS-only release channel
+HEMS-specific update policy
+consumer-specific backend update restriction
+consumer-specific update visibility
+consumer-specific deployment/update metadata
+```
+
+Template must not import this concrete Application implementation.
+
+---
+
+# 26. Application Configuration
+
+Developer-facing Application configuration currently uses:
+
+```text
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
+```
+
+If a future concrete consumer requires additional update configuration, it should be introduced through a supported Application contract.
+
+Do not introduce speculative Application update configuration solely to relocate standard Agent.Workbench behavior.
+
+---
+
+# 27. Core Boundary
 
 Current known Core update functionality includes:
 
@@ -694,45 +751,21 @@ src/core/update/reloadUpdatedFrontendWebApp.ts
 
 Core update code must not depend on:
 
-- Redux store composition
-- Template notifications
-- Template screens
-- Template navigation
-- Application configuration
-- Product-specific update state
+* Redux store composition
+* Template notifications
+* Template screens
+* Template navigation
+* concrete Application configuration
+* Template update state
+* concrete consumer behavior
 
-If a module requires these dependencies, it belongs above Core.
-
----
-
-## 26. Transitional Areas
-
-The update architecture has already been partially separated, but some
-responsibilities may still require review.
-
-Current architecture:
-
-```text
-Update Redux state          --> Template
-Update hooks                --> Template
-Update watchers             --> Template
-Update notifications        --> Template
-Update UI                   --> Template
-Browser reload helper       --> Core
-```
-
-Future refactoring should preserve these ownership rules.
-
-Do not move the full update feature into Core.
+If a module requires those dependencies, it belongs above Core.
 
 ---
 
-## 27. Relationship to Redux
+# 28. Redux Relationship
 
-Redux state for updates belongs to Template because it supports reusable
-application-shell behavior.
-
-The state participates in the Template reducer composition.
+Update Redux state belongs to Template.
 
 Conceptually:
 
@@ -742,16 +775,17 @@ templateReducers
         +-- update
 ```
 
-The new extensible Redux architecture does not require the update reducer to
-move into Application.
+The extensible Redux architecture does not require this reducer to move into Application.
 
-Only product-specific update state should belong to a concrete Application.
+Standard Agent.Workbench update state also remains Template-owned.
+
+Only genuine concrete product-specific state belongs to Application.
 
 ---
 
-## 28. Relationship to Notifications
+# 29. Notification Relationship
 
-Updates and notifications are separate responsibilities.
+Updates and notifications remain separate responsibilities.
 
 Conceptually:
 
@@ -768,80 +802,174 @@ Notification state
 Notification UI
 ```
 
-The notification slice should remain reusable.
+Update state should not own notification presentation.
 
-The update slice should not directly contain notification presentation logic.
+Notification infrastructure should remain reusable.
 
 ---
 
-## 29. Relationship to Server Infrastructure
+# 30. Server Relationship
 
-Backend updates depend on server reachability and switching infrastructure.
+Backend updates depend on server infrastructure.
 
-Relevant ownership:
+Ownership remains:
 
 ```text
-Technical server checks --> Core
-Server/connectivity state --> Template
-Update orchestration --> Template
+Core
+|
++-- technical server checks
+
+Template
+|
++-- server/connectivity state
++-- update orchestration
 ```
 
-The update system must reuse those mechanisms rather than introducing local
-server checks.
+Update logic should reuse server infrastructure rather than create local duplicate server checks.
 
 ---
 
-## 30. Relationship to Authentication
+# 31. Authentication Relationship
 
 Backend restart may affect authentication.
 
-Relevant ownership:
+Ownership remains:
 
 ```text
-Technical authentication capability --> Core
-Authentication/session orchestration --> Template
-Update orchestration --> Template
+Core
+|
++-- technical authentication capability
+
+Template
+|
++-- authentication/session orchestration
++-- update orchestration
 ```
 
-The update system may trigger reevaluation but must not duplicate login,
-logout, session, or token logic.
+The update system may trigger or participate in reevaluation.
+
+It must not duplicate the authentication implementation.
 
 ---
 
-## 31. Migration History
+# 32. Technical Decomposition Areas
 
-The update architecture has been migrated incrementally.
+The overall update ownership is established.
 
-Important completed changes include:
+Some technical responsibilities may still be coupled to broad API/runtime state.
 
-- Update Redux state moved under `src/template/state/update`.
-- Update hooks moved under `src/template/hooks/update`.
-- Runtime update watchers are located under
-  `src/template/update/watchers`.
-- Browser reload logic was extracted into
-  `src/core/update/reloadUpdatedFrontendWebApp.ts`.
-- Update imports were adjusted to the layered architecture.
-- Update functionality remains reusable without making Core depend on
-  Template state.
-
-The migration intentionally avoids changing runtime behavior unnecessarily.
-
----
-
-## 32. Safe Refactoring Workflow
-
-Update refactoring should continue in small batches.
-
-Preferred sequence:
+For example:
 
 ```text
-Analyze responsibility
+update API communication
+broad API state
+backend restart coordination
+server reconnect behavior
+```
+
+These may be reviewed incrementally.
+
+This is technical decomposition.
+
+It is not Agent.Workbench Application extraction.
+
+---
+
+# 33. Agent.Workbench-Specific Backend Terminology
+
+Some backend update behavior may contain Agent.Workbench terminology or depend on Agent.Workbench-compatible backend APIs.
+
+That alone does not make the behavior Application-owned.
+
+The ownership question is:
+
+```text
+Is this standard functionality of the reusable Base Template?
+```
+
+If yes:
+
+```text
+Template
+```
+
+If it exists only for a concrete consumer such as HEMS:
+
+```text
+Application
+```
+
+Naming alone does not determine ownership.
+
+---
+
+# 34. HEMS Consumer Example
+
+A concrete HEMS Application may consume the reusable update platform.
+
+Conceptually:
+
+```text
+HEMS Application
+        |
+        v
+Template update platform
+        |
+        v
+Core update capabilities
+```
+
+HEMS may add product-specific update configuration where genuinely required.
+
+Template must not import HEMS implementation.
+
+Core must remain independent from HEMS.
+
+---
+
+# 35. Historical Refactoring
+
+The update architecture has already been reorganized incrementally.
+
+Relevant completed structural work includes:
+
+```text
+Update Redux state
+    -> src/template/state/update/
+
+Update hooks
+    -> src/template/hooks/update/
+
+Runtime watchers
+    -> src/template/update/watchers/
+
+Browser reload helper
+    -> src/core/update/reloadUpdatedFrontendWebApp.ts
+```
+
+This history explains the current structure.
+
+It does not imply an unfinished migration of standard Agent.Workbench update functionality into Application.
+
+---
+
+# 36. Safe Refactoring
+
+Update refactoring should remain incremental.
+
+Preferred process:
+
+```text
+Identify responsibility
         |
         v
 Search all usages
         |
         v
-Move or extract one responsibility
+Determine architectural owner
+        |
+        v
+Extract one coherent responsibility
         |
         v
 Update imports
@@ -853,19 +981,16 @@ Run TypeScript validation
 Run targeted tests
         |
         v
-Test runtime behavior
-        |
-        v
-Update documentation
+Validate runtime behavior
 ```
 
-Do not move all update modules at once.
+Do not move the complete update subsystem merely to improve folder appearance.
 
 ---
 
-## 33. Import Policy
+# 37. Import Policy
 
-Prefer stable architectural imports.
+Template update modules may import Core helpers.
 
 Example:
 
@@ -874,8 +999,6 @@ import {
   reloadUpdatedFrontendWebApp,
 } from "@/core/update/reloadUpdatedFrontendWebApp";
 ```
-
-Template update modules may import Core helpers.
 
 Core update modules must not import from:
 
@@ -886,15 +1009,121 @@ Core update modules must not import from:
 
 Avoid broad automated import rewrites.
 
-Search exact paths before changing them.
+Search and inspect exact dependencies before moving functionality.
 
 ---
 
-## 34. Validation
+# 38. Current Status
 
-After update-related architecture changes, search important references.
+## Implemented
 
-Examples:
+Current functionality includes:
+
+```text
+frontend update checks
+backend update checks
+Template-owned update Redux state
+Template-owned update hooks
+Template-owned update watchers
+update notifications
+explicit update actions
+frontend reload workflow
+Core browser reload helper
+server integration
+authentication integration
+standard Agent.Workbench update behavior
+```
+
+## Technical Review Areas
+
+Potential technical decomposition remains around:
+
+```text
+broad API/update coupling
+backend update communication
+backend restart coordination
+public Template update APIs
+```
+
+These are technical design topics.
+
+They do not imply that standard update functionality belongs to Application.
+
+## Future Consumer Work
+
+Future concrete Applications may require:
+
+```text
+consumer-specific update configuration
+consumer release-channel configuration
+consumer update restrictions
+consumer-specific update policies
+```
+
+These should be introduced only when actual consumer requirements exist.
+
+---
+
+# 39. Architecture Rules
+
+Update changes must preserve these rules:
+
+1. Core must not import Template or Application.
+2. Template must not import concrete Application implementation.
+3. Redux-dependent update state belongs to Template.
+4. React lifecycle update hooks belong to Template.
+5. Update watchers belong to Template.
+6. Notification orchestration belongs to Template.
+7. Standard Agent.Workbench update functionality belongs to Template.
+8. Pure framework-independent update helpers may belong to Core.
+9. Concrete consumer-only update behavior belongs to Application.
+10. Connectivity failure must not automatically trigger logout.
+11. Authentication logic must not be duplicated inside the update system.
+12. Automatic checks must not be confused with automatic installation.
+13. Screens must not duplicate reusable update logic.
+14. Technical decomposition must not be confused with Application extraction.
+15. Ownership must be determined by responsibility rather than Agent.Workbench naming.
+
+---
+
+# 40. Incorrect Legacy Interpretation
+
+The following statements do not describe the accepted architecture:
+
+```text
+"Agent.Workbench update behavior must move into Application."
+
+"Agent.Workbench-specific backend update behavior is automatically product code."
+
+"Standard update functionality inside Template is transitional."
+
+"Update Redux state must move into an Agent.Workbench Application."
+
+"The Base Template must remove Agent.Workbench update behavior before repository separation."
+
+"A separate Agent.Workbench Application repository must own the update workflow."
+
+"Public update APIs are required specifically for Agent.Workbench extraction."
+```
+
+The correct ownership is:
+
+```text
+technical framework-independent update capability
+    -> Core
+
+standard reusable update platform
+    -> Template
+
+concrete consumer-only update behavior
+    -> Application
+```
+
+---
+
+# 41. Validation
+
+After update-related implementation changes, useful searches include:
 
 ```bash
 git grep -n "updateSlice" -- src test
@@ -905,21 +1134,24 @@ git grep -n "usePostLoginAutoReloadWeb" -- src test
 git grep -n "reloadUpdatedFrontendWebApp" -- src test
 ```
 
-Run TypeScript validation:
+Architecture checks:
 
 ```bash
+git grep -n "@/application/" -- src/template
+git grep -n "@/template/" -- src/application
+```
+
+Then run:
+
+```bash
+npm run config:generate
 npx tsc --noEmit
-```
-
-Run targeted Jest tests where available.
-
-Validate the patch:
-
-```bash
+npm test -- --runInBand
 git diff --check
+git status --short
 ```
 
-When update runtime behavior changes, start the application through:
+When runtime update behavior changes:
 
 ```bash
 npm start
@@ -931,95 +1163,56 @@ For a cleared cache while preserving npm lifecycle hooks:
 npm start -- --clear
 ```
 
-Do not use direct `npx expo start` as the normal validation path when
-application configuration may have changed.
+---
+
+# 42. Success Criteria
+
+The update architecture is correct when:
+
+1. Core contains only focused technical update capabilities.
+2. Template owns reusable update state and application-platform orchestration.
+3. Standard Agent.Workbench update behavior remains Template-owned.
+4. Concrete consumer-only update behavior remains Application-owned.
+5. Core has no Redux or Template dependencies.
+6. Template has no concrete Application dependency.
+7. Frontend update checks and reload behavior avoid duplicated logic.
+8. Backend updates reuse existing server infrastructure.
+9. Authentication remains separate from update logic.
+10. Connectivity remains separate from authentication.
+11. Update notifications use reusable Template notification infrastructure.
+12. Technical decomposition does not become Application extraction.
+13. A concrete consumer such as HEMS can use the reusable update platform without modifying Template internals.
 
 ---
 
-## 35. Current Status
+# 43. Summary
 
-### Implemented
+Update functionality follows:
 
-- Frontend update checks
-- Backend update checks
-- Template-owned update Redux state
-- Template-owned update hooks
-- Template-owned update watchers
-- Update notifications
-- Explicit update actions
-- Frontend reload workflow
-- Reusable Core browser reload helper
-- Integration with server and authentication infrastructure
+```text
+Application --> Template --> Core
+```
 
-### Transitional
+Core owns focused technical capabilities such as:
 
-- Some update responsibilities may still be coupled to broad API state.
-- Concrete backend update behavior may still be Agent.Workbench-specific.
-- Final Application-level update configuration is not yet defined.
-- Final public Base Template update API is not yet complete.
+```text
+frontend WebApp reload
+```
 
-### Planned
+Template owns:
 
-- Review product-specific backend update ownership.
-- Define supported application update configuration where required.
-- Continue reducing mixed API/update responsibilities.
-- Maintain the Core/Template dependency boundary.
-- Define stable public update APIs for separate application repositories.
-- Preserve targeted automated update tests.
+```text
+update state
+update hooks
+update watchers
+update UI
+notifications
+update orchestration
+standard Agent.Workbench update behavior
+```
 
----
+Application owns only concrete consumer-specific update behavior where required.
 
-## 36. Architecture Rules
+Agent.Workbench naming does not automatically imply Application ownership.
 
-Update-related changes must preserve these rules:
-
-1. Core must not import Template or Application.
-2. Redux-dependent update state belongs to Template.
-3. React lifecycle update hooks belong to Template.
-4. Update watchers belong to Template.
-5. Notification orchestration belongs to Template.
-6. Pure framework-independent reload logic may belong to Core.
-7. Product-specific update behavior belongs to Application.
-8. Connectivity failure must not automatically trigger logout.
-9. Authentication logic must not be duplicated inside the update system.
-10. Automatic checks must not be confused with automatic installation.
-11. Screens must not duplicate reusable update logic.
-12. Runtime behavior must be preserved during architecture moves.
-
----
-
-## 37. Next Steps
-
-Recommended next architecture work includes:
-
-- Review concrete backend update ownership.
-- Review update API dependencies separately from UI state.
-- Keep frontend reload logic centralized.
-- Keep update notifications separate from update state.
-- Define a stable Base Template update API.
-- Review which update settings belong to Application configuration.
-- Add or maintain dependency-boundary validation.
-- Keep update refactoring incremental.
-
-Do not move modules solely to produce a visually cleaner directory.
-
-Move them only when their actual responsibility and dependency direction
-support the target architecture.
-
----
-
-## 38. Success Criteria
-
-The update architecture is complete when:
-
-1. Core contains only framework-independent update capabilities.
-2. Template owns reusable update state and application-shell orchestration.
-3. Application owns concrete product-specific update configuration.
-4. Core has no Redux or Template dependency.
-5. Frontend update checks and reloads work without duplicated logic.
-6. Backend updates reuse the existing server infrastructure.
-7. Authentication remains separate from update logic.
-8. Connectivity remains separate from authentication.
-9. Update notifications use the reusable Template notification system.
-10. A separate Application repository can use the Base Template update
-    infrastructure without modifying internal Template code.
+Standard Agent.Workbench update functionality is part of the Base Template and is not transitional Application code.

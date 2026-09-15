@@ -1,10 +1,10 @@
 # File Configuration Upload
 
-This document describes the reusable file-configuration upload and download
-workflow of `web.template`.
+## Purpose
 
-The feature allows users to download and upload backend configuration files
-through the Agent.Workbench settings API.
+This document describes the file-configuration upload and download workflow of `web.template`.
+
+The feature allows users to discover, download and upload backend configuration files through the settings API.
 
 The architecture follows:
 
@@ -12,77 +12,85 @@ The architecture follows:
 Application --> Template --> Core
 ```
 
-The current file-configuration feature is implemented as reusable Template
-functionality.
+The current file-configuration feature is standard Base Template functionality and is therefore Template-owned.
+
+It is not treated as transitional Agent.Workbench Application functionality.
 
 ---
 
-## 1. Purpose
+# 1. Scope
 
 The file-configuration feature supports:
 
-- Discovering available backend configuration types
-- Selecting a configuration type
-- Downloading the current configuration
-- Selecting a local configuration file
-- Dragging and dropping files in the web application
-- Uploading configuration files
-- Handling backend warnings and errors
-- Detecting relevant Jetty port changes
-- Showing restart and progress information
-- Coordinating server URL changes after an upload
+* discovering available backend configuration types
+* selecting a configuration type
+* downloading the current configuration
+* selecting a local configuration file
+* web drag and drop
+* uploading configuration files
+* handling backend warnings and errors
+* inspecting Jetty configuration
+* detecting relevant server-address changes
+* showing restart and progress information
+* coordinating connectivity after backend restart
 
-The feature is primarily browser-oriented.
+The current workflow is primarily browser-oriented.
 
 ---
 
-## 2. Current Architecture
+# 2. Architectural Ownership
 
-The current ownership is:
+The ownership model is:
 
 ```text
 Template
 |
-+-- settings screen
-+-- upload Redux state
-+-- web file-drop hook
-+-- reusable progress dialog
++-- file-configuration settings screen
 +-- upload/download orchestration
++-- upload Redux state
++-- web file-drop integration
++-- warning/error presentation
++-- Jetty configuration workflow
++-- progress presentation integration
 +-- localization
++-- server/session coordination
 
 Core
 |
-+-- reusable server/authentication capabilities used by the feature
++-- reusable technical authentication capabilities
++-- reusable server normalization
++-- reusable server validation/checks
+
+Application
+|
++-- concrete product-only extensions when genuinely required
 ```
 
-The feature currently depends on Agent.Workbench backend settings endpoints.
+Standard Agent.Workbench settings functionality belongs to Template under the current architecture.
 
-Whether the complete feature should remain part of the Base Template or become
-application-specific should be decided based on reuse across future
-applications.
+The existence of Agent.Workbench-oriented backend endpoints does not by itself make the feature Application-owned.
 
 ---
 
-## 3. Central Files
+# 3. Important Files
 
-Current important files are:
+Current important files include:
 
-| File | Purpose |
-| --- | --- |
-| `src/template/screens/settings/AppSettingsFileUploadScreen.tsx` | Main UI and upload/download orchestration. |
-| `src/template/state/settings/appSettingsFileUploadSlice.ts` | Upload thunk and Redux upload state. |
-| `src/template/hooks/useFileDropWeb.ts` | Reusable browser drag-and-drop behavior. |
-| `src/template/components/design-system/ui-elements/UpdateProgressDialog.tsx` | Shared progress dialog used by configuration upload and update workflows. |
-| `assets/locales/*/FileConfiguration.json` | Translation namespace for file-configuration UI. |
+| File                                                                         | Purpose                                              |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `src/template/screens/settings/AppSettingsFileUploadScreen.tsx`              | Main UI and upload/download orchestration.           |
+| `src/template/state/settings/appSettingsFileUploadSlice.ts`                  | Redux upload state and asynchronous upload behavior. |
+| `src/template/hooks/useFileDropWeb.ts`                                       | Reusable browser drag-and-drop behavior.             |
+| `src/template/components/design-system/ui-elements/UpdateProgressDialog.tsx` | Shared progress presentation.                        |
+| `assets/locales/*/FileConfiguration.json`                                    | File-configuration translation resources.            |
 
-The previous paths under `src/screens` and `src/hooks` are no longer the
-current architecture.
+Historical paths such as root-level `src/screens` or `src/hooks` must not be documented as current architecture.
 
 ---
 
-## 4. Redux Ownership
+# 4. Redux Ownership
 
-Upload state belongs to Template.
+File-configuration upload state belongs to Template.
 
 The current slice is:
 
@@ -90,27 +98,27 @@ The current slice is:
 src/template/state/settings/appSettingsFileUploadSlice.ts
 ```
 
-It participates in the current Template Redux composition.
+It participates in Template Redux infrastructure.
 
-The reducer is currently referenced by both:
+This state is not concrete Application state.
+
+The ownership rule is:
 
 ```text
-src/template/state/store/rootReducer.ts
-src/template/state/store/templateReducers.ts
+standard Base Template / Agent.Workbench settings state
+    -> Template
+
+concrete consumer-only settings state
+    -> Application
 ```
 
-This is consistent with the ongoing Redux migration where the current store
-remains active while the extensible Template store infrastructure is being
-prepared in parallel.
-
-The configuration-upload reducer is reusable Template state and is not
-Application-specific state at this time.
+The feature must not be moved into `applicationReducers.ts` merely because it communicates with Agent.Workbench-oriented backend behavior.
 
 ---
 
-## 5. Configuration Type Discovery
+# 5. Configuration Type Discovery
 
-The screen loads available configuration types through:
+Available backend configuration types are loaded through:
 
 ```text
 GET /api/app/settings/get
@@ -125,21 +133,21 @@ configurationtype
 
 The first available configuration type can be selected as the initial value.
 
-If configuration types cannot be loaded, the current workflow may fall back
-to:
+The current workflow may fall back to:
 
 ```text
 JettyConfiguration
 ```
 
-Configuration-type discovery belongs to the feature workflow rather than the
-generic design system.
+when configuration-type discovery does not provide a usable value.
+
+Configuration-type discovery belongs to the file-configuration workflow.
 
 ---
 
-## 6. Download Flow
+# 6. Download Flow
 
-The current configuration is downloaded through:
+The selected backend configuration is downloaded through:
 
 ```text
 GET /api/app/settings/download
@@ -164,14 +172,19 @@ Determine filename
 Start browser download
 ```
 
-When available, the filename can be taken from the HTTP
-`Content-Disposition` response header.
+When provided by the backend, the filename may be derived from the HTTP:
 
-Browser download behavior is web-specific.
+```text
+Content-Disposition
+```
+
+header.
+
+Browser file-download behavior is web-specific.
 
 ---
 
-## 7. Upload Flow
+# 7. Upload Flow
 
 Configuration files are uploaded through:
 
@@ -181,7 +194,7 @@ X-Performative: <selected configuration type>
 Content-Type: multipart/form-data
 ```
 
-The selected configuration file is sent as a `FormData` field named:
+The selected file is sent through a `FormData` field named:
 
 ```text
 file
@@ -193,7 +206,7 @@ Conceptually:
 Select file
     |
     v
-Validate/inspect file when required
+Inspect or validate when required
     |
     v
 Create FormData
@@ -202,10 +215,10 @@ Create FormData
 Upload configuration
     |
     v
-Evaluate backend result
+Evaluate backend response
 ```
 
-The upload state and asynchronous operation are handled through:
+Upload state is handled through:
 
 ```text
 src/template/state/settings/appSettingsFileUploadSlice.ts
@@ -213,12 +226,11 @@ src/template/state/settings/appSettingsFileUploadSlice.ts
 
 ---
 
-## 8. Authentication
+# 8. Authentication
 
-The upload request must use the authentication mechanism of the currently
-selected server.
+The file-configuration workflow must reuse the authentication mechanism of the active server.
 
-For JWT authentication, requests use the active JWT.
+For JWT-based authentication, communication uses the active JWT.
 
 Conceptually:
 
@@ -226,7 +238,7 @@ Conceptually:
 Authorization: Bearer <jwt>
 ```
 
-For OIDC authentication, browser credentials are used.
+For browser OIDC sessions, requests use browser credentials where required.
 
 Conceptually:
 
@@ -234,16 +246,23 @@ Conceptually:
 credentials: include
 ```
 
-The file-configuration feature must reuse the existing authentication
-infrastructure.
+The feature must not implement separate login, token-management or session infrastructure.
 
-It must not implement a separate login or token-management mechanism.
+Authentication ownership remains:
+
+```text
+technical authentication capability
+    -> Core
+
+authentication/session orchestration
+    -> Template
+```
 
 ---
 
-## 9. File Selection
+# 9. File Selection UI
 
-The main file-selection and upload UI is implemented in:
+The main UI is implemented in:
 
 ```text
 src/template/screens/settings/AppSettingsFileUploadScreen.tsx
@@ -251,30 +270,28 @@ src/template/screens/settings/AppSettingsFileUploadScreen.tsx
 
 The screen coordinates:
 
-- Configuration-type selection
-- File selection
-- Drag-and-drop
-- Upload actions
-- Download actions
-- Warning and error presentation
-- Jetty configuration inspection
-- Progress presentation
-- Server URL handling
+* configuration-type selection
+* local file selection
+* drag and drop
+* uploads
+* downloads
+* warning and error handling
+* Jetty configuration inspection
+* server-address decisions
+* progress presentation
+* post-upload coordination
 
-The screen should consume reusable infrastructure instead of duplicating
-generic UI or authentication behavior.
+The screen should consume reusable infrastructure rather than duplicate generic behavior.
 
 ---
 
-## 10. Web Drag and Drop
+# 10. Web Drag and Drop
 
 Reusable web drag-and-drop behavior is implemented in:
 
 ```text
 src/template/hooks/useFileDropWeb.ts
 ```
-
-The settings screen imports and uses this hook.
 
 Conceptually:
 
@@ -291,24 +308,22 @@ Selected files
 File configuration screen
 ```
 
-The hook is web-specific reusable Template functionality.
+The hook is reusable Template functionality.
 
-File-drop behavior should not be duplicated directly inside individual
-screens.
+Screens should not duplicate browser drag-and-drop handling when the shared hook already provides it.
 
 ---
 
-## 11. Backend Warning and Error Handling
+# 11. Backend Result Handling
 
-The backend upload result may contain information such as:
+The upload response may contain information such as:
 
 ```ts
 messageType: "INFO" | "WARNING" | "ERROR";
 message: string;
 ```
 
-Warnings and errors must be handled before continuing with restart,
-reconnection, or logout-related behavior.
+The workflow must evaluate the response before continuing with restart, reconnection or authentication-related follow-up behavior.
 
 Conceptually:
 
@@ -323,24 +338,23 @@ Upload result
     +-- WARNING
     |     |
     |     v
-    |   show warning / stop follow-up flow
+    |   show warning and stop inappropriate follow-up
     |
     +-- ERROR
           |
           v
-        show error / stop follow-up flow
+        show error and stop follow-up
 ```
 
-An invalid configuration must not unnecessarily trigger logout or server
-restart handling in the frontend.
+An invalid configuration must not unnecessarily trigger logout or restart handling.
 
 ---
 
-## 12. Jetty Configuration Handling
+# 12. Jetty Configuration
 
 Jetty configuration files may require additional inspection before upload.
 
-Relevant settings can include:
+Relevant settings include:
 
 ```text
 http.enabled
@@ -350,19 +364,17 @@ https.port
 http.to.https
 ```
 
-When the selected file represents Jetty configuration, the screen may inspect
-the XML content to determine whether the effective server address would
-change.
+When the selected file represents Jetty configuration, the workflow may inspect the XML to determine whether the effective backend address changes.
 
-This is important because changing HTTP/HTTPS or port configuration may change
-the URL the frontend must use after the backend restarts.
+Changes to HTTP/HTTPS configuration or ports can affect the URL the frontend must use after backend restart.
+
+Jetty-specific handling is part of the standard Template settings workflow under the current architecture.
 
 ---
 
-## 13. Server URL Change
+# 13. Server Address Changes
 
-When uploaded Jetty configuration would change the backend address, the user
-may need to choose between:
+When an uploaded Jetty configuration changes the backend address, the workflow may allow the user to choose between:
 
 ```text
 Use detected new server address
@@ -374,27 +386,23 @@ and:
 Keep current server address
 ```
 
-If the current address should remain active, the browser-side workflow may
-adjust the uploaded XML configuration before sending it to the backend.
+If the current address should remain active, the browser workflow may adjust relevant configuration values before upload.
 
-Server URL handling must remain compatible with the shared server
-infrastructure.
+Shared server infrastructure must be reused.
 
-Reusable server normalization and validation belong under:
+Reusable technical server logic belongs under:
 
 ```text
 src/core/server/
 ```
 
-The file-upload screen should not introduce an independent server URL
-architecture.
+The file-configuration feature must not create an independent server-normalization or validation architecture.
 
 ---
 
-## 14. Successful Upload Flow
+# 14. Successful Upload and Restart
 
-After a successful upload, the feature may need to coordinate backend restart
-behavior.
+A successful configuration upload may require backend restart coordination.
 
 Conceptually:
 
@@ -411,275 +419,307 @@ Backend may restart
 Synchronize server address if required
         |
         v
-Reconnect / reevaluate authentication
+Wait for connectivity
+        |
+        v
+Reevaluate session/authentication state
         |
         v
 Continue with active server
 ```
 
-The exact sequence depends on the uploaded configuration and active
-authentication mechanism.
+The exact behavior depends on the uploaded configuration and the active authentication mechanism.
 
-The feature must reuse existing server and authentication infrastructure.
+The workflow must reuse existing server, connectivity and authentication infrastructure.
 
 ---
 
-## 15. Progress Dialog
+# 15. Connectivity Is Not Authentication
 
-The configuration upload no longer uses a dedicated
-`BackendUpdateProgressDialog`.
+Temporary backend unavailability during restart is a connectivity event.
 
-The shared progress component is:
+It must not automatically be treated as:
+
+```text
+authentication failure
+```
+
+The architecture rule is:
+
+```text
+Connectivity failure != authentication failure
+```
+
+Reusable connectivity state belongs to Template.
+
+Technical server checks belong to Core.
+
+Related documentation:
+
+```text
+doc/server-check-and-switching.md
+doc/authentication.md
+```
+
+---
+
+# 16. Progress Dialog
+
+The feature uses the shared progress component:
 
 ```text
 src/template/components/design-system/ui-elements/UpdateProgressDialog.tsx
 ```
 
-The same reusable component is also used by update screens such as:
+The same reusable component is also used by update workflows such as:
 
 ```text
 src/template/screens/update/tabs/UpdateBackendTab.tsx
 src/template/screens/update/tabs/UpdateWebAppTab.tsx
 ```
 
-This is intentional reuse.
+This reuse is intentional.
 
-The dialog provides presentation.
+The progress dialog owns presentation.
 
-The configuration-upload screen and feature state remain responsible for
-workflow decisions.
-
----
-
-## 16. Why the Progress Dialog Is in the Design System
-
-The progress dialog represents reusable presentation that is useful for more
-than one feature.
-
-Current consumers include:
-
-```text
-File configuration upload
-Backend update
-WebApp update
-```
-
-Therefore:
-
-```text
-Feature workflow
-      |
-      v
-UpdateProgressDialog
-```
-
-The dialog must remain independent from a concrete backend update or
-file-configuration business operation.
+The file-configuration feature owns file-configuration workflow decisions.
 
 ---
 
-## 17. Authentication After Restart
+# 17. Design System Ownership
 
-Changing backend configuration may restart the server and affect the active
-authentication session.
+`UpdateProgressDialog` belongs to the Template design system because it is reusable presentation shared by multiple workflows.
 
-The file-configuration feature must not duplicate authentication logic.
-
-Instead, it should cooperate with the existing authentication architecture.
-
-Relevant ownership remains:
+Conceptually:
 
 ```text
-Technical authentication capability --> Core
-Authentication/session orchestration --> Template
-File upload orchestration            --> Template
+File configuration workflow
+        |
+        +------------------+
+                           |
+Backend/WebApp update -----+
+                           |
+                           v
+                UpdateProgressDialog
 ```
 
-For JWT and OIDC behavior, see:
+Generic presentation belongs to the design system.
 
-```text
-doc/authentication.md
-```
+Feature-specific decisions remain with the owning feature.
 
 ---
 
-## 18. Connectivity After Restart
+# 18. Browser-Specific Behavior
 
-Temporary backend unavailability during restart is a connectivity event.
+Several parts of the current workflow depend on browser APIs:
 
-It must not automatically be interpreted as:
+* file picker behavior
+* drag and drop
+* browser downloads
+* Blob handling
+* Blob URLs
+* XML parsing
+* browser redirection
 
-```text
-authentication failure
-```
+Do not assume these APIs are available on every React Native platform.
 
-The architecture rule remains:
-
-```text
-Connectivity failure != authentication failure
-```
-
-Connectivity state belongs to Template.
-
-Technical server checks belong to Core.
-
-For details, see:
-
-```text
-doc/server-check-and-switching.md
-```
+If the workflow is later required on native platforms, adapters or platform-specific implementations may be necessary.
 
 ---
 
-## 19. Browser-Specific Behavior
+# 19. Localization
 
-Several parts of the feature are browser-specific:
+User-facing text uses the `FileConfiguration` translation namespace.
 
-- File picker interaction
-- Drag and drop
-- Browser file downloads
-- Blob URLs
-- XML parsing
-- Browser redirection
-
-Native implementations may require separate adapters or feature decisions if
-the configuration-upload workflow is ever required outside web.
-
-Do not assume browser APIs are available on every React Native platform.
-
----
-
-## 20. Localization
-
-User-facing text for this feature uses the `FileConfiguration` translation
-namespace.
-
-Translation resources are located under:
+Resources are located under:
 
 ```text
 assets/locales/*/FileConfiguration.json
 ```
 
-Reusable user-facing messages should not be hardcoded directly into the
-screen when an appropriate translation key exists.
+User-visible text should use existing translation infrastructure.
+
+Do not introduce hard-coded messages when an appropriate translation key exists or should be added.
 
 ---
 
-## 21. Relationship to the Design System
+# 20. Relationship to Application Configuration
 
-The settings screen should reuse the Template design system.
+Backend file configuration must not be confused with the developer-facing Application configuration architecture.
 
-Relevant reusable components may include:
+Developer-facing Application configuration uses:
 
 ```text
-ActionButton
-ConfirmDialog
-Dropdown
-Infobox
-UpdateProgressDialog
+src/application/config/application.properties
+src/application/config/features.properties
+src/application/config/navigation.properties
 ```
 
-The feature must not create parallel generic UI components solely for file
-configuration.
+The file-configuration feature documented here handles backend configuration files at runtime.
 
-Product or feature-specific behavior belongs to the settings screen and its
-state.
+These are separate concerns:
 
-Generic visual behavior belongs to the design system.
+```text
+Application .properties configuration
+    -> build/composition configuration
+
+File Configuration Upload
+    -> runtime backend settings workflow
+```
+
+Do not mix the two configuration systems.
 
 ---
 
-## 22. Application Ownership
+# 21. Agent.Workbench Ownership
 
-The current feature resides in Template.
+The previous architecture treated Agent.Workbench-oriented behavior as a possible future Application extraction candidate.
 
-However, the backend API:
+That is no longer the selected architecture.
+
+The current rule is:
+
+```text
+standard Agent.Workbench functionality
+    -> Template
+```
+
+Therefore the following is not planned:
+
+```text
+move File Configuration Upload into a separate Agent.Workbench Application
+move its Redux state into Agent.Workbench applicationReducers
+create an Agent.Workbench-specific settings repository layer
+```
+
+The feature remains Template-owned as standard Base Template settings functionality.
+
+---
+
+# 22. Concrete Application Extensions
+
+A concrete Application such as HEMS may provide additional settings or configuration workflows when they are genuinely product-specific.
+
+Such behavior should remain Application-owned.
+
+Conceptually:
+
+```text
+Template
+|
++-- standard file-configuration workflow
++-- reusable file-drop behavior
++-- shared progress UI
++-- standard Agent.Workbench settings behavior
+
+HEMS Application
+|
++-- HEMS-only configuration behavior if required
+```
+
+Concrete product extensions must not require Template to import Application implementation.
+
+---
+
+# 23. API Ownership
+
+The current workflow communicates with:
 
 ```text
 /api/app/settings/*
 ```
 
-and specific configuration types such as:
+API ownership must follow responsibility rather than endpoint naming alone.
+
+Under the current architecture:
 
 ```text
-JettyConfiguration
+reusable technical communication
+    -> Core where appropriate
+
+standard Base Template / Agent.Workbench settings integration
+    -> Template
+
+concrete product-only backend integration
+    -> Application
 ```
 
-may represent Agent.Workbench-specific behavior.
-
-This ownership should be reviewed before final repository separation.
-
-Possible future outcomes include:
-
-```text
-Reusable generic upload infrastructure --> Template
-Agent.Workbench configuration workflow --> Application
-```
-
-This decision is not yet finalized.
-
-Do not move the feature prematurely.
+Do not classify an endpoint as Application-owned solely because it is currently associated with Agent.Workbench backend behavior.
 
 ---
 
-## 23. Current Status
+# 24. Current Status
 
-### Implemented
+## Implemented
 
-- File-configuration settings screen under Template
-- Configuration-type discovery
-- Configuration download
-- Configuration upload
-- JWT and OIDC-aware upload communication
-- Browser file selection
-- Web drag-and-drop
-- Upload Redux state
-- Warning and error handling
-- Jetty configuration inspection
-- Server URL handling
-- Shared progress-dialog reuse
-- Localization
+The current documented implementation includes:
 
-### Transitional
+```text
+Template-owned file-configuration screen
+configuration-type discovery
+configuration download
+configuration upload
+JWT/OIDC-aware communication
+browser file selection
+web drag and drop
+Template Redux upload state
+warning/error handling
+Jetty configuration inspection
+server-address coordination
+shared progress-dialog reuse
+localization
+```
 
-- Backend settings APIs may be Agent.Workbench-specific.
-- Jetty-specific configuration handling may ultimately belong to a concrete
-  Application.
-- The current Redux store transition is still in progress.
-- Final external Base Template API for file configuration has not been
-  defined.
+## Established Ownership
 
-### Planned
+```text
+file-configuration workflow
+    -> Template
 
-- Review whether the complete feature belongs in Template or Application.
-- Keep generic file-drop behavior reusable.
-- Keep shared progress UI in the design system.
-- Reuse server and authentication infrastructure.
-- Avoid duplicating configuration-upload infrastructure across applications.
+upload Redux state
+    -> Template
+
+web file-drop hook
+    -> Template
+
+shared progress presentation
+    -> Template design system
+
+technical server/authentication capabilities
+    -> Core
+```
+
+## Future Extensions
+
+Future concrete Applications may add product-specific configuration behavior when required.
+
+Such extensions do not change ownership of the standard Base Template workflow.
 
 ---
 
-## 24. Architecture Rules
+# 25. Architecture Rules
 
-File-configuration changes must preserve these rules:
+Changes to this feature must preserve these rules:
 
 1. Core must not import Template UI.
-2. Template must not import a concrete Application.
-3. Generic UI belongs to the design system.
-4. Upload Redux state belongs to its owning feature layer.
-5. Authentication must use existing authentication infrastructure.
-6. Connectivity must remain separate from authentication.
-7. Server normalization must use shared server infrastructure.
-8. Web-only APIs must not silently become native assumptions.
-9. Warning and error responses must stop inappropriate follow-up workflows.
-10. Agent.Workbench-specific behavior must be reviewed before final Template
-    ownership is declared.
-11. Screens must not duplicate reusable file-drop or progress UI.
-12. Generated API code must not be modified for documentation cleanup.
+2. Core must not import Application.
+3. Template must not import a concrete Application.
+4. Standard Agent.Workbench file-configuration behavior remains Template-owned.
+5. Generic UI belongs to the Template design system.
+6. Upload Redux state remains with the feature owner.
+7. Authentication must reuse existing authentication infrastructure.
+8. Connectivity must remain separate from authentication.
+9. Server normalization and technical checks must reuse Core infrastructure.
+10. Browser-only APIs must not silently become cross-platform assumptions.
+11. Warning and error responses must stop inappropriate follow-up workflows.
+12. Screens must not duplicate reusable file-drop or progress UI.
+13. Concrete product-only extensions belong to Application.
+14. Generated API code must not be modified during unrelated cleanup.
+15. Runtime backend configuration must not be confused with developer-facing Application `.properties` configuration.
 
 ---
 
-## 25. Validation
+# 26. Validation
 
 After changing the file-configuration feature, search relevant dependencies:
 
@@ -690,27 +730,34 @@ git grep -n "useFileDropWeb" -- src test
 git grep -n "UpdateProgressDialog" -- src test
 ```
 
+Run configuration generation when relevant:
+
+```bash
+npm run config:generate
+```
+
 Run TypeScript validation:
 
 ```bash
 npx tsc --noEmit
 ```
 
-Run targeted tests where available.
+Run affected tests.
 
 Validate the patch:
 
 ```bash
 git diff --check
+git status --short
 ```
 
-When runtime behavior changes, start the application through:
+When runtime behavior changes, use the normal npm startup path:
 
 ```bash
 npm start
 ```
 
-For a cleared cache while preserving npm lifecycle hooks:
+For a cleared Expo cache while preserving npm lifecycle hooks:
 
 ```bash
 npm start -- --clear
@@ -718,17 +765,58 @@ npm start -- --clear
 
 ---
 
-## 26. Success Criteria
+# 27. Incorrect Legacy Statements
 
-The file-configuration architecture is successful when:
+The following statements are no longer correct:
 
-1. The active file paths match the Template architecture.
-2. Upload state is clearly owned.
-3. Shared progress presentation is reused.
-4. File drag-and-drop is not duplicated.
-5. JWT and OIDC authentication remain compatible.
-6. Backend restart does not confuse connectivity and authentication state.
-7. Jetty-specific behavior is clearly distinguishable from generic Template
-   infrastructure.
-8. A future separate Application repository can reuse or replace this feature
-   without modifying unrelated Template internals.
+```text
+"The file-configuration workflow may later move into the Agent.Workbench Application."
+
+"Agent.Workbench configuration workflow belongs to Application."
+
+"The file-configuration Redux state is transitional."
+
+"The feature must be extracted before repository separation."
+
+"Agent.Workbench-oriented backend settings endpoints make the feature Application-owned."
+```
+
+The current ownership is:
+
+```text
+standard file-configuration workflow
+    -> Template
+
+technical server/authentication capabilities
+    -> Core
+
+concrete consumer-only configuration behavior
+    -> Application
+```
+
+---
+
+# 28. Success Criteria
+
+The file-configuration architecture is correct when:
+
+1. The documented source paths match the current Template structure.
+2. Standard file-configuration functionality remains Template-owned.
+3. Upload state remains clearly owned by Template.
+4. Shared progress presentation is reused.
+5. Web file-drop behavior is not duplicated.
+6. JWT and OIDC communication remain compatible with shared authentication infrastructure.
+7. Backend restart handling keeps connectivity separate from authentication failure.
+8. Jetty handling reuses shared server infrastructure.
+9. Concrete consumer-specific extensions can remain Application-owned.
+10. Template does not import concrete Application implementation.
+11. Runtime backend configuration remains separate from developer-facing Application configuration.
+12. Architecture ownership remains consistent with `Application --> Template --> Core`.
+
+---
+
+# 29. Summary
+
+The file-configuration workflow is part of the reusable Base Template.
+
+Its architecture

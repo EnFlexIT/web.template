@@ -2,17 +2,24 @@
 
 ## Purpose
 
-This document describes the current production release workflow of
-`web.template`.
+This document describes the current production release workflow of `web.template`.
 
-The workflow builds the Expo web application, packages the exported files as a
-ZIP archive, uploads the archive to the configured FTP target and creates a
-GitHub release.
+The workflow:
 
-This document describes the current implementation.
+* builds the Expo web application
+* packages the exported files as a ZIP archive
+* uploads the archive to the configured FTP target
+* creates a GitHub release
 
-The architecture is currently transitioning toward separate Application
-repositories.
+The architecture follows:
+
+```text
+Application --> Template --> Core
+```
+
+Standard Agent.Workbench functionality belongs to the Base Template.
+
+Concrete consumer Applications such as HEMS may own their own product-specific build and deployment configuration.
 
 ---
 
@@ -24,7 +31,7 @@ The production release workflow is defined in:
 .github/workflows/export-put-release.yml
 ```
 
-The workflow name is:
+The documented workflow name is:
 
 ```text
 Export Put Release
@@ -38,11 +45,13 @@ workflow_dispatch
 
 A production release is therefore not automatically created on every push.
 
+The committed workflow file is authoritative.
+
 ---
 
 # 2. Current Workflow Overview
 
-The verified production workflow performs the following sequence:
+The documented production workflow performs:
 
 ```text
 Checkout repository
@@ -102,7 +111,7 @@ fetch-depth: 1
 
 The workflow also prints Git information for diagnostics.
 
-This includes values such as:
+Examples include:
 
 ```text
 GITHUB_SHA
@@ -113,11 +122,13 @@ package.json presence
 package-lock.json presence
 ```
 
+These diagnostics help identify release-context problems.
+
 ---
 
 # 4. Node.js and npm
 
-The workflow uses:
+The documented workflow uses:
 
 ```text
 Node.js 20
@@ -138,6 +149,8 @@ npm is then explicitly updated using:
 npm install -g npm@10
 ```
 
+The active Node.js and npm versions are printed during the workflow.
+
 ---
 
 # 5. Dependency Installation
@@ -155,17 +168,13 @@ package.json
 package-lock.json
 ```
 
-If the lockfile does not match the package definition, the workflow fails
-during installation.
+If the lockfile does not match the package definition, the workflow fails during installation.
 
 ---
 
 # 6. Package Diagnostics
 
-Before installation, the workflow currently prints additional package
-diagnostics.
-
-These include:
+The workflow may print package diagnostics such as:
 
 ```text
 @floating-ui/dom references
@@ -174,10 +183,9 @@ package name
 package version
 ```
 
-These diagnostics are useful for troubleshooting dependency and lockfile
-issues.
+These diagnostics are useful for troubleshooting.
 
-They are not part of the release artifact itself.
+They are not part of the release artifact.
 
 ---
 
@@ -189,19 +197,19 @@ The release version is read from:
 package.json
 ```
 
-using Node:
+using:
 
 ```bash
 node -p "require('./package.json').version"
 ```
-
-The value is stored as a GitHub Actions output.
 
 Example:
 
 ```text
 0.0.4
 ```
+
+The version is used for artifact naming and the GitHub release tag.
 
 ---
 
@@ -219,13 +227,13 @@ Example:
 20260811-0915
 ```
 
-The timestamp is used as part of the release archive name.
+The timestamp is included in the release archive filename.
 
 ---
 
 # 9. Current Build Command
 
-The current production export is created with:
+The documented production export uses:
 
 ```bash
 npx expo export -p web
@@ -237,17 +245,39 @@ Expo writes the generated web application to:
 dist/
 ```
 
-This is the current production build command.
-
 ---
 
-# 10. Application Configuration Generation
+# 10. Application Configuration
 
-The Application configuration is generated separately through:
+Developer-facing Application configuration is stored under:
+
+```text
+src/application/config/
+```
+
+The current configuration files are:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
+
+Generated runtime artifacts are written under:
+
+```text
+src/application/generated/
+```
+
+Configuration generation is executed with:
 
 ```bash
 npm run config:generate
 ```
+
+---
+
+# 11. Configuration Generation and Release Builds
 
 Normal npm runtime commands such as:
 
@@ -258,72 +288,19 @@ npm run android
 npm run ios
 ```
 
-trigger configuration generation through npm lifecycle hooks.
+may execute configuration generation through npm lifecycle hooks.
 
-The production release workflow does not currently use one of those npm
-commands.
-
-Instead, it executes:
+The production release workflow instead directly executes:
 
 ```bash
 npx expo export -p web
 ```
 
-directly.
+Direct Expo execution does not automatically imply that npm lifecycle generation hooks have run.
 
-Therefore:
+Therefore release automation should explicitly guarantee current generated Application configuration before export.
 
-```text
-npm lifecycle configuration generation
-        |
-        X
-direct Expo export
-```
-
-The current production release workflow does not explicitly guarantee that the
-generated Application configuration is refreshed immediately before export.
-
-This is a known transitional build integration issue.
-
----
-
-# 11. Current Configuration Risk
-
-The runtime currently consumes the generated file:
-
-```text
-src/application/generated/applicationConfig.generated.ts
-```
-
-That file is generated from:
-
-```text
-src/application/config/application.properties
-```
-
-through:
-
-```text
-src/template/config/build/generateApplicationConfig.mjs
-```
-
-Because the production workflow does not currently execute:
-
-```bash
-npm run config:generate
-```
-
-before the Expo export, the generated TypeScript configuration could
-theoretically be stale.
-
-The build should eventually generate Application configuration
-deterministically before every export.
-
----
-
-# 12. Recommended Build Sequence
-
-The desired production sequence is conceptually:
+The desired sequence is:
 
 ```text
 npm ci
@@ -333,22 +310,66 @@ npm run config:generate
     |
     v
 npx expo export -p web
-    |
-    v
-package
-    |
-    v
-publish
 ```
 
-The workflow should not depend on a previously generated configuration file
-being current.
-
-This change should be implemented and tested separately from documentation.
+If the committed workflow does not yet contain this generation step, it remains a deterministic-build improvement.
 
 ---
 
-# 13. Packaging
+# 12. Why Explicit Generation Matters
+
+The source of truth for developer-facing configuration is:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
+
+Generated TypeScript is build/runtime output.
+
+Therefore:
+
+```text
+Application .properties
+        |
+        v
+config:generate
+        |
+        v
+generated runtime configuration
+        |
+        v
+Expo export
+```
+
+is preferable to relying on previously generated files being current.
+
+---
+
+# 13. Configuration Generator
+
+Configuration tooling lives under:
+
+```text
+src/template/config/build/
+```
+
+A central generator is:
+
+```text
+src/template/config/build/generateApplicationConfig.mjs
+```
+
+The tooling supports the Application/Template integration contract.
+
+Future concrete consumer repositories may require configurable input/output paths.
+
+Such changes should be driven by real consumer integration requirements.
+
+---
+
+# 14. Packaging
 
 After the Expo export, the contents of:
 
@@ -358,7 +379,7 @@ dist/
 
 are packaged into a ZIP archive.
 
-The current naming pattern is:
+The documented naming pattern is:
 
 ```text
 <PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
@@ -370,25 +391,45 @@ Example:
 Agent.Workbench_0.0.4_20260811-0915.zip
 ```
 
-The actual prefix is supplied through the repository secret:
+The example name reflects the configured `PROJECT_NAME`.
+
+It does not imply that Agent.Workbench is a separate concrete Application.
+
+---
+
+# 15. PROJECT_NAME
+
+The archive prefix is supplied through the repository secret:
 
 ```text
 PROJECT_NAME
 ```
 
+Conceptually:
+
+```text
+PROJECT_NAME
+    +
+package.version
+    +
+timestamp
+    =
+release archive filename
+```
+
+The workflow therefore does not need to hardcode a product name into the release script.
+
 ---
 
-# 14. FTP Upload
+# 16. FTP Upload
 
-The ZIP file is uploaded through FTP.
+The ZIP archive is uploaded through FTP.
 
-The configured target is:
+The configured production target is:
 
 ```text
 <PROJECT_PATH>
 ```
-
-The workflow uses values from GitHub repository secrets.
 
 Conceptually:
 
@@ -400,21 +441,21 @@ put <archive>.zip
 exit
 ```
 
-The target directory must already be available on the FTP server.
+The target directory must exist unless the workflow explicitly creates it.
 
 ---
 
-# 15. Required Repository Secrets
+# 17. Required Repository Secrets
 
-The verified production workflow uses:
+The documented workflow uses:
 
-| Secret | Purpose |
-| --- | --- |
-| `FTP_UPLOAD_URL` | FTP server address |
-| `FTP_USER` | FTP username |
-| `FTP_PSWD` | FTP password |
-| `PROJECT_NAME` | Release archive name prefix |
-| `PROJECT_PATH` | FTP target path |
+| Secret           | Purpose                |
+| ---------------- | ---------------------- |
+| `FTP_UPLOAD_URL` | FTP server address     |
+| `FTP_USER`       | FTP username           |
+| `FTP_PSWD`       | FTP password           |
+| `PROJECT_NAME`   | Release archive prefix |
+| `PROJECT_PATH`   | FTP production target  |
 
 The secret name:
 
@@ -426,9 +467,9 @@ must remain consistent with the workflow.
 
 ---
 
-# 16. GitHub Release
+# 18. GitHub Release
 
-After the FTP upload, the workflow creates a GitHub release through:
+After FTP upload, the workflow creates a GitHub release through:
 
 ```text
 softprops/action-gh-release@v2
@@ -450,110 +491,154 @@ v0.0.4
 
 ---
 
-# 17. Duplicate Version Risk
+# 19. Duplicate Version Risk
 
-The GitHub release tag is derived only from:
+The GitHub release tag is derived from:
 
 ```text
 package.version
 ```
 
-The archive filename additionally contains a timestamp, but the Git tag does
-not.
+The archive filename also contains a timestamp, but the Git tag does not.
 
-Therefore multiple production releases using the same package version may
-conflict with an already existing release tag.
+Therefore multiple production releases with the same package version may conflict with an existing tag/release.
 
 The package version should be reviewed before starting a production release.
 
 ---
 
-# 18. Production vs Test Release
+# 20. Production vs Test Release
 
-The production workflow publishes to the normal production FTP path:
+The production workflow uploads to:
 
 ```text
 <PROJECT_PATH>
 ```
 
-The test release workflow is documented separately in:
+The test-release workflow is documented separately in:
 
 ```text
 doc/test-release.md
 ```
 
-Test and production release workflows should remain clearly distinguishable.
+The test path must remain distinct from the production path.
+
+Production and test release behavior should not be conflated.
 
 ---
 
-# 19. Current Architecture Ownership
+# 21. Release Architecture Ownership
 
-The current workflow still exists inside:
+Release-related ownership follows:
+
+```text
+Core
+|
++-- reusable technical capabilities only
+
+Template
+|
++-- reusable release state/presentation where applicable
++-- reusable build integration where appropriate
++-- standard Agent.Workbench frontend behavior
+
+Application
+|
++-- concrete consumer-specific build configuration
++-- concrete consumer-specific deployment configuration
++-- concrete product infrastructure
+```
+
+Standard Agent.Workbench functionality remains part of the Base Template.
+
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
+
+---
+
+# 22. Current web.template Release Workflow
+
+The release workflow currently lives in:
 
 ```text
 web.template
 ```
 
-This is valid during the architecture migration.
+This is valid because `web.template` remains:
 
-The target architecture is:
+* runnable
+* testable
+* deployable
+* the owner of the Base Template
+* the owner of standard Agent.Workbench functionality
 
-```text
-Application --> Template --> Core
-```
-
-Concrete release and deployment configuration ultimately belongs to the
-Application.
-
-Examples include:
-
-```text
-Application version
-artifact naming
-release destination
-product FTP target
-deployment configuration
-product release workflow
-```
-
-The Base Template may provide reusable build tooling.
-
-It should not permanently own the concrete deployment process of
-Agent.Workbench, HEMS or another product.
+Its current release workflow does not imply that Agent.Workbench requires its own separate Application repository.
 
 ---
 
-# 20. Target Repository Ownership
+# 23. Concrete Consumer Release Ownership
 
-The target repository model is conceptually:
+A future concrete consumer such as HEMS may own its own:
 
 ```text
-Base Template Repository
-|
-+-- reusable Template
-+-- reusable Core
-+-- reusable build tooling where appropriate
+HEMS build workflow
+HEMS deployment destination
+HEMS product infrastructure
+HEMS release configuration
+```
 
-Agent.Workbench Repository
-|
-+-- Application configuration
-+-- product build
-+-- product release workflow
-+-- product deployment
+Conceptually:
 
+```text
 HEMS Repository
 |
 +-- Application configuration
-+-- product build
-+-- product release workflow
-+-- product deployment
++-- Application screens
++-- product state
++-- product business logic
++-- build workflow
++-- deployment workflow
 ```
 
-Each Application should be independently releasable.
+and consume:
+
+```text
+web.template
+|
++-- Template
++-- Core
+```
+
+The Base Template must not depend on HEMS deployment details.
 
 ---
 
-# 21. Current Status
+# 24. No Separate Agent.Workbench Release Repository
+
+The previous architecture assumed:
+
+```text
+Agent.Workbench Application Repository
+```
+
+with an independent extracted release pipeline.
+
+That is not part of the accepted architecture.
+
+The correct ownership is:
+
+```text
+Agent.Workbench standard functionality
+    -> Base Template
+
+HEMS
+    -> concrete Application
+```
+
+Therefore future repository separation should focus on real concrete consumers such as HEMS, not on extracting Agent.Workbench from the Base Template.
+
+---
+
+# 25. Current Status
 
 ## Implemented
 
@@ -570,32 +655,37 @@ package-version based release tag
 timestamped archive naming
 ```
 
-## Transitional
+## Current Review Item
+
+The important remaining release-workflow review item is:
 
 ```text
-production workflow still owned by web.template
-direct Expo export
-generated Application configuration assumed to be current
-shared repository contains concrete product release workflow
+ensure npm run config:generate executes explicitly
+before Expo export
 ```
 
-## Planned
+This is a deterministic-build concern.
+
+It is not an Agent.Workbench extraction concern.
+
+## Future Consumer Work
+
+Future concrete Applications may require:
 
 ```text
-deterministic configuration generation before export
-Application-owned release workflows
-independent Agent.Workbench release
-independent HEMS release
-clear Base Template build-tooling boundary
+consumer-specific build workflows
+consumer-specific deployment destinations
+consumer release configuration
+consumer infrastructure configuration
 ```
+
+HEMS is an example of such a concrete consumer.
 
 ---
 
-# 22. Troubleshooting
+# 26. Troubleshooting: npm ci
 
-## npm ci fails
-
-Possible causes:
+If `npm ci` fails, possible causes include:
 
 ```text
 package-lock.json is missing
@@ -608,36 +698,49 @@ Typical local repair flow:
 
 ```bash
 npm install
-git add package.json package-lock.json
-git commit -m "chore: update package lockfile"
 ```
 
-Review the resulting dependency changes before committing.
+Then review:
+
+```bash
+git diff -- package.json package-lock.json
+```
+
+Do not commit dependency changes without reviewing them.
 
 ---
 
-## Application configuration is outdated
+# 27. Troubleshooting: Application Configuration
 
-Regenerate the Application configuration locally:
+If the exported Application contains unexpected configuration, inspect:
+
+```text
+src/application/config/application.properties
+src/application/config/features.properties
+src/application/config/navigation.properties
+```
+
+and:
+
+```text
+src/application/generated/
+```
+
+Regenerate with:
 
 ```bash
 npm run config:generate
 ```
 
-Then verify:
+The developer-facing `.properties` files are authoritative.
 
-```text
-src/application/generated/applicationConfig.generated.ts
-```
-
-Before a final release, the build pipeline should eventually perform this
-generation automatically.
+Generated files must not silently override stale configuration.
 
 ---
 
-## FTP upload fails
+# 28. Troubleshooting: FTP Upload
 
-Verify:
+If build/package steps succeed but FTP upload fails, verify:
 
 ```text
 FTP_UPLOAD_URL
@@ -645,15 +748,17 @@ FTP_USER
 FTP_PSWD
 PROJECT_PATH
 PROJECT_NAME
+FTP server availability
+FTP target directory
 ```
 
-Also verify that the remote target directory exists.
+Also inspect the workflow logs.
 
 ---
 
-## GitHub release fails
+# 29. Troubleshooting: GitHub Release
 
-Verify:
+If the GitHub release step fails, verify:
 
 ```text
 package.json version
@@ -672,30 +777,89 @@ tag may conflict with the new release.
 
 ---
 
-# 23. Validation Before Production Release
+# 30. Validation Before Production Release
 
-Before creating a production release, validate at least:
+Before creating a production release, run:
 
 ```bash
 npm run config:generate
 npx tsc --noEmit
+npm test -- --runInBand
 ```
-
-Run relevant automated tests and verify the Application through the normal npm
-startup path.
 
 Also verify:
 
 ```bash
-git status
 git diff --check
+git status --short
 ```
 
-The production release should be created from a known and reviewed Git state.
+The release should be created from a known and reviewed Git state.
 
 ---
 
-# 24. Summary
+# 31. Workflow Validation
+
+When the production workflow itself changes, inspect:
+
+```bash
+git diff -- .github/workflows/export-put-release.yml
+```
+
+Verify that documentation still matches the committed YAML.
+
+Do not document unverified release behavior as implemented.
+
+---
+
+# 32. Architecture Rules
+
+Release-related work must preserve:
+
+1. `Application --> Template --> Core`.
+2. Core must not import Template or Application.
+3. Standard Agent.Workbench functionality belongs to Template.
+4. Agent.Workbench does not require a separate Application repository.
+5. Concrete consumer build/deployment configuration belongs to the concrete consumer.
+6. HEMS-specific deployment belongs to HEMS.
+7. Application configuration generation should be deterministic before export.
+8. Release documentation must match the committed workflow.
+9. Generated configuration must not be treated as more authoritative than `.properties`.
+10. Production and test deployment targets must remain distinguishable.
+11. Template must not depend on consumer deployment details.
+12. Future release separation should be validated through a real concrete consumer.
+
+---
+
+# 33. Incorrect Legacy Statements
+
+The following statements do not describe the accepted architecture:
+
+```text
+"The architecture is transitioning toward a separate Agent.Workbench repository."
+
+"Agent.Workbench must own an independent Application release workflow."
+
+"web.template only temporarily owns the Agent.Workbench release."
+
+"Agent.Workbench and HEMS require equivalent consumer repositories."
+
+"Agent.Workbench release extraction is still pending."
+```
+
+The correct model is:
+
+```text
+Agent.Workbench standard functionality
+    -> Base Template
+
+HEMS and future concrete products
+    -> Application
+```
+
+---
+
+# 34. Summary
 
 The current production pipeline is:
 
@@ -706,7 +870,10 @@ GitHub Actions
 npm ci
       |
       v
-npx expo export -p web
+Application configuration generation
+      |
+      v
+Expo web export
       |
       v
 dist/
@@ -719,20 +886,28 @@ ZIP
       +------> GitHub Release
 ```
 
-The main current architecture gap is:
+If the committed workflow does not yet explicitly execute:
 
-```text
-application.properties
-        |
-        v
-config generation
-        |
-        X
-production export
+```bash
+npm run config:generate
 ```
 
-The production workflow does not yet explicitly regenerate Application
-configuration before export.
+before:
 
-Long term, concrete production release workflows belong to their respective
-Application repositories.
+```bash
+npx expo export -p web
+```
+
+that remains the main deterministic-build improvement.
+
+The architectural ownership is:
+
+```text
+Agent.Workbench standard functionality
+    -> Base Template
+
+HEMS
+    -> concrete Application
+```
+
+A separate Agent.Workbench Application/release repository is not part of the accepted architecture.

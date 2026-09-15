@@ -2,22 +2,21 @@
 
 ## Purpose
 
-Core is the lowest reusable technical layer of the `web.template`
-architecture.
+Core is the lowest reusable technical layer of the `web.template` architecture.
 
-The overall dependency direction is:
+The authoritative dependency direction is:
 
 ```text
 Application --> Template --> Core
 ```
 
-Core provides reusable technical capabilities that should remain independent
-from concrete applications and, where reasonably possible, from React,
-Redux and presentation concerns.
+Core provides reusable technical capabilities that remain independent from concrete Applications and, where reasonably possible, from React, Redux, navigation and presentation concerns.
 
 Core is not the complete Base Template.
 
-The reusable application shell belongs to Template.
+The reusable application platform belongs to Template.
+
+Standard Agent.Workbench functionality also belongs to Template.
 
 ---
 
@@ -35,28 +34,30 @@ Template
 Core
 ```
 
-The layers have different purposes.
+Their responsibilities are:
 
 ```text
 Application
 |
-+-- concrete product functionality
++-- concrete product composition
 
 Template
 |
-+-- reusable React application shell
++-- reusable React application platform
 +-- reusable orchestration
 +-- reusable UI
-+-- reusable state infrastructure
++-- reusable navigation
++-- reusable Redux infrastructure
++-- standard Agent.Workbench functionality
 
 Core
 |
 +-- reusable technical capabilities
 +-- technical types
-+-- framework-independent helpers
++-- framework-independent helpers where practical
 ```
 
-Allowed dependencies point toward the lower reusable layers.
+Allowed dependencies point toward lower reusable layers.
 
 Core must not depend on Template or Application.
 
@@ -64,21 +65,27 @@ Core must not depend on Template or Application.
 
 # 2. Core Responsibility
 
-Core owns technical functionality that can be reused without knowing which
-product is running.
+Core owns technical functionality that can be reused without knowing which concrete product is running.
 
-Typical characteristics of Core code are:
+Typical characteristics of Core code include:
 
-- Application-independent
-- UI-independent where possible
-- Independent from concrete product configuration
-- Reusable across different applications
-- Focused on technical behavior
-- Suitable for use by Template infrastructure
+* Application-independent
+* presentation-independent where practical
+* independent from concrete product configuration
+* reusable across multiple Applications
+* focused on technical behavior
+* suitable for use by Template infrastructure
+* independent from Template implementation
 
-Core should not become a general folder for every shared function.
+Core must not become a generic shared-code directory.
 
-Reusability alone is not enough to justify Core ownership.
+Reusability alone does not justify Core ownership.
+
+The central ownership question remains:
+
+```text
+Who owns this responsibility?
+```
 
 ---
 
@@ -88,17 +95,16 @@ Current reusable Core functionality includes technical areas such as:
 
 ```text
 src/core/authentication/
+src/core/runtime/
 src/core/server/
 src/core/update/
 ```
 
-These areas represent technical capabilities rather than product UI or
-application-shell orchestration.
+These areas represent technical capabilities rather than product UI or application-shell orchestration.
 
-The Core structure may continue to evolve as responsibilities are reviewed.
+Core may evolve when additional coherent technical capabilities are identified.
 
-This document does not imply that every reusable project feature must move
-into Core.
+This does not imply that every reusable feature should move into Core.
 
 ---
 
@@ -114,10 +120,11 @@ src/core/authentication/
 
 Known responsibilities include:
 
-- HTTP authentication integration
-- Authentication-related technical types
-- Logout-flow protection
-- Reusable authentication helpers
+* HTTP authentication integration
+* authentication-related technical types
+* logout-flow protection
+* reusable authentication helpers
+* technical token/session helpers where framework-independent
 
 Examples of current files include:
 
@@ -127,7 +134,7 @@ src/core/authentication/logout/logoutFlowGuard.ts
 src/core/authentication/types.ts
 ```
 
-Core authentication must remain independent from concrete application UI.
+Core authentication must remain independent from concrete Application UI.
 
 ---
 
@@ -143,7 +150,7 @@ Core
 +-- technical authentication capability
 +-- request integration
 +-- technical auth types
-+-- framework-independent guards where possible
++-- framework-independent guards where practical
 
 Template
 |
@@ -156,7 +163,7 @@ Template
 
 Application
 |
-+-- product-specific authentication configuration where required
++-- concrete product-specific authentication behavior where required
 ```
 
 Therefore:
@@ -165,7 +172,7 @@ Therefore:
 Authentication != entirely Core
 ```
 
-Only the technical part belongs in Core.
+Only the technical capability belongs in Core.
 
 ---
 
@@ -181,12 +188,12 @@ src/core/server/
 
 Known responsibilities include:
 
-- Server input normalization
-- Server validation
-- Technical connectivity checks
-- Backend environment detection
-- Parsing reusable server information
-- Reusable server-related types
+* server input normalization
+* server validation
+* technical connectivity checks
+* backend environment detection
+* parsing reusable server information
+* reusable server-related types
 
 Current files include:
 
@@ -217,24 +224,46 @@ Core
 Template
 |
 +-- server-selection state
-+-- connectivity Redux state
++-- connectivity state
 +-- server-selection UI
 +-- reconnect orchestration
 +-- presentation
 
 Application
 |
-+-- product-specific server configuration
++-- concrete product-specific server configuration where required
 ```
 
-The fact that server functionality is reusable does not mean all server-related
-state and UI belong in Core.
+The fact that server functionality is reusable does not mean all server-related state and UI belong in Core.
 
 ---
 
-# 8. Update Infrastructure
+# 8. Runtime Infrastructure
 
-Core may contain pure technical update helpers.
+Reusable runtime helpers belong to Core when they represent technical capabilities independent from Template presentation.
+
+Current runtime functionality may live under:
+
+```text
+src/core/runtime/
+```
+
+Runtime helpers should remain independent from:
+
+```text
+React presentation
+Template Redux state
+navigation UI
+concrete Application modules
+```
+
+If runtime behavior requires application-shell orchestration, that orchestration belongs to Template.
+
+---
+
+# 9. Update Infrastructure
+
+Core may contain technical update helpers.
 
 Current reusable update functionality includes:
 
@@ -254,14 +283,14 @@ Update orchestration itself belongs to Template.
 
 ---
 
-# 9. Update Boundary
+# 10. Update Boundary
 
 The update system is intentionally split.
 
 ```text
 Core
 |
-+-- pure technical update helpers
++-- technical update helpers
 
 Template
 |
@@ -274,11 +303,10 @@ Template
 
 Application
 |
-+-- product-specific update behavior if required
++-- concrete product-specific update behavior where genuinely required
 ```
 
-Therefore these are not Core responsibilities merely because they are
-reusable:
+The following are not Core responsibilities merely because they are reusable:
 
 ```text
 Redux update slice
@@ -292,61 +320,72 @@ They belong to Template.
 
 ---
 
-# 10. Networking and API Concerns
+# 11. Networking and API Concerns
 
-Technical HTTP helpers may belong to Core when they are independent from
-application state and product behavior.
+Technical HTTP helpers may belong to Core when they are independent from Template state and concrete product behavior.
 
-However, not every API implementation belongs in Core.
+However, not every API implementation belongs to Core.
 
-For example:
+Examples:
 
 ```text
-generic request helper              --> possible Core
-authentication interceptor          --> Core
-Redux API state                     --> Template
-product-specific endpoint handling  --> Application
+generic request helper
+    -> Core where appropriate
+
+authentication interceptor
+    -> Core
+
+reusable Template / Agent.Workbench API integration
+    -> Template where appropriate
+
+Redux API state
+    -> Template
+
+concrete product-specific endpoint handling
+    -> Application
 ```
 
-The ownership decision depends on responsibility.
+API ownership follows responsibility, not endpoint naming.
+
+Agent.Workbench terminology alone does not make API code Application-owned.
 
 ---
 
-# 11. Types
+# 12. Types
 
-Technical types that are independent from product and Template presentation
-may belong to Core.
+Technical types that are independent from product and Template presentation may belong to Core.
 
 Examples include types used by:
 
-- Server validation
-- Authentication helpers
-- Technical networking
-- Framework-independent utilities
+* server validation
+* authentication helpers
+* technical networking
+* runtime helpers
+* framework-independent utilities
 
-Types should not be moved to Core simply because multiple files import them.
+Types must not be moved to Core solely because multiple files import them.
 
-Their semantic owner matters.
+Semantic ownership remains decisive.
 
 ---
 
-# 12. Utilities
+# 13. Utilities
 
 Reusable technical utility functions may belong to Core when they:
 
-- Do not require React UI
-- Do not depend on Redux application state
-- Do not import Template
-- Do not depend on concrete Application functionality
-- Represent a stable technical capability
+* do not require React UI
+* do not depend on Template Redux state
+* do not import Template
+* do not depend on concrete Application functionality
+* represent a stable technical capability
 
 A generic helper is not automatically Core.
 
-Feature-owned helpers should remain with their feature.
+Feature-owned helpers should remain with their owning feature.
 
 ---
 
-# 13. What Does Not Belong in Core
+# 14. What Does Not Belong in Core
 
 The following responsibilities generally do not belong in Core:
 
@@ -357,33 +396,33 @@ createTemplateApp
 React providers
 Redux store composition
 Redux slices
+navigation infrastructure
 navigation rendering
 menu UI
-tab UI
+screen registry
 dialogs
 buttons
 cards
 layout components
-notifications UI
+notification UI
 theme presentation
 localization UI
 screens
+Agent.Workbench standard UI
 product branding
-product menus
-product tabs
+product-specific navigation
 product business logic
 ```
 
-These belong to Template or Application depending on ownership.
+These belong to Template or Application depending on responsibility.
 
 ---
 
-# 14. Bootstrap
+# 15. Bootstrap
 
-Application bootstrap belongs to Template and Application composition, not to
-Core.
+Application bootstrap belongs to Template and Application composition, not Core.
 
-The current application entry point conceptually performs:
+The current Application entry point conceptually performs:
 
 ```text
 Application configuration
@@ -398,22 +437,21 @@ TemplateApp
 registerRootComponent(...)
 ```
 
-The relevant reusable bootstrap contract belongs under:
+The reusable bootstrap contract belongs under:
 
 ```text
 src/template/application/
 ```
 
-Core must not know which React application is being registered.
+Core must not know which React Application is being registered.
 
 ---
 
-# 15. Redux
+# 16. Redux
 
 Redux is not a Core module.
 
-Redux is an implementation technology used primarily by Template and
-Application.
+Redux is an implementation technology used primarily by Template and optionally by Application.
 
 The ownership model is:
 
@@ -422,56 +460,197 @@ Template
 |
 +-- reusable Redux infrastructure
 +-- Template reducers
++-- Agent.Workbench standard state
 +-- store composition
 
 Application
 |
-+-- product-specific reducers
-+-- product-specific state
++-- optional concrete product-specific reducers
++-- concrete product-specific state
 ```
 
-Core should not depend on the Redux application store.
+Core must not depend on the application Redux store.
 
-Pure technical code should preferably receive required values explicitly
-instead of reading global Redux state.
+Technical Core functions should receive required values explicitly rather than reading global Redux state.
 
 ---
 
-# 16. Navigation
+# 17. Template Redux Infrastructure
+
+Reusable Redux infrastructure belongs to Template.
+
+Known store infrastructure includes:
+
+```text
+src/template/state/store/
+├── createTemplateStore.ts
+├── rootReducer.ts
+├── store.ts
+├── templateReducers.ts
+├── types.ts
+├── useAppDispatch.ts
+└── useAppSelector.ts
+```
+
+Agent.Workbench state is intentionally Template-owned.
+
+Known area:
+
+```text
+src/template/state/agent-workbench/
+```
+
+This state is not transitional Application state.
+
+---
+
+# 18. Application Redux Extension
+
+Concrete Applications may optionally provide Application-specific reducers.
+
+The current extension point is:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+Application reducers must not override Template-owned reducer keys.
+
+The current Agent.Workbench Application composition does not require meaningful Application-specific Redux state.
+
+This is valid.
+
+---
+
+# 19. Navigation
 
 Navigation infrastructure belongs to Template.
 
-Examples include:
+Template owns:
 
 ```text
 routing
-menu infrastructure
-tab infrastructure
-navigation rendering
+menu rendering
+menu tree construction
+Template navigation definitions
+Template screen registry
 visibility integration
+authentication/runtime integration
+standard Agent.Workbench navigation
+Template menu ordering
 ```
 
-Concrete menu and tab definitions belong to Application.
+Application owns:
+
+```text
+Application-specific navigation extensions
+Application-specific screen references
+optional custom ordering
+```
 
 Conceptually:
 
 ```text
-Application navigation configuration
-              |
-              v
-Template navigation engine
+Template navigation
+        +
+Application navigation extensions
+        |
+        v
+runtime navigation
 ```
 
-Core does not need to know about menus, tabs or React Navigation.
+Core does not own React navigation.
 
 ---
 
-# 17. Notifications
+# 20. Application Navigation Configuration
+
+Developer-facing Application navigation uses:
+
+```text
+src/application/config/navigation.properties
+```
+
+Example:
+
+```properties
+menu.example.enabled=true
+menu.example.caption=exampleApplication
+menu.example.parent=settings
+menu.example.position=99
+menu.example.screen=example-screen
+```
+
+Applications must not define the complete Template navigation tree.
+
+Applications should not depend on Template-internal numeric menu IDs.
+
+---
+
+# 21. Semantic Feature Selection
+
+Developer-facing feature selection uses:
+
+```text
+src/application/config/features.properties
+```
+
+Examples:
+
+```properties
+feature.notifications.enabled=true
+feature.appearance.enabled=true
+feature.serverSettings.enabled=true
+feature.liveConsole.enabled=true
+feature.programStart.enabled=true
+feature.dataAnalyzing.enabled=true
+feature.database.general.enabled=true
+```
+
+Application selects reusable Template functionality semantically.
+
+Template owns implementation and internal navigation behavior.
+
+---
+
+# 22. Automatic Application Screen Discovery
+
+Application-specific screens belong to Application.
+
+They are discovered automatically through:
+
+```text
+src/template/config/build/applicationScreenDiscovery.mjs
+```
+
+Examples:
+
+```text
+ExampleScreen.tsx
+    -> example-screen
+
+ExampleScreen2.tsx
+    -> example-screen2
+
+HemsOverviewScreen.tsx
+    -> hems-overview-screen
+```
+
+Generated registry:
+
+```text
+src/application/generated/applicationScreenRegistry.generated.ts
+```
+
+Template must not manually import concrete Application screens.
+
+---
+
+# 23. Notifications
 
 Notification presentation and reusable notification state belong to Template.
 
-Core technical functionality may return errors or technical results, but it
-should not directly create product UI notifications.
+Core technical functionality may return errors or technical results, but it should not directly create UI notifications.
 
 Conceptually:
 
@@ -489,25 +668,23 @@ This keeps technical functionality independent from presentation.
 
 ---
 
-# 18. User Profile
+# 24. User Profile
 
-Reusable user-profile UI and Redux state belong to Template when they are part
-of the shared application shell.
+Reusable user-profile UI and Redux state belong to Template when they are part of the shared application platform.
 
-Technical identity/authentication information may originate from Core
-capabilities.
+Technical identity/authentication information may originate from Core capabilities.
 
-Product-specific profile functionality belongs to Application.
+Concrete product-specific profile functionality belongs to Application.
 
 User Profile is therefore not a single Core module.
 
 ---
 
-# 19. Dynamic Content
+# 25. Dynamic Content
 
 Dynamic-content React infrastructure currently belongs to Template.
 
-The current implementation lives under:
+Current implementation lives under:
 
 ```text
 src/template/components/dynamic-content/
@@ -515,15 +692,13 @@ src/template/components/dynamic-content/
 
 It contains reusable rendering and editing UI.
 
-React dynamic-content components must not be moved to Core simply because they
-are reusable.
+React dynamic-content components must not be moved to Core simply because they are reusable.
 
-Their final Template/Application ownership may still be reviewed, but they are
-not Core presentation infrastructure.
+A future ownership change should only occur if actual product-specific responsibility is identified.
 
 ---
 
-# 20. Shared Components
+# 26. Shared Components
 
 Reusable UI components belong to Template.
 
@@ -547,15 +722,15 @@ typography
 icons
 ```
 
-Core must not import those components.
+Core must not import these components.
 
 ---
 
-# 21. Localization
+# 27. Localization
 
 Localization has technical and presentation aspects.
 
-Reusable application localization currently belongs primarily to Template.
+Reusable application localization belongs primarily to Template.
 
 Examples include:
 
@@ -567,44 +742,52 @@ language-selection UI
 
 The language switcher is Template UI.
 
-Core should only contain localization-related technical helpers if they are
-truly independent from the Template runtime.
-
-Localization is therefore not automatically a Core module.
+Core should only contain localization-related technical helpers if they are independent from the Template runtime.
 
 ---
 
-# 22. Theme
+# 28. Theme
 
-The visual theme and reusable themed components belong to Template.
+Visual theme and reusable themed components belong to Template.
 
-Current reusable design-system areas include:
+Current design-system areas include:
 
 ```text
 src/template/components/design-system/themed/
 src/template/components/design-system/stylistic/
 ```
 
-Theme presentation is part of the reusable application shell.
+Theme presentation is part of the reusable application platform.
 
 Core must remain independent from visual theme implementation.
 
 ---
 
-# 23. Configuration
+# 29. Application Configuration
 
-Configuration ownership is split between Application and Template tooling.
-
-Concrete Application values belong to Application.
-
-Current source configuration:
+Developer-facing Application configuration uses:
 
 ```text
-src/application/config/application.properties
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
 ```
 
-Template defines the configuration contract and generation/integration
-mechanism.
+Responsibilities:
+
+```text
+application.properties
+    Application identity and metadata
+
+features.properties
+    semantic Template feature selection
+
+navigation.properties
+    Application-specific navigation extensions
+```
+
+Template defines the configuration contract and generation mechanism.
 
 Conceptually:
 
@@ -615,7 +798,7 @@ Application properties
 Template configuration tooling
         |
         v
-ApplicationConfig
+generated runtime configuration
         |
         v
 Template runtime
@@ -625,12 +808,27 @@ Core must not depend on concrete Application configuration.
 
 ---
 
-# 24. ApplicationConfig Is Not Core Product Data
+# 30. Legacy Configuration Names
 
-The Application contract enables dependency inversion.
+The following are not part of the current architecture:
 
-Template receives configuration from Application instead of importing product
-code.
+```text
+menu.properties
+tabs.properties
+featureFlags.properties
+menuFeatureFlags.properties
+tabFeatureFlags.properties
+```
+
+They must not be reintroduced as active or planned Application configuration.
+
+---
+
+# 31. ApplicationConfig Is Not Core Product Data
+
+`ApplicationConfig` enables dependency inversion.
+
+Template receives generated Application configuration instead of importing concrete product implementation.
 
 Conceptually:
 
@@ -644,13 +842,13 @@ ApplicationConfig
 Template
 ```
 
-Technical Core functionality may receive individual technical values when
-necessary, but Core should not become aware of the entire concrete
-Application configuration.
+Technical Core functionality may receive individual technical values when necessary.
+
+Core must not become aware of the entire concrete Application configuration.
 
 ---
 
-# 25. Dependency Rules
+# 32. Dependency Rules
 
 The fundamental dependency rule is:
 
@@ -661,13 +859,13 @@ Application --> Template --> Core
 Allowed:
 
 ```text
-Application imports Template
+Application imports supported Template surfaces
 Application imports Core where appropriate
 Template imports Core
 Core imports Core
 ```
 
-Not allowed:
+Forbidden:
 
 ```text
 Core imports Template
@@ -679,7 +877,7 @@ The dependency direction must remain acyclic.
 
 ---
 
-# 26. Dependency Example
+# 33. Dependency Example
 
 Correct:
 
@@ -702,20 +900,19 @@ Core server validator
 Template notification component
 ```
 
-A Core function should return a technical result.
+A Core function returns a technical result.
 
-Template decides how that result is presented.
+Template decides how that result is orchestrated or presented.
 
 ---
 
-# 27. Framework Independence
+# 34. Framework Independence
 
 Core should remain framework-independent where practical.
 
-This does not require artificially removing every framework-related type from
-Core immediately.
+This does not require artificially removing every framework-related type immediately.
 
-The important architectural direction is:
+The important direction is:
 
 ```text
 technical capability
@@ -724,7 +921,7 @@ technical capability
 minimal framework coupling
 ```
 
-New Core code should avoid introducing unnecessary dependencies on:
+New Core code should avoid unnecessary dependencies on:
 
 ```text
 React UI
@@ -736,10 +933,9 @@ Template components
 
 ---
 
-# 28. Core Public API
+# 35. Core Public API
 
-Long term, Core should expose stable technical contracts instead of requiring
-consumers to depend on arbitrary internal files.
+Long term, Core should expose stable technical contracts instead of requiring consumers to depend on arbitrary internal files.
 
 Conceptually:
 
@@ -747,34 +943,35 @@ Conceptually:
 Core public API
 |
 +-- authentication
++-- runtime
 +-- server
 +-- update helpers
 +-- technical types
 +-- utilities
 ```
 
-The exact package/export structure can evolve as repository separation
-continues.
+The exact export structure may evolve.
 
-Do not create a large public API prematurely.
+Do not create an oversized public API without a concrete requirement.
 
 ---
 
-# 29. Core and Base Template
+# 36. Core and Base Template
 
-Core is only one part of the Base Template.
+Core is one part of the Base Template.
 
 The relationship is:
 
 ```text
-Base Template Repository
+Base Template
 |
 +-- Template
 |    |
-|    +-- React application shell
+|    +-- React application platform
 |    +-- design system
 |    +-- navigation
 |    +-- Redux
+|    +-- standard Agent.Workbench functionality
 |    +-- reusable UI/features
 |    +-- orchestration
 |
@@ -783,53 +980,93 @@ Base Template Repository
      +-- technical capabilities
 ```
 
-The Base Template repository provides both layers.
+The Base Template provides both layers.
 
 Concrete Applications consume the Base Template.
 
 ---
 
-# 30. Core and Product Applications
+# 37. Agent.Workbench Ownership
 
-Core must not contain product-specific code.
+Standard Agent.Workbench functionality belongs to Template.
 
-Examples of product-specific concerns include:
+Examples include:
 
 ```text
-Agent.Workbench data analysis
-Agent.Workbench business settings
-HEMS domain functionality
-product-specific dashboards
-product-specific APIs
-product-specific workflows
-product-specific branding
+Program Start
+Data Analyzing
+Database configuration
+Server configuration
+Live Console
+Settings
+Agent.Workbench navigation
+Agent.Workbench state
+reusable Agent.Workbench API integration
 ```
 
-These belong to their concrete Application.
+These areas must not be classified as concrete Application code solely because they contain Agent.Workbench-specific terminology.
 
-During migration, some product code may still physically exist in Template.
+The ownership decision is:
 
-That transitional physical location does not make it Core.
+```text
+Agent.Workbench standard functionality
+    -> Template
+```
+
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
 
 ---
 
-# 31. Stability
+# 38. Concrete Product Applications
+
+Concrete Applications contain product-specific composition.
+
+HEMS is an example.
+
+Examples of Application-owned concerns include:
+
+```text
+HEMS domain functionality
+HEMS-specific screens
+HEMS-specific state
+HEMS-specific APIs
+HEMS branding
+HEMS build/deployment
+future product-specific dashboards
+future product-specific workflows
+```
+
+Conceptually:
+
+```text
+HEMS Application
+        |
+        v
+Template
+        |
+        v
+Core
+```
+
+---
+
+# 39. Stability
 
 Core should be stable, but it is not expected to stop evolving.
 
-Reusable technical capabilities may still change when:
+Reusable technical capabilities may change when:
 
-- Technical requirements change
-- Security requirements change
-- Backend contracts evolve
-- Bugs are fixed
-- Better reusable abstractions are identified
+* technical requirements change
+* security requirements change
+* backend contracts evolve
+* bugs are fixed
+* better reusable abstractions are identified
 
 The goal is controlled evolution, not immobility.
 
 ---
 
-# 32. Design Rules
+# 40. Core Design Rules
 
 Core changes must follow these rules:
 
@@ -837,92 +1074,103 @@ Core changes must follow these rules:
 2. Core must not depend on Application.
 3. Core must not contain concrete product business logic.
 4. Core should avoid React presentation concerns.
-5. Core should avoid Redux application-state ownership.
+5. Core must not own the application Redux store.
 6. Core should expose technical behavior rather than UI behavior.
-7. Core should remain reusable across applications.
-8. Core functionality should have clear technical ownership.
+7. Core should remain reusable across Applications.
+8. Core functionality must have clear technical ownership.
 9. Reusability alone does not justify moving code into Core.
-10. Product-specific behavior belongs to Application.
-11. Reusable application-shell behavior belongs to Template.
-12. Dependency cycles across architecture layers are not allowed.
+10. Standard Agent.Workbench application-platform behavior belongs to Template.
+11. Concrete product behavior belongs to Application.
+12. Reusable application-platform behavior belongs to Template.
+13. Dependency cycles across architecture layers are forbidden.
 
 ---
 
-# 33. Migration Rules
+# 41. Moving Functionality into Core
 
-Core extraction should happen incrementally.
+Movement into Core should be responsibility-driven and incremental.
 
 Before moving code into Core:
 
 ```text
 1. Identify the responsibility.
-2. Check whether the code is product-independent.
-3. Check whether it requires Template UI/state.
+2. Verify that the code is product-independent.
+3. Verify that it does not require Template UI/state ownership.
 4. Remove unnecessary upward dependencies.
-5. Define a clear technical contract.
-6. Move only the coherent technical capability.
+5. Define a coherent technical contract.
+6. Move only the technical capability.
 7. Update imports explicitly.
 8. Run TypeScript validation.
 9. Run affected tests.
 10. Validate runtime behavior.
 ```
 
-Do not move entire feature folders into Core solely because part of the
-feature is reusable.
+Do not move entire feature folders into Core solely because part of a feature is reusable.
+
+This is technical extraction into Core, not Application extraction.
 
 ---
 
-# 34. Current Status
+# 42. Current Status
 
 ## Implemented
 
-Current Core architecture already includes reusable technical areas such as:
+Current Core architecture includes reusable technical areas such as:
 
 ```text
 authentication
-server infrastructure
-technical update helpers
+runtime
+server
+update
 ```
 
-The dependency direction toward Core is established conceptually and is being
-enforced incrementally.
+The dependency direction is established as:
+
+```text
+Application --> Template --> Core
+```
+
+Template owns standard Agent.Workbench application-platform functionality.
+
+Application owns concrete product composition.
 
 ---
 
-## Transitional
+## Ongoing Technical Review
 
-Some responsibilities are still being separated.
+Some technical boundaries may continue to be refined.
 
 Examples include:
 
 ```text
-API ownership
-authentication boundaries
-server orchestration boundaries
-feature helper ownership
-Application extraction
+generic API helper ownership
+authentication helper boundaries
+server helper boundaries
+runtime helper ownership
+public Core API surfaces
 ```
 
-Some Agent.Workbench-specific functionality still physically resides under
-Template until separate Application repositories are ready.
+These reviews do not imply that Agent.Workbench functionality is waiting to move into Application.
 
 ---
 
-## Planned
+## Future Work
 
-Future work includes:
+Future work may include:
 
-- Continue reviewing Core/Template boundaries.
-- Keep Core free from product-specific imports.
-- Keep Redux orchestration outside Core.
-- Expose stable technical contracts where useful.
-- Extract additional technical capabilities only when ownership is clear.
-- Validate architectural dependencies automatically where practical.
-- Support the future Base Template package/repository integration model.
+* continue reviewing Core/Template technical boundaries
+* keep Core free from Template and Application imports
+* keep Redux orchestration outside Core
+* expose stable technical contracts where useful
+* move additional technical capabilities into Core only when ownership is clear
+* validate architectural dependencies automatically where practical
+* validate Base Template consumption through a concrete consumer such as HEMS
+
+A separate Agent.Workbench Application extraction is not part of the current architecture.
 
 ---
 
-# 35. Non-Goals
+# 43. Non-Goals
 
 Core is not intended to become:
 
@@ -931,19 +1179,56 @@ the entire Base Template
 a React component library
 a Redux framework
 a navigation framework
-an Agent.Workbench framework
+an Agent.Workbench Application
 a repository for every reusable helper
-a place for concrete product configuration
+a place for concrete Application configuration
 ```
 
-These distinctions are essential to keeping the architecture maintainable.
+Core also must not become the owner of standard Agent.Workbench application-platform behavior.
+
+These distinctions are essential for maintainability.
 
 ---
 
-# 36. Long-Term Objective
+# 44. Incorrect Legacy Statements
 
-The long-term objective is a focused technical Core that supports a reusable
-Template without knowing which concrete product consumes it.
+The following statements are no longer correct:
+
+```text
+"Concrete menu and tab definitions belong entirely to Application."
+
+"Agent.Workbench data analysis is concrete Application code."
+
+"Agent.Workbench standard settings must move into Application."
+
+"Agent.Workbench functionality inside Template is transitional."
+
+"Application extraction is still pending."
+
+"A separate Agent.Workbench Application repository is required."
+
+"menu.properties is planned Application navigation configuration."
+
+"tabs.properties is planned Application configuration."
+
+"featureFlags.properties is planned feature configuration."
+```
+
+The correct ownership is:
+
+```text
+Agent.Workbench standard functionality
+    -> Template
+
+HEMS and future concrete products
+    -> Application
+```
+
+---
+
+# 45. Long-Term Objective
+
+The long-term objective is a focused technical Core supporting a reusable Template without knowing which concrete product consumes the platform.
 
 The architecture remains:
 
@@ -957,11 +1242,10 @@ Template
 Core
 ```
 
-Core provides stable technical capabilities.
+Core provides reusable technical capabilities.
 
-Template provides reusable application behavior.
+Template provides reusable application-platform behavior and standard Agent.Workbench functionality.
 
-Application provides concrete product functionality.
+Application provides concrete product composition.
 
-This separation allows Agent.Workbench, HEMS and future applications to reuse
-the same Base Template while remaining independent from each other.
+This allows HEMS and future Applications to consume the same Base Template without requiring a separate Agent.Workbench Application layer.

@@ -1,11 +1,15 @@
 # Test Release
 
-This document describes the current test-release workflow of `web.template`
-and its relationship to frontend release-type detection.
+## Purpose
 
-The test-release workflow creates an Expo Web build, packages the generated
-files, publishes the ZIP as a GitHub Actions artifact, and uploads the same ZIP
-to a dedicated FTP test directory.
+This document describes the current test-release workflow of `web.template` and its relationship to frontend release-type detection.
+
+The test-release workflow:
+
+* creates an Expo Web export
+* packages the generated files
+* publishes the ZIP as a GitHub Actions artifact
+* uploads the same ZIP to a dedicated FTP test directory
 
 The architecture follows:
 
@@ -13,33 +17,33 @@ The architecture follows:
 Application --> Template --> Core
 ```
 
-Build and deployment ownership must also be considered as the project moves
-toward a Base Template repository with separate Application repositories.
+Standard Agent.Workbench functionality belongs to the Base Template.
+
+Concrete consumer Applications such as HEMS may own their own product-specific build and deployment configuration.
 
 ---
 
-## 1. Purpose
+# 1. Test Release Purpose
 
-The test-release workflow provides a deployable web build for validation
-before a production release.
+The test-release workflow provides a deployable web build for validation before a production release.
 
 Typical purposes include:
 
-- Internal testing
-- Frontend/backend compatibility validation
-- Update-system testing
-- Release-type testing
-- UI validation
-- Infrastructure validation
-- Manual inspection of a generated release artifact
+* internal testing
+* frontend/backend compatibility validation
+* update-system testing
+* release-type testing
+* UI validation
+* infrastructure validation
+* manual inspection of a generated release artifact
 
 The test workflow is not intended to represent the final production release.
 
 ---
 
-## 2. Current Workflow Files
+# 2. Workflow Files
 
-The repository currently contains both release workflows:
+The repository currently contains release workflows including:
 
 ```text
 .github/workflows/export-put-release.yml
@@ -52,42 +56,40 @@ This document focuses on:
 .github/workflows/export-put-test-release.yml
 ```
 
-Current GitHub Actions workflow name:
+The documented GitHub Actions workflow name is:
 
 ```text
 Export Put Test Release
 ```
 
+Workflow behavior should always be verified against the committed YAML before changing release documentation.
+
 ---
 
-## 3. Trigger
+# 3. Trigger
 
-The test-release workflow is started manually.
-
-The workflow uses:
+The test-release workflow is manually triggered through:
 
 ```yaml
 on:
   workflow_dispatch:
 ```
 
-This means a test build is created only when the workflow is explicitly
-started through GitHub Actions.
+This means the test release is explicitly started through GitHub Actions.
 
-There is currently no automatic branch or tag trigger in the test-release
-workflow.
+The documented workflow does not use an automatic branch or tag trigger for the test release.
 
 ---
 
-## 4. Runner
+# 4. Runner
 
-The current workflow runs on:
+The documented workflow runs on:
 
 ```text
 ubuntu-latest
 ```
 
-The job is currently named:
+The current job is documented as:
 
 ```text
 install
@@ -95,9 +97,9 @@ install
 
 ---
 
-## 5. Checkout
+# 5. Repository Checkout
 
-The workflow checks out the current repository using:
+The workflow checks out the repository using:
 
 ```yaml
 uses: actions/checkout@v4
@@ -109,9 +111,9 @@ with:
 fetch-depth: 1
 ```
 
-The workflow then prints basic repository information for diagnostics.
+The workflow also prints repository information for diagnostics.
 
-This includes information such as:
+Examples include:
 
 ```text
 GITHUB_SHA
@@ -122,11 +124,13 @@ package.json availability
 package-lock.json availability
 ```
 
+These diagnostic steps help identify build-context problems.
+
 ---
 
-## 6. Node.js and npm
+# 6. Node.js and npm
 
-The current workflow uses:
+The documented workflow uses:
 
 ```text
 Node.js 20
@@ -140,7 +144,7 @@ uses: actions/setup-node@v4
 
 with npm caching enabled.
 
-The workflow then explicitly installs:
+The workflow then installs:
 
 ```text
 npm 10
@@ -152,23 +156,23 @@ using:
 npm install -g npm@10
 ```
 
-The installed Node.js and npm versions are printed before the build
-continues.
+The active Node.js and npm versions are printed before the build continues.
 
 ---
 
-## 7. Dependency Validation
+# 7. Dependency Installation
 
-Dependencies are installed through:
+Dependencies are installed using:
 
 ```bash
 npm ci
 ```
 
-This is important for release builds because `npm ci` uses the committed
-lockfile rather than changing dependency resolution.
+This is appropriate for release automation because it uses the committed lockfile instead of recalculating dependency resolution.
 
-The workflow also performs diagnostic checks for:
+The workflow also contains diagnostic checks for package and lockfile information.
+
+Observed diagnostics include areas such as:
 
 ```text
 package.json
@@ -179,62 +183,55 @@ package version
 @floating-ui/dom
 ```
 
-The `@floating-ui/dom` checks are currently diagnostic workflow steps rather
-than architectural requirements.
+These checks are workflow diagnostics and not architectural requirements.
 
 ---
 
-## 8. Application Version
+# 8. Application Version
 
-The release version is read directly from:
+The release version is read from:
 
 ```text
 package.json
 ```
 
-The workflow executes:
+using:
 
 ```bash
 node -p "require('./package.json').version"
 ```
 
-The result becomes the workflow output:
-
-```text
-version
-```
-
-This value participates in the generated artifact name.
+The result is used as the workflow version value and participates in artifact naming.
 
 ---
 
-## 9. Timestamp
+# 9. Timestamp
 
-The workflow generates a timestamp using:
+The workflow creates a timestamp using:
 
 ```bash
 date +%Y%m%d-%H%M
 ```
 
-The resulting format is:
+Format:
 
 ```text
 yyyyMMdd-HHmm
 ```
 
-Example structure:
+Example:
 
 ```text
 20260810-1542
 ```
 
-The timestamp is used in the artifact filename.
+The timestamp participates in the generated artifact filename.
 
 ---
 
-## 10. Web Export
+# 10. Web Export
 
-The current workflow exports the Expo Web application with:
+The documented workflow exports the Expo Web application using:
 
 ```bash
 npx expo export -p web
@@ -246,68 +243,90 @@ Expo writes the exported web application to:
 dist/
 ```
 
-The generated `dist` directory becomes the content of the release ZIP.
+The contents of `dist/` are then packaged into the release ZIP.
 
 ---
 
-## 11. Important Configuration-Generation Note
+# 11. Application Configuration Generation
 
-The normal local npm lifecycle currently includes application-configuration
-generation.
+Developer-facing Application configuration uses:
+
+```text
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
+```
 
 The project provides:
 
-```text
+```bash
 npm run config:generate
 ```
 
-and npm lifecycle hooks for normal startup commands.
+Generated runtime artifacts are written under:
 
-However, the current GitHub test-release workflow calls Expo directly:
+```text
+src/application/generated/
+```
+
+The normal development lifecycle uses configuration generation before Application startup.
+
+However, the documented test-release workflow directly executes:
 
 ```bash
 npx expo export -p web
 ```
 
-This does not automatically execute npm lifecycle scripts such as `preweb`.
+Therefore the release workflow must not assume that normal npm startup lifecycle hooks automatically regenerate Application configuration.
 
-Therefore the current workflow depends on the required generated application
-configuration already being present and current in the repository.
+The desired deterministic release sequence is:
+
+```text
+checkout
+    |
+    v
+npm ci
+    |
+    v
+npm run config:generate
+    |
+    v
+npx expo export -p web
+```
+
+If the current workflow does not explicitly contain the `config:generate` step, this remains a release-workflow improvement that should be addressed before relying on configuration-only changes in automated releases.
+
+---
+
+# 12. Why Explicit Generation Matters
+
+The developer-facing configuration source is the `.properties` configuration.
+
+Generated TypeScript is build/runtime output.
+
+Release automation should therefore produce generated artifacts from the committed configuration source instead of relying on previously generated files being current.
 
 Conceptually:
 
 ```text
-Current workflow
-
-checkout repository
+Application .properties
         |
         v
-npm ci
+config:generate
         |
         v
-npx expo export -p web
-```
-
-It does not currently perform:
-
-```text
-npm run config:generate
+generated runtime artifacts
         |
         v
 Expo export
 ```
 
-This is a transitional build concern.
-
-Before final Application-repository extraction, release workflows should
-explicitly guarantee that application configuration is generated from the
-Application-owned configuration source before the Expo export.
-
-Do not silently assume that direct `npx expo export` performs this step.
+This keeps release builds deterministic.
 
 ---
 
-## 12. Packaging
+# 13. Packaging
 
 After the Expo export, the workflow packages the contents of:
 
@@ -317,14 +336,13 @@ dist/
 
 into a ZIP file.
 
-The current artifact naming pattern is:
+The documented naming pattern is:
 
 ```text
 <PROJECT_NAME>_<package.version>_<yyyyMMdd-HHmm>.zip
 ```
 
-The ZIP contains the exported web application contents rather than the
-`dist` directory itself as an additional top-level folder.
+The ZIP contains the exported web application contents rather than introducing `dist/` as an additional top-level directory.
 
 Conceptually:
 
@@ -337,7 +355,7 @@ dist/*
 
 ---
 
-## 13. PROJECT_NAME
+# 14. PROJECT_NAME
 
 The artifact name uses the GitHub repository secret:
 
@@ -354,57 +372,48 @@ package.json version
     +
 timestamp
     =
-artifact name
+artifact filename
 ```
 
-The workflow itself does not hardcode the concrete project name.
+The workflow therefore does not need to hardcode the project name directly into the artifact name.
 
 ---
 
-## 14. GitHub Actions Artifact
+# 15. GitHub Actions Artifact
 
-The generated ZIP is uploaded as a GitHub Actions workflow artifact.
+The generated ZIP is uploaded as a GitHub Actions artifact.
 
-The workflow uses:
+The documented workflow uses:
 
 ```yaml
 actions/upload-artifact@v4
 ```
 
-The artifact name is:
+The artifact name follows:
 
 ```text
 <PROJECT_NAME>_<version>_<timestamp>
 ```
 
-The uploaded file is:
+The uploaded ZIP is:
 
 ```text
 <PROJECT_NAME>_<version>_<timestamp>.zip
 ```
 
-This allows the generated build to be inspected or downloaded from the
-GitHub Actions run even independently of the FTP upload.
+This allows the test build to be inspected independently from the FTP deployment.
 
 ---
 
-## 15. FTP Upload
+# 16. FTP Upload
 
-The same ZIP file is uploaded to the configured FTP server.
+The same ZIP is uploaded to the configured FTP server.
 
 The test target is:
 
 ```text
 <PROJECT_PATH>/test
 ```
-
-The workflow constructs:
-
-```text
-test_path = PROJECT_PATH/test
-```
-
-and uploads the generated ZIP there.
 
 Conceptually:
 
@@ -417,16 +426,18 @@ generated ZIP
       +------------------+
       |                  |
       v                  v
-GitHub artifact     FTP /test directory
+GitHub artifact     FTP test directory
 ```
+
+The target test directory must exist on the FTP server unless the workflow explicitly creates it.
 
 ---
 
-## 16. FTP Command
+# 17. FTP Command
 
-The workflow currently uses the command-line FTP client.
+The workflow uses the command-line FTP client.
 
-Conceptually, the command sequence is:
+Conceptually:
 
 ```text
 open <FTP_UPLOAD_URL>
@@ -436,25 +447,23 @@ put <artifact>.zip
 exit
 ```
 
-The target test directory must be available on the FTP server.
-
-The workflow does not currently create the directory.
+The workflow should not expose credential values in logs.
 
 ---
 
-## 17. Required GitHub Secrets
+# 18. Required GitHub Secrets
 
-The current test workflow references these repository secrets:
+The documented test workflow references:
 
-| Secret | Purpose |
-| --- | --- |
-| `FTP_UPLOAD_URL` | FTP server address. |
-| `FTP_USER` | FTP username. |
-| `FTP_PSWD` | FTP password. |
-| `PROJECT_NAME` | Prefix used for the generated artifact name. |
-| `PROJECT_PATH` | Base FTP project directory. |
+| Secret           | Purpose                    |
+| ---------------- | -------------------------- |
+| `FTP_UPLOAD_URL` | FTP server address         |
+| `FTP_USER`       | FTP username               |
+| `FTP_PSWD`       | FTP password               |
+| `PROJECT_NAME`   | Prefix for artifact naming |
+| `PROJECT_PATH`   | Base FTP project directory |
 
-The workflow appends:
+The test workflow appends:
 
 ```text
 /test
@@ -462,45 +471,45 @@ The workflow appends:
 
 to `PROJECT_PATH`.
 
-The secret is currently named:
+The secret name:
 
 ```text
 FTP_PSWD
 ```
 
-Do not rename it in documentation without also changing the workflow.
+must not be renamed in documentation unless the workflow is changed at the same time.
 
 ---
 
-## 18. Test Release Identification
+# 19. Test Deployment and Release Type
 
-The `/test` FTP directory identifies where the test artifact is deployed.
+The FTP `/test` path determines where the test artifact is uploaded.
 
-However, frontend release-type presentation is not determined merely from the
-FTP directory.
+Frontend release-type presentation is a separate concern.
 
-The frontend obtains release-type information from the backend application
-settings.
+The frontend receives release-type information from backend application settings.
 
-The relevant backend key is:
+Relevant backend key:
 
 ```text
 _WebAppReleaseType
 ```
 
+The deployment directory must not become a second independent frontend release-type detection mechanism.
+
 ---
 
-## 19. Release Types
+# 20. Release Types
 
-The current frontend recognizes:
+The documented frontend release states are:
 
-```ts
-"PRODUCTION_RELEASE"
-"TEST_RELEASE"
-"UNKNOWN"
+```text
+PRODUCTION_RELEASE
+TEST_RELEASE
+UNKNOWN
 ```
 
-The reusable release state defines:
+Reusable release state is represented by:
 
 ```text
 WebAppReleaseType
@@ -512,14 +521,13 @@ under:
 src/template/state/release/appReleaseSlice.tsx
 ```
 
-Release-type state belongs to Template because it supports reusable
-application-shell presentation.
+Release state belongs to Template because it supports reusable application-shell behavior.
 
 ---
 
-## 20. Release-Type Detection
+# 21. Release-Type Detection
 
-Backend release-type detection is implemented in:
+Technical backend release-type parsing is implemented in:
 
 ```text
 src/core/server/serverCheck.ts
@@ -531,124 +539,96 @@ The server-check infrastructure reads:
 _WebAppReleaseType
 ```
 
-from the backend application settings.
+from backend application settings.
 
-The current Core server implementation recognizes:
+The documented recognized values include:
 
 ```text
 TEST_RELEASE
 PRODUCTION_RELEASE
 ```
 
-and participates in normalizing the backend result.
-
-This technical parsing belongs to Core because it is part of reusable backend
-inspection.
+Technical parsing belongs to Core because it is reusable backend inspection behavior.
 
 ---
 
-## 21. Default Backend Result
+# 22. Template Release State
 
-The current server-check implementation contains fallback behavior for
-`_WebAppReleaseType`.
-
-The backend settings result is therefore normalized before being consumed by
-Template release state.
-
-Changes to release-type fallback behavior should be made centrally rather than
-duplicated inside UI components.
-
----
-
-## 22. Template Release State
-
-Reusable release state lives at:
+Reusable release state exists at:
 
 ```text
 src/template/state/release/appReleaseSlice.tsx
 ```
 
-It stores the active frontend release classification.
-
-The state recognizes:
-
-```text
-PRODUCTION_RELEASE
-TEST_RELEASE
-UNKNOWN
-```
-
-The slice also protects meaningful stored release information from being
-unnecessarily overwritten by an `UNKNOWN` value.
-
-Release state and technical backend parsing remain separate responsibilities.
+The state handles the normalized release classification used by reusable Template presentation.
 
 Conceptually:
 
 ```text
-Backend settings
-      |
-      v
+Backend application settings
+        |
+        v
 Core serverCheck
-      |
-      v
+        |
+        v
 Template release state
-      |
-      v
+        |
+        v
 Template presentation
 ```
 
+Technical parsing and UI state remain separate responsibilities.
+
 ---
 
-## 23. Footer Presentation
+# 23. UNKNOWN Release State
 
-The reusable footer is located at:
+The Template release state also supports:
+
+```text
+UNKNOWN
+```
+
+The current implementation should be inspected before changing fallback or overwrite behavior.
+
+Release-type fallback logic should remain centralized rather than being duplicated inside presentation components.
+
+Changes should be tested together with server switching and initialization behavior.
+
+---
+
+# 24. Footer Presentation
+
+Reusable footer presentation exists at:
 
 ```text
 src/template/components/layout/Footer.tsx
 ```
 
-Release-related presentation such as a visible test-release indicator belongs
-to reusable Template UI.
+Release-related UI such as a test-release indicator belongs to Template presentation.
 
-The footer is a consumer of application-shell state.
+The footer consumes normalized state.
 
-It must not implement backend settings parsing itself.
+It must not parse backend settings directly.
 
-The responsibility remains:
+Responsibility remains:
 
 ```text
-serverCheck        --> technical detection
-appReleaseSlice    --> reusable state
-Footer             --> presentation
+serverCheck
+    -> technical detection
+
+appReleaseSlice
+    -> reusable state
+
+Footer
+    -> presentation
 ```
 
 ---
 
-## 24. Relevant Frontend Files
+# 25. Release Architecture Ownership
 
-Current relevant files include:
-
-| File | Purpose |
-| --- | --- |
-| `src/core/server/serverCheck.ts` | Reads and normalizes backend application settings including `_WebAppReleaseType`. |
-| `src/template/state/release/appReleaseSlice.tsx` | Stores reusable frontend release-type state. |
-| `src/template/components/layout/Footer.tsx` | Reusable application-shell location for release-related presentation. |
-
-The old paths:
-
-```text
-src/screens/login/serverCheck.ts
-src/components/Footer.tsx
-```
-
-are no longer the current architecture.
-
----
-
-## 25. Architectural Ownership
-
-Current ownership is:
+Release-related architecture follows:
 
 ```text
 Core
@@ -657,137 +637,135 @@ Core
 
 Template
 |
-+-- release Redux state
-+-- release-related reusable presentation
++-- reusable release Redux state
++-- reusable release presentation
 
 Application
 |
-+-- concrete build/deployment configuration
-+-- product-specific release configuration
++-- concrete consumer build configuration
++-- concrete consumer deployment configuration
++-- product-specific release settings where required
 ```
 
-This ownership becomes increasingly important as concrete applications move
-into separate repositories.
+Standard Agent.Workbench frontend behavior remains part of Template.
+
+Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
 
 ---
 
-## 26. Future Application Repositories
+# 26. Build and Deployment Ownership
 
-The target architecture uses:
+Concrete consumer Applications should own their product-specific build and deployment configuration.
 
-```text
-Base Template repository
-        |
-        +-- Agent.Workbench Application repository
-        +-- HEMS Application repository
-        +-- future Application repositories
-```
-
-Concrete applications own their own build and deployment configuration.
-
-Therefore workflows such as:
+For example, a future HEMS repository may own:
 
 ```text
-export-put-test-release.yml
-export-put-release.yml
+HEMS release configuration
+HEMS deployment destination
+HEMS product infrastructure
+HEMS build workflow
 ```
 
-should eventually be reviewed as Application-repository responsibilities.
+The Base Template may provide reusable build mechanisms and integration contracts.
 
-The Base Template should provide reusable build capability and contracts, but
-should not permanently own concrete product deployment destinations.
+It should not need to know a concrete consumer's deployment target.
 
 ---
 
-## 27. Current Repository Status
+# 27. Current web.template Workflow
 
-At the current migration stage, the workflows still exist inside
-`web.template`.
+The release workflows currently live inside `web.template`.
 
-That is acceptable during the transition.
+This is valid for the current repository because `web.template` also contains the in-repository Agent.Workbench Application composition and standard Agent.Workbench Base Template functionality.
 
-Do not move the workflows before the concrete Application repositories and
-their build contracts are ready.
+Their current physical location does not imply that future concrete consumer repositories such as HEMS must share the same deployment configuration.
 
-The ownership distinction should be:
-
-```text
-Current physical location != final architectural owner
-```
+Future consumer build ownership should be validated when a real consumer repository is integrated.
 
 ---
 
-## 28. Test Release vs Production Release
+# 28. No Separate Agent.Workbench Release Repository
 
-The repository currently contains separate workflow files:
+The previous architecture assumed a future:
 
 ```text
-export-put-test-release.yml
-export-put-release.yml
+Agent.Workbench Application repository
 ```
 
-The test workflow is verified to upload its ZIP to:
+with its own extracted product build and deployment workflow.
+
+That is no longer the selected architecture.
+
+Standard Agent.Workbench functionality belongs to the Base Template.
+
+Therefore the architecture does not require a separate Agent.Workbench consumer repository solely for release ownership.
+
+Future release separation work should focus on concrete consumers such as HEMS.
+
+---
+
+# 29. Test Release vs Production Release
+
+The repository contains:
+
+```text
+.github/workflows/export-put-test-release.yml
+.github/workflows/export-put-release.yml
+```
+
+The documented test workflow uploads to:
 
 ```text
 <PROJECT_PATH>/test
 ```
 
-This document does not assume additional production-workflow details that have
-not been inspected.
-
-For production behavior, inspect:
+Production behavior must be verified against:
 
 ```text
 .github/workflows/export-put-release.yml
 ```
 
-before changing release documentation or workflow behavior.
+before documenting or changing production-release behavior.
+
+Do not infer unverified production behavior from the test workflow.
 
 ---
 
-## 29. When to Use the Test Workflow
+# 30. When to Use the Test Workflow
 
 Use the test-release workflow when:
 
-- A frontend build should be validated before production.
-- Update behavior needs to be tested.
-- Frontend/backend compatibility should be checked.
-- A release ZIP should be inspected.
-- Release-type presentation needs validation.
-- Infrastructure changes need a deployed test build.
-- A build should be tested without using the production deployment target.
+* a frontend build should be validated before production
+* update behavior needs testing
+* frontend/backend compatibility should be checked
+* a release ZIP should be inspected
+* release-type presentation needs validation
+* infrastructure changes need a deployed test build
+* testing should occur without using the production deployment target
 
 ---
 
-## 30. Test Artifact Naming
+# 31. Artifact Naming
 
-The test artifact currently uses the same general naming structure defined by
-the workflow:
+The documented artifact naming structure is:
 
 ```text
 <PROJECT_NAME>_<version>_<timestamp>.zip
 ```
 
-The test character is expressed by the deployment target:
+The test nature of the deployment is represented by:
 
 ```text
 <PROJECT_PATH>/test
 ```
 
-There is currently no `-TEST` suffix added by the verified workflow.
+The documented workflow does not add a `-TEST` suffix to the ZIP name.
 
-If such a suffix is introduced later, update both:
-
-```text
-workflow
-documentation
-```
-
-at the same time.
+If artifact naming changes, update workflow and documentation together.
 
 ---
 
-## 31. Troubleshooting: Build Failure
+# 32. Troubleshooting: Build Failure
 
 If the workflow fails before export, inspect:
 
@@ -800,41 +778,43 @@ package.json
 workflow logs
 ```
 
-The workflow intentionally prints diagnostic package information before
-building.
+Do not change dependency resolution from inside the release workflow merely to make a release succeed.
 
-Do not change the lockfile from inside the release workflow.
+Dependency fixes belong in the repository and lockfile.
 
 ---
 
-## 32. Troubleshooting: Configuration Mismatch
+# 33. Troubleshooting: Configuration Mismatch
 
-If the exported application contains unexpected Application configuration,
-check whether:
+If the exported Application contains unexpected configuration, inspect:
 
 ```text
 src/application/config/application.properties
+src/application/config/features.properties
+src/application/config/navigation.properties
 ```
 
-and the generated configuration are synchronized.
+and generated artifacts under:
 
-Because the current workflow directly runs:
+```text
+src/application/generated/
+```
+
+Then verify whether the release workflow ran:
 
 ```bash
-npx expo export -p web
+npm run config:generate
 ```
 
-it does not currently guarantee a fresh `config:generate` step.
+before Expo export.
 
-This should be reviewed before relying on properties-only changes in release
-automation.
+A stale generated file must not be treated as authoritative over the developer-facing `.properties` configuration.
 
 ---
 
-## 33. Troubleshooting: FTP Upload
+# 34. Troubleshooting: FTP Upload
 
-If the GitHub workflow artifact exists but the FTP upload fails, the build and
-packaging stages have already succeeded.
+If the GitHub Actions artifact exists but FTP upload fails, then build and packaging have already succeeded.
 
 Check:
 
@@ -854,20 +834,19 @@ Also verify that:
 <PROJECT_PATH>/test
 ```
 
-exists.
+exists or is created by the workflow.
 
 ---
 
-## 34. Troubleshooting: No Test Indicator
+# 35. Troubleshooting: Missing Test Indicator
 
-If a test release does not produce the expected frontend test indication,
-check the backend application settings response for:
+If a test deployment does not produce the expected frontend test indicator, inspect the backend application settings for:
 
 ```text
 _WebAppReleaseType
 ```
 
-The expected test value is:
+Expected test value:
 
 ```text
 TEST_RELEASE
@@ -881,34 +860,15 @@ src/template/state/release/appReleaseSlice.tsx
 src/template/components/layout/Footer.tsx
 ```
 
-Do not implement a second release-type parser in the footer.
+Do not add a second release-type parser in the footer.
 
 ---
 
-## 35. Troubleshooting: UNKNOWN State
+# 36. Validation
 
-If release state becomes:
+After changing release infrastructure, validate relevant source and workflow references.
 
-```text
-UNKNOWN
-```
-
-inspect the server-check result and Template release-state update.
-
-The current slice contains protection intended to prevent `UNKNOWN` from
-unnecessarily replacing previously meaningful `TEST_RELEASE` information.
-
-Changes in this area should be tested together with server switching and
-initialization.
-
----
-
-## 36. Validation Workflow
-
-After changing test-release infrastructure, validate the workflow file and
-affected source references.
-
-Useful searches include:
+Useful searches:
 
 ```bash
 git grep -n "_WebAppReleaseType" -- src
@@ -917,106 +877,192 @@ git grep -n "PRODUCTION_RELEASE" -- src
 git grep -n "appReleaseSlice" -- src test
 ```
 
-Check the workflow:
+Inspect workflow changes:
 
 ```bash
 git diff -- .github/workflows/export-put-test-release.yml
 ```
 
-Validate source changes:
+Run Application configuration generation:
+
+```bash
+npm run config:generate
+```
+
+Run TypeScript validation:
 
 ```bash
 npx tsc --noEmit
+```
+
+Run affected tests:
+
+```bash
+npm test -- --runInBand
 ```
 
 Validate the patch:
 
 ```bash
 git diff --check
+git status --short
 ```
 
-When application configuration changes, also run:
+---
+
+# 37. Current Status
+
+## Implemented
+
+The documented test-release workflow includes:
+
+```text
+manual workflow trigger
+Node.js 20
+npm 10
+npm caching
+npm ci
+Expo Web export
+ZIP packaging
+GitHub Actions artifact upload
+FTP test upload
+/test deployment target
+backend _WebAppReleaseType parsing
+Template release state
+reusable release presentation
+```
+
+## Current Review Item
+
+The key current release-workflow review item is:
+
+```text
+ensure npm run config:generate executes explicitly
+before Expo export
+```
+
+This is a deterministic-build concern.
+
+It is not an Agent.Workbench extraction concern.
+
+## Future Consumer Work
+
+Future concrete consumer Applications may require:
+
+```text
+consumer-specific build workflows
+consumer-specific deployment destinations
+consumer release configuration
+consumer infrastructure configuration
+```
+
+HEMS is an example of such a future consumer.
+
+---
+
+# 38. Architecture Rules
+
+Release-related work must preserve:
+
+1. `Application --> Template --> Core`.
+2. Core must not import Template or Application.
+3. Backend release-type parsing may remain reusable Core functionality.
+4. Reusable release state belongs to Template.
+5. Reusable release presentation belongs to Template.
+6. Standard Agent.Workbench functionality belongs to Template.
+7. HEMS-specific deployment configuration belongs to HEMS.
+8. Release-type UI must consume normalized state instead of parsing backend settings independently.
+9. Test and production deployment targets must remain distinguishable.
+10. Application configuration generation should be deterministic before export.
+11. Workflow documentation must match the committed workflow.
+12. Unverified production behavior must not be documented as fact.
+13. Future concrete consumer repositories may own their own build/deployment pipelines.
+14. A separate Agent.Workbench Application repository is not required.
+
+---
+
+# 39. Incorrect Legacy Statements
+
+The following statements are no longer correct:
+
+```text
+"Agent.Workbench is a concrete Application repository."
+
+"Agent.Workbench must eventually own a separate release pipeline."
+
+"Release workflow ownership requires Agent.Workbench extraction."
+
+"web.template is only temporarily responsible for Agent.Workbench releases."
+
+"Agent.Workbench and HEMS must have equivalent consumer repositories."
+```
+
+The correct architecture is:
+
+```text
+Agent.Workbench standard functionality
+    -> Base Template
+
+HEMS
+    -> concrete Application
+```
+
+---
+
+# 40. Success Criteria
+
+The test-release architecture is correct when:
+
+1. The committed workflow and documentation match.
+2. Test builds use deterministic dependency installation.
+3. Application configuration is generated explicitly before export.
+4. Test artifacts remain separate from production deployment.
+5. Backend release type is parsed in one reusable technical location.
+6. Template state consumes normalized release information.
+7. Presentation does not duplicate backend parsing.
+8. Standard Agent.Workbench release presentation remains Template-owned.
+9. Concrete consumers such as HEMS can own their own deployment configuration.
+10. The Base Template does not depend on HEMS deployment details.
+11. Workflow secrets remain documented consistently with the workflow.
+12. Architecture remains consistent with `Application --> Template --> Core`.
+
+---
+
+# 41. Summary
+
+The test-release workflow currently builds and deploys the web frontend for validation.
+
+The architectural ownership is:
+
+```text
+Core
+    technical release-type parsing
+
+Template
+    reusable release state
+    reusable release presentation
+    standard Agent.Workbench frontend behavior
+
+Application
+    concrete consumer build/deployment configuration
+```
+
+The most important current workflow improvement is to ensure that:
 
 ```bash
 npm run config:generate
 ```
 
-before validating the local application.
+runs explicitly before:
 
----
+```bash
+npx expo export -p web
+```
 
-## 37. Current Status
+when that step is not already present in the committed workflow.
 
-### Implemented
+This keeps generated Application configuration deterministic.
 
-- Manual test-release workflow
-- Node.js 20
-- npm 10
-- npm dependency caching
-- `npm ci`
-- Expo Web export
-- ZIP packaging
-- GitHub Actions artifact upload
-- FTP test upload
-- `/test` deployment target
-- Backend `_WebAppReleaseType` parsing
-- Template release state
-- Reusable release-related presentation infrastructure
+A future HEMS consumer may own its own release pipeline.
 
-### Transitional
-
-- Release workflows still live in `web.template`.
-- Concrete deployment ownership has not yet moved to separate Application
-  repositories.
-- The test workflow directly uses `npx expo export -p web`.
-- Application configuration generation is not explicitly executed in the
-  current test workflow.
-- Final reusable build contract between Application and Base Template is not
-  yet defined.
-
-### Planned
-
-- Review release workflow ownership during Application-repository extraction.
-- Make application configuration generation explicit in release builds.
-- Keep technical release-type parsing reusable.
-- Keep reusable release UI/state in Template.
-- Move concrete product deployment configuration to Application repositories.
-- Keep test and production deployment behavior clearly separated.
-
----
-
-## 38. Architecture Rules
-
-Release-related changes must preserve these rules:
-
-1. Core must not import Template or Application.
-2. Backend release-type parsing may remain reusable Core infrastructure.
-3. Reusable release state belongs to Template.
-4. Reusable release presentation belongs to Template.
-5. Concrete product deployment configuration belongs to Application.
-6. Release type must come from supported backend/application configuration,
-   not from UI guesses.
-7. The footer must not duplicate server-settings parsing.
-8. Test deployment must remain separate from production deployment.
-9. Build automation must eventually generate Application configuration
-   explicitly.
-10. Workflow documentation must reflect the actual committed workflow.
-11. Do not document unverified production behavior as current fact.
-12. Separate Application repositories must eventually own their concrete build
-    and deployment pipelines.
-
----
-
-## 39. Success Criteria
-
-The test-release architecture is successful when:
-
-1. The committed workflow and documentation match.
-2. Test builds are reproducible through `npm ci`.
-3. Application configuration is guaranteed to be current before export.
-4. Test artifacts remain separate from production artifacts.
-5. Backend release type is parsed in one reusable technical location.
-6. Template presentation consumes release state without duplicating parsing.
-7. Concrete Application repositories can own their deployment configuration.
-8. The Base Template remains reusable and independent from a concrete FTP
-   deployment target.
+A separate Agent.Workbench Application repository is not part of the current architecture.

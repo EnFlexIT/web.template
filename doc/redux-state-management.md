@@ -1,137 +1,317 @@
 ﻿# Redux State Management
 
-This document describes the current Redux architecture, ownership rules,
-migration status, and extension model of `web.template`.
+## Purpose
+
+This document describes the Redux architecture, ownership rules and extension model of `web.template`.
 
 The project uses Redux Toolkit.
 
-Redux is treated as a state-management technology and not as an
-architectural layer.
+Redux is a state-management technology and not an architectural layer.
 
-The architecture follows this dependency direction:
+The architecture follows:
 
 ```text
 Application --> Template --> Core
 ```
 
-State belongs to the architectural area that owns the corresponding
-responsibility.
+State belongs to the architectural area that owns the corresponding responsibility.
 
 ---
 
-## 1. Architecture Rule
+# 1. Architecture Rule
 
-Redux must not define architectural ownership.
+Redux does not determine architectural ownership.
 
-A reducer or slice belongs to the layer that owns its responsibility.
+A reducer or slice belongs to the layer that owns the responsibility represented by that state.
 
-General ownership rules:
+The general ownership model is:
 
 ```text
-Reusable technical capability --> Core
-Reusable application mechanism --> Template
-Concrete product state         --> Application
+Reusable technical capability
+    -> Core
+
+Reusable application-platform state
+    -> Template
+
+Standard Agent.Workbench state
+    -> Template
+
+Concrete product-specific state
+    -> Application
 ```
 
-Typical examples:
+Examples:
 
-- Reusable Template UI state belongs to `template`.
-- Navigation state belongs to `template`.
-- Notification state belongs to `template`.
-- Reusable authentication UI state belongs to `template`.
-- Product-specific business state belongs to `application`.
-- Pure technical logic should be moved to `core` when it does not depend
-  on Template or Application code.
+```text
+navigation state
+    -> Template
 
-The previous generic `src/redux` architecture is no longer the target
-structure.
+notification state
+    -> Template
 
-Redux state is organized by responsibility.
+authentication/session UI state
+    -> Template
+
+Agent.Workbench Program Start state
+    -> Template
+
+Agent.Workbench Data Analyzing state
+    -> Template
+
+HEMS-specific business state
+    -> HEMS Application
+```
+
+The previous generic `src/redux` organization is not the architectural model.
+
+Redux state is organized according to responsibility.
 
 ---
 
-## 2. Current Redux Structure
+# 2. Redux Structure
 
-The important Redux infrastructure is located under:
+Reusable Redux infrastructure exists under:
 
 ```text
 src/template/state/
 ```
 
-The store infrastructure is located under:
+Store infrastructure exists under:
 
 ```text
 src/template/state/store/
-+-- createTemplateStore.ts
-+-- rootReducer.ts
-+-- store.ts
-+-- templateReducers.ts
-+-- types.ts
-+-- useAppDispatch.ts
-+-- useAppSelector.ts
 ```
 
-The concrete Application layer currently provides an application
-reducer registry under:
+Known store files include:
 
 ```text
-src/application/state/
-+-- applicationReducers.ts
+createTemplateStore.ts
+rootReducer.ts
+store.ts
+templateReducers.ts
+types.ts
+useAppDispatch.ts
+useAppSelector.ts
 ```
 
-The repository is currently transitioning from the existing fixed store
-composition to an extensible Base Template store.
+Application-specific Redux state can be provided through:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+The current Agent.Workbench Application composition does not require meaningful Application-specific Redux state.
+
+Therefore `applicationReducers.ts` is currently essentially an empty extension point.
 
 ---
 
-## 3. Current Active Store
+# 3. Ownership Model
 
-The existing application still uses the current Template store.
-
-The active composition remains based on:
+The architectural ownership rule is:
 
 ```text
-src/template/state/store/store.ts
-src/template/state/store/rootReducer.ts
+Template
+|
++-- reusable application state
++-- standard Agent.Workbench state
++-- reusable Redux infrastructure
+
+Application
+|
++-- optional concrete product-specific state
+
+Core
+|
++-- reusable technical capabilities
 ```
 
-`TemplateApp` still receives the existing store through the Redux
-`Provider`.
+Core is not a Redux state layer.
+
+Technical logic may belong to Core when it is independent from React, Template orchestration and concrete Application behavior.
+
+Redux state that supports the reusable application platform remains Template-owned.
+
+---
+
+# 4. Template State
+
+Template owns reusable state required by the Base Template.
+
+Examples include state related to:
+
+```text
+API integration
+authentication/session behavior
+bootstrap
+connectivity
+developer tools
+localization
+navigation
+notifications
+organizations
+release information
+server handling
+settings
+theme
+updates
+user/session information
+Agent.Workbench
+```
+
+The exact internal directory organization may evolve.
+
+The ownership rule is more important than individual folder names.
+
+---
+
+# 5. Agent.Workbench State
+
+Agent.Workbench state is intentionally Template-owned.
+
+A dedicated area exists under:
+
+```text
+src/template/state/agent-workbench/
+```
+
+Known Agent.Workbench-related state includes functionality associated with:
+
+```text
+execSettings
+dataAnalysis
+Data Analyzing
+Program Start
+```
+
+This state is not transitional Application state.
+
+It is not waiting to be moved into a separate Agent.Workbench Application repository.
+
+The ownership rule is:
+
+```text
+standard Agent.Workbench state
+    -> Template
+```
+
+This matches the architectural decision that standard Agent.Workbench functionality is part of the Base Template.
+
+---
+
+# 6. No Agent.Workbench Redux Extraction
+
+The current architecture does not include a later extraction of standard Agent.Workbench reducers into a concrete Application.
+
+The following previous direction is no longer valid:
+
+```text
+Agent.Workbench state
+    -> separate Agent.Workbench Application
+```
+
+The correct direction is:
+
+```text
+Agent.Workbench state
+    -> Base Template
+```
+
+Therefore modules under:
+
+```text
+src/template/state/agent-workbench/
+```
+
+must not be described as misplaced or transitional merely because they contain Agent.Workbench functionality.
+
+Their Template ownership is intentional.
+
+---
+
+# 7. Application-Specific State
+
+Concrete Applications may provide their own Redux state when required.
+
+The Application-side extension point is:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+Application reducers should only contain state that is genuinely specific to the concrete product.
+
+Examples could include:
+
+```text
+HEMS-specific domain state
+consumer-specific workflow state
+product-only business data
+```
+
+The current Agent.Workbench Application composition does not require such state.
+
+An essentially empty `applicationReducers.ts` is therefore valid.
+
+---
+
+# 8. Redux Extension Contract
+
+Template provides the reusable Redux integration mechanism.
+
+Application may optionally provide concrete reducers.
 
 Conceptually:
 
 ```text
-TemplateApp
-    |
-    v
-Provider
-    |
-    v
-current store
-    |
-    v
-current rootReducer
+Template reducers
+        +
+optional Application reducers
+        |
+        v
+Redux store
 ```
 
-This remains the runtime configuration until the new extensible store
-factory is connected safely.
+Template must not import concrete Application reducer implementations directly.
 
-The existing store must not be removed or replaced prematurely.
+The Application supplies product-specific reducers through the supported integration boundary.
 
 ---
 
-## 4. Extensible Store Architecture
+# 9. ApplicationReducers
 
-A reusable store factory has been introduced in parallel with the
-existing active store.
+The reusable Application reducer contract is defined under the Template store infrastructure.
 
-The factory is located at:
+A known contract location is:
+
+```text
+src/template/state/store/types.ts
+```
+
+Conceptually:
+
+```text
+ApplicationReducers
+|
++-- reducer key
++-- reducer implementation
+```
+
+This allows concrete Applications to extend Redux state without reversing the dependency direction.
+
+---
+
+# 10. createTemplateStore
+
+Reusable store composition is represented by:
 
 ```text
 src/template/state/store/createTemplateStore.ts
 ```
 
-Its purpose is to combine:
+Its architectural responsibility is to allow Template-owned reducers and optional Application-owned reducers to participate in one store composition.
+
+Conceptually:
 
 ```text
 Template-owned reducers
@@ -139,255 +319,122 @@ Template-owned reducers
 Application-owned reducers
         |
         v
-Configured Redux store
+createTemplateStore(...)
+        |
+        v
+Redux store
 ```
 
-Conceptually:
+The store infrastructure belongs to Template.
 
-```ts
-createTemplateStore({
-  applicationReducers: {
-    execSettings: execSettingsReducer,
-    dataAnalysis: dataAnalysisReducer,
-  },
-});
-```
-
-The Base Template provides the store mechanism.
-
-The concrete application provides its own reducers.
-
-This prevents the Base Template from permanently depending on
-Agent.Workbench, HEMS, or another concrete product.
+Concrete product reducers remain Application-owned.
 
 ---
 
-## 5. Template Reducers
+# 11. Template Reducer Registry
 
-The reusable Base Template reducer registry is defined in:
+Reusable Template reducer registration is represented by:
 
 ```text
 src/template/state/store/templateReducers.ts
 ```
 
-`templateReducers` contains reducers whose responsibilities belong to
-the reusable Base Template.
+Template reducers must contain state whose responsibility belongs to the reusable Base Template.
 
-Current Template reducer areas include:
+This includes standard Agent.Workbench state where that functionality belongs to the Base Template.
 
-```text
-language
-theme
-api
-dataPermissions
-menu
-organizations
-ready
-baseMode
-servers
-connectivity
-dbSettings
-passwordChangePrompt
-notifications
-update
-sessionTime
-serverStatus
-appSettingsFileUpload
-appRelease
-userProfile
-liveConsole
-developerConsole
-```
-
-The exact internal folder of each slice follows its owning
-responsibility.
-
-The important architectural rule is that Template reducers must not
-include permanent product-specific business state.
+The Template reducer registry must not depend on concrete consumer Applications such as HEMS.
 
 ---
 
-## 6. Application Reducers
+# 12. Root Reducer and Store
 
-The application reducer extension contract is defined through:
+The Template store infrastructure also includes:
 
 ```text
-ApplicationReducers
+src/template/state/store/rootReducer.ts
+src/template/state/store/store.ts
 ```
 
-The contract is located in:
+These files are part of the reusable Redux implementation.
+
+Runtime composition must preserve the architecture boundary:
 
 ```text
-src/template/state/store/types.ts
-```
+Template
+    owns reusable store infrastructure
 
-A concrete application can provide its reducers through this contract.
-
-The current application registry is:
-
-```text
-src/application/state/applicationReducers.ts
-```
-
-The current Agent.Workbench application registry includes
-application-specific reducers such as:
-
-```text
-execSettings
-dataAnalysis
-```
-
-Conceptually:
-
-```text
 Application
-    |
-    +-- execSettings
-    +-- dataAnalysis
-    |
-    v
-ApplicationReducers
-    |
-    v
-createTemplateStore
+    may provide optional product reducers
+
+Template
+    must not import concrete Application implementation
 ```
 
-This establishes the architectural ownership even though some of these
-reducers are still physically located inside the current repository.
+This document intentionally does not classify Agent.Workbench state inside the Template store as transitional.
 
 ---
 
-## 7. Transitional Agent.Workbench State
+# 13. Reducer Collision Protection
 
-Some Agent.Workbench-specific reducers are still located under:
+Application reducers must not silently replace Template-owned reducer keys.
 
-```text
-src/template/state/agent-workbench/
-```
-
-Known examples include:
-
-```text
-execSettingsSlice.tsx
-dataAnalysisSlice.ts
-dataAnalyzingConstants.ts
-```
-
-These modules are application-specific and should eventually move into
-the separate Agent.Workbench application repository.
-
-Their current physical location is transitional.
-
-The intended final direction is:
-
-```text
-Agent.Workbench Repository
-    |
-    +-- state/
-        +-- execSettings
-        +-- dataAnalysis
-```
-
-The Base Template must not permanently import these reducers.
-
-The application should provide them through the public reducer extension
-contract.
-
----
-
-## 8. Reducer Collision Protection
-
-Application reducers must not override reducers owned by the Base
-Template.
-
-`createTemplateStore` checks reducer keys before configuring the store.
-
-For example, an application must not provide another reducer using a
-Template-owned key such as:
-
-```text
-theme
-language
-api
-notifications
-```
-
-If an application reducer conflicts with a Base Template reducer key,
-store creation fails with an explicit error.
+The store integration must preserve reducer ownership.
 
 Conceptually:
 
 ```text
-templateReducers
-      +
-applicationReducers
-      |
-      v
-check duplicate keys
-      |
-      +-- conflict --> error
-      |
-      +-- valid ----> configureStore
+Template reducer keys
+        +
+Application reducer keys
+        |
+        v
+collision validation
+        |
+        +-- duplicate -> error
+        |
+        +-- unique ----> compose
 ```
 
-This protects the public Template state contract from accidental
-application overrides.
+A concrete Application must not override Base Template state such as:
+
+```text
+theme
+language
+notifications
+navigation
+```
+
+or any other key already owned by Template.
+
+This protects the Template/Application contract.
 
 ---
 
-## 9. Store Factory Tests
+# 14. Typed Redux Hooks
 
-The extensible store factory has dedicated Jest coverage.
+Typed Redux hooks belong to the Template store infrastructure.
 
-The tests validate at least:
-
-- Template reducers are available.
-- Application reducers can be added.
-- Application reducers can update their own state.
-- Application reducers cannot override Template reducer keys.
-
-The store factory tests isolate the factory from real Template reducer
-dependencies where necessary.
-
-This prevents unrelated React Native or runtime dependencies from
-affecting the store factory unit tests.
-
----
-
-## 10. Typed Redux Hooks
-
-Typed Redux hooks now belong to the Template store infrastructure.
-
-Current files:
+Known files include:
 
 ```text
 src/template/state/store/useAppDispatch.ts
 src/template/state/store/useAppSelector.ts
 ```
 
-These hooks are tied to the current Redux store types.
+These hooks provide reusable typed access to the Redux store.
 
-Their typing may need further refinement when the extensible application
-store becomes the active runtime store.
+Their implementation must remain compatible with the Template/Application extension model.
 
-The long-term type model must support both:
-
-```text
-Template state
-+
-Application-specific state
-```
-
-without forcing the Base Template to know concrete application reducers.
+Template typing must not require imports from a concrete Application.
 
 ---
 
-## 11. RootState Imports
+# 15. RootState Imports
 
-Redux state types should be imported as type-only dependencies whenever
-they are used only for TypeScript typing.
+When Redux state types are used only for TypeScript typing, type-only imports should be preferred.
 
-Preferred form:
+Example:
 
 ```ts
 import type {
@@ -395,17 +442,15 @@ import type {
 } from "@/template/state/store/store";
 ```
 
-Using type-only imports reduces unnecessary runtime dependency edges and
-helps avoid import cycles.
+Type-only imports reduce unnecessary runtime dependency edges.
 
-A type dependency does not automatically determine architectural
-ownership.
+A type import does not determine architectural ownership.
 
-The underlying responsibility of the module remains the deciding factor.
+Responsibility remains the deciding factor.
 
 ---
 
-## 12. Template State by Responsibility
+# 16. Template State Organization
 
 Reusable state is grouped by responsibility under:
 
@@ -413,9 +458,10 @@ Reusable state is grouped by responsibility under:
 src/template/state/
 ```
 
-Important areas include:
+Known responsibility areas include:
 
 ```text
+agent-workbench/
 api/
 authentication/
 bootstrap/
@@ -435,192 +481,186 @@ theme/
 update/
 ```
 
-The exact folder names may evolve as responsibilities are refined.
+Folder names may evolve as implementation changes.
 
-The architecture must not return to one large generic `redux/slices`
-folder.
+The repository should not return to one large generic `redux/slices` directory.
 
 ---
 
-## 13. API State
+# 17. API State
 
-The API state currently lives under:
+Reusable API-related application state belongs to Template when it supports Base Template behavior.
+
+A known area is:
 
 ```text
-src/template/state/api/apiSlice.tsx
+src/template/state/api/
 ```
 
-It is still a complex module.
+API state may coordinate responsibilities such as:
 
-Its responsibilities include areas such as:
+```text
+API client handling
+authentication-related state
+active server handling
+persistence
+server switching
+```
 
-- API client handling
-- Authentication-related state
-- Active server handling
-- Persistence
-- Server switching
+Technical logic that becomes independent from Template orchestration may belong to Core.
 
-Some of these responsibilities may eventually be separated further.
-
-The important current rule is that the module already belongs to the
-Template state structure rather than a legacy root Redux folder.
-
-Any future move toward Core must first remove dependencies on
-Template-specific behavior.
-
-Core must never depend upward on Template code.
+Core must not depend upward on Template state.
 
 ---
 
-## 14. Session State
+# 18. Session State
 
-Session-related Redux state has also been moved into the Template state
-structure.
+Reusable session-related state belongs to Template when it supports application-shell behavior.
 
-It participates in the current Template reducer composition.
-
-Session handling should be separated according to responsibility:
+The responsibility split is:
 
 ```text
 Core
-+-- technical session mechanisms
++-- technical session capabilities
 +-- reusable transport logic
 
 Template
 +-- session state
 +-- session UI integration
-+-- application shell behavior
++-- application-shell behavior
+
+Application
++-- product-specific behavior only when required
 ```
 
-Technical logic may move to Core when it has no Template dependencies.
-
-Redux state that supports reusable application-shell behavior remains
-Template-owned.
+Redux session state that supports the reusable platform remains Template-owned.
 
 ---
 
-## 15. Menu State
+# 19. Navigation State
 
-Menu state belongs to the reusable Template navigation mechanism.
+Navigation state belongs to Template because navigation infrastructure belongs to Template.
 
-The menu slice is located under the Template state structure.
-
-Its responsibilities include state such as:
-
-- Current menu tree
-- Active menu
-- Dynamic navigation state
-
-Navigation configuration itself is not Redux state.
-
-Configuration and state must remain separate.
-
-Conceptually:
+Navigation state may include concepts such as:
 
 ```text
-Application navigation definition
+current menu tree
+active menu
+dynamic navigation state
+```
+
+Configuration and runtime state are separate concepts.
+
+The composition is:
+
+```text
+Template navigation definitions
+        +
+Application navigation extensions
         |
         v
 Template navigation mechanism
         |
         v
-Template menu state
+Template navigation state
 ```
 
 ---
 
-## 16. Navigation Configuration
+# 20. Navigation Configuration Is Not Redux State
 
-Static menu and tab definitions are configuration rather than reducers.
+Static feature and navigation configuration is not Redux state.
 
-The Template owns the navigation mechanism.
+Developer-facing Application configuration uses:
 
-The concrete Application should eventually own product-specific
-navigation configuration.
+```text
+src/application/config/application.properties
+src/application/config/features.properties
+src/application/config/navigation.properties
+```
 
-The planned developer-facing application configuration includes:
+The old planned configuration names:
 
 ```text
 menu.properties
-menuFeatureFlags.properties
 tabs.properties
+featureFlags.properties
+menuFeatureFlags.properties
 tabFeatureFlags.properties
 ```
 
-These property formats are planned and have not yet replaced the current
-navigation configuration.
+are not part of the current architecture.
 
-The Redux migration must not be confused with the navigation
-configuration migration.
-
-They are related but separate architecture concerns.
+Redux architecture and configuration architecture are related but separate concerns.
 
 ---
 
-## 17. Notifications
+# 21. Notifications
 
 Notification state belongs to the reusable Base Template.
 
-Notification state is located under:
+A known state area is:
 
 ```text
 src/template/state/notifications/
 ```
 
-Its responsibilities include:
+Reusable notification responsibilities may include:
 
-- Local notifications
-- Read and unread state
-- Notification severity
-- Server-related notification grouping
-- Notification actions
+```text
+local notifications
+read/unread state
+severity
+server-related grouping
+notification actions
+```
 
-Notification logic should remain reusable and must not depend on a
-specific product application unless an explicit extension mechanism is
-introduced.
+Notification functionality remains Template-owned unless a specific product extension is explicitly required.
 
 ---
 
-## 18. Server and Connectivity State
+# 22. Server and Connectivity State
 
-Reusable server and connectivity state belongs to the Base Template.
+Reusable server and connectivity state belongs to Template.
 
-Important areas include:
+Known areas include:
 
 ```text
 src/template/state/server/
 src/template/state/connectivity/
 ```
 
-Responsibilities include:
-
-- Saved server environments
-- Active server selection
-- Server status
-- Connectivity state
-
-Reusable technical server types and validation logic may belong to:
+Responsibilities may include:
 
 ```text
-src/core/
+saved server environments
+active server selection
+server status
+connectivity state
 ```
 
-The responsibility boundary is:
+Technical server capabilities belong to Core where appropriate.
+
+The responsibility split is:
 
 ```text
-Technical server capability --> Core
-Reusable server UI/state    --> Template
-Product server definition   --> Application
+Technical server capability
+    -> Core
+
+Reusable server state and UI
+    -> Template
+
+Concrete product-specific server configuration
+    -> Application
 ```
 
 ---
 
-## 19. Authentication State
+# 23. Authentication State
 
-Reusable authentication-related Redux state belongs to the Template
-when it supports reusable application-shell behavior.
+Reusable authentication-related Redux state belongs to Template when it supports the reusable application platform.
 
-Examples include:
+Examples may include:
 
 ```text
 password-change prompt state
@@ -628,15 +668,12 @@ user profile state
 session-related state
 ```
 
-Authentication must be separated according to responsibility rather
-than moved as one large feature.
-
-Conceptually:
+Authentication ownership is split by responsibility:
 
 ```text
 Core
-+-- technical authentication capability
-+-- reusable authentication types
++-- technical authentication capabilities
++-- reusable technical types
 
 Template
 +-- authentication UI
@@ -644,76 +681,63 @@ Template
 +-- session integration
 
 Application
-+-- product-specific authentication configuration
++-- concrete product-specific behavior where required
 ```
 
 ---
 
-## 20. Settings State
+# 24. Settings State
 
-Reusable settings state belongs to the Template when it represents
-functionality offered by the Base Template.
+Settings state belongs to Template when it represents reusable functionality offered by the Base Template.
 
-Current examples include settings for areas such as:
+Examples may include:
 
 ```text
 database configuration
 application settings file upload
+general reusable settings
 ```
 
-Some settings may later prove to be product-specific.
+Standard Agent.Workbench settings that are part of the Base Template remain Template-owned.
 
-Their final ownership must be reviewed before physical repository
-extraction.
-
-Current physical location alone must not be used as proof of final
-architectural ownership.
+A setting should only move into Application when it is genuinely specific to that concrete product.
 
 ---
 
-## 21. Developer Tool State
+# 25. Developer Tool State
 
-Reusable developer tooling currently has Template-owned Redux state.
+Reusable developer tooling belongs to Template.
 
-Examples include:
+Known state includes functionality such as:
 
 ```text
 developerConsole
 liveConsole
 ```
 
-Their current location is under:
+Known areas exist under:
 
 ```text
 src/template/state/developer-tools/
 ```
 
-The final ownership of some developer tools is still under review.
+These tools are part of the reusable Base Template under the current architecture.
 
-Possible ownership includes:
-
-```text
-Base Template
-or
-Agent.Workbench Application
-```
-
-Until that decision is made, the state remains in the current Template
-structure.
+They must not be documented as waiting for extraction into a separate Agent.Workbench Application.
 
 ---
 
-## 22. Update State and Watchers
+# 26. Update State and Watchers
 
-Reusable update state belongs to the Template.
+Reusable update state belongs to Template.
 
-Update-related state is located under:
+Known state is located under:
 
 ```text
 src/template/state/update/
 ```
 
-Runtime update watchers are located under:
+Reusable update watchers exist under:
 
 ```text
 src/template/update/watchers/
@@ -726,370 +750,433 @@ PostLoginUpdateWatcher.tsx
 UpdateNotificationWatcher.tsx
 ```
 
-The watchers are application-shell infrastructure rather than Redux
-reducers.
+Watchers may dispatch Redux actions, but they are application-shell orchestration rather than Redux reducers themselves.
 
-They may dispatch Redux actions, but that does not make them part of the
-Redux state layer.
+Technical update capabilities may exist in Core.
 
 ---
 
-## 23. Redux Initialization
+# 27. Redux Initialization
 
-The application initializes reusable state in an ordered startup flow.
+Reusable state initialization belongs to the Template application shell.
 
-Important initialization areas include:
+Initialization may include areas such as:
 
 ```text
 servers
 language
 theme
-api
+API
 data permissions
 organizations
-menu
+navigation
 ```
 
-Server and API initialization must happen early enough for features that
-depend on active-server information.
+Initialization order must preserve runtime dependencies.
 
-The exact startup orchestration belongs to the reusable Template
-application shell.
+For example, features that depend on active-server information must not run before the required server state is available.
 
-Initialization order should not be changed casually because later
-initializers may depend on earlier state.
+Initialization should not be reordered casually.
 
 ---
 
-## 24. API Client Configuration
+# 28. API Client Configuration
 
-The API state builds generated API clients according to the active
-server and authentication state.
+Generated API clients are not Redux code.
 
-JWT-based communication uses an authorization header conceptually like:
+Redux may hold state and orchestration required to configure generated clients according to runtime context.
 
-```text
-Authorization: Bearer <jwt>
-```
+Generated client implementation remains in the API implementation area.
 
-OIDC browser sessions use credentials and cookies rather than requiring
-the frontend to manage the same bearer-token flow.
+Authentication behavior may include different transport mechanisms depending on the authentication method.
 
-Generated API clients remain under the API implementation area.
-
-Redux should hold only state and orchestration that belong to the
-corresponding responsibility.
-
-Generated client source code must not be treated as Redux code.
+Redux ownership should follow the state responsibility rather than the location of generated clients.
 
 ---
 
-## 25. ApplicationConfig and Redux
+# 29. Application Configuration and Redux
 
 Application configuration and Redux are separate extension mechanisms.
 
-`ApplicationConfig` provides configuration such as:
+Application configuration is provided through:
 
 ```text
-application identity
-navigation definitions
-feature rules
+application.properties
+features.properties
+navigation.properties
 ```
 
-`ApplicationReducers` provides application-specific Redux state.
+Redux extension is provided through optional Application reducers.
 
 Conceptually:
 
 ```text
 Application
-    |
-    +-- ApplicationConfig
-    |
-    +-- ApplicationReducers
-    |
-    v
+|
++-- metadata/configuration
+|
++-- feature selection
+|
++-- navigation extensions
+|
++-- optional Application reducers
+|
+v
 Base Template
 ```
 
-The Base Template should accept both through supported public contracts.
-
-The Template must not import a concrete application to obtain either
-configuration or reducers.
+Template must not import a concrete Application to obtain either configuration or reducers.
 
 ---
 
-## 26. Current Integration Gap
+# 30. Agent.Workbench and ApplicationReducers
 
-The Redux extension infrastructure exists, but the runtime integration
-is not yet complete.
+Agent.Workbench standard reducers must not be registered as if they were concrete Application reducers.
 
-Current state:
+Incorrect model:
 
 ```text
-ApplicationReducers       implemented
-templateReducers          implemented
-createTemplateStore       implemented
-collision protection      implemented
-factory tests             implemented
-
-TemplateApp integration   pending
-createTemplateApp wiring  pending
-final combined typing     pending
+applicationReducers
+|
++-- execSettings
++-- dataAnalysis
 ```
 
-The new store factory must not replace the active store until the
-remaining type and dependency issues are resolved.
+when those reducers represent standard Agent.Workbench Base Template functionality.
 
-This migration should continue in a controlled batch rather than through
-a large store rewrite.
-
----
-
-## 27. Target Runtime Composition
-
-The intended future runtime composition is approximately:
+Correct model:
 
 ```text
-Application Repository
-        |
-        +-- applicationConfig
-        |
-        +-- applicationReducers
-        |
-        v
-createTemplateApp(...)
-        |
-        v
-createTemplateStore(...)
-        |
-        +-- templateReducers
-        +-- applicationReducers
-        |
-        v
-Redux Provider
-        |
-        v
-TemplateApp
+Template state
+|
++-- Agent.Workbench state
+
+Application reducers
+|
++-- only concrete product-specific state
 ```
 
-The final public API may differ slightly as implementation details are
-refined.
-
-The architectural rule remains stable:
-
-> The Base Template provides the extension mechanism, while the
-> application provides concrete product state.
+The current Agent.Workbench Application composition therefore does not need Agent.Workbench reducers in `applicationReducers.ts`.
 
 ---
 
-## 28. Target State Typing
+# 31. Application State Typing
 
-The final Redux typing must support both Base Template state and
-application-specific state.
+The Redux model must support optional Application-specific state without making Template depend on a concrete Application.
 
 Conceptually:
 
 ```text
-TemplateStoreState
+Template state
         +
-ApplicationReducers
+optional Application state
         |
         v
-Application RootState
+runtime store state
 ```
 
-The Template should be able to type its own reducers without importing
-concrete Agent.Workbench state.
+Template code must be able to type its own state independently.
 
-Application code should be able to access both:
-
-- Template state
-- Application-specific state
-
-This type design must be completed before the extensible store becomes
-the active store.
+Concrete Application code may consume supported Template state and its own product-specific state through the established store interfaces.
 
 ---
 
-## 29. Import Policy
+# 32. Import Policy
 
 Prefer stable aliases for cross-area imports.
 
-Examples:
+Example:
 
 ```ts
 import type {
   RootState,
 } from "@/template/state/store/store";
-
-import {
-  selectTheme,
-} from "@/template/state/theme/themeSlice";
 ```
 
-Type-only imports should use:
+Before changing Redux imports:
 
-```ts
-import type {
-  SomeType,
-} from "...";
-```
-
-Do not perform broad automated path replacement across the entire
-repository.
-
-Before changing an import path:
-
-1. Search the exact old path.
+1. Search the current usage.
 2. Verify architectural ownership.
-3. Update only the affected files.
+3. Update only the required files.
 4. Search again for stale imports.
 5. Run TypeScript validation.
 
-Generated API files should not be modified as a side effect of Redux
-refactoring.
+Broad automated import rewrites should be avoided.
+
+Generated API files should not be modified as a side effect of Redux refactoring.
 
 ---
 
-## 30. Validation Workflow
+# 33. Architecture Dependency Rules
 
-After Redux architecture changes, run targeted validation.
+Redux code must preserve:
 
-TypeScript:
+```text
+Application --> Template --> Core
+```
+
+The following dependencies are invalid:
+
+```text
+Core --> Template
+Core --> Application
+Template --> concrete Application
+```
+
+A useful dependency check is:
 
 ```bash
+git grep -n "@/application/" -- src/template
+```
+
+Template should not import concrete Application implementation.
+
+Application-side imports can be reviewed with:
+
+```bash
+git grep -n "@/template/" -- src/application
+```
+
+Unexpected direct Template-internal imports should be reviewed against the intended public APIs.
+
+---
+
+# 34. Validation Workflow
+
+After Redux-related architecture changes, run:
+
+```bash
+npm run config:generate
 npx tsc --noEmit
-```
-
-Whitespace and patch validation:
-
-```bash
+npm test -- --runInBand
 git diff --check
+git status --short
 ```
 
-Search for stale paths:
+For targeted store changes, affected tests can also be run directly.
 
-```bash
-git grep -n "<old-path>" -- src test
-```
-
-Run the tests affected by the change.
-
-For example:
+Example:
 
 ```bash
 npx jest --runTestsByPath test/createTemplateStore.test.ts
 ```
 
-When runtime store composition changes, start the application through
-the normal npm entry point:
-
-```bash
-npm start
-```
-
-Using the npm entry point also ensures that application configuration is
-generated before Expo starts.
+When runtime store behavior changes, the application should also be started through the normal npm entry point.
 
 ---
 
-## 31. Migration Safety
+# 35. Refactoring Safety
 
-Redux refactoring must be performed in small batches.
+Redux changes should be performed in small, controlled batches.
 
 Do not:
 
-- Replace the active store before the parallel factory is proven.
-- Move all reducers at once.
-- Run broad scripts that rewrite unrelated files.
-- Mix generated API cleanup with Redux architecture work.
-- Change reducer keys without checking all selectors and consumers.
-- Move product-specific reducers individually without checking their
-  related screens and navigation.
+```text
+move many reducers without verifying ownership
+rewrite unrelated imports automatically
+change reducer keys without checking selectors and consumers
+mix generated API cleanup with Redux architecture work
+treat Agent.Workbench state as Application state
+move code only to make directories appear more separated
+```
 
-Preferred sequence:
+Preferred workflow:
 
 ```text
-Define contract
+verify ownership
     |
     v
-Build parallel infrastructure
+verify dependencies
     |
     v
-Add tests
+make smallest coherent change
     |
     v
-Register application reducers
+run TypeScript
     |
     v
-Resolve typing
+run tests
     |
     v
-Connect runtime store
+run dependency checks
     |
     v
-Remove transitional composition
+review diff
 ```
 
 ---
 
-## 32. Current Status
+# 36. Current Architecture Status
 
-### Implemented
+## Established
 
-- Redux Toolkit
-- State organization by architectural responsibility
-- Template-owned state under `src/template/state`
-- Template store infrastructure under `src/template/state/store`
-- Typed Template Redux hooks
-- Type-only `RootState` imports where applicable
-- `ApplicationReducers` extension contract
-- `templateReducers`
-- `createTemplateStore`
-- Reducer key collision protection
-- Store factory tests
-- Application reducer registry
-- Identification of Agent.Workbench-specific state
+The Redux architecture currently follows these established rules:
 
-### Transitional
+```text
+Redux state is organized by responsibility
 
-- `TemplateApp` still uses the existing store.
-- `rootReducer.ts` still represents the active application composition.
-- Agent.Workbench reducers are still physically located in the current
-  repository.
-- Application reducers are not yet connected through
-  `createTemplateApp`.
-- Combined Template/Application state typing is not finalized.
-- Some Template feature ownership decisions remain open.
+Template owns reusable Redux infrastructure
 
-### Planned
+Template owns standard Agent.Workbench state
 
-- Connect `applicationReducers` to application creation.
-- Make `createTemplateStore` the active runtime store factory.
-- Finalize Template and Application state typing.
-- Move Agent.Workbench reducers into the separate Agent.Workbench
-  repository.
-- Remove remaining concrete application state from the Base Template.
-- Finalize the public Redux extension API.
-- Maintain automated architecture boundary validation.
+Application-specific Redux state is optional
+
+applicationReducers.ts is the Application extension point
+
+Template must not import concrete Application reducers
+
+Application reducers must not override Template-owned reducer keys
+
+Core remains independent from Template/Application state
+```
+
+Known reusable store infrastructure includes:
+
+```text
+createTemplateStore
+rootReducer
+store
+templateReducers
+ApplicationReducers
+typed Redux hooks
+```
+
+The current Agent.Workbench Application composition does not require meaningful product-specific reducers.
 
 ---
 
-## 33. Success Criteria
+# 37. Future Consumer State
 
-The Redux migration is complete when:
+A future HEMS Application may provide its own state when necessary.
 
-1. The Base Template store is created through a reusable store factory.
-2. Template reducers are owned and registered by the Base Template.
-3. Application reducers are provided by the concrete application.
-4. Application reducers cannot override Template reducer keys.
-5. The Base Template does not import Agent.Workbench or HEMS reducers.
-6. Template state typing does not depend on concrete application state.
-7. Application code can access both Template and application-specific
-   state safely.
-8. Agent.Workbench-specific reducers live in the Agent.Workbench
-   repository.
-9. Redux state is organized by responsibility rather than by one generic
-   Redux folder.
-10. Store composition is covered by targeted automated tests.
-11. Runtime behavior remains unchanged during the migration.
+Example conceptual structure:
+
+```text
+HEMS Application
+|
++-- state/
+|   +-- HEMS-specific reducer A
+|   +-- HEMS-specific reducer B
+|
++-- applicationReducers
+        |
+        v
+Base Template Redux integration
+```
+
+The Base Template must not need to import those HEMS reducer implementations.
+
+HEMS state remains HEMS-owned.
+
+Standard Agent.Workbench state remains Template-owned.
+
+---
+
+# 38. Incorrect Legacy Statements
+
+The following statements are no longer correct:
+
+```text
+"Agent.Workbench reducers are Application reducers."
+
+"Agent.Workbench state inside Template is transitional."
+
+"execSettings must move into a separate Agent.Workbench repository."
+
+"dataAnalysis must move into a separate Agent.Workbench repository."
+
+"The Base Template must not contain Agent.Workbench state."
+
+"applicationReducers should register Agent.Workbench reducers."
+
+"Agent.Workbench reducers must eventually be removed from Template."
+
+"menu.properties is the future navigation configuration."
+
+"tabs.properties is the future tab configuration."
+
+"featureFlags.properties is the future feature configuration."
+
+"menuFeatureFlags.properties and tabFeatureFlags.properties are planned."
+
+"Redux separation is incomplete because Agent.Workbench state still exists in Template."
+```
+
+The correct ownership is:
+
+```text
+Agent.Workbench standard state
+    -> Template
+
+Concrete HEMS/product state
+    -> Application
+```
+
+---
+
+# 39. Success Criteria
+
+The Redux architecture is correct when:
+
+1. Redux state is organized by architectural responsibility.
+2. Template owns reusable Redux infrastructure.
+3. Template owns standard Agent.Workbench state.
+4. Core does not depend on Template or Application Redux state.
+5. Concrete Application reducers remain optional.
+6. The current Agent.Workbench Application composition can operate without meaningful Application-specific Redux state.
+7. Template does not import concrete Application reducers.
+8. Application reducers cannot silently override Template reducer keys.
+9. Template state typing does not require a concrete consumer Application.
+10. Concrete Applications can add product-specific state through the supported extension mechanism.
+11. Agent.Workbench reducers remain inside Template when they support standard Base Template functionality.
+12. HEMS-specific state remains HEMS-owned.
+13. Navigation configuration remains separate from Redux state.
+14. Developer-facing configuration continues to use `application.properties`, `features.properties` and `navigation.properties`.
+15. Architecture dependency boundaries remain testable.
+
+---
+
+# 40. Current Redux Summary
+
+The Redux architecture follows:
+
+```text
+Application --> Template --> Core
+```
+
+Redux itself is not an architectural layer.
+
+Template owns:
+
+```text
+reusable Redux infrastructure
+reusable Base Template state
+standard Agent.Workbench state
+typed store integration
+```
+
+Application owns:
+
+```text
+optional concrete product-specific Redux state
+```
+
+Core owns:
+
+```text
+reusable technical capabilities
+```
+
+The current Agent.Workbench Application composition does not require meaningful Application-specific Redux state.
+
+Agent.Workbench state under:
+
+```text
+src/template/state/agent-workbench/
+```
+
+is intentionally Template-owned.
+
+It must not be described as transitional or as waiting for extraction into a separate Agent.Workbench repository.
+
+Future consumer Applications such as HEMS may extend the Redux store with their own product-specific state without reversing the dependency direction.

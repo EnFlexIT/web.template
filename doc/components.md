@@ -1,12 +1,20 @@
 # Components
 
-This document describes the reusable component architecture of
-`web.template`.
+## Purpose
 
-The component layer belongs primarily to the Base Template and provides shared
-UI building blocks, application layout, theme-aware components, dynamic
-content rendering, notifications, localization UI, developer tools, and rich
-text editing.
+This document describes the reusable component architecture of `web.template`.
+
+The component layer belongs primarily to Template and provides reusable:
+
+* UI building blocks
+* application layout
+* theme-aware components
+* notifications
+* localization UI
+* developer tools
+* dynamic-content rendering/editing
+* rich-text editing
+* reusable feature presentation
 
 The architecture follows:
 
@@ -14,36 +22,42 @@ The architecture follows:
 Application --> Template --> Core
 ```
 
-Reusable UI belongs to Template.
+Reusable React UI belongs to Template.
+
+Standard Agent.Workbench UI belongs to Template when it is part of the reusable Base Template platform.
+
+Concrete product-only UI belongs to Application.
 
 Core must not depend on React presentation components.
 
 ---
 
-## 1. Purpose
+# 1. Goals
 
-The component architecture has four main goals:
+The component architecture has these main goals:
 
-- Provide reusable UI instead of screen-specific duplicates.
-- Keep visual behavior consistent across applications.
-- Separate reusable Template UI from product-specific Application UI.
-- Provide a stable public design-system API for future application
-  repositories.
+* provide reusable UI instead of screen-specific duplicates
+* keep visual behavior consistent
+* separate Template UI from concrete product UI
+* provide stable design-system integration
+* keep business logic outside generic UI primitives
+* keep Core independent from presentation
+* allow future Applications such as HEMS to consume Template UI
+* keep standard Agent.Workbench presentation inside the Base Template
 
-Before creating a new UI component, existing Template and design-system
-components should always be reviewed first.
+Before creating a new component, existing Template and design-system components should be reviewed.
 
 ---
 
-## 2. Current Component Structure
+# 2. Current Component Structure
 
-Reusable Template components currently live under:
+Reusable Template components live under:
 
 ```text
 src/template/components/
 ```
 
-Current structure:
+Current high-level structure:
 
 ```text
 src/template/components/
@@ -75,21 +89,19 @@ src/template/components/
     +-- ui/
 ```
 
-Routing helpers are no longer part of the component directory.
-
-Reusable navigation infrastructure belongs under:
+Reusable routing infrastructure belongs under:
 
 ```text
 src/template/navigation/
 ```
 
+Routing is not part of the component directory.
+
 ---
 
-## 3. Component Ownership
+# 3. Component Ownership
 
 Component ownership follows architectural responsibility.
-
-Conceptually:
 
 ```text
 Core
@@ -103,46 +115,81 @@ Template
 +-- design system
 +-- reusable layout
 +-- reusable feature UI
++-- standard Agent.Workbench UI
 +-- localization UI
 +-- notifications
-+-- reusable developer tools
-+-- dynamic content infrastructure
-+-- rich text editor
++-- developer tools
++-- dynamic content
++-- rich-text editor
 
 Application
 |
-+-- product-specific UI
-+-- product-specific screens
-+-- product-specific branding
++-- concrete product-specific UI
++-- concrete product-specific screens
++-- product-specific branding extensions
 +-- product-specific component extensions
 ```
 
-A component should not be moved into Core simply because it is reusable.
+A component must not move into Core merely because it is reusable.
 
-React UI is generally Template-owned.
+React UI is generally Template-owned unless it represents concrete product-only behavior.
 
 ---
 
-## 4. Component Areas
+# 4. Agent.Workbench Component Ownership
 
-The current component areas are:
+Standard Agent.Workbench presentation is intentionally part of Template.
 
-| Area | Path | Purpose |
-| --- | --- | --- |
-| Design system | `src/template/components/design-system` | Reusable visual primitives, themed components, typography, icons and common UI elements. |
-| Layout | `src/template/components/layout` | Shared application shell such as header, footer, navigation and screen wrapper. |
-| Notifications | `src/template/components/notifications` | Reusable notification presentation. |
-| Localization | `src/template/components/localization` | Reusable language-selection UI. |
-| Developer tools | `src/template/components/developer-tools` | Reusable developer-facing Template tools. |
-| Dynamic content | `src/template/components/dynamic-content` | Backend-driven content rendering and editing. |
-| Rich text editor | `src/template/components/rich-text-editor` | Reusable rich-text editor controls and UI. |
-| Routing | `src/template/navigation/routing` | Reusable menu-based routing helpers. |
+Examples may include reusable UI for:
+
+```text
+Program Start
+Data Analyzing
+Database configuration
+Server configuration
+Live Console
+Settings
+```
+
+The presence of the term `Agent.Workbench` does not automatically make a component Application-owned.
+
+The architectural rule is:
+
+```text
+standard Agent.Workbench platform UI
+    -> Template
+
+HEMS-specific UI
+    -> HEMS Application
+
+future concrete product-only UI
+    -> respective Application
+```
+
+Agent.Workbench standard UI is not waiting for extraction into a separate Application repository.
+
+---
+
+# 5. Component Areas
+
+Current component areas include:
+
+| Area             | Path                                       | Purpose                                                                                 |
+| ---------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Design system    | `src/template/components/design-system`    | Reusable visual primitives, themed components, typography, icons and common UI elements |
+| Layout           | `src/template/components/layout`           | Shared application shell                                                                |
+| Notifications    | `src/template/components/notifications`    | Reusable notification presentation                                                      |
+| Localization     | `src/template/components/localization`     | Reusable language-selection UI                                                          |
+| Developer tools  | `src/template/components/developer-tools`  | Reusable developer-facing Template tools                                                |
+| Dynamic content  | `src/template/components/dynamic-content`  | Backend-driven content rendering and editing                                            |
+| Rich text editor | `src/template/components/rich-text-editor` | Reusable rich-text editor controls                                                      |
+| Routing          | `src/template/navigation/routing`          | Reusable menu-based routing helpers                                                     |
 
 ---
 
 # Design System
 
-## 5. Design System Overview
+## 6. Design System Overview
 
 The reusable design system lives under:
 
@@ -150,7 +197,7 @@ The reusable design system lives under:
 src/template/components/design-system/
 ```
 
-It contains:
+Current structure includes:
 
 ```text
 design-system/
@@ -161,20 +208,21 @@ design-system/
 +-- index.ts
 ```
 
-The design system should be the first place to check before creating a new
-reusable UI component.
+The design system should be checked before introducing a new reusable component.
 
 ---
 
-## 6. Public Design-System API
+## 7. Public Design-System API
 
-The design system provides a central barrel export through:
+The design system exposes a central barrel through:
 
 ```text
 src/template/components/design-system/index.ts
 ```
 
-The preferred architectural import is:
+Preferred imports use the existing design-system alias where available.
+
+Example:
 
 ```ts
 import {
@@ -185,17 +233,15 @@ import {
 } from "@design-system";
 ```
 
-This is preferable to importing deep internal files when the component is part
-of the supported public design-system API.
+Stable exports should be preferred over unnecessary deep imports.
 
-Deep imports may still be necessary for internal or not-yet-exported
-components, but public exports should be preferred.
+Deep imports may remain appropriate for internal or not-yet-exported implementation details.
 
 ---
 
-## 7. UI Elements
+## 8. UI Elements
 
-Reusable UI primitives live under:
+Reusable UI elements live under:
 
 ```text
 src/template/components/design-system/ui-elements/
@@ -237,32 +283,28 @@ ui-elements/Icon/
 
 ---
 
-## 8. ActionButton
+# 9. ActionButton
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/ActionButton.tsx
 ```
 
-### Purpose
+`ActionButton` is a reusable component for user actions.
 
-`ActionButton` is the central reusable component for user actions.
+Typical uses include:
 
-Typical use cases include:
-
-- Save
-- Cancel
-- Confirm
-- Upload
-- Download
-- Edit
-- Delete
-- Close
-- Retry
-- Navigation actions
-
-The component represents an action rather than a concrete business operation.
+* Save
+* Cancel
+* Confirm
+* Upload
+* Download
+* Edit
+* Delete
+* Close
+* Retry
+* Navigation actions
 
 Example:
 
@@ -273,7 +315,7 @@ Example:
 />
 ```
 
-With an icon:
+With icon:
 
 ```tsx
 <ActionButton
@@ -283,10 +325,7 @@ With an icon:
 />
 ```
 
-### Guideline
-
-Prefer configuring `ActionButton` instead of creating specialized button
-components such as:
+Prefer configuration of `ActionButton` over creating trivial specialized wrappers such as:
 
 ```text
 SaveButton
@@ -295,207 +334,183 @@ DownloadButton
 EditButton
 ```
 
-A specialized button component should only exist when it provides genuinely
-reusable behavior beyond a different label or icon.
+A specialized component is justified only when it adds meaningful reusable behavior.
 
 ---
 
-## 9. Card
+# 10. Card
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/Card.tsx
 ```
 
-### Purpose
+`Card` is a reusable visual container.
 
-`Card` is the reusable visual container for grouped content.
+Typical uses include:
 
-Typical use cases include:
+* settings sections
+* dashboard widgets
+* profile sections
+* server information
+* update information
+* form groups
 
-- Settings sections
-- Dashboard widgets
-- Profile sections
-- Server information
-- Update information
-- Form groups
-
-Example:
-
-```tsx
-<Card>
-  <ThemedText>Content</ThemedText>
-</Card>
-```
-
-Screens should not recreate the standard card appearance independently.
+Screens should not independently recreate the standard card presentation.
 
 ---
 
-## 10. Infobox
+# 11. Infobox
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/Infobox.tsx
 ```
 
-### Purpose
+`Infobox` provides reusable informational/status presentation.
 
-`Infobox` presents reusable informational or status-oriented content.
+Typical uses include:
 
-Typical examples include:
+* guidance
+* warnings
+* server information
+* update information
+* configuration explanations
+* empty-state descriptions
 
-- User guidance
-- Warnings
-- Server information
-- Update information
-- Configuration explanations
-- Empty-state descriptions
-
-Use translation resources for user-facing text.
+User-facing text should use localization infrastructure.
 
 ---
 
-## 11. Confirmation Components
+# 12. Confirmation Components
 
-Current confirmation components are:
+Reusable confirmation components include:
 
 ```text
 src/template/components/design-system/ui-elements/ConfirmDialog.tsx
 src/template/components/design-system/ui-elements/ConfirmModal.tsx
 ```
 
-Use confirmation UI when an action has a significant consequence.
+Use confirmation UI when an action has significant consequences.
 
-Typical examples:
+Examples:
 
-- Delete
-- Reset
-- Configuration replacement
-- Update installation
-- Logout
-- Important settings changes
+* Delete
+* Reset
+* Configuration replacement
+* Update installation
+* Logout
+* Important settings changes
 
-Confirmation UI should present consequences.
-
-Business logic should remain outside the reusable dialog component.
+Business logic must remain outside the generic confirmation component.
 
 ---
 
-## 12. BaseModal
+# 13. BaseModal
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/BaseModal.tsx
 ```
 
-`BaseModal` provides reusable modal infrastructure for other Template
-components.
+`BaseModal` provides reusable modal infrastructure.
 
-Feature-specific dialogs should reuse the shared modal behavior instead of
-implementing independent modal foundations.
+Feature dialogs should reuse the shared modal foundation where appropriate.
 
 ---
 
-## 13. Dropdown
+# 14. Dropdown
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/Dropdown.tsx
 ```
 
-Typical use cases include:
+Typical uses include:
 
-- Language selection
-- Server selection
-- Settings choices
-- Mode selection
-- Configuration options
+* language selection
+* server selection
+* settings choices
+* mode selection
+* configuration options
 
-The dropdown is responsible for reusable selection presentation.
+The component owns reusable selection presentation.
 
-Feature or business behavior should remain outside the component.
+Feature/business behavior belongs to the consuming feature.
 
 ---
 
-## 14. Text Inputs
+# 15. Text Inputs
 
-Current input components include:
+Current reusable input components include:
 
 ```text
 src/template/components/design-system/ui-elements/TextInput.tsx
 src/template/components/design-system/ui-elements/WebPasswordInput.tsx
 ```
 
-Use shared inputs for:
+Typical use cases:
 
-- Login forms
-- Settings forms
-- Password fields
-- Configuration values
-- Search/filter controls
+* login forms
+* settings forms
+* password fields
+* configuration values
+* search/filter controls
 
-Avoid reproducing text-input styling and password visibility behavior inside
-individual screens.
+Avoid duplicating shared input presentation and password-visibility behavior.
 
 ---
 
-## 15. Tabs
+# 16. Tabs
 
-Reusable tab components are:
+Reusable tab presentation components include:
 
 ```text
 src/template/components/design-system/ui-elements/Tab.tsx
 src/template/components/design-system/ui-elements/TabsBar.tsx
 ```
 
-These components provide tab presentation.
+These components own presentation only.
 
-Navigation configuration and tab feature rules belong to the navigation
-architecture rather than the UI components themselves.
+They do not define the architectural navigation model.
 
-Conceptually:
+Reusable Template tabs remain Template-owned.
 
-```text
-Application tab configuration
-        |
-        v
-Template tab navigation
-        |
-        v
-Tab / TabsBar presentation
-```
+Concrete Application navigation extensions use the supported navigation architecture.
+
+A separate Application-owned `tabs.properties` model is not part of the current architecture.
 
 ---
 
-## 16. SettingsNavCard
+# 17. SettingsNavCard
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/SettingsNavCard.tsx
 ```
 
-`SettingsNavCard` is a reusable settings-navigation element.
+`SettingsNavCard` is reusable settings-navigation presentation.
 
-It can be used for settings areas such as:
+It may be used for areas such as:
 
-- Server settings
-- Update settings
-- Security settings
-- File configuration
-- Profile settings
+* server settings
+* update settings
+* security settings
+* file configuration
+* profile settings
 
-Product-specific destination definitions should remain outside the reusable
-card component.
+The component does not own navigation definitions.
+
+Navigation ownership remains in the navigation architecture.
 
 ---
 
-## 17. Table Components
+# 18. Table Components
 
 Reusable table-related components include:
 
@@ -506,63 +521,63 @@ src/template/components/design-system/ui-elements/TableSwitchCell.tsx
 
 `Table` provides reusable structured-data presentation.
 
-`TableSwitchCell` provides reusable boolean interaction inside suitable table
-or settings contexts.
+`TableSwitchCell` provides reusable boolean interaction where appropriate.
 
-Business-specific table behavior should remain in the consuming feature.
+Business-specific behavior remains in the consuming feature.
 
 ---
 
-## 18. DataPermissionsDialog
+# 19. DataPermissionsDialog
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/DataPermissionsDialog.tsx
 ```
 
-The data-permission dialog is part of the reusable design-system UI.
+The dialog is reusable Template UI.
 
-State associated with reusable data-permission behavior belongs to its owning
-Template state infrastructure.
+State associated with reusable data-permission behavior belongs to its owning Template state infrastructure.
 
 The component should remain focused on presentation and interaction.
 
 ---
 
-## 19. UpdateProgressDialog
+# 20. UpdateProgressDialog
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/UpdateProgressDialog.tsx
 ```
 
-This dialog provides reusable progress presentation for update-like workflows.
+This component provides reusable progress presentation.
 
-It may be reused where the same progress-dialog behavior is appropriate.
+It may be consumed by workflows such as:
 
-The dialog itself must not own backend-update or configuration-upload business
-logic.
+* update flows
+* configuration uploads
+* other long-running operations where the same UI is appropriate
+
+The dialog itself must not own backend-update or upload business logic.
 
 ---
 
-## 20. ThemeModeSwitchRow
+# 21. ThemeModeSwitchRow
 
-### Location
+Location:
 
 ```text
 src/template/components/design-system/ui-elements/ThemeModeSwitchRow.tsx
 ```
 
-This component provides reusable theme-mode selection presentation.
+The component provides reusable theme-mode selection presentation.
 
-The active theme state remains managed by the appropriate Template state and
-theme infrastructure.
+Global theme state belongs to the appropriate Template state/theme infrastructure.
 
 ---
 
-## 21. Dashboard Components
+# 22. Dashboard Components
 
 Current reusable dashboard/statistic components include:
 
@@ -572,22 +587,22 @@ MetricCard.tsx
 SmallStat.tsx
 ```
 
-Typical use cases include:
+Typical uses include:
 
-- Dashboard summaries
-- Important metrics
-- Compact status values
-- Highlighted information
+* dashboard summaries
+* important metrics
+* compact status values
+* highlighted information
 
-These components should remain generic.
+The components should remain generic.
 
-Product-specific metrics belong to the consuming Application or feature.
+Concrete product metrics belong to their owning feature/Application.
 
 ---
 
 # Charts
 
-## 22. Chart Components
+## 23. Chart Components
 
 Reusable chart components live under:
 
@@ -606,8 +621,7 @@ index.ts
 
 The chart components provide reusable visualization infrastructure.
 
-Feature-specific data transformation should generally remain outside the
-generic chart components.
+Feature-specific data transformation should remain outside generic chart components.
 
 Conceptually:
 
@@ -625,7 +639,7 @@ Reusable chart component
 
 # Icons
 
-## 23. Icon Infrastructure
+## 24. Icon Infrastructure
 
 Reusable icons live under:
 
@@ -633,26 +647,25 @@ Reusable icons live under:
 src/template/components/design-system/icons/
 ```
 
-The design system provides:
+The design system exposes:
 
 ```text
 icons/index.ts
 ```
 
-A general icon component also exists at:
+A general icon component exists at:
 
 ```text
 src/template/components/design-system/ui-elements/Icon/Icon.tsx
 ```
 
-Before adding a duplicate icon implementation, check the existing icon
-infrastructure.
+Check existing icon infrastructure before introducing duplicate icons.
 
 ---
 
-## 24. Rich-Text Icons
+# 25. Rich-Text Icons
 
-Rich-text-specific icons currently live under:
+Rich-text-specific icons live under:
 
 ```text
 src/template/components/design-system/icons/rich-text/
@@ -675,13 +688,13 @@ StrikeIcon.tsx
 index.ts
 ```
 
-These icons are shared by the reusable rich-text editing infrastructure.
+These icons support reusable rich-text editing infrastructure.
 
 ---
 
 # Themed Components
 
-## 25. Themed Components
+## 26. Themed Components
 
 Theme-aware components live under:
 
@@ -700,29 +713,17 @@ ThemedView.tsx
 index.ts
 ```
 
-These components integrate reusable UI with the active Unistyles theme.
+These components integrate reusable UI with the active theme.
 
-### Guideline
-
-Prefer theme values and theme-aware components over hardcoded colors.
-
-Avoid:
-
-```tsx
-<View style={{ backgroundColor: "#ffffff" }} />
-```
-
-when the color is part of the application's theme.
-
-Theme changes should be centralized in the design/theme infrastructure.
+Prefer theme values over hard-coded colors where those values are part of the application theme.
 
 ---
 
 # Stylistic Components
 
-## 26. Stylistic Components
+## 27. Stylistic Components
 
-Reusable typography and stylistic wrappers live under:
+Reusable typography/stylistic components live under:
 
 ```text
 src/template/components/design-system/stylistic/
@@ -741,25 +742,21 @@ Text.tsx
 index.ts
 ```
 
-These components provide consistent typography and higher-level visual
-conventions.
-
-Prefer shared heading components over repeatedly defining heading sizes inside
-individual screens.
+Shared stylistic components should be preferred over repeatedly recreating common typography conventions.
 
 ---
 
 # Layout
 
-## 27. Layout Components
+## 28. Layout Components
 
-Reusable application-shell layout components live under:
+Reusable application-platform layout components live under:
 
 ```text
 src/template/components/layout/
 ```
 
-Current files are:
+Current files include:
 
 ```text
 Footer.tsx
@@ -770,36 +767,34 @@ Screen.tsx
 ToolBox.tsx
 ```
 
-These components form the reusable Template application frame.
+These components form the reusable Template shell.
 
 ---
 
-## 28. Header
+# 29. Header
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/Header.tsx
 ```
 
-The header belongs to the reusable Template shell.
+The header may integrate reusable concerns such as:
 
-It may integrate reusable concerns such as:
+* navigation context
+* breadcrumbs
+* toolbox actions
+* Application identity
 
-- Navigation context
-- Breadcrumbs
-- Toolbox actions
-- Application identity
+Concrete Application configuration must flow through supported Template integration contracts.
 
-Concrete product configuration should be obtained through supported Template
-configuration contracts rather than direct imports from a concrete
-Application.
+Template layout must not import concrete Application implementation.
 
 ---
 
-## 29. Footer
+# 30. Footer
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/Footer.tsx
@@ -807,44 +802,52 @@ src/template/components/layout/Footer.tsx
 
 The footer may consume reusable Template state such as:
 
-- Active server
-- Connectivity information
-- Notifications
-- Release information
-- Developer-console access
+* active server
+* connectivity
+* notifications
+* release information
+* developer-console access
 
-The footer should remain a consumer of these systems.
+The footer is a presentation consumer.
 
-It should not own server validation, authentication, update, or notification
-algorithms.
+It must not own:
+
+* server validation
+* authentication algorithms
+* update algorithms
+* notification-generation algorithms
 
 ---
 
-## 30. Navigation Component
+# 31. Navigation Component
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/Navigation.tsx
 ```
 
-`Navigation` is the UI representation of the Template navigation
-infrastructure.
+`Navigation` is the UI representation of Template navigation infrastructure.
 
-Navigation configuration and routing algorithms belong under:
+Navigation logic belongs under:
 
 ```text
 src/template/navigation/
 ```
 
-The layout component should render navigation rather than own concrete
-application menu definitions.
+The layout component renders navigation.
+
+It does not own the complete navigation configuration.
+
+Template owns reusable navigation and standard Agent.Workbench navigation.
+
+Application may contribute Application-specific extensions through the supported navigation contract.
 
 ---
 
-## 31. Screen
+# 32. Screen
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/Screen.tsx
@@ -852,32 +855,29 @@ src/template/components/layout/Screen.tsx
 
 `Screen` provides reusable screen-layout behavior.
 
-Feature screens should use common layout infrastructure instead of duplicating
-screen framing and spacing.
+Feature screens should reuse common framing and spacing infrastructure.
 
 ---
 
-## 32. Logo
+# 33. Logo
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/Logo.tsx
 ```
 
-`Logo` displays reusable application branding.
+`Logo` provides reusable Application-branding presentation.
 
-Concrete branding information should eventually come through supported
-Application configuration.
+Concrete branding data should flow through supported Application configuration.
 
-The Template logo component must not directly import a concrete application's
-implementation.
+The Template logo component must not import concrete Application implementation.
 
 ---
 
-## 33. ToolBox
+# 34. ToolBox
 
-### Location
+Location:
 
 ```text
 src/template/components/layout/ToolBox.tsx
@@ -885,14 +885,13 @@ src/template/components/layout/ToolBox.tsx
 
 `ToolBox` provides reusable contextual-action presentation.
 
-Feature-specific actions should be supplied to the reusable component rather
-than embedded as product-specific behavior inside it.
+Feature-specific actions should be supplied to the component rather than hard-coded as product-specific behavior.
 
 ---
 
 # Notifications
 
-## 34. Notification Components
+## 35. Notification Components
 
 Notification presentation lives under:
 
@@ -906,7 +905,7 @@ Current file:
 NotificationPopup.tsx
 ```
 
-Notification state belongs separately under Template state infrastructure.
+Notification state belongs separately to Template state infrastructure.
 
 Conceptually:
 
@@ -920,14 +919,13 @@ Notification components
 User presentation
 ```
 
-Notification UI should not become the owner of notification state or
-feature-specific notification generation.
+Presentation components should not become the owner of notification generation or feature state.
 
 ---
 
 # Localization
 
-## 35. Localization Components
+## 36. Localization Components
 
 Reusable localization UI lives under:
 
@@ -941,48 +939,63 @@ Current file:
 LanguageSwitcher.tsx
 ```
 
-The language switcher is reusable Template UI.
-
-Translation resources remain under:
+Translation resources live under:
 
 ```text
 assets/locales/
 ```
 
-User-facing labels should use the existing i18next infrastructure instead of
-hardcoded strings.
+User-facing labels should use the existing localization infrastructure.
 
 ---
 
 # Developer Tools
 
-## 36. Developer Tools
+## 37. Developer Tools
 
-Reusable developer-facing components live under:
+Reusable developer-facing functionality lives under:
 
 ```text
 src/template/components/developer-tools/
 ```
 
-The current developer-console implementation is located at:
+Current Developer Console implementation:
 
 ```text
 src/template/components/developer-tools/developer-console/DeveloperConsole.tsx
 ```
 
-Developer-facing tools should remain separated from general design-system
-primitives.
+Developer tools belong to Template when they represent reusable Base Template functionality.
 
-Whether a developer feature belongs permanently to Template or should become
-Application-specific must be decided based on reusability.
+They must not be moved to Core merely because they are technical.
 
-Do not move developer tools into Core solely because they are technical.
+They also must not be treated as Agent.Workbench Application extraction candidates solely because they are heavily used by Agent.Workbench.
+
+---
+
+# 38. Developer Console
+
+The Developer Console is Template-owned.
+
+Its implementation is reusable application-platform functionality.
+
+The close-button multiplication character is represented as:
+
+```tsx
+{"\u00D7"}
+```
+
+to avoid encoding corruption.
+
+UI behavior belongs to the component.
+
+Logging/business/runtime sources remain with their owning subsystems.
 
 ---
 
 # Dynamic Content
 
-## 37. Dynamic Content Overview
+## 39. Dynamic Content Overview
 
 Reusable dynamic-content infrastructure lives under:
 
@@ -999,13 +1012,17 @@ dynamic-content/
 +-- model/
 ```
 
-Dynamic content supports backend-defined site content.
+Dynamic content supports backend-defined content.
 
-Rendering and editing responsibilities are intentionally separated.
+Rendering and editing responsibilities are separated.
+
+Under the current architecture this infrastructure is Template-owned.
+
+It is not waiting for Agent.Workbench Application extraction.
 
 ---
 
-## 38. Dynamic Content Rendering
+# 40. Dynamic Content Rendering
 
 Rendering components live under:
 
@@ -1024,15 +1041,11 @@ SiteContentProperties.tsx
 SiteContentText.tsx
 ```
 
-These components are responsible for rendering supported dynamic-content
-representations.
-
-Feature screens should reuse this infrastructure rather than reimplementing
-backend-driven content rendering.
+Feature screens should reuse this infrastructure instead of duplicating backend-driven content rendering.
 
 ---
 
-## 39. Dynamic Content Editors
+# 41. Dynamic Content Editors
 
 Editor components live under:
 
@@ -1053,38 +1066,35 @@ UploadButton.tsx
 XButton.tsx
 ```
 
-These components are specific to dynamic-content editing.
+These components belong to dynamic-content editing.
 
-Their existence does not mean that general-purpose actions should create
-similar specialized buttons elsewhere.
-
-For generic UI actions, prefer `ActionButton`.
+Generic actions should still prefer reusable design-system components such as `ActionButton` where appropriate.
 
 ---
 
-## 40. Dynamic Content Model
+# 42. Dynamic Content Model
 
-Dynamic-content model helpers live under:
+Model helpers live under:
 
 ```text
 src/template/components/dynamic-content/model/
 ```
 
-Current helper:
+Known helper:
 
 ```text
 isAbstractSiteContent.ts
 ```
 
-Model helpers should remain independent from presentation where possible.
+Model helpers should remain independent from presentation where practical.
 
 ---
 
 # Rich Text Editor
 
-## 41. Rich Text Editor Overview
+## 43. Rich Text Editor
 
-The reusable rich-text editor lives under:
+Reusable rich-text editing lives under:
 
 ```text
 src/template/components/rich-text-editor/
@@ -1098,14 +1108,13 @@ rich-text-editor/
 +-- index.ts
 ```
 
-The rich-text editor should remain isolated from unrelated application
-screens.
+Reusable editor controls should remain centralized.
 
 ---
 
-## 42. Rich Text Editor UI
+# 44. Rich Text Editor UI
 
-Current UI files include:
+Current files include:
 
 ```text
 bar.tsx
@@ -1116,73 +1125,103 @@ ItalicButton.tsx
 StrikeButton.tsx
 ```
 
-These controls work with the rich-text icon infrastructure from:
+These controls use icons from:
 
 ```text
 src/template/components/design-system/icons/rich-text/
 ```
 
-Reusable editor controls should be extended centrally instead of duplicating
-toolbar behavior in individual screens.
+Shared editor behavior should not be duplicated inside individual screens.
 
 ---
 
 # Routing
 
-## 43. Routing Is Not a Component Folder
+## 45. Routing Is Navigation Infrastructure
 
-Routing helpers no longer belong under an old path such as:
-
-```text
-src/components/routing
-```
-
-Reusable routing infrastructure belongs under:
+Reusable routing helpers belong under:
 
 ```text
 src/template/navigation/routing/
 ```
 
-Known routing helpers include:
+Known helpers include:
 
 ```text
 menuPaths.ts
 useMenuNavigation.ts
 ```
 
+Routing must not return to historical locations such as:
+
+```text
+src/components/routing
+```
+
 Conceptually:
 
 ```text
-Application menu definition
+Template navigation
+        +
+Application navigation extensions
         |
         v
-Template navigation infrastructure
-        |
-        v
-Routing helper
+Template routing infrastructure
         |
         v
 Navigation UI
 ```
 
-This keeps navigation mechanics separate from visual components.
+---
+
+# 46. Menu Navigation
+
+`useMenuNavigation` provides reusable navigation based on navigation identifiers.
+
+Route generation should remain centralized.
+
+Screens should not manually reconstruct navigation paths when Template navigation infrastructure already provides them.
 
 ---
 
-## 44. Menu Navigation
+# Navigation Ownership
 
-`useMenuNavigation` provides reusable navigation based on menu identifiers.
+## 47. Navigation and Components
 
-Menu route generation should remain centralized.
+Navigation presentation and navigation definition are separate responsibilities.
 
-Avoid manually recreating navigation paths in individual screens when the
-Template navigation infrastructure already provides the required behavior.
+Template owns:
+
+```text
+navigation infrastructure
+Template navigation definitions
+Template screen registry
+standard Agent.Workbench navigation
+visibility integration
+menu ordering
+```
+
+Application owns:
+
+```text
+Application-specific navigation extensions
+Application-specific screens
+```
+
+The following model is not current architecture:
+
+```text
+Application owns all menu definitions
+Application owns all tab definitions
+```
+
+Application navigation extends Template navigation.
 
 ---
 
 # Design-System Reuse
 
-## 45. Reuse Rule
+## 48. Reuse Rule
 
 Before creating a new component, search the existing design system.
 
@@ -1202,68 +1241,67 @@ Also inspect:
 src/template/components/design-system/
 ```
 
-A new component should not be introduced merely because a screen needs a
-different label, icon, spacing value, or callback.
+A new component should not be introduced merely because one screen needs a different:
+
+* label
+* icon
+* callback
+* spacing value
 
 ---
 
-## 46. When to Add a New Reusable Component
+# 49. When to Add a Reusable Component
 
-A new reusable component is appropriate when:
+A reusable component is appropriate when:
 
-- The same UI pattern appears in multiple places.
-- Shared behavior should be centralized.
-- Shared styling should remain consistent.
-- The component represents a reusable Template concept.
-- Repeated JSX would otherwise become difficult to maintain.
+* the same UI pattern appears in multiple places
+* shared behavior should be centralized
+* shared styling should remain consistent
+* it represents a reusable Template concept
+* repeated JSX would otherwise become difficult to maintain
 
 A new reusable component is usually unnecessary when:
 
-- The UI exists only on one feature screen.
-- It is a trivial wrapper with no reusable behavior.
-- An existing design-system component already supports the requirement.
-- Only a different label or icon is required.
-- The behavior is strongly product-specific.
+* it exists only on one product-specific screen
+* it is a trivial wrapper
+* an existing component already supports the requirement
+* only a label or icon differs
+* the behavior is genuinely concrete-product-specific
 
 ---
 
-# Application-Specific Components
+# Concrete Application Components
 
-## 47. Product UI
+## 50. Product UI
 
-Not every component should become part of the Base Template.
+Not every component belongs to the Base Template.
 
-A component belongs to Application when it represents concrete product
-behavior that is not reusable across applications.
+Concrete product UI belongs to Application when the behavior is truly product-specific.
 
-Examples may include:
-
-```text
-Agent.Workbench-specific business widgets
-Agent.Workbench-specific configuration editors
-HEMS-specific dashboards
-product-specific data visualization
-product-specific workflow components
-```
-
-The target dependency remains:
+Examples include:
 
 ```text
-Application --> Template
+HEMS-specific dashboard widgets
+HEMS-only workflow components
+future product-specific dashboards
+future product-specific business visualization
+consumer-specific branding components
 ```
 
-Template must not import those concrete product components.
+Do not classify a component as Application-owned merely because it contains Agent.Workbench terminology.
+
+Standard Agent.Workbench platform functionality remains Template-owned.
 
 ---
 
-## 48. Product Screens and Reusable Components
+# 51. Concrete Application Screens
 
-A product-specific screen may consume reusable Template components.
+A concrete Application screen may consume reusable Template UI.
 
 Conceptually:
 
 ```text
-Application screen
+HEMS screen
     |
     +-- ActionButton
     +-- Card
@@ -1272,22 +1310,22 @@ Application screen
     +-- Template navigation
     |
     v
-Product-specific behavior
+HEMS-specific behavior
 ```
 
-Reusable UI should remain generic even when first introduced for one concrete
-application.
+Template must not import the concrete Application screen.
+
+Application screens are discovered through the Application screen-discovery mechanism documented in the architecture.
 
 ---
 
 # Styling and Themes
 
-## 49. Styling
+## 52. Styling
 
 The project uses React Native Unistyles.
 
-Reusable components should use the shared theme infrastructure rather than
-introducing independent styling conventions.
+Reusable components should use shared theme infrastructure.
 
 Prefer:
 
@@ -1309,24 +1347,21 @@ parallel design systems
 
 ---
 
-## 50. Theme Responsibility
+# 53. Theme Responsibility
 
 Themed and stylistic components provide reusable presentation.
 
-The active theme itself is managed separately by Template state and styling
-infrastructure.
+Global theme state belongs to Template theme/state infrastructure.
 
-Components should consume theme information without becoming responsible for
-global theme state.
+Components consume theme information without becoming the owner of global theme state.
 
 ---
 
 # Localization
 
-## 51. User-Facing Text
+## 54. User-Facing Text
 
-Reusable components that display user-facing text should integrate with the
-existing localization infrastructure where appropriate.
+Reusable components that display user-facing text should use the existing localization infrastructure where appropriate.
 
 Translation files live under:
 
@@ -1334,26 +1369,25 @@ Translation files live under:
 assets/locales/
 ```
 
-Do not add duplicated hardcoded German and English text directly into shared
-components.
+Do not duplicate hardcoded language-specific strings across reusable components.
 
 ---
 
 # Business Logic
 
-## 52. Keep Business Logic Outside UI Primitives
+## 55. Keep Business Logic Outside UI Primitives
 
-Design-system components should not contain product-specific business logic.
+Design-system components must not contain feature-specific business logic.
 
-Preferred separation:
+Preferred:
 
 ```text
-Screen / feature logic
-        |
-        v
+Feature logic
+    |
+    v
 props
-        |
-        v
+    |
+    v
 Reusable UI component
 ```
 
@@ -1361,22 +1395,20 @@ Avoid:
 
 ```text
 Reusable button
-        |
-        v
-direct Agent.Workbench API call
+    |
+    v
+direct feature API call
 ```
 
-API calls, Redux orchestration, and concrete business workflows should remain
-in their owning feature or state layer.
+API calls, Redux orchestration and business workflows belong to their owning feature/state layer.
 
 ---
 
 # State
 
-## 53. Component State
+## 56. Component State
 
-Local visual state may remain inside a component when it only matters to that
-component.
+Local visual state may remain in a component when it only matters locally.
 
 Examples:
 
@@ -1388,46 +1420,37 @@ hover state
 local toolbar state
 ```
 
-Reusable application state should live in the appropriate Template state
-module.
+Reusable application state belongs to Template state when Template owns the feature.
 
-Product-specific global state belongs to Application.
+Concrete product-specific global state belongs to Application.
 
-Redux ownership follows responsibility, not component location.
+Redux ownership follows architectural responsibility.
 
 ---
 
-# Public API
+# Public Integration
 
-## 54. Stable Imports
+## 57. Stable Imports
 
-The long-term goal is that separate Application repositories consume reusable
-Template UI through stable public exports.
+Reusable Template UI should be consumed through stable supported exports where available.
 
-For the design system, the current preferred alias is:
+Current preferred design-system alias:
 
 ```text
 @design-system
 ```
 
-Future external package usage may conceptually look like:
+Avoid unnecessary dependencies on arbitrary Template internals.
 
-```ts
-import {
-  ActionButton,
-  Card,
-  ThemedText,
-} from "@enflex/web-template";
-```
+Future consumer integration may expose additional stable Template APIs when concrete requirements justify them.
 
-Application repositories should eventually avoid depending on arbitrary
-internal Template file paths.
+Do not invent a large public API prematurely.
 
 ---
 
 # Refactoring
 
-## 55. Safe Component Refactoring
+## 58. Safe Component Refactoring
 
 When moving or changing components:
 
@@ -1437,33 +1460,39 @@ When moving or changing components:
    git grep -n "<ComponentName>" -- src test
    ```
 
-2. Inspect current responsibilities.
+2. Inspect responsibility.
 
-3. Move only one coherent component group.
+3. Move only one coherent component/group.
 
 4. Update imports explicitly.
 
 5. Search for the old path.
 
-6. Run TypeScript validation.
+6. Run configuration generation when relevant.
+
+   ```bash
+   npm run config:generate
+   ```
+
+7. Run TypeScript validation.
 
    ```bash
    npx tsc --noEmit
    ```
 
-7. Run affected tests.
+8. Run affected tests.
 
-8. Validate the diff.
+9. Validate the diff.
 
    ```bash
    git diff --check
    ```
 
-9. Start the application when visual/runtime behavior changed.
+10. Start the application when visual/runtime behavior changed.
 
-   ```bash
-   npm start
-   ```
+```bash
+npm start
+```
 
 Avoid broad automated rewrites across unrelated source files.
 
@@ -1471,89 +1500,147 @@ Avoid broad automated rewrites across unrelated source files.
 
 # Current Status
 
-## 56. Implemented
+## 59. Implemented
 
-The current component migration includes:
+Current component architecture includes:
 
-- Reusable components moved under `src/template/components`.
-- Design system established under
-  `src/template/components/design-system`.
-- Central design-system barrel exports.
-- `@design-system` alias.
-- Layout components separated under `layout`.
-- Notification presentation separated under `notifications`.
-- Localization UI separated under `localization`.
-- Developer console separated under `developer-tools`.
-- Dynamic content separated under `dynamic-content`.
-- Rich text editor separated under `rich-text-editor`.
-- Routing moved into Template navigation infrastructure.
-- Reusable themed and stylistic components grouped in the design system.
-- Reusable charts grouped inside the design system.
-- Rich-text icons grouped inside the design system.
+* reusable components under `src/template/components`
+* design system under `src/template/components/design-system`
+* central design-system barrel exports
+* `@design-system` alias
+* layout components under `layout`
+* notification presentation under `notifications`
+* localization UI under `localization`
+* Developer Console under `developer-tools`
+* dynamic content under `dynamic-content`
+* rich-text editor under `rich-text-editor`
+* routing under Template navigation infrastructure
+* themed/stylistic components in the design system
+* reusable charts in the design system
+* rich-text icons in the design system
 
 ---
 
-## 57. Transitional Areas
+# 60. Established Ownership
 
-Some ownership questions remain open.
-
-Examples include:
+The following ownership is established:
 
 ```text
+Design system
+    -> Template
+
+Layout
+    -> Template
+
+Notifications UI
+    -> Template
+
+Localization UI
+    -> Template
+
 Developer Console
-Dynamic Content
-some settings components
-some Agent.Workbench-specific UI
+    -> Template
+
+Dynamic Content infrastructure
+    -> Template
+
+Rich Text Editor
+    -> Template
+
+standard Agent.Workbench UI
+    -> Template
+
+HEMS-specific UI
+    -> HEMS Application
 ```
 
-Their final ownership should be determined by actual reuse across products.
-
-Do not move them merely because of their current physical location.
+These areas must not be described as waiting for a separate Agent.Workbench Application extraction.
 
 ---
 
-## 58. Planned
+# 61. Future Work
 
-Future component architecture work includes:
+Future component work may include:
 
-- Continue defining the supported Base Template public UI API.
-- Reduce arbitrary deep imports where stable exports are available.
-- Review product-specific components before Application repository extraction.
-- Keep design-system components product-neutral.
-- Review reusable branding extension points.
-- Maintain dependency-boundary validation.
-- Add reusable components only when a real reusable pattern exists.
+* continue refining supported Template UI exports
+* reduce arbitrary deep imports where stable exports exist
+* keep design-system components product-neutral
+* review reusable branding extension points
+* maintain dependency-boundary validation
+* add reusable components only for actual reusable patterns
+* validate Template UI consumption through a real concrete Application such as HEMS
+
+Future work does **not** include moving standard Agent.Workbench UI into a separate Application repository.
 
 ---
 
 # Architecture Rules
 
-## 59. Rules
+## 62. Rules
 
 Component changes must preserve these rules:
 
 1. Core must not import Template components.
 2. Template must not import concrete Application components.
-3. Reusable UI belongs to Template.
-4. Product-specific UI belongs to Application.
-5. Design-system components must remain product-neutral.
-6. Reuse existing components before creating new ones.
-7. Navigation logic belongs under Template navigation, not the component tree.
-8. API and business logic should not be placed in UI primitives.
-9. User-facing text should use localization infrastructure.
-10. Theme values should be preferred over hardcoded visual constants.
-11. Stable public exports should be preferred where available.
-12. Generated API code must not be modified as part of component cleanup.
+3. Reusable React UI belongs to Template.
+4. Standard Agent.Workbench UI belongs to Template.
+5. Concrete product-specific UI belongs to Application.
+6. Design-system components should remain product-neutral.
+7. Existing components should be reused before creating duplicates.
+8. Navigation logic belongs under Template navigation.
+9. Business/API logic should not live in generic UI primitives.
+10. User-facing text should use localization infrastructure.
+11. Theme values should be preferred over duplicated hardcoded visual constants.
+12. Stable supported exports should be preferred where available.
+13. Generated API code must not be modified during unrelated component cleanup.
+14. Component ownership must follow responsibility rather than naming.
+15. Agent.Workbench-related naming does not automatically imply Application ownership.
+
+---
+
+# Incorrect Legacy Statements
+
+## 63. Legacy Architecture
+
+The following statements do not describe the accepted architecture:
+
+```text
+"Agent.Workbench-specific UI should move to Application."
+
+"Developer Console ownership is waiting for Agent.Workbench extraction."
+
+"Dynamic Content should move into the Agent.Workbench repository."
+
+"Product-specific components must be reviewed before Agent.Workbench Application repository extraction."
+
+"Application owns all menu definitions."
+
+"Application owns all tab definitions."
+
+"Reusable Agent.Workbench UI inside Template is transitional."
+
+"Separate Application repositories require removing standard Agent.Workbench UI from Template."
+```
+
+The correct ownership is:
+
+```text
+standard Agent.Workbench platform UI
+    -> Template
+
+HEMS/future concrete product-only UI
+    -> Application
+```
 
 ---
 
 # Documentation Rule
 
-## 60. Updating This Document
+## 64. Updating This Document
 
-When reusable component architecture changes, update this document.
+Update this document when reusable component architecture materially changes.
 
-Relevant changes include:
+Examples:
 
 ```text
 new reusable design-system component
@@ -1565,30 +1652,89 @@ new shared editor infrastructure
 new architectural ownership decision
 ```
 
-The documentation must distinguish between:
+Documentation should distinguish actual implementation from future ideas.
 
-```text
-Implemented
-Transitional
-Planned
+Do not document speculative component movement as accepted architecture.
+
+---
+
+# Validation
+
+## 65. Validation Commands
+
+Useful checks include:
+
+```bash
+git grep -n "@/application/" -- src/template
+git grep -n "@/template/" -- src/application
 ```
 
-Do not document planned component structure as if it already exists.
+For component changes:
+
+```bash
+git grep -n "<ComponentName>" -- src test
+```
+
+Then run:
+
+```bash
+npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+git diff --check
+git status --short
+```
+
+Runtime/visual validation should be performed when presentation behavior changes.
 
 ---
 
 # Success Criteria
 
-## 61. Target State
+## 66. Target State
 
 The component architecture is successful when:
 
 1. Reusable Template UI has a clear owner and location.
-2. Applications reuse common components rather than duplicating them.
-3. Core remains independent from Template presentation.
-4. Product-specific UI does not leak into the Base Template.
-5. Design-system imports are stable and predictable.
-6. Theme and localization behavior remain centralized.
-7. Layout, navigation, state and business responsibilities remain separated.
-8. Separate Application repositories can consume the Base Template UI without
-   editing Template internals.
+2. Standard Agent.Workbench UI remains correctly Template-owned.
+3. Concrete Applications reuse common Template components.
+4. Core remains independent from Template presentation.
+5. Concrete product-only UI does not leak into Template.
+6. Design-system imports remain stable and predictable.
+7. Theme and localization behavior remain centralized.
+8. Layout, navigation, state and business responsibilities remain separated.
+9. Template does not import concrete Application components.
+10. A concrete consumer such as HEMS can use Template UI without modifying Template internals.
+11. Component ownership is based on responsibility rather than product terminology.
+12. No separate Agent.Workbench Application extraction is required.
+
+---
+
+# Summary
+
+The component architecture follows:
+
+```text
+Application --> Template --> Core
+```
+
+Core contains no React presentation layer.
+
+Template owns reusable UI, including:
+
+```text
+design system
+layout
+notifications
+localization
+developer tools
+dynamic content
+rich-text editing
+standard Agent.Workbench UI
+```
+
+Application owns only concrete product-specific UI.
+
+HEMS-specific UI belongs to the HEMS Application.
+
+Standard Agent.Workbench presentation is part of the Base Template and is not transitional Application code.

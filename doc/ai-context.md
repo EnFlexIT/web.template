@@ -5,390 +5,636 @@
 > This document is the primary project context for AI assistants working on
 > the `EnFlexIT/web.template` repository.
 >
-> It describes the current architecture, migration rules, development
-> workflow, important modules, transitional areas, and open decisions.
-
-## 1. Project Overview
-
-`web.template` is an Expo, React Native Web, and TypeScript foundation for
-EnFlex.IT applications.
-
-The repository is currently being refactored into a reusable Base Template
-that can be consumed by separate application repositories such as:
-
-- Agent.Workbench
-- HEMS
-- Future EnFlex.IT applications
-
-The Base Template provides reusable technical and application-shell
-infrastructure.
-
-Concrete applications provide their own configuration, product-specific
-screens, state, branding, build configuration, and deployment configuration.
+> It describes the current architecture, ownership rules, configuration model,
+> development workflow and important implementation boundaries.
+>
+> The architecture described here is implemented and selected.
+> Do not reopen already-decided architecture questions unless explicitly asked.
 
 ---
 
-## 2. Architecture
+## 1. Project Overview
 
-The required dependency direction is:
+`web.template` is an Expo, React Native Web and TypeScript foundation for
+EnFlex.IT applications.
+
+The repository provides:
+
+* reusable technical capabilities through Core
+* a reusable Base Template
+* standard Agent.Workbench functionality as part of the Base Template
+* the in-repository Agent.Workbench Application composition that validates the Application integration
+  contract
+
+The architecture is:
 
 ```text
 Application --> Template --> Core
 ```
 
-The following directions are not allowed:
+Agent.Workbench is **not** a separate concrete Application in the current
+architecture.
+
+Standard Agent.Workbench functionality belongs to the Base Template.
+
+HEMS is an example of a concrete Application that can consume the Base
+Template.
+
+---
+
+## 2. Architectural Dependency Rules
+
+The allowed dependency direction is:
 
 ```text
-Template --> Application
+Application
+    |
+    v
+Template
+    |
+    v
+Core
+```
+
+The following dependency directions are not allowed:
+
+```text
+Template --> concrete Application
 Core --> Template
 Core --> Application
 ```
 
 ### Core
 
-`src/core` contains reusable technical capabilities and shared technical
-types.
+`src/core/` contains reusable technical capabilities.
 
 Core may contain:
 
-- Authentication transport logic
-- Session-related technical mechanisms
-- Server validation
-- Networking helpers
-- Storage-related technical capabilities
-- Reusable update logic
-- Shared technical types
-- Technical utilities
+* technical authentication logic
+* technical session mechanisms
+* server validation
+* networking helpers
+* reusable runtime capabilities
+* technical update logic
+* reusable technical types
+* technical utilities
 
-Core must not import from Template or Application.
+Core must not import Template or Application.
 
-Core should not contain product-specific UI, product composition, or
-application-specific business behavior.
+Core should not contain:
+
+* React application-shell composition
+* Template navigation
+* Template UI
+* Agent.Workbench composition
+* concrete product behavior
 
 ### Template
 
-`src/template` contains the reusable application shell, reusable UI,
-navigation mechanisms, Template-owned state, and reusable feature
-infrastructure.
+`src/template/` contains the reusable application platform.
 
 Template may contain:
 
-- Design system
-- Header and footer
-- Navigation engine
-- Reusable screens
-- Authentication UI
-- Session guards
-- Notifications
-- Localization
-- Theme handling
-- Server-selection UI and state
-- Redux infrastructure
-- Update infrastructure
-- Reusable hooks
-- Configuration contracts
+* reusable React application shell
+* standard Agent.Workbench functionality
+* Agent.Workbench state
+* reusable Agent.Workbench API integration where appropriate
+* Application integration contracts
+* navigation infrastructure
+* Template navigation definitions
+* Template screen registry
+* authentication/session orchestration
+* server selection
+* settings
+* notifications
+* update orchestration
+* design system
+* reusable screens
+* reusable components
+* reusable hooks
+* localization infrastructure
+* Redux infrastructure
 
-Template may import from Core.
+Template may import Core.
 
-Template must not directly import a concrete application.
+Template must not import a concrete Application.
 
 ### Application
 
-`src/application` represents the concrete product composition.
+`src/application/` represents concrete product composition.
+
+The current repository uses this area as the in-repository Agent.Workbench Application composition.
 
 Application may contain:
 
-- Application identity
-- Application configuration
-- Product-specific screens
-- Product-specific Redux state
-- Product-specific navigation definitions
-- Product-specific feature rules
-- Branding
-- Product-specific extensions
-- Build configuration
-- Deployment configuration
+* Application identity and metadata
+* Template feature selection
+* Application-specific navigation
+* Application-specific screens
+* Application translations
+* optional Application-specific Redux state
+* product-specific behavior
+* product-specific branding
 
-Application may use Template and Core.
+Application may consume supported Template and Core integration surfaces.
 
 ---
 
-## 3. Repository Model
+## 3. Agent.Workbench Ownership
 
-The target repository model is:
+This is a final architecture decision unless explicitly changed later.
 
 ```text
-Agent.Workbench ----\
-                     +--> Base Template --> Core
-HEMS ----------------/
+Agent.Workbench standard functionality
+    --> Base Template
 ```
 
-There is no central runtime resolver that switches between
-Agent.Workbench and HEMS.
+Agent.Workbench is not treated as:
 
-Each application repository consumes the Base Template directly.
+```text
+a concrete Application
+a transitional Application
+a future separate Application repository
+```
 
-The Base Template must therefore be reusable without knowing which
-concrete application uses it.
+Standard Agent.Workbench functionality includes, where applicable:
+
+```text
+Program Start
+Data Analyzing
+Database configuration
+Server configuration
+Live Console
+Settings
+Agent.Workbench state
+Agent.Workbench navigation
+Agent.Workbench API integration
+```
+
+Do not propose moving these areas into a separate Agent.Workbench repository
+only because they contain Agent.Workbench-specific naming.
+
+Ownership is based on the selected platform architecture and responsibility.
 
 ---
 
-## 4. Current Source Structure
+## 4. Concrete Applications
+
+HEMS is an example of a concrete Application.
+
+Conceptually:
+
+```text
+HEMS Application
+        |
+        v
+Base Template
+        |
+        v
+Core
+```
+
+A concrete consumer Application may provide:
+
+```text
+Application configuration
+Template feature selection
+Application navigation extensions
+Application-specific screens
+Application translations
+optional Application-specific Redux state
+product-specific business behavior
+product-specific branding
+product-specific build/deployment configuration
+```
+
+Future Applications should follow the same general model.
+
+There is no required separate Agent.Workbench Application repository.
+
+---
+
+## 5. Current Source Structure
 
 The important architectural structure is:
 
 ```text
 src/
-+-- api/
-|
-+-- application/
-|   +-- config/
-|   +-- generated/
-|   +-- state/
-|   +-- screens/
-|   +-- branding/
-|   +-- index.ts
-|
-+-- core/
-|
-+-- template/
-    +-- application/
-    +-- authentication/
-    +-- components/
-    +-- config/
-    +-- hooks/
-    +-- navigation/
-    +-- screens/
-    +-- state/
-    +-- styles/
-    +-- update/
-    +-- index.ts
+├── api/
+│
+├── application/
+│   ├── config/
+│   ├── generated/
+│   ├── screens/
+│   ├── state/
+│   └── index.ts
+│
+├── core/
+│
+└── template/
+    ├── application/
+    ├── authentication/
+    ├── components/
+    ├── config/
+    ├── hooks/
+    ├── navigation/
+    ├── screens/
+    ├── state/
+    ├── styles/
+    ├── update/
+    └── index.ts
 ```
 
-The repository is still transitional.
-
-Some Agent.Workbench-specific code remains physically inside the current
-repository until the separate Agent.Workbench repository is created.
+The architectural boundary is based on responsibility, not only on physical
+file location.
 
 ---
 
-## 5. Current Architecture Status
+## 6. Current Agent.Workbench Application Composition
 
-### Implemented
+`src/application/` is currently the in-repository Agent.Workbench Application composition.
 
-The following foundations are already implemented:
+It is not Agent.Workbench.
 
-- `core`, `template`, and `application` architecture direction
-- Design system under `src/template/components/design-system`
-- Public design-system alias `@design-system`
-- Reusable Template hooks under `src/template/hooks`
-- Navigation infrastructure under `src/template/navigation`
-- Template Redux state under `src/template/state`
-- Store infrastructure under `src/template/state/store`
-- `ApplicationConfig`
-- `createTemplateApp`
-- `ApplicationConfigContext`
-- `ApplicationConfigProvider`
-- `useApplicationConfig`
-- Property-based application identity
-- Application configuration generator
-- Generated typed application configuration
-- Automatic configuration generation through npm lifecycle scripts
-- Removal of direct Template UI access to
-  `EXPO_PUBLIC_APPLICATION_TITLE`
-- `ApplicationReducers` extension contract
-- `templateReducers`
-- `createTemplateStore`
-- Reducer-key collision protection
-- Store factory tests
-- Application-side reducer registry
-- Update watchers under the Template update infrastructure
-- Jest tests under `test/`
-
-### Transitional
-
-The following areas are intentionally transitional:
-
-- `TemplateApp` still uses the existing active Redux store.
-- The new `createTemplateStore` factory is not yet the active runtime store.
-- Application reducers are not yet passed through `createTemplateApp`.
-- Agent.Workbench-specific reducers are still physically located inside the
-  current repository.
-- Agent.Workbench-specific screens remain inside the current repository.
-- Some navigation definitions are still product-specific but located inside
-  the Template repository.
-- `apiSlice.tsx` still combines several responsibilities.
-- Final ownership of some developer tools and settings features remains open.
-- Concrete API-client ownership between Template and Application is not yet
-  finalized.
-
-### Planned
-
-Planned architecture work includes:
-
-- Menu configuration through properties
-- Menu feature flags through properties
-- Tab configuration through properties
-- Tab feature flags through properties
-- Layout configuration
-- Cookie configuration
-- Additional branding and legal metadata
-- Final extensible Redux integration
-- Final combined Template/Application state typing
-- Stable public Base Template package API
-- Agent.Workbench repository extraction
-- HEMS integration
-- Independent application builds and deployments
-- Independent Base Template release workflow
-
----
-
-## 6. Application Configuration
-
-Application developers configure application identity through:
+Important areas include:
 
 ```text
-src/application/config/application.properties
+src/application/
+├── config/
+│   ├── application.properties
+│   ├── features.properties
+│   └── navigation.properties
+│
+├── generated/
+│   ├── applicationConfig.generated.ts
+│   └── applicationScreenRegistry.generated.ts
+│
+├── screens/
+│   └── ExampleScreen.tsx
+│
+├── state/
+│   └── applicationReducers.ts
+│
+└── index.ts
+```
+
+The current Agent.Workbench Application composition exists to validate that a concrete product can
+configure and extend the Base Template through supported integration
+mechanisms.
+
+---
+
+## 7. Developer-Facing Application Configuration
+
+Application developers should not need to edit TypeScript, TSX, JavaScript or
+JSON configuration files for normal Application configuration.
+
+The active developer-facing configuration files are:
+
+```text
+src/application/config/
+├── application.properties
+├── features.properties
+└── navigation.properties
+```
+
+Responsibilities:
+
+```text
+application.properties
+    Application identity and metadata
+
+features.properties
+    semantic activation or deactivation
+    of reusable Template features
+
+navigation.properties
+    Application-specific navigation extensions
+```
+
+Generated TypeScript is allowed as build/runtime output.
+
+Generated TypeScript is not the developer-facing configuration format.
+
+---
+
+## 8. Legacy Configuration Names
+
+The following old configuration names are not part of the current
+architecture:
+
+```text
+menu.properties
+tabs.properties
+featureFlags.properties
+menuFeatureFlags.properties
+tabFeatureFlags.properties
+```
+
+Do not reintroduce these files as planned configuration.
+
+The active model is:
+
+```text
+application.properties
+features.properties
+navigation.properties
+```
+
+---
+
+## 9. Application Identity
+
+Application identity is Application-owned.
+
+Template receives required identity values through the formal Application
+integration contract.
+
+Typical runtime values include:
+
+```text
+id
+displayName
+```
+
+Do not introduce new direct product-specific environment dependencies inside
+Template UI when the value belongs to Application configuration.
+
+Before extending `ApplicationConfig`, ask:
+
+```text
+Does Template actually need this value?
+```
+
+If not, keep the value Application-owned.
+
+---
+
+## 10. Semantic Feature Selection
+
+Reusable Template functionality is selected through:
+
+```text
+src/application/config/features.properties
+```
+
+Examples include:
+
+```properties
+feature.notifications.enabled=true
+feature.appearance.enabled=true
+feature.serverSettings.enabled=true
+feature.liveConsole.enabled=true
+feature.programStart.enabled=true
+feature.dataAnalyzing.enabled=true
+feature.database.general.enabled=true
+```
+
+Application selects capabilities.
+
+Template owns their implementation.
+
+Applications must not need to know internal Template details such as:
+
+```text
+numeric menu IDs
+internal parent IDs
+Template screen registry keys
+authentication visibility rules
+runtime visibility rules
+Agent.Workbench navigation internals
+```
+
+---
+
+## 11. Navigation
+
+Template owns reusable navigation infrastructure and reusable Template
+navigation definitions.
+
+Application owns only concrete Application navigation extensions.
+
+Conceptually:
+
+```text
+Template navigation
+        +
+Application navigation extensions
+        |
+        v
+runtime navigation
+```
+
+Template responsibilities include:
+
+* menu tree construction
+* routing
+* path calculation
+* menu rendering
+* Template feature navigation
+* Template screen registry
+* Agent.Workbench navigation
+* visibility integration
+* Template menu ordering
+
+Application-specific navigation is configured through:
+
+```text
+src/application/config/navigation.properties
 ```
 
 Example:
 
 ```properties
-ApplicationId=agent-workbench
-ApplicationTitle=Agent.Workbench
-ApplicationLogo=../assets/bild.png
-ApplicationContact=admin@xxx
-ApplicationOwner=EnFlex.IT
-
-LegalImprintCompanyHomepage=
-LegalImprintCompanyName=
-LegalImprintEmail=admin@xxx
+menu.example.enabled=true
+menu.example.caption=exampleApplication
+menu.example.parent=settings
+menu.example.position=99
+menu.example.screen=example-screen
 ```
 
-The developer-facing configuration should remain simple.
+Applications do not maintain internal Template numeric IDs.
 
-Standard application metadata should not require developers to edit JSON,
-JavaScript, or TypeScript configuration files.
-
-Currently, the generator maps at least:
-
-```text
-ApplicationId    --> ApplicationConfig.id
-ApplicationTitle --> ApplicationConfig.displayName
-```
-
-Additional properties will be added incrementally when their typed contracts
-and consumers are implemented.
+Custom IDs are generated or resolved internally.
 
 ---
 
-## 7. Configuration Generation
+## 12. Template Menu Ordering
 
-The current configuration flow is:
+Normal Template menu positions are derived automatically from sibling order in
+the Template menu catalog.
+
+Do not introduce manually maintained numeric positions for normal Template
+menu entries unless there is a concrete need.
+
+Application custom `position` remains optional.
+
+For missing positions, MenuHub uses:
+
+```ts
+Number.MAX_SAFE_INTEGER
+```
+
+Relevant implementation:
 
 ```text
-application.properties
+src/template/screens/menu/MenuHubScreen.tsx
+```
+
+This keeps Drawer and MenuHub ordering consistent.
+
+---
+
+## 13. Automatic Application Screen Discovery
+
+Application screens are discovered automatically.
+
+Implementation:
+
+```text
+src/template/config/build/applicationScreenDiscovery.mjs
+```
+
+Examples:
+
+```text
+ExampleScreen.tsx
+    -> example-screen
+
+ExampleScreen2.tsx
+    -> example-screen2
+
+HemsOverviewScreen.tsx
+    -> hems-overview-screen
+```
+
+Generated registry:
+
+```text
+src/application/generated/applicationScreenRegistry.generated.ts
+```
+
+Do not require concrete Applications to manually register every screen inside
+Template.
+
+Template must not import concrete Application screen implementations.
+
+---
+
+## 14. Application Integration Contract
+
+The reusable Template integration layer exists under:
+
+```text
+src/template/application/
+```
+
+Important files include:
+
+```text
+ApplicationConfig.ts
+ApplicationConfigContext.tsx
+createTemplateApp.tsx
+TemplateApp.tsx
+```
+
+Conceptually:
+
+```text
+Application configuration
         |
         v
-generateApplicationConfig.mjs
+Application
         |
         v
-applicationConfig.generated.ts
+createTemplateApp(...)
         |
         v
-createTemplateApp(applicationConfig)
-        |
-        v
-ApplicationConfigProvider
+TemplateApp
+```
+
+The Application supplies concrete composition.
+
+Template supplies the reusable application platform.
+
+---
+
+## 15. No Runtime Application Resolver
+
+Do not introduce a central runtime resolver inside Template.
+
+Incorrect:
+
+```text
+Template
+|
++-- detect Agent.Workbench
++-- detect HEMS
++-- select product
+```
+
+Correct:
+
+```text
+Concrete Application
         |
         v
 Base Template
 ```
 
-The generator currently lives at:
-
-```text
-src/template/config/build/generateApplicationConfig.mjs
-```
-
-The generated configuration is written to:
-
-```text
-src/application/generated/applicationConfig.generated.ts
-```
-
-Application developers should edit the `.properties` source file.
-
-The generated TypeScript configuration should not be edited manually.
-
-A dedicated root-level `scripts/` directory is not part of the intended
-architecture.
+Agent.Workbench does not participate in such product selection because its
+standard functionality is already part of the Base Template.
 
 ---
 
-## 8. Planned Configuration Files
+## 16. Configuration Generation
 
-The application configuration area is planned to grow incrementally.
-
-Target structure:
-
-```text
-src/application/config/
-+-- application.properties
-+-- menu.properties
-+-- menuFeatureFlags.properties
-+-- tabs.properties
-+-- tabFeatureFlags.properties
-+-- cookies.properties
-+-- layout.properties
-```
-
-Current status:
-
-```text
-application.properties          implemented
-menu.properties                 planned
-menuFeatureFlags.properties     planned
-tabs.properties                 planned
-tabFeatureFlags.properties      planned
-cookies.properties              planned
-layout.properties               planned
-```
-
-Do not invent the formats of the planned property files before their
-contracts are agreed and implemented.
-
----
-
-## 9. Application Startup
-
-The root entry point creates the Template application from the concrete
-application configuration.
+Developer-facing `.properties` files are transformed into runtime artifacts.
 
 Conceptually:
 
-```ts
-import {
-  applicationConfig,
-} from "./src/application";
-
-import {
-  createTemplateApp,
-} from "./src/template/application/createTemplateApp";
-
-const App = createTemplateApp(applicationConfig);
+```text
+Application .properties
+        |
+        v
+configuration tooling
+        |
+        v
+generated runtime configuration
+        |
+        v
+Application composition
+        |
+        v
+Base Template
 ```
 
-There is no multi-application resolver inside the Template.
+Configuration tooling exists under:
 
-The concrete application provides its configuration directly.
+```text
+src/template/config/build/
+```
+
+A central generator is:
+
+```text
+generateApplicationConfig.mjs
+```
+
+The explicit generation command is:
+
+```bash
+npm run config:generate
+```
+
+Generated files should not be edited manually as normal Application
+configuration.
 
 ---
 
-## 10. Development Start Commands
+## 17. Application Startup
 
-Application configuration is generated automatically when using the normal
-npm entry points:
+Use the normal npm entry points:
 
 ```bash
 npm start
@@ -397,31 +643,16 @@ npm run android
 npm run ios
 ```
 
-The npm lifecycle hook runs:
+Configuration can be generated manually with:
 
 ```bash
 npm run config:generate
 ```
 
-before Expo starts.
+When Application configuration may have changed, prefer npm lifecycle commands
+rather than invoking Expo directly.
 
-The configuration can also be generated manually:
-
-```bash
-npm run config:generate
-```
-
-Do not use this as the normal start command when configuration may have
-changed:
-
-```bash
-npx expo start
-```
-
-Running Expo directly bypasses the npm lifecycle hooks and therefore does not
-automatically regenerate the application configuration.
-
-For a cleared Expo cache while preserving the npm lifecycle hooks, use:
+For a cleared Expo cache while preserving the npm lifecycle path:
 
 ```bash
 npm start -- --clear
@@ -429,15 +660,149 @@ npm start -- --clear
 
 ---
 
-## 11. Design System
+## 18. Redux Architecture
 
-Reusable UI lives under:
+Redux is not an architecture layer.
+
+State belongs to the architectural area that owns the responsibility.
+
+The ownership rule is:
+
+```text
+Reusable Template state
+    -> Template
+
+Agent.Workbench standard state
+    -> Template
+
+Concrete product-specific state
+    -> Application
+```
+
+Reusable Redux infrastructure exists under:
+
+```text
+src/template/state/
+src/template/state/store/
+```
+
+Known store infrastructure includes:
+
+```text
+createTemplateStore.ts
+rootReducer.ts
+store.ts
+templateReducers.ts
+types.ts
+useAppDispatch.ts
+useAppSelector.ts
+```
+
+Do not infer architectural ownership from Redux technology alone.
+
+---
+
+## 19. Agent.Workbench Redux State
+
+Agent.Workbench state is intentionally Template-owned.
+
+Known area:
+
+```text
+src/template/state/agent-workbench/
+```
+
+Examples include functionality associated with:
+
+```text
+execSettings
+dataAnalysis
+Program Start
+Data Analyzing
+```
+
+This state is not transitional Application state.
+
+Do not propose:
+
+```text
+moving Agent.Workbench reducers into src/application
+registering Agent.Workbench reducers as Application reducers
+creating a separate Agent.Workbench state repository
+```
+
+unless the architecture decision itself is explicitly changed.
+
+---
+
+## 20. Application Redux Extension
+
+Concrete Applications may optionally provide their own Redux state.
+
+The Application extension point is:
+
+```text
+src/application/state/applicationReducers.ts
+```
+
+The current Agent.Workbench Application composition does not require meaningful
+Application-specific Redux state.
+
+An essentially empty `applicationReducers.ts` is therefore valid.
+
+Conceptually:
+
+```text
+Template reducers
+        +
+optional Application reducers
+        |
+        v
+Redux store
+```
+
+Template must not import concrete Application reducer implementations.
+
+Application reducers must not silently override Template-owned reducer keys.
+
+---
+
+## 21. Redux Typing
+
+Typed Redux hooks belong to Template store infrastructure.
+
+Known files include:
+
+```text
+src/template/state/store/useAppDispatch.ts
+src/template/state/store/useAppSelector.ts
+```
+
+Use type-only imports when a state type is needed only by TypeScript.
+
+Example:
+
+```ts
+import type {
+  RootState,
+} from "@/template/state/store/store";
+```
+
+Template typing must remain independent from concrete consumer Applications.
+
+---
+
+## 22. Design System
+
+Reusable UI belongs to Template.
+
+The design system exists under:
 
 ```text
 src/template/components/design-system/
 ```
 
-Important groups include:
+Known groups include:
 
 ```text
 icons/
@@ -446,7 +811,7 @@ themed/
 ui-elements/
 ```
 
-Preferred public import:
+Preferred public import where supported:
 
 ```ts
 import {
@@ -460,357 +825,157 @@ import {
 Before creating a new reusable UI component, search the existing design
 system first.
 
-Avoid introducing duplicate components with overlapping responsibilities.
+Avoid duplicate components with overlapping responsibilities.
 
 ---
 
-## 12. Navigation
+## 23. Authentication
 
-The Template owns the navigation mechanism.
-
-Important areas include:
-
-```text
-src/template/navigation/menu/
-src/template/navigation/tabs/
-```
-
-Template navigation responsibilities include:
-
-- Menu tree construction
-- Routing
-- Menu rendering
-- Path calculation
-- Tab rendering
-- Feature-rule evaluation
-- Dynamic and static navigation composition
-
-The concrete Application should eventually provide:
-
-- Concrete menu definitions
-- Concrete tab definitions
-- Concrete screens
-- Menu feature rules
-- Tab feature rules
-
-The planned developer-facing configuration includes:
-
-```text
-menu.properties
-menuFeatureFlags.properties
-tabs.properties
-tabFeatureFlags.properties
-```
-
-These files are planned and are not yet the active navigation source.
-
----
-
-## 13. Redux
-
-Redux is a state-management technology and not an architecture layer.
-
-State must be located according to responsibility.
-
-General rule:
-
-```text
-Reusable technical capability --> Core
-Reusable application state     --> Template
-Concrete product state         --> Application
-```
-
-The previous generic `src/redux` structure is no longer the target
-architecture.
-
-The important store infrastructure now lives under:
-
-```text
-src/template/state/store/
-```
-
-Important files include:
-
-```text
-createTemplateStore.ts
-rootReducer.ts
-store.ts
-templateReducers.ts
-types.ts
-useAppDispatch.ts
-useAppSelector.ts
-```
-
----
-
-## 14. Current Redux Runtime
-
-The existing active runtime still uses:
-
-```text
-src/template/state/store/store.ts
-src/template/state/store/rootReducer.ts
-```
-
-`TemplateApp` still provides this current store to React Redux.
-
-The new store factory exists in parallel and must not replace the active store
-until its remaining integration and typing issues are resolved.
-
-Do not reconnect the store through a broad rewrite.
-
----
-
-## 15. Extensible Redux Store
-
-The reusable factory is:
-
-```text
-src/template/state/store/createTemplateStore.ts
-```
-
-The Base Template reducer registry is:
-
-```text
-src/template/state/store/templateReducers.ts
-```
-
-The extension contract is:
-
-```text
-ApplicationReducers
-```
-
-The concrete application reducer registry is currently:
-
-```text
-src/application/state/applicationReducers.ts
-```
-
-Conceptually:
-
-```text
-templateReducers
-        +
-applicationReducers
-        |
-        v
-createTemplateStore
-        |
-        v
-Redux store
-```
-
-The store factory prevents application reducers from overriding
-Template-owned reducer keys.
-
----
-
-## 16. Agent.Workbench Transitional State
-
-Known Agent.Workbench-specific state still physically located inside the
-current repository includes:
-
-```text
-src/template/state/agent-workbench/
-```
-
-Examples include:
-
-```text
-execSettingsSlice.tsx
-dataAnalysisSlice.ts
-dataAnalyzingConstants.ts
-```
-
-Known Agent.Workbench-specific screens include:
-
-```text
-src/template/screens/AgentWorkbenchOptions/
-```
-
-Related functionality includes:
-
-- Program Start
-- Data Analyzing
-- Exec Settings
-- Data Analysis state
-- Menu ID 3023
-- Agent.Workbench-specific tabs
-- `SERVER_MASTER` visibility rules
-
-These areas should eventually move together into the Agent.Workbench
-application repository.
-
-Do not move individual files without reviewing their navigation, state, API,
-and screen dependencies.
-
----
-
-## 17. Redux Typing
-
-Typed Redux hooks currently live under:
-
-```text
-src/template/state/store/
-```
-
-Important files include:
-
-```text
-useAppDispatch.ts
-useAppSelector.ts
-```
-
-Use type-only imports for Redux state types when they are required only by
-TypeScript.
-
-Preferred form:
-
-```ts
-import type {
-  RootState,
-} from "@/template/state/store/store";
-```
-
-The final extensible state model must support:
-
-```text
-Template state
-+
-Application-specific state
-```
-
-without requiring the Base Template to import concrete application reducers.
-
----
-
-## 18. Authentication
-
-Authentication is split according to responsibility.
-
-Conceptually:
+Authentication is split by responsibility.
 
 ```text
 Core
-+-- technical authentication capability
++-- technical authentication capabilities
 +-- transport
-+-- shared technical types
-+-- reusable technical session logic
++-- technical types
++-- technical session helpers
 
 Template
 +-- authentication UI
 +-- session guards
 +-- reusable authentication state
-+-- application shell integration
++-- application-shell integration
 
 Application
-+-- product-specific authentication configuration
++-- concrete product-specific behavior where required
 ```
 
 Do not move authentication as one monolithic feature.
 
-A module belongs to a layer according to its actual responsibility and
-dependencies.
-
-Some authentication and API-related typing remains transitional and should be
-reviewed before further movement.
+Inspect actual dependencies before changing ownership.
 
 ---
 
-## 19. Server Management
+## 24. Server Management
 
-Reusable technical server logic belongs in Core where it has no Template
+Reusable technical server logic belongs to Core where it has no Template
 dependency.
 
-Reusable server state and UI integration belong in Template.
+Reusable server state and UI belong to Template.
 
 Conceptually:
 
 ```text
-Technical server capability --> Core
-Reusable server UI/state    --> Template
-Product server definition   --> Application
+Technical server capability
+    -> Core
+
+Reusable server UI/state
+    -> Template
+
+Product-specific server configuration
+    -> Application
 ```
 
-Important Template state areas include:
+Known Template state areas include:
 
 ```text
 src/template/state/server/
 src/template/state/connectivity/
 ```
 
-Connectivity checks should determine backend reachability.
-
-They must not implicitly perform unrelated logout behavior.
+Do not mix connectivity checks with unrelated logout behavior unless explicitly
+required by the existing design.
 
 ---
 
-## 20. Update Infrastructure
+## 25. Update Infrastructure
 
-Reusable update infrastructure belongs to the Template unless the logic is
-purely technical and independent of Template UI.
+Reusable update infrastructure is split by responsibility.
 
-Runtime update watchers currently live under:
+```text
+Core
+    technical update capabilities
+
+Template
+    reusable update state
+    hooks
+    watchers
+    dialogs
+    notifications
+    orchestration
+
+Application
+    product-specific behavior only when genuinely required
+```
+
+Known Template watcher area:
 
 ```text
 src/template/update/watchers/
 ```
 
+Do not restore obsolete historical paths without checking the current source.
+
+---
+
+## 26. Developer Tools and Settings
+
+Under the current architecture, reusable developer tools and standard
+Agent.Workbench settings belong to Template when they are part of the Base
+Template platform.
+
 Examples include:
 
 ```text
-PostLoginUpdateWatcher.tsx
-UpdateNotificationWatcher.tsx
+Developer Console
+Live Console
+Server Settings
+Database-related standard functionality
+General reusable settings
 ```
 
-Update-related Template Redux state lives under:
+Do not treat these features as automatically Application-owned simply because
+they are useful to Agent.Workbench.
 
-```text
-src/template/state/update/
-```
+If ownership is uncertain for a specific module, inspect its current
+responsibility and usages before moving it.
 
-Pure technical reload/update utilities may belong to Core when they have no
-Template dependencies.
-
-Do not document the historical
-`src/application/bootstrap/watchers` path as the current location.
+Do not guess.
 
 ---
 
-## 21. API
+## 27. API Ownership
 
-The existing API area remains:
+The repository contains API definitions and implementations under:
 
 ```text
 src/api/
-+-- definition/
-+-- implementation/
-+-- ...
 ```
 
-Generated API clients live under:
+Generated API clients must not be manually reformatted or rewritten during
+unrelated architecture work.
+
+API ownership follows responsibility:
 
 ```text
-src/api/implementation/
+generic technical communication
+    -> Core where appropriate
+
+reusable Base Template / Agent.Workbench API integration
+    -> Template where appropriate
+
+concrete product business API
+    -> Application
 ```
 
-Known generated clients include:
+Do not assume that every API containing an Agent.Workbench name is
+Application-owned.
 
-```text
-AWB-RestAPI/
-Dynamic-Content-Api/
-```
-
-Do not manually refactor or reformat generated API code as part of general
-architecture cleanup.
-
-The final ownership of concrete API clients between Template and Application
-is still under review.
+Inspect how the API is used before changing ownership.
 
 ---
 
-## 22. Localization
+## 28. Localization
 
 Translations live under:
 
@@ -818,18 +983,20 @@ Translations live under:
 assets/locales/
 ```
 
-German and English are currently supported.
-
-Prefer existing translation infrastructure and existing feature namespaces.
+Use existing i18next infrastructure.
 
 Do not hard-code user-visible text when the surrounding feature already uses
-i18next.
+translations.
+
+Concrete Application translations belong to Application composition.
+
+Reusable Template translations remain Template-owned.
 
 ---
 
-## 23. Public APIs and Aliases
+## 29. Public APIs and Aliases
 
-Important aliases include:
+Known aliases include:
 
 ```text
 @core
@@ -839,274 +1006,410 @@ Important aliases include:
 @
 ```
 
-The root alias maps:
+The root alias maps source paths according to the project TypeScript
+configuration.
 
-```text
-@/* --> src/*
-```
+Concrete Applications should prefer supported Template integration surfaces
+instead of arbitrary deep imports into Template implementation.
 
-Long-term, separate application repositories should consume the Base Template
-through an explicit public API instead of arbitrary internal Template paths.
+Before introducing or changing a public API, inspect existing exports.
 
-Target usage is approximately:
-
-```ts
-import {
-  createTemplateApp,
-  type ApplicationConfig,
-  type ApplicationReducers,
-} from "@enflex/web-template";
-```
-
-Only supported contracts, functions, components, types, and extension
-interfaces should be exported publicly.
+Do not invent package exports that do not exist.
 
 ---
 
-## 24. Working Method
+## 30. Dependency Validation
 
-Architecture work must be done in small, verifiable batches.
+Useful architecture checks include:
+
+```bash
+git grep -n "@/application/" -- src/template
+```
+
+This should remain empty because Template must not import concrete Application
+implementation.
+
+Application-side imports can be reviewed with:
+
+```bash
+git grep -n "@/template/" -- src/application
+```
+
+Unexpected deep Template imports should be reviewed against supported public
+integration surfaces.
+
+Do not automatically conclude that every matching import is wrong.
+Inspect the actual public API and current code.
+
+---
+
+## 31. Working Method
+
+Architecture work must be performed in small, verifiable batches.
 
 For each change:
 
-1. Search all usages before moving or deleting anything.
+1. Search all usages before moving, renaming or deleting anything.
 
    ```bash
    git grep -n "<name-or-path>" -- .
    ```
 
-2. Inspect the owning responsibility and current imports.
+2. Inspect the current implementation.
 
-3. Move or modify only one coherent group.
+3. Determine architectural ownership from responsibility.
 
-4. Update imports explicitly.
+4. Make the smallest coherent change.
 
-5. Search again for stale paths.
+5. Update imports explicitly.
 
-6. Run TypeScript validation.
+6. Search again for stale paths.
+
+7. Generate configuration when relevant.
+
+   ```bash
+   npm run config:generate
+   ```
+
+8. Run TypeScript validation.
 
    ```bash
    npx tsc --noEmit
    ```
 
-7. Run targeted Jest tests.
+9. Run affected tests.
 
-   ```bash
-   npx jest --runTestsByPath <test-file>
-   ```
+10. Validate the patch.
 
-8. Validate the patch.
+```bash
+git diff --check
+```
 
-   ```bash
-   git diff --check
-   ```
+11. Review the working tree.
 
-9. Start the application when runtime behavior is affected.
+```bash
+git status --short
+```
 
-   ```bash
-   npm start
-   ```
+12. Start the application when runtime behavior is affected.
 
-10. Review the working tree.
-
-   ```bash
-   git status --short
-   ```
-
-11. Commit the completed batch.
-
-Do not wait for Metro to reveal stale imports one at a time.
+Do not wait for runtime tooling to reveal stale imports one at a time.
 
 ---
 
-## 25. Refactoring Safety Rules
+## 32. Refactoring Safety Rules
 
 AI assistants must:
 
-- Inspect existing implementations before changing them.
-- Respect `Application --> Template --> Core`.
-- Preserve runtime behavior during architecture moves.
-- Search all references before moving files.
-- Prefer small coherent batches.
-- Use stable aliases where appropriate.
-- Reuse existing components, hooks, selectors, services, and utilities.
-- Keep generated API code untouched unless explicitly required.
-- Update tests and documentation when architecture changes.
-- Clearly distinguish implemented, transitional, and planned architecture.
-- Verify store changes with tests before connecting them to runtime.
-- Review product-specific screens, state, navigation, and APIs together when
-  extracting a feature.
+* inspect existing implementations before changing them
+* respect `Application --> Template --> Core`
+* preserve runtime behavior
+* search all references before moving files
+* prefer small coherent batches
+* reuse existing components, hooks, selectors, services and utilities
+* keep generated API code untouched unless explicitly required
+* update documentation when architecture changes
+* verify uncertain implementation details with `git grep`, `Get-Content` or
+  `Get-ChildItem`
+* distinguish known current behavior from assumptions
+* keep Agent.Workbench standard functionality Template-owned
+* keep concrete product functionality Application-owned
 
 Avoid:
 
-- Broad file-rewrite scripts.
-- Broad formatting across unrelated source files.
-- Duplicate utilities.
-- Duplicate URL-normalization implementations.
-- Upward imports.
-- Moving mixed-responsibility modules only to make folders look cleaner.
-- Introducing a Template-to-Application dependency.
-- Reintroducing a central application resolver.
-- Creating a root-level `scripts/` architecture.
-- Replacing the active Redux store before the parallel store factory is ready.
-- Editing generated API clients during unrelated architecture work.
+* broad automatic file-rewrite scripts
+* unrelated formatting changes
+* duplicate utilities
+* duplicate URL-normalization implementations
+* upward dependencies
+* Template-to-Application imports
+* central runtime Application resolvers
+* unnecessary new configuration files
+* reintroducing legacy configuration names
+* moving Agent.Workbench functionality solely because of its name
+* editing generated API clients during unrelated work
+* claiming a runtime integration state without verifying the code
 
 ---
 
-## 26. Documentation Strategy
+## 33. PowerShell Rules
 
-`README.md` should remain a concise entry point.
+Development is performed on Windows with PowerShell and VS Code.
 
-Detailed documentation belongs in `doc/`.
+When providing PowerShell commands:
+
+* do not include the `PS C:\...>` prompt
+* provide only the command itself
+* prefer simple individual commands
+* use `-Encoding UTF8` with `Get-Content`
+* avoid large automated rewrite scripts
+* prefer small safe changes
+* verify after major changes
+
+Example:
+
+```powershell
+Get-Content ".\doc\architecture\05-current-state.md" -Encoding UTF8
+```
+
+---
+
+## 34. Documentation Rules
+
+Documentation is written in English.
+
+Explanations to the developer may be written in German.
+
+The current architecture must be described consistently as:
+
+```text
+Application --> Template --> Core
+```
+
+Do not reintroduce these obsolete statements:
+
+```text
+Agent.Workbench is a concrete Application.
+
+Agent.Workbench is transitional inside Template.
+
+Agent.Workbench requires a separate Application repository.
+
+Agent.Workbench state must move out of Template.
+
+Agent.Workbench screens are Application extraction candidates.
+
+menu.properties is planned configuration.
+
+tabs.properties is planned configuration.
+
+featureFlags.properties is planned configuration.
+
+menuFeatureFlags.properties is planned configuration.
+
+tabFeatureFlags.properties is planned configuration.
+```
+
+The correct model is:
+
+```text
+Agent.Workbench standard functionality
+    -> Base Template
+
+HEMS
+    -> concrete Application
+```
+
+---
+
+## 35. Documentation Set
 
 Important documentation includes:
 
 ```text
-application-separation.md
-project-structure.md
-redux-state-management.md
-authentication.md
-server-check-and-switching.md
-update-system.md
-components.md
-release-workflow.md
-architecture/
+doc/ai-context.md
+doc/application-separation.md
+doc/project-structure.md
+doc/redux-state-management.md
+
+doc/architecture/00-vision.md
+doc/architecture/01-core-platform.md
+doc/architecture/05-current-state.md
+doc/architecture/application-contract.md
+doc/architecture/platform-architecture.md
+doc/architecture/decisions/
 ```
 
-Documentation must always distinguish:
+When one architecture document changes, related documents should be checked for
+contradictory ownership statements.
 
-```text
-Implemented
-Transitional
-Planned
-Open
-```
-
-Do not document planned architecture as if it were already active.
-
-Documentation paths must be updated when code moves.
+Do not create new architecture documentation when an existing document already
+covers the topic unless a new document is explicitly justified.
 
 ---
 
-## 27. Commit Convention
+## 36. Current Documentation Phase
+
+The current refactoring and known presentation bugfixes have been completed.
+
+The current priority is documentation consistency before new feature work.
+
+The documentation cleanup is aligning all architecture documents around:
+
+```text
+Application --> Template --> Core
+```
+
+with:
+
+```text
+Agent.Workbench standard functionality
+    -> Template
+
+HEMS
+    -> concrete Application
+```
+
+After documentation is consistent, further extension ideas and a separate
+HEMS/consumer validation can be addressed.
+
+---
+
+## 37. Validation Commands
+
+Typical validation commands are:
+
+```bash
+npm run config:generate
+npx tsc --noEmit
+npm test -- --runInBand
+git diff --check
+git status --short
+```
+
+Architecture checks include:
+
+```bash
+git grep -n "@/application/" -- src/template
+git grep -n "@/template/" -- src/application
+```
+
+Interpret architecture-check results in context.
+
+Do not modify code merely to make a grep result disappear without confirming
+the intended public integration boundary.
+
+---
+
+## 38. Commit Convention
 
 Examples:
 
 ```text
 feat(login): add OpenID redirect
 fix(update): prevent duplicate update check
-docs: update layered architecture
-refactor(state): move notification state into template
+docs: align architecture documentation
+refactor(state): reorganize reusable state
 refactor: load application identity from properties config
 ```
 
-Keep architecture batches focused.
+Keep commits focused.
 
 Do not mix unrelated formatting or generated-code changes into architecture
 commits.
 
 ---
 
-## 28. Current Roadmap
+## 39. Current Next Steps
 
-### Immediate
-
-1. Keep architecture documentation synchronized with the current code.
-2. Complete documentation cleanup and remove obsolete paths.
-3. Extend property-based configuration incrementally.
-4. Define menu and tab configuration contracts.
-5. Continue the Redux integration only in safe, tested steps.
-6. Finalize combined Template/Application Redux typing.
-7. Review Agent.Workbench-specific screen and state ownership.
-8. Review concrete API-client ownership.
-
-### Next Architecture Phase
-
-1. Connect application reducers to application creation.
-2. Make the extensible store factory the active runtime store.
-3. Finalize the public Base Template API.
-4. Add or maintain automated dependency-boundary checks.
-5. Prepare the physical Agent.Workbench repository extraction.
-6. Validate the Base Template independently.
-
-### Future Platform Capabilities
-
-Possible future capabilities include:
-
-- Property-based application configuration
-- Property-based navigation configuration
-- Dynamic branding
-- Additional application metadata
-- Independent application builds
-- Independent deployment configuration
-- Central Base Template releases
-
-Do not assume an application registry or multi-application runtime resolver
-unless that architecture is explicitly changed in the future.
-
----
-
-## 29. Open Ownership Decisions
-
-The final ownership of some features still requires architectural review.
-
-Examples include:
+Current priority:
 
 ```text
-Live Console
-Developer Console
-Database Connections
-Server Settings
-Dynamic Content
-Backend Update
-Settings File Upload
-Concrete API Clients
-General Settings
-User Profile
+1. Finish architecture documentation cleanup.
+2. Remove obsolete Agent.Workbench extraction statements.
+3. Remove obsolete configuration references.
+4. Ensure Redux documentation reflects Template-owned Agent.Workbench state.
+5. Ensure Application documentation reflects semantic feature selection.
+6. Review remaining architecture documents and ADRs for contradictions.
+7. Validate documentation changes.
 ```
 
-Do not move these areas solely based on their current physical folder.
+After documentation cleanup:
 
-Ownership must be determined from responsibility and reusability.
+```text
+1. Discuss next extension ideas.
+2. Review remaining implementation improvements.
+3. Validate the Base Template with a separate HEMS/consumer scenario.
+4. Refine public consumption APIs where required by real consumer usage.
+```
+
+Do not start a new Agent.Workbench extraction project.
 
 ---
 
-## 30. Prompt for a New AI Conversation
+## 40. If Implementation Details Are Unclear
+
+Do not guess.
+
+Use source inspection.
+
+Useful commands include:
+
+```powershell
+git grep -n "<search-term>" -- src
+```
+
+```powershell
+Get-Content ".\path\to\file" -Encoding UTF8
+```
+
+```powershell
+Get-ChildItem ".\src\some-area" -Recurse
+```
+
+For architecture decisions, treat current code plus the current architecture
+documentation as the source of truth.
+
+If documentation and implementation conflict, identify the conflict before
+changing code.
+
+---
+
+## 41. Prompt for a New AI Conversation
 
 ```text
 I am working on the EnFlexIT/web.template repository.
 
 Use doc/ai-context.md as the primary project context.
 
-Respect this dependency direction:
+The current architecture is already decided and implemented:
 
 Application --> Template --> Core
 
-Important current architecture rules:
+Important rules:
 
-- The Base Template must not import a concrete application.
+- Core contains reusable technical capabilities.
 - Core must not import Template or Application.
-- Applications use property-based developer-facing configuration.
-- There is no central multi-application resolver.
-- Redux state belongs to its owning architectural responsibility.
-- createTemplateStore exists but is not yet the active runtime store.
-- Agent.Workbench-specific state and screens are still transitional.
+- Template contains the reusable application platform.
+- Template may import Core.
+- Template must not import a concrete Application.
+- Agent.Workbench standard functionality belongs to Template.
+- Agent.Workbench state belongs to Template.
+- Agent.Workbench is the current in-repository Application identity/composition, but it is not modeled as a separate consumer Application repository.
+- Do not plan a separate Agent.Workbench Application repository.
+- HEMS is a concrete Application.
+- src/application currently contains the in-repository Agent.Workbench Application composition.
+- Developer-facing Application configuration uses:
+  application.properties
+  features.properties
+  navigation.properties
+- Do not reintroduce menu.properties, tabs.properties,
+  featureFlags.properties, menuFeatureFlags.properties or
+  tabFeatureFlags.properties.
+- Applications select reusable Template features semantically.
+- Template owns internal navigation IDs and visibility rules.
+- Application-specific navigation only extends Template navigation.
+- Application screens are discovered automatically.
+- Application-specific Redux state is optional.
+- Do not classify Agent.Workbench state as transitional Application state.
 - Generated API clients must not be modified during unrelated refactoring.
-- Use npm start instead of direct npx expo start when configuration may have
-  changed.
+- There is no central runtime multi-Application resolver.
+- If an implementation detail is unclear, inspect the source instead of
+  guessing.
 
-Before changing code:
+Working method:
 
 1. Search all references.
 2. Inspect current ownership and dependencies.
 3. Make one small coherent change.
 4. Update imports explicitly.
 5. Search for stale paths.
-6. Run TypeScript validation.
-7. Run targeted tests.
-8. Run git diff --check.
-9. Start the application when runtime behavior changes.
-10. Update documentation when paths or responsibilities change.
+6. Run npm run config:generate when relevant.
+7. Run npx tsc --noEmit.
+8. Run affected tests.
+9. Run git diff --check.
+10. Review git status --short.
+11. Update documentation when ownership or paths change.
 
 Current task:
 
