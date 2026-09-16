@@ -36,7 +36,7 @@ function collectTsxFiles(
     if (
       entry.isFile() &&
       entry.name.endsWith(
-        ".tsx",
+        "Screen.tsx",
       )
     ) {
       files.push(

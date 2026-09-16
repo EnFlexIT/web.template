@@ -1,39 +1,80 @@
 import {
-  Image,
+  ScrollView,
   View,
 } from "react-native";
 
 import {
-  useTranslation,
-} from "react-i18next";
+  useState,
+} from "react";
 
 import {
   StyleSheet,
 } from "react-native-unistyles";
 
 import {
-  Card,
-  H2,
-  ThemedText,
+  TabsBar,
 } from "@design-system";
 
 import {
-  ApplicationImages,
-} from "../generated/applicationAssets.generated";
+  AssetsExampleTab,
+} from "./example/tabs/AssetsExampleTab";
 
-/**
- * Minimal example of an Application-owned screen.
- *
- * The screen is not part of the Base Template.
- * It demonstrates how an Application can provide
- * its own screen, translations and assets.
- */
+import {
+  OverviewExampleTab,
+} from "./example/tabs/OverviewExampleTab";
+import {
+  ComponentsExampleTab,
+} from "./example/tabs/ComponentsExampleTab";
+
+import {
+  NavigationExampleTab,
+} from "./example/tabs/NavigationExampleTab";
+import { LayoutExampleTab } from "./example/tabs/LayoutExampleTab";
+
+import { ConfigurationExampleTab } from "./example/tabs/ConfigurationExampleTab";
+type ExampleTabKey =
+  | "overview"
+  | "assets"
+  | "components"
+  | "navigation"
+  | "configuration"
+  | "layout";
+
+const exampleTabs = [
+  {
+    key: "overview",
+    label: "Overview",
+  },
+  {
+    key: "assets",
+    label: "Assets",
+  },
+  {
+    key: "components",
+    label: "Components",
+  },
+  {
+    key: "navigation",
+    label: "Navigation",
+  },
+  {
+    key: "configuration",
+    label: "Configuration",
+  },
+  {
+    key: "layout",
+    label: "Layout",
+  },
+] as const;
+
 export function ExampleScreen() {
-  const {
-    t,
-  } = useTranslation(
-    "ExampleApplication",
-  );
+  const [
+    activeTab,
+    setActiveTab,
+  ] =
+    useState<ExampleTabKey>(
+      "overview",
+    );
 
   return (
     <View
@@ -41,29 +82,56 @@ export function ExampleScreen() {
         styles.container
       }
     >
-      <Card padding="md">
-        <H2>
-          {t("title")}
-        </H2>
+      <TabsBar
+        items={
+          exampleTabs
+        }
+        activeKey={
+          activeTab
+        }
+        onChange={
+          setActiveTab
+        }
+      />
 
-        <ThemedText>
-          {t("description")}
-        </ThemedText>
+      <ScrollView
+        style={
+          styles.scrollView
+        }
+        contentContainerStyle={
+          styles.content
+        }
+      >
+        {activeTab ===
+        "overview" ? (
+          <OverviewExampleTab />
+        ) : null}
 
-        <ThemedText>
-          {t("extensionHint")}
-        </ThemedText>
+        {activeTab ===
+        "assets" ? (
+          <AssetsExampleTab />
+        ) : null}
 
-        <Image
-          source={
-            ApplicationImages.solar
-          }
-          style={
-            styles.image
-          }
-          resizeMode="contain"
-        />
-      </Card>
+        {activeTab ===
+        "components" ? (
+          <ComponentsExampleTab />
+        ) : null}
+
+        {activeTab ===
+        "navigation" ? (
+          <NavigationExampleTab />
+        ) : null}
+
+        {activeTab ===
+        "configuration" ? (
+          <ConfigurationExampleTab />
+        ) : null}
+
+        {activeTab ===
+        "layout" ? (
+          <LayoutExampleTab />
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -71,13 +139,17 @@ export function ExampleScreen() {
 const styles =
   StyleSheet.create(() => ({
     container: {
+      flex: 1,
       width: "100%",
-      padding: 16,
+      padding: 24,
+      gap: 16,
     },
 
-    image: {
-      width: "100%",
-      height: 220,
-      marginTop: 16,
+    scrollView: {
+      flex: 1,
+    },
+
+    content: {
+      paddingBottom: 32,
     },
   }));
