@@ -1,4 +1,8 @@
 import type {
+  ImageSourcePropType,
+} from "react-native";
+
+import type {
   AuthMethod,
 } from "@/template/state/api/apiSlice";
 
@@ -32,6 +36,16 @@ export type TabVisibilityResolver<
   context: TabVisibilityContext<TState>,
 ) => boolean;
 
+export type ApplicationBranding = {
+  /**
+   * Optional Application logo.
+   *
+   * When omitted, the Base Template may use
+   * its default branding.
+   */
+  logo?: ImageSourcePropType;
+};
+
 export type ApplicationConfig<
   TState = unknown,
 > = {
@@ -41,7 +55,7 @@ export type ApplicationConfig<
    * Examples:
    * - base-template
    * - agent-workbench
-   * - hems
+   * - plant-assist
    */
   id: string;
 
@@ -49,6 +63,11 @@ export type ApplicationConfig<
    * Visible application name.
    */
   displayName: string;
+
+  /**
+   * Optional Application-specific branding.
+   */
+  branding?: ApplicationBranding;
 
   navigation: {
     menu: {

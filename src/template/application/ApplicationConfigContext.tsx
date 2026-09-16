@@ -10,7 +10,7 @@ import type {
 
 export type ApplicationConfigContextValue = Pick<
   ApplicationConfig<unknown>,
-  "id" | "displayName"
+  "id" | "displayName" | "branding"
 >;
 
 const ApplicationConfigContext =

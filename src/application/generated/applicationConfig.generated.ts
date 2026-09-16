@@ -19,6 +19,10 @@ import {
   resolveApplicationScreen,
 } from "../registry/applicationScreenRegistry";
 
+import {
+  ApplicationImages,
+} from "./applicationAssets.generated";
+
 type MenuFeatureRule = {
   authInclude?: readonly string[];
   authExclude?: readonly string[];
@@ -331,6 +335,11 @@ export const applicationConfig:
   ApplicationConfig = {
   id: "agent-workbench",
   displayName: "Agent.Workbench",
+
+  branding: {
+    logo:
+      ApplicationImages.awb1024,
+  },
 
   navigation: {
     menu: {
