@@ -14,12 +14,14 @@ export const templateMenuCatalog = {
   settings: {
     menuID: 3003,
     caption: "settings",
+    icon: "setting",
     screen: "settings",
   },
 
   notifications: {
     menuID: 3015,
     caption: "notifications",
+    icon: "notification",
     parent: "settings",
     screen: "notifications",
     feature: "notifications",
@@ -28,6 +30,7 @@ export const templateMenuCatalog = {
   systemSettings: {
     menuID: 3021,
     caption: "SystemSettings",
+    icon: "tool",
     parent: "settings",
     screen: "menu-hub",
     container: true,
@@ -36,6 +39,7 @@ export const templateMenuCatalog = {
   personalSettings: {
     menuID: 3022,
     caption: "personalSettings",
+    icon: "user",
     parent: "settings",
     screen: "menu-hub",
     container: true,

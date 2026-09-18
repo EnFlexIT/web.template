@@ -39,11 +39,13 @@ const menuItems:
   {
     caption: "settings",
     menuID: 3003,
+    icon: "setting",
     Screen: resolveApplicationScreen("settings"),
   },
   {
     caption: "notifications",
     menuID: 3015,
+    icon: "notification",
     parentID: 3003,
     position: 1,
     Screen: resolveApplicationScreen("notifications"),
@@ -51,6 +53,7 @@ const menuItems:
   {
     caption: "SystemSettings",
     menuID: 3021,
+    icon: "tool",
     parentID: 3003,
     position: 2,
     Screen: resolveApplicationScreen("menu-hub"),
@@ -58,6 +61,7 @@ const menuItems:
   {
     caption: "personalSettings",
     menuID: 3022,
+    icon: "user",
     parentID: 3003,
     position: 3,
     Screen: resolveApplicationScreen("menu-hub"),

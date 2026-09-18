@@ -11,6 +11,7 @@ import {
 
 import {
   StyleSheet,
+  useUnistyles,
 } from "react-native-unistyles";
 
 import {
@@ -36,6 +37,10 @@ import {
 import {
   Text,
 } from "@/template/components/design-system/stylistic/Text";
+
+import {
+  Icon,
+} from "@/template/components/design-system/ui-elements/Icon/Icon";
 
 import {
   selectAuthenticationMethod,
@@ -88,6 +93,10 @@ function DrawerItem({
 
   const dispatch =
     useAppDispatch();
+
+  const {
+    theme,
+  } = useUnistyles();
 
   const { t } =
     useTranslation([
@@ -193,6 +202,13 @@ function DrawerItem({
     return null;
   }
 
+  const iconColor =
+    activeMenuId === id
+      ? theme.colors.primary
+      : hovered
+        ? theme.colors.highlight
+        : theme.colors.text;
+
   return (
     <View
       style={
@@ -219,7 +235,9 @@ function DrawerItem({
         onHoverOut={() =>
           setHovered(false)
         }
-        style={styles.row}
+        style={
+          styles.row
+        }
       >
         <Text
           style={[
@@ -233,6 +251,24 @@ function DrawerItem({
               : "▸"
             : " "}
         </Text>
+
+        <View
+          style={
+            styles.iconSlot
+          }
+        >
+          {node.val.icon ? (
+            <Icon
+              name={
+                node.val.icon
+              }
+              size={16}
+              color={
+                iconColor
+              }
+            />
+          ) : null}
+        </View>
 
         <Text
           style={[
@@ -309,6 +345,10 @@ export function Navigation({
   const dispatch =
     useAppDispatch();
 
+  const {
+    theme,
+  } = useUnistyles();
+
   const { t } =
     useTranslation([
       "Drawer",
@@ -322,10 +362,12 @@ export function Navigation({
   const isBaseMode =
     api.isBaseMode === true;
 
-  const { rawMenu } =
-    useAppSelector(
-      selectMenu,
-    );
+  const {
+    rawMenu,
+    activeMenuId,
+  } = useAppSelector(
+    selectMenu,
+  );
 
   const {
     pathById,
@@ -354,6 +396,12 @@ export function Navigation({
     ] ??
     `/${menu.val.menuID}`;
 
+  const rootIconColor =
+    activeMenuId ===
+    menu.val.menuID
+      ? theme.colors.primary
+      : theme.colors.text;
+
   return (
     <View
       style={{
@@ -377,14 +425,14 @@ export function Navigation({
             }}
           />
 
-       <Text
-          style={{
-            fontWeight:
-              "bold",
-          }}
-        >
-          {displayName}
-        </Text>
+          <Text
+            style={{
+              fontWeight:
+                "bold",
+            }}
+          >
+            {displayName}
+          </Text>
         </View>
 
         <View
@@ -411,12 +459,31 @@ export function Navigation({
             }
           >
             <Text
-              style={
-                styles.arrow
-              }
+              style={[
+                styles.arrow,
+                styles.noSelect,
+              ]}
             >
               {" "}
             </Text>
+
+            <View
+              style={
+                styles.iconSlot
+              }
+            >
+              {menu.val.icon ? (
+                <Icon
+                  name={
+                    menu.val.icon
+                  }
+                  size={16}
+                  color={
+                    rootIconColor
+                  }
+                />
+              ) : null}
+            </View>
 
             <Text
               style={[
@@ -454,7 +521,9 @@ export function Navigation({
                       .menuID ??
                     index
                   }
-                  node={node}
+                  node={
+                    node
+                  }
                   expanded={
                     expanded
                   }
@@ -513,6 +582,15 @@ const styles =
       arrow: {
         width: 16,
         opacity: 0.8,
+      },
+
+      iconSlot: {
+        width: 18,
+        height: 18,
+        alignItems:
+          "center",
+        justifyContent:
+          "center",
       },
 
       currentlyActiveMenuID: {

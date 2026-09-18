@@ -9,6 +9,9 @@ import type {
 } from "@/template/state/store/templateStoreTypes";
 
 import type {
+  IconName,
+} from "@/template/components/design-system/ui-elements/Icon/Icon";
+import type {
   MenuItem as ApiMenuItem,
 } from "@/api/implementation/Dynamic-Content-Api";
 
@@ -29,9 +32,9 @@ interface BaseMenuItem<P = {}> {
   parentID?: number;
   position?: number;
   caption: string;
+  icon?: IconName;
   Screen?: any;
 }
-
 interface DynamicMenuItem
   extends BaseMenuItem {
   position: number;

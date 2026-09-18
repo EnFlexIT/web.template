@@ -18,73 +18,58 @@ import {
   writeGeneratedApplicationAssets,
 } from "./applicationAssetDiscovery.mjs";
 
-const rootDirectory =
-  process.cwd();
+const rootDirectory = process.cwd();
 
-const configDirectory =
-  path.join(
-    rootDirectory,
-    "src",
-    "application",
-    "config",
-  );
+const configDirectory = path.join(
+  rootDirectory,
+  "src",
+  "application",
+  "config",
+);
 
-const applicationPropertiesPath =
-  path.join(
-    configDirectory,
-    "application.properties",
-  );
+const applicationPropertiesPath = path.join(
+  configDirectory,
+  "application.properties",
+);
 
-const featuresPropertiesPath =
-  path.join(
-    configDirectory,
-    "features.properties",
-  );
+const featuresPropertiesPath = path.join(
+  configDirectory,
+  "features.properties",
+);
 
-const navigationPropertiesPath =
-  path.join(
-    configDirectory,
-    "navigation.properties",
-  );
+const navigationPropertiesPath = path.join(
+  configDirectory,
+  "navigation.properties",
+);
 
-const generatedDirectory =
-  path.join(
-    rootDirectory,
-    "src",
-    "application",
-    "generated",
-  );
+const generatedDirectory = path.join(
+  rootDirectory,
+  "src",
+  "application",
+  "generated",
+);
 
-const generatedFilePath =
-  path.join(
-    generatedDirectory,
-    "applicationConfig.generated.ts",
-  );
+const generatedFilePath = path.join(
+  generatedDirectory,
+  "applicationConfig.generated.ts",
+);
 
-const generatedThemeFilePath =
-  path.join(
-    generatedDirectory,
-    "applicationTheme.generated.ts",
-  );
+const generatedThemeFilePath = path.join(
+  generatedDirectory,
+  "applicationTheme.generated.ts",
+);
 
 const customMenuIdStart = 3900;
-
 
 /**
  * Parses the simple key=value subset of the
  * Java .properties format used by applications.
  */
-function parseProperties(
-  content,
-) {
+function parseProperties(content) {
   const properties = {};
 
-  for (
-    const rawLine of
-    content.split(/\r?\n/)
-  ) {
-    const line =
-      rawLine.trim();
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
 
     if (
       !line ||
@@ -94,31 +79,21 @@ function parseProperties(
       continue;
     }
 
-    const separatorIndex =
-      line.indexOf("=");
+    const separatorIndex = line.indexOf("=");
 
-    if (
-      separatorIndex < 0
-    ) {
+    if (separatorIndex < 0) {
       throw new Error(
         `Invalid properties line: "${rawLine}". Expected key=value.`,
       );
     }
 
-    const key =
-      line
-        .slice(
-          0,
-          separatorIndex,
-        )
-        .trim();
+    const key = line
+      .slice(0, separatorIndex)
+      .trim();
 
-    const value =
-      line
-        .slice(
-          separatorIndex + 1,
-        )
-        .trim();
+    const value = line
+      .slice(separatorIndex + 1)
+      .trim();
 
     if (!key) {
       throw new Error(
@@ -126,70 +101,42 @@ function parseProperties(
       );
     }
 
-    if (
-      Object.hasOwn(
-        properties,
-        key,
-      )
-    ) {
+    if (Object.hasOwn(properties, key)) {
       throw new Error(
         `Duplicate property key: "${key}".`,
       );
     }
 
-    properties[key] =
-      value;
+    properties[key] = value;
   }
 
   return properties;
 }
 
-function readPropertiesFile(
-  filePath,
-) {
-  if (
-    !fs.existsSync(
-      filePath,
-    )
-  ) {
+function readPropertiesFile(filePath) {
+  if (!fs.existsSync(filePath)) {
     throw new Error(
       `Required configuration file does not exist: ${filePath}`,
     );
   }
 
   return parseProperties(
-    fs.readFileSync(
-      filePath,
-      "utf8",
-    ),
+    fs.readFileSync(filePath, "utf8"),
   );
 }
 
-function readOptionalPropertiesFile(
-  filePath,
-) {
-  if (
-    !fs.existsSync(
-      filePath,
-    )
-  ) {
+function readOptionalPropertiesFile(filePath) {
+  if (!fs.existsSync(filePath)) {
     return {};
   }
 
   return parseProperties(
-    fs.readFileSync(
-      filePath,
-      "utf8",
-    ),
+    fs.readFileSync(filePath, "utf8"),
   );
 }
 
-function requireProperty(
-  properties,
-  key,
-) {
-  const value =
-    properties[key]?.trim();
+function requireProperty(properties, key) {
+  const value = properties[key]?.trim();
 
   if (!value) {
     throw new Error(
@@ -200,18 +147,10 @@ function requireProperty(
   return value;
 }
 
-function parseInteger(
-  value,
-  description,
-) {
-  const parsed =
-    Number(value);
+function parseInteger(value, description) {
+  const parsed = Number(value);
 
-  if (
-    !Number.isInteger(
-      parsed,
-    )
-  ) {
+  if (!Number.isInteger(parsed)) {
     throw new Error(
       `Invalid integer for ${description}: "${value}".`,
     );
@@ -220,19 +159,12 @@ function parseInteger(
   return parsed;
 }
 
-function parseBoolean(
-  value,
-  description,
-) {
-  if (
-    value === "true"
-  ) {
+function parseBoolean(value, description) {
+  if (value === "true") {
     return true;
   }
 
-  if (
-    value === "false"
-  ) {
+  if (value === "false") {
     return false;
   }
 
@@ -242,18 +174,13 @@ function parseBoolean(
 }
 
 function getKnownFeatureNames() {
-  const featureNames =
-    new Set();
+  const featureNames = new Set();
 
   for (
     const definition of
-    Object.values(
-      templateMenuCatalog,
-    )
+    Object.values(templateMenuCatalog)
   ) {
-    if (
-      definition.feature
-    ) {
+    if (definition.feature) {
       featureNames.add(
         definition.feature,
       );
@@ -271,13 +198,9 @@ function getKnownFeatureNames() {
 
   for (
     const definition of
-    Object.values(
-      templateTabCatalog,
-    )
+    Object.values(templateTabCatalog)
   ) {
-    if (
-      definition.feature
-    ) {
+    if (definition.feature) {
       featureNames.add(
         definition.feature,
       );
@@ -304,14 +227,10 @@ function parseTemplateFeatureConfiguration(
       key,
       value,
     ] of
-    Object.entries(
-      properties,
-    )
+    Object.entries(properties)
   ) {
     const match =
-      key.match(
-        pattern,
-      );
+      key.match(pattern);
 
     if (!match) {
       throw new Error(
@@ -354,7 +273,7 @@ function parseApplicationNavigation(
     new Map();
 
   const menuPattern =
-    /^menu\.([A-Za-z0-9_-]+)\.(enabled|caption|parent|position|screen)$/;
+    /^menu\.([A-Za-z0-9_-]+)\.(enabled|caption|parent|position|screen|icon)$/;
 
   const tabPattern =
     /^tab\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\.(enabled|caption|position|screen)$/;
@@ -364,14 +283,10 @@ function parseApplicationNavigation(
       key,
       value,
     ] of
-    Object.entries(
-      properties,
-    )
+    Object.entries(properties)
   ) {
     const menuMatch =
-      key.match(
-        menuPattern,
-      );
+      key.match(menuPattern);
 
     if (menuMatch) {
       const menuKey =
@@ -381,15 +296,11 @@ function parseApplicationNavigation(
         menuMatch[2];
 
       const item =
-        menuItems.get(
-          menuKey,
-        ) ?? {
+        menuItems.get(menuKey) ?? {
           key: menuKey,
         };
 
-      switch (
-        propertyName
-      ) {
+      switch (propertyName) {
         case "enabled":
           item.enabled =
             parseBoolean(
@@ -416,6 +327,11 @@ function parseApplicationNavigation(
             );
           break;
 
+        case "icon":
+          item.icon =
+            value;
+          break;
+
         case "screen":
           item.screen =
             value;
@@ -436,9 +352,7 @@ function parseApplicationNavigation(
     }
 
     const tabMatch =
-      key.match(
-        tabPattern,
-      );
+      key.match(tabPattern);
 
     if (tabMatch) {
       const menuKey =
@@ -461,9 +375,7 @@ function parseApplicationNavigation(
           tabKey,
         };
 
-      switch (
-        propertyName
-      ) {
+      switch (propertyName) {
         case "enabled":
           item.enabled =
             parseBoolean(
@@ -514,23 +426,18 @@ function parseApplicationNavigation(
     menuItems.values()
   ) {
     if (
-      item.enabled ===
-      false
+      item.enabled === false
     ) {
       continue;
     }
 
-    if (
-      !item.caption
-    ) {
+    if (!item.caption) {
       throw new Error(
         `Application menu "${item.key}" is missing caption.`,
       );
     }
 
-    if (
-      !item.screen
-    ) {
+    if (!item.screen) {
       throw new Error(
         `Application menu "${item.key}" is missing screen.`,
       );
@@ -542,23 +449,18 @@ function parseApplicationNavigation(
     tabItems.values()
   ) {
     if (
-      item.enabled ===
-      false
+      item.enabled === false
     ) {
       continue;
     }
 
-    if (
-      !item.caption
-    ) {
+    if (!item.caption) {
       throw new Error(
         `Application tab "${item.menuKey}.${item.tabKey}" is missing caption.`,
       );
     }
 
-    if (
-      !item.screen
-    ) {
+    if (!item.screen) {
       throw new Error(
         `Application tab "${item.menuKey}.${item.tabKey}" is missing screen.`,
       );
@@ -585,6 +487,12 @@ function renderMenuItem(
     `    menuID: ${item.menuID},`,
   ];
 
+  if (item.icon) {
+    lines.push(
+      `    icon: ${JSON.stringify(item.icon)},`,
+    );
+  }
+
   if (
     item.parentID !==
     undefined
@@ -608,9 +516,7 @@ function renderMenuItem(
     "  },",
   );
 
-  return lines.join(
-    "\n",
-  );
+  return lines.join("\n");
 }
 
 function renderTabItem(
@@ -646,9 +552,7 @@ function renderTabItem(
     "  },",
   );
 
-  return lines.join(
-    "\n",
-  );
+  return lines.join("\n");
 }
 
 function renderMenuRule(
@@ -682,17 +586,13 @@ function renderTabRule(
 ) {
   const properties = [];
 
-  if (
-    rule.type
-  ) {
+  if (rule.type) {
     properties.push(
       `type: ${JSON.stringify(rule.type)}`,
     );
   }
 
-  if (
-    rule.statePath
-  ) {
+  if (rule.statePath) {
     properties.push(
       `statePath: ${JSON.stringify(rule.statePath)}`,
     );
@@ -741,7 +641,8 @@ const applicationLogo =
   applicationProperties[
     "ApplicationLogo"
   ]?.trim() || undefined;
-  const applicationThemeOverrides = {
+
+const applicationThemeOverrides = {
   light: {
     primary:
       applicationProperties[
@@ -872,9 +773,7 @@ if (
       `Unknown Application logo asset "${applicationLogo}".`,
       "Add a matching image to",
       "src/application/assets.",
-    ].join(
-      " ",
-    ),
+    ].join(" "),
   );
 }
 
@@ -897,8 +796,7 @@ for (
   ]
 ) {
   if (
-    item.enabled ===
-    false
+    item.enabled === false
   ) {
     continue;
   }
@@ -913,9 +811,7 @@ for (
         `Unknown Application screen "${item.screen}".`,
         "Create a matching screen file in",
         "src/application/screens.",
-      ].join(
-        " ",
-      ),
+      ].join(" "),
     );
   }
 }
@@ -1057,9 +953,7 @@ for (
   const item of
   enabledApplicationMenus
 ) {
-  if (
-    !item.parent
-  ) {
+  if (!item.parent) {
     continue;
   }
 
@@ -1076,9 +970,7 @@ for (
       [
         `Application menu "${item.key}" uses disabled`,
         `parent menu "${item.parent}".`,
-      ].join(
-        " ",
-      ),
+      ].join(" "),
     );
   }
 }
@@ -1104,9 +996,7 @@ for (
       [
         `Application tab "${item.menuKey}.${item.tabKey}"`,
         `belongs to disabled menu "${item.menuKey}".`,
-      ].join(
-        " ",
-      ),
+      ].join(" "),
     );
   }
 }
@@ -1298,6 +1188,9 @@ for (
         menuKey,
       ),
 
+    icon:
+      definition.icon,
+
     screen:
       definition.screen,
   });
@@ -1328,6 +1221,9 @@ for (
 
     position:
       item.position,
+
+    icon:
+      item.icon,
 
     screen:
       item.screen,
@@ -1553,6 +1449,7 @@ const renderedApplicationBranding =
   },
 `
     : "";
+
 const generatedThemeContent = `
 // This file is generated automatically.
 // Do not edit this file manually.
@@ -1564,6 +1461,7 @@ ${JSON.stringify(
   2,
 )} as const;
 `.trimStart();
+
 const generatedContent = `
 // This file is generated automatically.
 // Do not edit this file manually.
@@ -1782,6 +1680,7 @@ fs.writeFileSync(
   generatedContent,
   "utf8",
 );
+
 fs.writeFileSync(
   generatedThemeFilePath,
   generatedThemeContent,
