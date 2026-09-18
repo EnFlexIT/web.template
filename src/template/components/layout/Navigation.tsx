@@ -377,17 +377,14 @@ export function Navigation({
             }}
           />
 
-          <Text
-            style={{
-              fontWeight:
-                "bold",
-            }}
-          >
-            {displayName}
-            {isBaseMode
-              ? " (Base)"
-              : ""}
-          </Text>
+       <Text
+          style={{
+            fontWeight:
+              "bold",
+          }}
+        >
+          {displayName}
+        </Text>
         </View>
 
         <View
