@@ -938,7 +938,7 @@ const styles =
     },
 
     drawer: {
-      width: 200,
+      width: 230,
     },
 
     layoutContainer: {

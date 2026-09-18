@@ -73,13 +73,22 @@ import {
 
 interface DrawerItemProps {
   node: MenuTree;
-  expanded: Record<number, boolean>;
-  setExpanded: React.Dispatch<
-    React.SetStateAction<
-      Record<number, boolean>
-    >
-  >;
-  pathById: Record<number, string>;
+
+  expanded:
+    Record<number, boolean>;
+
+  setExpanded:
+    React.Dispatch<
+      React.SetStateAction<
+        Record<number, boolean>
+      >
+    >;
+
+  pathById:
+    Record<number, string>;
+
+  showIcons:
+    boolean;
 }
 
 function DrawerItem({
@@ -87,6 +96,7 @@ function DrawerItem({
   expanded,
   setExpanded,
   pathById,
+  showIcons,
 }: DrawerItemProps) {
   const linkTo =
     useLinkTo();
@@ -148,6 +158,7 @@ function DrawerItem({
   styles.useVariants({
     isCurrentRoute:
       activeMenuId === id,
+
     hovered,
   });
 
@@ -155,6 +166,7 @@ function DrawerItem({
     setExpanded(
       (previous) => ({
         ...previous,
+
         [id]:
           !(
             previous[id] ??
@@ -202,12 +214,20 @@ function DrawerItem({
     return null;
   }
 
+  const isActive =
+    activeMenuId === id;
+
   const iconColor =
-    activeMenuId === id
+    isActive
       ? theme.colors.primary
       : hovered
         ? theme.colors.highlight
         : theme.colors.text;
+
+  const chevronColor =
+    hovered
+      ? theme.colors.primary
+      : theme.colors.text;
 
   return (
     <View
@@ -239,36 +259,45 @@ function DrawerItem({
           styles.row
         }
       >
-        <Text
-          style={[
-            styles.arrow,
-            styles.noSelect,
-          ]}
-        >
-          {isFolder
-            ? isOpen
-              ? "▾"
-              : "▸"
-            : " "}
-        </Text>
-
         <View
           style={
-            styles.iconSlot
+            styles.chevronSlot
           }
         >
-          {node.val.icon ? (
+          {isFolder ? (
             <Icon
               name={
-                node.val.icon
+                isOpen
+                  ? "down"
+                  : "right"
               }
-              size={16}
+              size={12}
               color={
-                iconColor
+                chevronColor
               }
             />
           ) : null}
         </View>
+
+        {showIcons && (
+          <View
+            style={
+              styles.iconSlot
+            }
+          >
+            {node.val.icon ? (
+              <Icon
+                name={
+                  node.val.icon
+                }
+                size={16}
+                color={
+                  iconColor
+                }
+              />
+            ) : null}
+          </View>
+        )}
 
         <Text
           style={[
@@ -318,6 +347,9 @@ function DrawerItem({
                   }
                   pathById={
                     pathById
+                  }
+                  showIcons={
+                    showIcons
                   }
                 />
               ),
@@ -376,7 +408,9 @@ export function Navigation({
       buildMenuPaths(
         rawMenu,
       ),
-    [rawMenu],
+    [
+      rawMenu,
+    ],
   );
 
   const [
@@ -388,7 +422,12 @@ export function Navigation({
 
   const {
     displayName,
+    navigation,
   } = useApplicationConfig();
+
+  const showIcons =
+    navigation.menu.showIcons ===
+    true;
 
   const rootPath =
     pathById[
@@ -458,32 +497,31 @@ export function Navigation({
               styles.row
             }
           >
-            <Text
-              style={[
-                styles.arrow,
-                styles.noSelect,
-              ]}
-            >
-              {" "}
-            </Text>
-
             <View
               style={
-                styles.iconSlot
+                styles.chevronSlot
               }
-            >
-              {menu.val.icon ? (
-                <Icon
-                  name={
-                    menu.val.icon
-                  }
-                  size={16}
-                  color={
-                    rootIconColor
-                  }
-                />
-              ) : null}
-            </View>
+            />
+
+            {showIcons && (
+              <View
+                style={
+                  styles.iconSlot
+                }
+              >
+                {menu.val.icon ? (
+                  <Icon
+                    name={
+                      menu.val.icon
+                    }
+                    size={16}
+                    color={
+                      rootIconColor
+                    }
+                  />
+                ) : null}
+              </View>
+            )}
 
             <Text
               style={[
@@ -533,6 +571,9 @@ export function Navigation({
                   pathById={
                     pathById
                   }
+                  showIcons={
+                    showIcons
+                  }
                 />
               ),
             )}
@@ -574,21 +615,31 @@ const styles =
       row: {
         flexDirection:
           "row",
+
         alignItems:
           "center",
+
         gap: 6,
       },
 
-      arrow: {
+      chevronSlot: {
         width: 16,
-        opacity: 0.8,
+        height: 18,
+
+        alignItems:
+          "center",
+
+        justifyContent:
+          "center",
       },
 
       iconSlot: {
         width: 18,
         height: 18,
+
         alignItems:
           "center",
+
         justifyContent:
           "center",
       },
@@ -617,19 +668,26 @@ const styles =
       },
 
       noSelect: {
-        userSelect: "none",
+        userSelect:
+          "none",
       },
 
       logoContainer: {
         flexDirection:
           "row",
+
         alignItems:
           "center",
+
         gap: 7,
+
         borderBottomColor:
           theme.colors.border,
+
         borderBottomWidth: 1,
+
         minHeight: 74,
+
         padding: 10,
       },
 
@@ -641,7 +699,9 @@ const styles =
       toolboxContainer: {
         borderTopColor:
           theme.colors.border,
+
         borderTopWidth: 1,
+
         padding: 10,
       },
     }),

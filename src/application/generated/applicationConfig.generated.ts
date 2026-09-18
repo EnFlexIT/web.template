@@ -347,13 +347,18 @@ export const applicationConfig:
 
   navigation: {
     menu: {
+      showIcons:
+        false,
+
       items: menuItems,
+
       isEnabled:
         isApplicationMenuEnabled,
     },
 
     tabs: {
       items: tabItems,
+
       isEnabled:
         isApplicationTabEnabled,
     },

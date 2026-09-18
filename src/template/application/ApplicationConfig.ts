@@ -71,13 +71,25 @@ export type ApplicationConfig<
 
   navigation: {
     menu: {
+      /**
+       * Controls whether menu icons are shown.
+       *
+       * When omitted or false, the navigation
+       * keeps the classic text-only appearance.
+       */
+      showIcons?: boolean;
+
       items: readonly StaticMenuItem[];
-      isEnabled: MenuVisibilityResolver;
+
+      isEnabled:
+        MenuVisibilityResolver;
     };
 
     tabs: {
       items: readonly StaticTabItem[];
-      isEnabled: TabVisibilityResolver<TState>;
+
+      isEnabled:
+        TabVisibilityResolver<TState>;
     };
   };
 };

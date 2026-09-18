@@ -624,7 +624,25 @@ const navigationProperties =
   readOptionalPropertiesFile(
     navigationPropertiesPath,
   );
+const navigationMenuIconsEnabled =
+  navigationProperties[
+    "NavigationMenuIconsEnabled"
+  ]?.trim()
+    ? parseBoolean(
+        navigationProperties[
+          "NavigationMenuIconsEnabled"
+        ],
+        "NavigationMenuIconsEnabled",
+      )
+    : false;
 
+const applicationNavigationProperties = {
+  ...navigationProperties,
+};
+
+delete applicationNavigationProperties[
+  "NavigationMenuIconsEnabled"
+];
 const applicationId =
   requireProperty(
     applicationProperties,
@@ -731,7 +749,7 @@ const {
     applicationTabDefinitions,
 } =
   parseApplicationNavigation(
-    navigationProperties,
+    applicationNavigationProperties,
   );
 
 /**
@@ -1640,13 +1658,18 @@ export const applicationConfig:
 ${renderedApplicationBranding}
   navigation: {
     menu: {
+      showIcons:
+        ${navigationMenuIconsEnabled},
+
       items: menuItems,
+
       isEnabled:
         isApplicationMenuEnabled,
     },
 
     tabs: {
       items: tabItems,
+
       isEnabled:
         isApplicationTabEnabled,
     },

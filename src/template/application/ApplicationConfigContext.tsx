@@ -11,7 +11,13 @@ import type {
 export type ApplicationConfigContextValue = Pick<
   ApplicationConfig<unknown>,
   "id" | "displayName" | "branding"
->;
+> & {
+  navigation: {
+    menu: {
+      showIcons?: boolean;
+    };
+  };
+};
 
 const ApplicationConfigContext =
   createContext<ApplicationConfigContextValue | null>(
