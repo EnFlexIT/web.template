@@ -7,18 +7,26 @@
 The architecture separates:
 
 * reusable technical capabilities
+
 * reusable application-platform functionality
+
 * concrete product composition
 
 The implemented dependency direction is:
 
 ```text
+
 Application --> Template --> Core
+
 ```
 
 This architecture is already selected and implemented.
 
-It is not merely a future migration target.
+Plant Assist is the first separate concrete consumer currently used to validate the Base Template integration contract.
+
+HEMS remains a future concrete Application that can follow the same consumer model.
+
+The architecture is not merely a future migration target.
 
 ---
 
@@ -27,13 +35,21 @@ It is not merely a future migration target.
 The architecture consists of three responsibility layers:
 
 ```text
+
 Application
-    |
-    v
+
+    |
+
+    v
+
 Template
-    |
-    v
+
+    |
+
+    v
+
 Core
+
 ```
 
 These layers describe responsibility and dependency direction.
@@ -43,14 +59,19 @@ They are not merely directory names.
 The general ownership rule is:
 
 ```text
+
 Reusable technical capability
-    -> Core
+
+    -> Core
 
 Reusable application platform
-    -> Template
+
+    -> Template
 
 Concrete product composition
-    -> Application
+
+    -> Application
+
 ```
 
 ---
@@ -62,29 +83,45 @@ Core contains reusable technical capabilities that remain independent from the r
 Typical Core responsibilities include:
 
 * technical authentication helpers
+
 * reusable authentication types
+
 * server normalization
+
 * server validation
+
 * technical server checks
+
 * server-environment detection
+
 * reusable runtime capabilities
+
 * technical networking helpers
+
 * technical update helpers
+
 * reusable technical utilities
+
 * framework-independent types and logic
 
 Core must not depend on:
 
 ```text
+
 Template
+
 Application
+
 ```
 
 Invalid dependencies are:
 
 ```text
+
 Core --> Template
+
 Core --> Application
+
 ```
 
 Core should remain as independent from React and product composition as reasonably possible.
@@ -107,8 +144,10 @@ Typical Template responsibilities include:
 * `ApplicationConfig`
 * `ApplicationConfigContext`
 * reusable React application shell
+* configuration and discovery tooling
 * navigation infrastructure
 * Template navigation definitions
+* optional navigation icon rendering
 * Template screen registry
 * Redux infrastructure
 * authentication and session orchestration
@@ -118,6 +157,7 @@ Typical Template responsibilities include:
 * notifications
 * localization infrastructure
 * design system
+* reusable theme infrastructure
 * reusable components
 * reusable hooks
 * reusable screens
@@ -132,9 +172,12 @@ Template must not depend on a concrete Application.
 Invalid:
 
 ```text
+Template --> Plant Assist
 Template --> HEMS
 Template --> concrete Application implementation
 ```
+
+Template provides reusable integration surfaces through which a concrete Application may contribute configuration, screens, assets, branding, theme overrides, translations, optional state and navigation extensions.
 
 ---
 
@@ -145,22 +188,35 @@ Standard Agent.Workbench functionality is intentionally part of the Base Templat
 The current ownership decision is:
 
 ```text
+
 Agent.Workbench standard functionality
-    -> Template
+
+    -> Template
+
 ```
 
 This includes standard reusable functionality such as:
 
 ```text
+
 Program Start
+
 Data Analyzing
+
 Database configuration
+
 Server configuration
+
 Live Console
+
 Settings
+
 Agent.Workbench navigation
+
 Agent.Workbench state
+
 Agent.Workbench API integration where reusable
+
 ```
 
 Agent.Workbench is therefore not modeled as a separate concrete Application.
@@ -168,10 +224,15 @@ Agent.Workbench is therefore not modeled as a separate concrete Application.
 The architecture does not require:
 
 ```text
+
 a separate Agent.Workbench Application
+
 a separate Agent.Workbench Application repository
+
 Agent.Workbench screen extraction from Template
+
 Agent.Workbench state extraction from Template
+
 ```
 
 This ownership decision must not be reopened implicitly by documentation or refactoring.
@@ -188,24 +249,65 @@ Typical Application responsibilities include:
 * Application metadata
 * semantic Template feature selection
 * Application-specific navigation
+* Application navigation presentation options
 * Application-specific screens
 * Application translations
+* Application assets
+* Application branding
+* Application theme overrides
 * optional Application-specific Redux state
 * product-specific business logic
-* product-specific branding
 * product-specific APIs
+* product version
 * product-specific build configuration
+* product release configuration
 * product-specific deployment configuration
 
 Application may consume supported Template and Core integration surfaces.
 
 Template and Core must never depend on a concrete Application.
 
+Concrete Applications should use supported `.properties` configuration and Application-owned files rather than modifying generated runtime artifacts or reusable Template source files.
+
 ---
 
 # 6. Concrete Applications
 
-HEMS is an example of a concrete Application.
+Plant Assist is the first separate concrete Application currently used to validate the consumer model.
+
+Conceptually:
+
+```text
+Plant Assist Application
+        |
+        v
+Base Template
+        |
+        v
+Core
+```
+
+Plant Assist currently demonstrates:
+
+```text
+Application configuration
+Template feature selection
+Application navigation extensions
+optional navigation icons
+Application-specific screens
+Application translations
+Application assets and branding
+Application theme overrides
+independent Application versioning
+independent build and release
+deployment configuration
+```
+
+Plant Assist is currently an MVP used to validate architecture and integration.
+
+It is not intended to represent final product functionality or final UI design.
+
+HEMS remains a future concrete Application and may follow the same model.
 
 Conceptually:
 
@@ -219,7 +321,7 @@ Base Template
 Core
 ```
 
-Future concrete EnFlexIT Applications can follow the same model.
+Future concrete EnFlexIT Applications can follow the same consumer pattern.
 
 A concrete Application should focus on product-specific concerns while reusing platform functionality from Template and technical capabilities from Core.
 
@@ -250,11 +352,19 @@ src/template/
     including standard Agent.Workbench functionality
 
 src/application/
-    Agent.Workbench Application composition
+    in-repository Agent.Workbench Application composition
     validating the Application integration contract
 ```
 
-`src/application/` is not Agent.Workbench.
+`src/application/` is not Agent.Workbench itself.
+
+The architecture is additionally validated by the separate consumer repository:
+
+```text
+web.plantAssist
+```
+
+`web.plantAssist` owns its concrete Application configuration, branding, theme overrides, screens, translations, version, build, release and deployment concerns while consuming the Base Template architecture.
 
 ---
 
@@ -263,47 +373,72 @@ src/application/
 The Base Template repository contains:
 
 ```text
+
 Base Template
+
 |
+
 +-- Core
+
 |
+
 +-- Template
-|   |
-|   +-- application shell
-|   +-- Application contract
-|   +-- navigation infrastructure
-|   +-- Template navigation
-|   +-- Redux infrastructure
-|   +-- Agent.Workbench functionality
-|   +-- Agent.Workbench state
-|   +-- authentication/session
-|   +-- server selection
-|   +-- settings
-|   +-- notifications
-|   +-- update orchestration
-|   +-- design system
-|   +-- reusable screens/components/hooks
+
+\|   |
+
+\|   +-- application shell
+
+\|   +-- Application contract
+
+\|   +-- navigation infrastructure
+
+\|   +-- Template navigation
+
+\|   +-- Redux infrastructure
+
+\|   +-- Agent.Workbench functionality
+
+\|   +-- Agent.Workbench state
+
+\|   +-- authentication/session
+
+\|   +-- server selection
+
+\|   +-- settings
+
+\|   +-- notifications
+
+\|   +-- update orchestration
+
+\|   +-- design system
+
+\|   +-- reusable screens/components/hooks
+
 |
+
 +-- Agent.Workbench Application composition
+
 ```
 
 The current Agent.Workbench Application composition exists to verify that the Base Template can be consumed through the intended Application contract.
 
 ---
 
-# 9. Future Consumer Model
+# 9. Consumer Repository Model
 
-Future concrete Applications may consume the Base Template from separate repositories.
+Concrete Applications may consume the Base Template from separate repositories.
 
-Conceptually:
+The current and future model is:
 
 ```text
-                 Base Template
-                      ^
-                      |
-              +-------+-------+
-              |               |
-            HEMS        future Applications
+                     Base Template
+                          ^
+                          |
+             +------------+------------+
+             |            |            |
+        Plant Assist     HEMS      future Applications
+          current       future
+          consumer      consumer
 ```
 
 A concrete consumer repository may contain:
@@ -311,14 +446,21 @@ A concrete consumer repository may contain:
 ```text
 Application configuration
 Application navigation
+Application navigation presentation options
 Application screens
 Application translations
+Application assets
+Application branding
+Application theme overrides
 optional Application state
 product business logic
-product branding
+product version
 product build configuration
+product release workflow
 product deployment configuration
 ```
+
+Plant Assist is the first current proof that this separate consumer model works.
 
 Agent.Workbench is not shown as a separate consumer because its standard functionality belongs to the Base Template itself.
 
@@ -329,43 +471,59 @@ Agent.Workbench is not shown as a separate consumer because its standard functio
 The central ownership question is:
 
 ```text
+
 Who owns the responsibility?
+
 ```
 
 Examples:
 
 ```text
+
 technical server normalization
-    -> Core
+
+    -> Core
 
 server-selection UI
-    -> Template
+
+    -> Template
 
 product-specific server configuration
-    -> Application
+
+    -> Application
+
 ```
 
 Another example:
 
 ```text
+
 technical authentication helper
-    -> Core
+
+    -> Core
 
 session orchestration
-    -> Template
+
+    -> Template
 
 product-specific authentication behavior
-    -> Application
+
+    -> Application
+
 ```
 
 Another example:
 
 ```text
+
 Agent.Workbench Data Analyzing state
-    -> Template
+
+    -> Template
 
 HEMS-specific domain state
-    -> HEMS Application
+
+    -> HEMS Application
+
 ```
 
 Physical location alone must not determine ownership.
@@ -379,29 +537,49 @@ Applications integrate with Template through explicit contracts.
 Important Template-side integration files include:
 
 ```text
+
 src/template/application/
+
 ├── ApplicationConfig.ts
+
 ├── ApplicationConfigContext.tsx
+
 ├── createTemplateApp.tsx
+
 └── TemplateApp.tsx
+
 ```
 
 Conceptually:
 
 ```text
+
 Concrete Application
-        |
-        v
+
+        |
+
+        v
+
 Application configuration
-        |
-        v
+
+        |
+
+        v
+
 createTemplateApp(...)
-        |
-        v
+
+        |
+
+        v
+
 TemplateApp
-        |
-        v
+
+        |
+
+        v
+
 Reusable Template runtime
+
 ```
 
 Template defines the reusable integration contract.
@@ -428,6 +606,8 @@ Responsibilities:
 ```text
 application.properties
     Application identity and metadata
+    Application branding
+    Application theme overrides
 
 features.properties
     semantic activation or deactivation
@@ -435,11 +615,39 @@ features.properties
 
 navigation.properties
     Application-specific navigation extensions
+    Application navigation presentation options
+```
+
+Examples include:
+
+```properties
+ApplicationId=plant-assist
+ApplicationTitle=Plant Assist
+ApplicationLogo=flexaqua
+
+ThemeLightPrimary=#009FB2
+ThemeLightBackground=#F4FBFC
+
+ThemeDarkPrimary=#35C4D2
+ThemeDarkBackground=#0E1C22
+```
+
+and:
+
+```properties
+NavigationMenuIconsEnabled=true
+
+menu.plantAssist.enabled=true
+menu.plantAssist.caption=plantAssist
+menu.plantAssist.parent=settings
+menu.plantAssist.position=99
+menu.plantAssist.screen=plant-assist-screen
+menu.plantAssist.icon=appstore
 ```
 
 Developers should not need to edit TypeScript, TSX, JavaScript or JSON configuration files for normal Application configuration.
 
-Generated TypeScript may exist as build/runtime output.
+Generated TypeScript may exist as build/runtime output, but generated files are not the normal developer-facing configuration surface.
 
 ---
 
@@ -448,11 +656,17 @@ Generated TypeScript may exist as build/runtime output.
 The following names are not part of the current architecture:
 
 ```text
+
 menu.properties
+
 tabs.properties
+
 featureFlags.properties
+
 menuFeatureFlags.properties
+
 tabFeatureFlags.properties
+
 ```
 
 They must not be reintroduced as planned or active Application configuration.
@@ -460,9 +674,13 @@ They must not be reintroduced as planned or active Application configuration.
 The current model is:
 
 ```text
+
 application.properties
+
 features.properties
+
 navigation.properties
+
 ```
 
 ---
@@ -474,13 +692,21 @@ Applications enable or disable reusable Template capabilities semantically.
 Examples:
 
 ```properties
+
 feature.notifications.enabled=true
+
 feature.appearance.enabled=true
+
 feature.serverSettings.enabled=true
+
 feature.liveConsole.enabled=true
+
 feature.programStart.enabled=true
+
 feature.dataAnalyzing.enabled=true
+
 feature.database.general.enabled=true
+
 ```
 
 Application selects reusable functionality.
@@ -490,12 +716,19 @@ Template owns the implementation.
 Applications therefore do not need to configure Template internals such as:
 
 ```text
+
 numeric menu IDs
+
 internal parent IDs
+
 Template screen registry keys
+
 authentication visibility rules
+
 runtime visibility rules
+
 Agent.Workbench navigation internals
+
 ```
 
 ---
@@ -506,7 +739,7 @@ Navigation infrastructure belongs to Template.
 
 Reusable Template navigation definitions also belong to Template.
 
-Application owns only concrete Application-specific navigation extensions.
+Application owns only concrete Application-specific navigation extensions and supported presentation options.
 
 Conceptually:
 
@@ -529,6 +762,7 @@ Template responsibilities include:
 * Template screen registry
 * Agent.Workbench navigation
 * Template menu ordering
+* optional navigation icon rendering
 
 Application navigation is configured through:
 
@@ -536,11 +770,25 @@ Application navigation is configured through:
 navigation.properties
 ```
 
+Applications may optionally enable navigation icons:
+
+```properties
+NavigationMenuIconsEnabled=true
+```
+
+and may provide an icon for an Application-owned navigation entry:
+
+```properties
+menu.plantAssist.icon=appstore
+```
+
+When icons are omitted or disabled, the classic text-oriented navigation remains supported.
+
 Applications do not reproduce the entire Template navigation structure.
 
 ---
 
-# 16. Automatic Screen Discovery
+# 16. Automatic Screen and Asset Discovery
 
 Application-specific screens belong to Application.
 
@@ -561,8 +809,8 @@ ExampleScreen.tsx
 ExampleScreen2.tsx
     -> example-screen2
 
-HemsOverviewScreen.tsx
-    -> hems-overview-screen
+PlantAssistScreen.tsx
+    -> plant-assist-screen
 ```
 
 The generated registry is:
@@ -571,7 +819,31 @@ The generated registry is:
 src/application/generated/applicationScreenRegistry.generated.ts
 ```
 
-Template must not manually import concrete Application screens.
+Application assets are also discovered automatically through:
+
+```text
+src/template/config/build/applicationAssetDiscovery.mjs
+```
+
+Application-owned assets are placed under:
+
+```text
+src/application/assets/
+```
+
+The generated asset registry is:
+
+```text
+src/application/generated/applicationAssets.generated.ts
+```
+
+Application branding may reference a discovered asset semantically:
+
+```properties
+ApplicationLogo=flexaqua
+```
+
+Template must not manually import concrete Application screens or concrete Application branding assets.
 
 ---
 
@@ -582,28 +854,41 @@ Redux is a state-management technology, not an architectural layer.
 State ownership follows responsibility.
 
 ```text
+
 Template
+
 |
+
 +-- reusable Template state
+
 +-- Agent.Workbench state
+
 +-- reusable store infrastructure
 
 Application
+
 |
+
 +-- optional concrete product-specific state
+
 ```
 
 The ownership rule is:
 
 ```text
+
 Reusable Template state
-    -> Template
+
+    -> Template
 
 Agent.Workbench standard state
-    -> Template
+
+    -> Template
 
 Concrete product-only state
-    -> Application
+
+    -> Application
+
 ```
 
 Agent.Workbench state is not transitional Application state.
@@ -619,18 +904,27 @@ Concrete Applications may optionally provide Application-specific reducers.
 Conceptually:
 
 ```text
+
 Template reducers
-        +
+
+        +
+
 optional Application reducers
-        |
-        v
+
+        |
+
+        v
+
 Redux store
+
 ```
 
 The Application extension point exists at:
 
 ```text
+
 src/application/state/applicationReducers.ts
+
 ```
 
 The current Agent.Workbench Application composition does not require meaningful Application-specific Redux state.
@@ -641,7 +935,7 @@ Template must not import concrete Application reducer implementations.
 
 ---
 
-# 19. Design System
+# 19. Design System and Theme Overrides
 
 Reusable React UI belongs primarily to Template.
 
@@ -659,6 +953,30 @@ Template design system
 theme and reusable UI infrastructure
 ```
 
+Reusable theme infrastructure belongs to Template.
+
+Concrete theme override values belong to Application.
+
+Supported Application theme overrides are configured through `application.properties`.
+
+Examples:
+
+```properties
+ThemeLightPrimary=#009FB2
+ThemeLightBackground=#F4FBFC
+
+ThemeDarkPrimary=#35C4D2
+ThemeDarkBackground=#0E1C22
+```
+
+Generated theme overrides are materialized in:
+
+```text
+src/application/generated/applicationTheme.generated.ts
+```
+
+When an override is omitted, the Base Template default remains active.
+
 Product-specific UI belongs to Application.
 
 Core does not own React presentation components merely because they are reusable.
@@ -670,14 +988,19 @@ Core does not own React presentation components merely because they are reusable
 API ownership follows responsibility.
 
 ```text
+
 generic technical communication
-    -> Core where appropriate
+
+    -> Core where appropriate
 
 reusable Base Template / Agent.Workbench API integration
-    -> Template where appropriate
+
+    -> Template where appropriate
 
 concrete product business API
-    -> Application
+
+    -> Application
+
 ```
 
 Agent.Workbench-named API code is not automatically Application-owned.
@@ -686,22 +1009,34 @@ Its actual responsibility must be inspected before ownership changes.
 
 ---
 
-# 21. Build and Deployment
+# 21. Build, Version, Release and Deployment
 
-Concrete consumer Applications should own product-specific build and deployment configuration.
+Concrete consumer Applications own product-specific build, version, release and deployment configuration.
 
 Examples include:
 
 * product identity
 * Application configuration
-* product release configuration
+* Application version
+* product release artifacts
+* product release workflow
 * deployment targets
 * product-specific infrastructure configuration
 * Helm configuration where applicable
 
+Plant Assist currently validates this ownership through its separate consumer repository and independent release process.
+
 The Base Template provides reusable capabilities and integration contracts.
 
 It should not require product-specific build configuration for unrelated consumer Applications.
+
+Application versioning and Template versioning are separate concerns.
+
+A concrete product release represents the Application as a unit.
+
+The Template version used by that Application is supporting build information rather than a separate end-user update channel by default.
+
+Explicit BuildInfo, Application information UI and release-note metadata are planned follow-up topics and are not yet part of the implemented platform contract.
 
 ---
 
@@ -712,20 +1047,31 @@ Template must not contain a central resolver that selects between concrete Appli
 Incorrect:
 
 ```text
+
 Template
+
 |
+
 +-- detect Agent.Workbench
+
 +-- detect HEMS
+
 +-- choose product
+
 ```
 
 Correct:
 
 ```text
+
 Concrete Application
-        |
-        v
+
+        |
+
+        v
+
 Base Template
+
 ```
 
 Agent.Workbench does not participate in product selection because its standard functionality is already part of the Base Template.
@@ -743,11 +1089,14 @@ The architecture should:
 * separate product-specific behavior from reusable platform behavior
 * reduce implementation duplication
 * simplify creation of future Applications
-* allow HEMS and future consumers to reuse the same platform
+* allow Plant Assist, HEMS and future consumers to reuse the same platform
 * keep Application configuration simple
 * expose stable integration contracts
+* support Application-owned branding and theme overrides
+* support automatic Application screen and asset discovery
+* allow optional Application navigation presentation without transferring navigation ownership
 * preserve clear dependency boundaries
-* allow consumer-specific build and deployment ownership
+* allow consumer-specific version, build, release and deployment ownership
 
 ---
 
@@ -762,32 +1111,23 @@ The architecture follows these principles:
    ```
 
 2. Core must not depend on Template or Application.
-
 3. Template must not depend on a concrete Application.
-
 4. Standard Agent.Workbench functionality belongs to Template.
-
 5. Concrete product functionality belongs to Application.
-
 6. Reusable React UI and application-shell behavior belong to Template.
-
 7. Reusable technical capabilities belong to Core when sufficiently independent from UI and product behavior.
-
 8. Redux ownership follows responsibility.
-
 9. Application configuration should remain explicit and simple.
-
 10. Developer-facing Application configuration uses `.properties`.
-
 11. Applications should not depend on Template internal IDs or implementation details.
-
 12. Stable public integration contracts are preferred over deep cross-layer imports.
-
 13. Concrete Applications compose themselves with Template.
-
 14. Template does not select the active concrete Application.
-
-15. Ownership must be determined by responsibility, not historical file location or naming alone.
+15. Application branding should not require modifying Template source files.
+16. Application theme overrides should not require editing Template theme defaults.
+17. Application screens and supported assets should be discoverable without manual Template registration.
+18. Concrete consumer repositories own their own product version, build, release and deployment process.
+19. Ownership must be determined by responsibility, not historical file location or naming alone.
 
 ---
 
@@ -805,7 +1145,11 @@ The architecture does not aim to:
 * duplicate Template navigation inside concrete Applications
 * expose Template internal menu IDs as Application configuration
 * require Application developers to edit TypeScript configuration
+* require Applications to modify Template theme source files
+* require manual Application screen or asset registration inside Template
 * move code only to make directory boundaries look cleaner
+
+The current Plant Assist MVP is also not intended to define the final Plant Assist product functionality or final UI design.
 
 ---
 
@@ -825,11 +1169,14 @@ with:
 Agent.Workbench standard functionality
     -> Template
 
+Plant Assist
+    -> current separate concrete Application consumer
+
 HEMS
-    -> concrete Application
+    -> future concrete Application consumer
 ```
 
-The current repository already contains:
+The current architecture already includes:
 
 ```text
 Core responsibility area
@@ -839,9 +1186,15 @@ Application integration contract
 properties-based Application configuration
 semantic Template feature selection
 Application navigation extensions
+optional Application navigation icons
 automatic Application screen discovery
+automatic Application asset discovery
+Application branding
+Application theme overrides
 Template-owned Agent.Workbench state
 optional Application Redux extension
+separate Plant Assist consumer validation
+independent Plant Assist build and release validation
 ```
 
 The architecture documentation should describe this as the current selected model rather than as an unfinished migration toward a separate Agent.Workbench Application.
@@ -856,13 +1209,18 @@ Possible future work includes:
 
 ```text
 HEMS consumer integration
-separate consumer repository validation
 public Template API refinement
-consumer-specific build/deployment setup
+BuildInfo
+Application information screen
+Application-versus-Template version presentation
+release-note metadata
+further automation of consumer Application creation
 additional Application contract extensions when required
 ```
 
-A separate HEMS/consumer test is useful because it validates that the Base Template can be consumed by a concrete Application without modifying Template internals.
+The separate consumer model itself no longer needs hypothetical validation because Plant Assist already provides that proof.
+
+Future consumers should follow the same ownership and dependency rules unless the architecture is explicitly changed.
 
 ---
 
@@ -890,6 +1248,12 @@ The following previous assumptions are no longer valid:
 "tabs.properties is planned Application configuration."
 
 "featureFlags.properties is planned Application configuration."
+
+"HEMS is the first separate consumer validation."
+
+"Application branding requires editing Template source files."
+
+"Application themes must be implemented directly in Template theme files."
 ```
 
 The correct ownership is:
@@ -898,8 +1262,11 @@ The correct ownership is:
 Agent.Workbench standard functionality
     -> Base Template
 
+Plant Assist
+    -> current separate concrete Application consumer
+
 HEMS and future product consumers
-    -> concrete Applications
+    -> future concrete Applications
 ```
 
 ---
@@ -912,12 +1279,16 @@ The long-term objective is to make it possible to create a concrete EnFlexIT App
 Application metadata
 Template feature selection
 Application navigation extensions
+Application navigation presentation
 Application screens
 Application translations
+Application assets
+Application branding
+Application theme overrides
 optional Application state
 product-specific business functionality
-product-specific branding
-product build/deployment configuration
+product version
+product build/release/deployment configuration
 ```
 
 while consuming reusable capabilities from the Base Template.
@@ -936,6 +1307,10 @@ Core
 
 The Base Template can evolve as the reusable platform while concrete consumer Applications remain focused on their own product requirements.
 
-Agent.Workbench standard functionality remains part of that reusable Base Template.
+Plant Assist already demonstrates the separate consumer model.
 
-This provides the foundation for HEMS and future EnFlexIT Applications without introducing a separate Agent.Workbench Application layer.
+HEMS and future Applications can build on the same contract.
+
+Agent.Workbench standard functionality remains part of the reusable Base Template.
+
+Planned improvements such as BuildInfo, Application information UI, release-note metadata and further Application creation automation should extend this model without reversing its ownership boundaries.
