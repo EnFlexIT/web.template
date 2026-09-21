@@ -94,6 +94,7 @@ export const templateMenuCatalog = {
       "update.general",
       "update.webapp",
       "update.backend",
+      "update.appInformation",
     ],
   },
 
@@ -176,7 +177,7 @@ export const templateTabCatalog = {
   updateGeneral: {
     menu: "update",
     tabKey: "general",
-    caption: "General",
+    caption: "Update:general.title",
     position: 1,
     screen: "update-general",
     feature: "update.general",
@@ -185,7 +186,7 @@ export const templateTabCatalog = {
   updateWebApp: {
     menu: "update",
     tabKey: "webapp",
-    caption: "Web-App",
+    caption: "Update:serverWeb.title",
     position: 2,
     screen: "update-web-app",
     feature: "update.webapp",
@@ -194,10 +195,22 @@ export const templateTabCatalog = {
   updateBackend: {
     menu: "update",
     tabKey: "backend",
-    caption: "Backend",
+    caption: "Update:backend.title",
     position: 3,
     screen: "update-backend",
     feature: "update.backend",
+  },
+
+  updateAppInformation: {
+    menu: "update",
+    tabKey: "app-information",
+    caption:
+      "Update:appInformation.tabTitle",
+    position: 4,
+    screen:
+      "update-app-information",
+    feature:
+      "update.appInformation",
   },
 
   programStart: {

@@ -10,7 +10,10 @@ import type {
 
 export type ApplicationConfigContextValue = Pick<
   ApplicationConfig<unknown>,
-  "id" | "displayName" | "branding"
+  | "id"
+  | "displayName"
+  | "branding"
+  | "buildInfo"
 > & {
   navigation: {
     menu: {

@@ -20,6 +20,10 @@ import {
 } from "../registry/applicationScreenRegistry";
 
 import {
+  applicationBuildInfo,
+} from "./applicationBuildInfo.generated";
+
+import {
   ApplicationImages,
 } from "./applicationAssets.generated";
 
@@ -171,23 +175,30 @@ const tabItems:
   {
     menuID: 3014,
     tabKey: "general",
-    caption: "General",
+    caption: "Update:general.title",
     position: 1,
     Content: resolveApplicationScreen("update-general"),
   },
   {
     menuID: 3014,
     tabKey: "webapp",
-    caption: "Web-App",
+    caption: "Update:serverWeb.title",
     position: 2,
     Content: resolveApplicationScreen("update-web-app"),
   },
   {
     menuID: 3014,
     tabKey: "backend",
-    caption: "Backend",
+    caption: "Update:backend.title",
     position: 3,
     Content: resolveApplicationScreen("update-backend"),
+  },
+  {
+    menuID: 3014,
+    tabKey: "app-information",
+    caption: "Update:appInformation.tabTitle",
+    position: 4,
+    Content: resolveApplicationScreen("update-app-information"),
   },
   {
     menuID: 3023,
@@ -339,6 +350,9 @@ export const applicationConfig:
   ApplicationConfig = {
   id: "agent-workbench",
   displayName: "Agent.Workbench",
+
+  buildInfo:
+    applicationBuildInfo,
 
   branding: {
     logo:

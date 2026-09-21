@@ -46,6 +46,25 @@ export type ApplicationBranding = {
   logo?: ImageSourcePropType;
 };
 
+/**
+ * Stable version information generated from the
+ * concrete Application and the reusable Base Template.
+ *
+ * Build-specific metadata such as commit, release tag
+ * and build timestamp may be added later.
+ */
+export type ApplicationBuildInfo = {
+  application: {
+    packageName?: string;
+    version?: string;
+  };
+
+  template: {
+    packageName: string;
+    version: string;
+  };
+};
+
 export type ApplicationConfig<
   TState = unknown,
 > = {
@@ -68,6 +87,12 @@ export type ApplicationConfig<
    * Optional Application-specific branding.
    */
   branding?: ApplicationBranding;
+
+  /**
+   * Generated Application and Base Template
+   * version metadata.
+   */
+  buildInfo?: ApplicationBuildInfo;
 
   navigation: {
     menu: {

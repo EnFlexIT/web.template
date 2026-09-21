@@ -105,5 +105,17 @@
       }
     }
   },
+  "appInformation": {
+    "tabTitle": "App Information",
+    "application": {
+      "title": "Application",
+      "name": "Name",
+      "version": "Version"
+    },
+    "template": {
+      "title": "Base Template",
+      "version": "Version"
+    }
+  },
   "InstalledFeatures": "Installed features"
 }

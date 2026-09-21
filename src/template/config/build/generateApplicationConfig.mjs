@@ -1517,6 +1517,10 @@ import type {
 import {
   resolveApplicationScreen,
 } from "../registry/applicationScreenRegistry";
+
+import {
+  applicationBuildInfo,
+} from "./applicationBuildInfo.generated";
 ${renderedApplicationAssetsImport}
 type MenuFeatureRule = {
   authInclude?: readonly string[];
@@ -1671,6 +1675,9 @@ export const applicationConfig:
   ApplicationConfig = {
   id: ${JSON.stringify(applicationId)},
   displayName: ${JSON.stringify(applicationTitle)},
+
+  buildInfo:
+    applicationBuildInfo,
 ${renderedApplicationBranding}
   navigation: {
     menu: {

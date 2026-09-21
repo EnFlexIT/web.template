@@ -9,6 +9,10 @@ import {
 } from "react-native";
 
 import {
+  useTranslation,
+} from "react-i18next";
+
+import {
   StyleSheet,
   useUnistyles,
 } from "react-native-unistyles";
@@ -62,6 +66,9 @@ function renderContent(
 export function TabScreen({
   menuID,
 }: TabScreenProps) {
+  const { t } =
+    useTranslation();
+
   const { theme } =
     useUnistyles();
 
@@ -130,10 +137,24 @@ export function TabScreen({
         tabs.map(
           (tab) => ({
             key: tab.tabKey,
-            label: tab.caption,
+
+            /*
+             * Template tab captions may either be
+             * translation keys or plain fallback text.
+             */
+            label: t(
+              tab.caption,
+              {
+                defaultValue:
+                  tab.caption,
+              },
+            ),
           }),
         ),
-      [tabs],
+      [
+        tabs,
+        t,
+      ],
     );
 
   const [
