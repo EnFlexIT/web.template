@@ -18,6 +18,11 @@ import {
   writeGeneratedApplicationAssets,
 } from "./applicationAssetDiscovery.mjs";
 
+import {
+  generateApplicationBuildInfo,
+  writeGeneratedApplicationBuildInfo,
+} from "./applicationBuildInfoGeneration.mjs";
+
 const rootDirectory = process.cwd();
 
 const configDirectory = path.join(
@@ -624,6 +629,7 @@ const navigationProperties =
   readOptionalPropertiesFile(
     navigationPropertiesPath,
   );
+
 const navigationMenuIconsEnabled =
   navigationProperties[
     "NavigationMenuIconsEnabled"
@@ -643,6 +649,7 @@ const applicationNavigationProperties = {
 delete applicationNavigationProperties[
   "NavigationMenuIconsEnabled"
 ];
+
 const applicationId =
   requireProperty(
     applicationProperties,
@@ -765,6 +772,15 @@ const applicationScreens =
  */
 const applicationAssets =
   discoverApplicationAssets(
+    rootDirectory,
+  );
+
+/**
+ * Generate stable Application and Base Template
+ * version metadata.
+ */
+const applicationBuildInfo =
+  generateApplicationBuildInfo(
     rootDirectory,
   );
 
@@ -1689,6 +1705,11 @@ writeGeneratedApplicationScreenRegistry(
 writeGeneratedApplicationAssets(
   rootDirectory,
   applicationAssets,
+);
+
+writeGeneratedApplicationBuildInfo(
+  rootDirectory,
+  applicationBuildInfo,
 );
 
 fs.mkdirSync(
