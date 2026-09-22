@@ -4,8 +4,12 @@ import path from "node:path";
 function parseProperties(content) {
   const properties = {};
 
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
+  for (
+    const rawLine of
+    content.split(/\r?\n/)
+  ) {
+    const line =
+      rawLine.trim();
 
     if (
       !line ||
@@ -18,7 +22,9 @@ function parseProperties(content) {
     const separatorIndex =
       line.indexOf("=");
 
-    if (separatorIndex < 0) {
+    if (
+      separatorIndex < 0
+    ) {
       throw new Error(
         `Invalid properties line: "${rawLine}". Expected key=value.`,
       );
@@ -26,12 +32,17 @@ function parseProperties(content) {
 
     const key =
       line
-        .slice(0, separatorIndex)
+        .slice(
+          0,
+          separatorIndex,
+        )
         .trim();
 
     const value =
       line
-        .slice(separatorIndex + 1)
+        .slice(
+          separatorIndex + 1,
+        )
         .trim();
 
     if (!key) {
@@ -51,7 +62,8 @@ function parseProperties(content) {
       );
     }
 
-    properties[key] = value;
+    properties[key] =
+      value;
   }
 
   return properties;
@@ -62,7 +74,9 @@ function requireValue(
   description,
 ) {
   const normalized =
-    String(value ?? "").trim();
+    String(
+      value ?? "",
+    ).trim();
 
   if (!normalized) {
     throw new Error(
@@ -71,6 +85,20 @@ function requireValue(
   }
 
   return normalized;
+}
+
+function optionalValue(
+  value,
+) {
+  const normalized =
+    String(
+      value ?? "",
+    ).trim();
+
+  return (
+    normalized ||
+    undefined
+  );
 }
 
 function readPackageJson(
@@ -171,26 +199,63 @@ export function generateApplicationBuildInfo(
     packageName ===
     templatePackageName;
 
+  /*
+   * Release-specific values are injected only by
+   * the real release/build pipeline.
+   *
+   * Normal local config generation intentionally
+   * leaves them undefined. This keeps
+   * `npm run config:generate` deterministic.
+   */
+  const applicationReleaseTag =
+    optionalValue(
+      process.env
+        .ENFLEX_APPLICATION_RELEASE_TAG,
+    );
+
+  const buildTimestamp =
+    optionalValue(
+      process.env
+        .ENFLEX_BUILD_TIMESTAMP,
+    );
+
+  const application = {
+    packageName:
+      isTemplateRepository
+        ? undefined
+        : packageName,
+
+    version:
+      isTemplateRepository
+        ? undefined
+        : packageVersion,
+
+    releaseTag:
+      isTemplateRepository
+        ? undefined
+        : applicationReleaseTag,
+  };
+
+  const template = {
+    packageName:
+      templatePackageName,
+
+    version:
+      templateVersion,
+  };
+
+  const build =
+    buildTimestamp
+      ? {
+          timestamp:
+            buildTimestamp,
+        }
+      : undefined;
+
   return {
-    application: {
-      packageName:
-        isTemplateRepository
-          ? undefined
-          : packageName,
-
-      version:
-        isTemplateRepository
-          ? undefined
-          : packageVersion,
-    },
-
-    template: {
-      packageName:
-        templatePackageName,
-
-      version:
-        templateVersion,
-    },
+    application,
+    template,
+    build,
   };
 }
 

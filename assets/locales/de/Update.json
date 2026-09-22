@@ -110,11 +110,16 @@
     "application": {
       "title": "Anwendung",
       "name": "Name",
-      "version": "Version"
+      "version": "Version",
+      "release": "Release"
     },
     "template": {
       "title": "Basis-Template",
       "version": "Version"
+    },
+    "build": {
+      "title": "Build",
+      "createdAt": "Erstellt am"
     }
   },
   "InstalledFeatures": "Installierte Features"

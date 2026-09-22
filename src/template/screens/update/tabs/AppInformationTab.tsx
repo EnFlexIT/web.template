@@ -25,6 +25,33 @@ import {
   useApplicationConfig,
 } from "@/template/application/ApplicationConfigContext";
 
+function formatBuildTimestamp(
+  value: string | undefined,
+): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    undefined,
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(date);
+}
+
 export function AppInformationTab() {
   const { t } =
     useTranslation(["Update"]);
@@ -32,13 +59,25 @@ export function AppInformationTab() {
   const application =
     useApplicationConfig();
 
+  const buildInfo =
+    application.buildInfo;
+
   const applicationVersion =
-    application.buildInfo?.application.version ??
+    buildInfo?.application.version ??
+    "-";
+
+  const releaseTag =
+    buildInfo?.application.releaseTag ??
     "-";
 
   const templateVersion =
-    application.buildInfo?.template.version ??
+    buildInfo?.template.version ??
     "-";
+
+  const buildTimestamp =
+    formatBuildTimestamp(
+      buildInfo?.build?.timestamp,
+    );
 
   return (
     <View style={s.container}>
@@ -66,6 +105,14 @@ export function AppInformationTab() {
             )}
             value={applicationVersion}
           />
+
+          <Row
+            label={t(
+              "appInformation.application.release",
+              "Release",
+            )}
+            value={releaseTag}
+          />
         </View>
       </Card>
 
@@ -84,6 +131,25 @@ export function AppInformationTab() {
               "Version",
             )}
             value={templateVersion}
+          />
+        </View>
+      </Card>
+
+      <Card>
+        <View style={s.cardContent}>
+          <H3>
+            {t(
+              "appInformation.build.title",
+              "Build",
+            )}
+          </H3>
+
+          <Row
+            label={t(
+              "appInformation.build.createdAt",
+              "Created at",
+            )}
+            value={buildTimestamp}
           />
         </View>
       </Card>

@@ -47,21 +47,26 @@ export type ApplicationBranding = {
 };
 
 /**
- * Stable version information generated from the
+ * Stable version and release information of the
  * concrete Application and the reusable Base Template.
  *
- * Build-specific metadata such as commit, release tag
- * and build timestamp may be added later.
+ * Release-specific values are injected by the
+ * release/build pipeline and therefore remain optional.
  */
 export type ApplicationBuildInfo = {
   application: {
     packageName?: string;
     version?: string;
+    releaseTag?: string;
   };
 
   template: {
     packageName: string;
     version: string;
+  };
+
+  build?: {
+    timestamp: string;
   };
 };
 
@@ -70,11 +75,6 @@ export type ApplicationConfig<
 > = {
   /**
    * Stable technical application identifier.
-   *
-   * Examples:
-   * - base-template
-   * - agent-workbench
-   * - plant-assist
    */
   id: string;
 
@@ -89,8 +89,8 @@ export type ApplicationConfig<
   branding?: ApplicationBranding;
 
   /**
-   * Generated Application and Base Template
-   * version metadata.
+   * Generated Application, Template and release
+   * metadata.
    */
   buildInfo?: ApplicationBuildInfo;
 
@@ -98,9 +98,6 @@ export type ApplicationConfig<
     menu: {
       /**
        * Controls whether menu icons are shown.
-       *
-       * When omitted or false, the navigation
-       * keeps the classic text-only appearance.
        */
       showIcons?: boolean;
 

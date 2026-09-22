@@ -105,17 +105,22 @@
       }
     }
   },
-  "appInformation": {
-    "tabTitle": "App Information",
-    "application": {
-      "title": "Application",
-      "name": "Name",
-      "version": "Version"
-    },
-    "template": {
-      "title": "Base Template",
-      "version": "Version"
-    }
+"appInformation": {
+  "tabTitle": "App Information",
+  "application": {
+    "title": "Application",
+    "name": "Name",
+    "version": "Version",
+    "release": "Release"
   },
+  "template": {
+    "title": "Base Template",
+    "version": "Version"
+  },
+  "build": {
+    "title": "Build",
+    "createdAt": "Created at"
+  }
+},
   "InstalledFeatures": "Installed features"
 }
