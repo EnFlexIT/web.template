@@ -22,3 +22,4 @@ export { TextInput } from "./TextInput";
 export { SettingsSwitchRow } from "./ThemeModeSwitchRow";
 export { UpdateProgressDialog } from "./UpdateProgressDialog";
 export { WebPasswordInput } from "./WebPasswordInput";
+export { DatePicker } from "./DatePicker";

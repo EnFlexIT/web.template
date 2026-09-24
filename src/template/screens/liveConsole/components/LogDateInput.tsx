@@ -1,24 +1,12 @@
 import React from "react";
 
 import {
-  Platform,
-  View,
-} from "react-native";
+  useTranslation,
+} from "react-i18next";
 
 import {
-  useUnistyles,
-} from "react-native-unistyles";
-
-import {
-  StyleSheet,
-} from "react-native-unistyles";
-
-import {
-  TextInput,
-  ThemedText,
-} from "@design-system";
-
-//**************************************************************************** */
+  DatePicker,
+} from "@/template/components/design-system/ui-elements/DatePicker";
 
 type LogDateInputProps = {
   label: string;
@@ -29,99 +17,30 @@ type LogDateInputProps = {
   ) => void;
 };
 
-//**************************************************************************** */
-
 export function LogDateInput({
   label,
   value,
   disabled = false,
   onChange,
 }: LogDateInputProps) {
-  const { theme } =
-    useUnistyles();
+  const {
+    i18n,
+  } = useTranslation();
 
-  if (
-    Platform.OS === "web"
-  ) {
-    const webInputStyle:
-      React.CSSProperties = {
-      width: "100%",
-      minHeight: 42,
-      boxSizing:
-        "border-box",
-      padding:
-        "8px 10px",
-      border:
-        `1px solid ${theme.colors.border}`,
-      borderRadius: 4,
-      backgroundColor:
-        theme.colors.card,
-      color:
-        theme.colors.text,
-      fontSize: 14,
-      fontFamily:
-        "inherit",
-      opacity:
-        disabled
-          ? 0.5
-          : 1,
-    };
-
-    return (
-      <View style={s.field}>
-        <ThemedText
-          style={s.label}
-        >
-          {label}
-        </ThemedText>
-
-        <input
-          type="date"
-          value={value}
-          disabled={disabled}
-          onChange={(
-            event,
-          ) => {
-            onChange(
-              event
-                .currentTarget
-                .value,
-            );
-          }}
-          style={
-            webInputStyle
-          }
-        />
-      </View>
-    );
-  }
+  const locale =
+    i18n.language
+      ?.toLowerCase()
+      .startsWith("de")
+      ? "de-DE"
+      : "en-US";
 
   return (
-    <View style={s.field}>
-      <TextInput
-        label={label}
-        value={value}
-        placeholder="YYYY-MM-DD"
-        disabled={disabled}
-        onChangeText={
-          onChange
-        }
-      />
-    </View>
+    <DatePicker
+      label={label}
+      value={value}
+      disabled={disabled}
+      locale={locale}
+      onChange={onChange}
+    />
   );
 }
-
-//**************************************************************************** */
-
-const s = StyleSheet.create({
-  field: {
-    width: "100%",
-    maxWidth: 240,
-    gap: 4,
-  },
-
-  label: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-});
