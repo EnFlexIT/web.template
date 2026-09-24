@@ -5,6 +5,8 @@ All URIs are relative to *http://localhost:8080/api*
 |Method | HTTP request | Description|
 |------------- | ------------- | -------------|
 |[**downloadAppSettingsFile**](#downloadappsettingsfile) | **GET** /app/settings/download | Download configuration file|
+|[**downloadLogArchive**](#downloadlogarchive) | **GET** /logs/archive | Download multiple log files as ZIP archive|
+|[**getLogFiles**](#getlogfiles) | **GET** /logs | Returns all available log files|
 |[**infoGet**](#infoget) | **GET** /info | Returns system information|
 |[**loadGet**](#loadget) | **GET** /load | Returns the current System load|
 |[**uploadAppSettingsFile**](#uploadappsettingsfile) | **POST** /app/settings/upload | Upload configuration file (binary)|
@@ -55,7 +57,110 @@ const { status, data } = await apiInstance.downloadAppSettingsFile(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | File download successful |  * Content-Disposition - attachment; filename&#x3D;\&quot;config.json\&quot; <br>  |
+|**200** | File download successful |  * Content-Disposition - attachment; filename&#x3D;\&quot;logs.zip\&quot; <br>  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **downloadLogArchive**
+> File downloadLogArchive()
+
+Downloads all log files within the specified date range as a ZIP archive.
+
+### Example
+
+```typescript
+import {
+    AdminsApi,
+    Configuration
+} from './api';
+
+const configuration = new Configuration();
+const apiInstance = new AdminsApi(configuration);
+
+let from: string; //Start date (inclusive) (default to undefined)
+let to: string; //End date (inclusive) (default to undefined)
+
+const { status, data } = await apiInstance.downloadLogArchive(
+    from,
+    to
+);
+```
+
+### Parameters
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **from** | [**string**] | Start date (inclusive) | defaults to undefined|
+| **to** | [**string**] | End date (inclusive) | defaults to undefined|
+
+
+### Return type
+
+**File**
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/zip
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+|**200** | ZIP archive download successful |  * Content-Disposition - attachment; filename&#x3D;\&quot;logs.zip\&quot; <br>  |
+|**401** | Authentication required |  -  |
+|**403** | Access denied |  -  |
+|**500** | Failed to create log archive |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getLogFiles**
+> Array<string> getLogFiles()
+
+Returns metadata for all stored log files.
+
+### Example
+
+```typescript
+import {
+    AdminsApi,
+    Configuration
+} from './api';
+
+const configuration = new Configuration();
+const apiInstance = new AdminsApi(configuration);
+
+const { status, data } = await apiInstance.getLogFiles();
+```
+
+### Parameters
+This endpoint does not have any parameters.
+
+
+### Return type
+
+**Array<string>**
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+|**200** | List of available log files |  -  |
+|**401** | Authentication required |  -  |
+|**403** | Access denied |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

@@ -36,7 +36,7 @@ export interface Event {
      */
     'time': string;
     /**
-     * 
+     *
      * @type {EventLogTypes}
      * @memberof Event
      */
@@ -83,25 +83,25 @@ export type EventLogTypes = typeof EventLogTypes[keyof typeof EventLogTypes];
 
 
 /**
- * 
+ *
  * @export
  * @interface Message
  */
 export interface Message {
     /**
-     * 
+     *
      * @type {string}
      * @memberof Message
      */
     'dateTime': string;
     /**
-     * 
+     *
      * @type {MessageType}
      * @memberof Message
      */
     'messageType': MessageType;
     /**
-     * 
+     *
      * @type {string}
      * @memberof Message
      */
@@ -110,7 +110,7 @@ export interface Message {
 
 
 /**
- * 
+ *
  * @export
  * @enum {string}
  */
@@ -131,118 +131,118 @@ export type MessageType = typeof MessageType[keyof typeof MessageType];
  */
 export interface NetworkConnection {
     /**
-     * 
+     *
      * @type {string}
      * @memberof NetworkConnection
      */
     'name': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof NetworkConnection
      */
     'displayName': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof NetworkConnection
      */
     'macAddress': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof NetworkConnection
      */
     'ip4Addresses': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof NetworkConnection
      */
     'ip6Addresses': string;
     /**
-     * 
+     *
      * @type {number}
      * @memberof NetworkConnection
      */
     'trafficSendInMB': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof NetworkConnection
      */
     'trafficReceivedInMB': number;
 }
 /**
- * 
+ *
  * @export
  * @interface PasswordChange
  */
 export interface PasswordChange {
     /**
-     * 
+     *
      * @type {string}
      * @memberof PasswordChange
      */
     'password_old': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof PasswordChange
      */
     'password_new': string;
 }
 /**
- * 
+ *
  * @export
  * @interface Properties
  */
 export interface Properties {
     /**
-     * 
+     *
      * @type {string}
      * @memberof Properties
      */
     'performative'?: string;
     /**
-     * 
+     *
      * @type {Array<PropertyEntry>}
      * @memberof Properties
      */
     'propertyEntries': Array<PropertyEntry>;
 }
 /**
- * 
+ *
  * @export
  * @interface PropertyEntry
  */
 export interface PropertyEntry {
     /**
-     * 
+     *
      * @type {string}
      * @memberof PropertyEntry
      */
     'key': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof PropertyEntry
      */
     'value': string;
     /**
-     * 
+     *
      * @type {ValueType}
      * @memberof PropertyEntry
      */
     'valueType': ValueType;
     /**
-     * 
+     *
      * @type {Array<string>}
      * @memberof PropertyEntry
      */
     'valueOptions'?: Array<string>;
     /**
-     * 
+     *
      * @type {boolean}
      * @memberof PropertyEntry
      */
@@ -251,38 +251,38 @@ export interface PropertyEntry {
 
 
 /**
- * 
+ *
  * @export
  * @interface SessionTimes
  */
 export interface SessionTimes {
     /**
-     * 
+     *
      * @type {number}
      * @memberof SessionTimes
      */
     'remainingTime': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SessionTimes
      */
     'expirationTime': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SessionTimes
      */
     'remainingTokenTime'?: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SessionTimes
      */
     'tokenExpirationTime'?: number;
 }
 /**
- * 
+ *
  * @export
  * @interface SoftwareComponent
  */
@@ -300,13 +300,13 @@ export interface SoftwareComponent {
      */
     'name'?: string;
     /**
-     * 
+     *
      * @type {SoftwareComponentType}
      * @memberof SoftwareComponent
      */
     'componentType'?: SoftwareComponentType;
     /**
-     * 
+     *
      * @type {Version}
      * @memberof SoftwareComponent
      */
@@ -315,13 +315,13 @@ export interface SoftwareComponent {
 
 
 /**
- * 
+ *
  * @export
  * @interface SoftwareComponentList
  */
 export interface SoftwareComponentList {
     /**
-     * 
+     *
      * @type {Array<SoftwareComponent>}
      * @memberof SoftwareComponentList
      */
@@ -350,73 +350,73 @@ export type SoftwareComponentType = typeof SoftwareComponentType[keyof typeof So
  */
 export interface SystemInformation {
     /**
-     * 
+     *
      * @type {string}
      * @memberof SystemInformation
      */
     'osDescription': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof SystemInformation
      */
     'osManufacturer': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof SystemInformation
      */
     'osFamilly': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof SystemInformation
      */
     'osVersion': string;
     /**
-     * 
+     *
      * @type {string}
      * @memberof SystemInformation
      */
     'processorName': string;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'processorFrequenceInMhz': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'processorNoPhysical': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'processorNoLogical': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'memoryTotalInGB': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'swapMemoryTotalInGB': number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof SystemInformation
      */
     'heapMemoryMaxInGB': number;
     /**
-     * 
+     *
      * @type {Array<NetworkConnection>}
      * @memberof SystemInformation
      */
@@ -448,7 +448,7 @@ export interface SystemLoad {
     'heapUsage': number;
 }
 /**
- * 
+ *
  * @export
  * @enum {string}
  */
@@ -503,7 +503,7 @@ export interface Version {
 export const AdminsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 
+         *
          * @summary Download configuration file
          * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
@@ -527,7 +527,7 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             if (xPerformative != null) {
                 localVarHeaderParameter['X-Performative'] = String(xPerformative);
             }
@@ -541,7 +541,89 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             };
         },
         /**
-         * Returns Hardware and system  information. 
+         * Downloads all log files within the specified date range as a ZIP archive.
+         * @summary Download multiple log files as ZIP archive
+         * @param {string} from Start date (inclusive)
+         * @param {string} to End date (inclusive)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        downloadLogArchive: async (from: string, to: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('downloadLogArchive', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('downloadLogArchive', 'to', to)
+            const localVarPath = `/logs/archive`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = to;
+            }
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns metadata for all stored log files.
+         * @summary Returns all available log files
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLogFiles: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/logs`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns Hardware and system  information.
          * @summary Returns system information
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -564,7 +646,7 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -575,7 +657,7 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             };
         },
         /**
-         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes 
+         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes
          * @summary Returns the current System load
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -598,7 +680,7 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -637,13 +719,13 @@ export const AdminsApiAxiosParamCreator = function (configuration?: Configuratio
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-            if (file !== undefined) { 
+            if (file !== undefined) {
                 localVarFormParams.append('file', file as any);
             }
-    
-    
+
+
             localVarHeaderParameter['Content-Type'] = 'multipart/form-data';
-    
+
             if (xPerformative != null) {
                 localVarHeaderParameter['X-Performative'] = String(xPerformative);
             }
@@ -668,7 +750,7 @@ export const AdminsApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = AdminsApiAxiosParamCreator(configuration)
     return {
         /**
-         * 
+         *
          * @summary Download configuration file
          * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
@@ -681,7 +763,33 @@ export const AdminsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Returns Hardware and system  information. 
+         * Downloads all log files within the specified date range as a ZIP archive.
+         * @summary Download multiple log files as ZIP archive
+         * @param {string} from Start date (inclusive)
+         * @param {string} to End date (inclusive)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async downloadLogArchive(from: string, to: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<File>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.downloadLogArchive(from, to, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AdminsApi.downloadLogArchive']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns metadata for all stored log files.
+         * @summary Returns all available log files
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getLogFiles(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getLogFiles(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AdminsApi.getLogFiles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns Hardware and system  information.
          * @summary Returns system information
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -693,7 +801,7 @@ export const AdminsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes 
+         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes
          * @summary Returns the current System load
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -729,7 +837,7 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
     const localVarFp = AdminsApiFp(configuration)
     return {
         /**
-         * 
+         *
          * @summary Download configuration file
          * @param {string} [xPerformative] Defines which configuration should be downloaded
          * @param {*} [options] Override http request option.
@@ -739,7 +847,27 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
             return localVarFp.downloadAppSettingsFile(xPerformative, options).then((request) => request(axios, basePath));
         },
         /**
-         * Returns Hardware and system  information. 
+         * Downloads all log files within the specified date range as a ZIP archive.
+         * @summary Download multiple log files as ZIP archive
+         * @param {string} from Start date (inclusive)
+         * @param {string} to End date (inclusive)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        downloadLogArchive(from: string, to: string, options?: RawAxiosRequestConfig): AxiosPromise<File> {
+            return localVarFp.downloadLogArchive(from, to, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns metadata for all stored log files.
+         * @summary Returns all available log files
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLogFiles(options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+            return localVarFp.getLogFiles(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns Hardware and system  information.
          * @summary Returns system information
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -748,7 +876,7 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
             return localVarFp.infoGet(options).then((request) => request(axios, basePath));
         },
         /**
-         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes 
+         * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes
          * @summary Returns the current System load
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -778,7 +906,7 @@ export const AdminsApiFactory = function (configuration?: Configuration, basePat
  */
 export class AdminsApi extends BaseAPI {
     /**
-     * 
+     *
      * @summary Download configuration file
      * @param {string} [xPerformative] Defines which configuration should be downloaded
      * @param {*} [options] Override http request option.
@@ -790,7 +918,31 @@ export class AdminsApi extends BaseAPI {
     }
 
     /**
-     * Returns Hardware and system  information. 
+     * Downloads all log files within the specified date range as a ZIP archive.
+     * @summary Download multiple log files as ZIP archive
+     * @param {string} from Start date (inclusive)
+     * @param {string} to End date (inclusive)
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof AdminsApi
+     */
+    public downloadLogArchive(from: string, to: string, options?: RawAxiosRequestConfig) {
+        return AdminsApiFp(this.configuration).downloadLogArchive(from, to, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns metadata for all stored log files.
+     * @summary Returns all available log files
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof AdminsApi
+     */
+    public getLogFiles(options?: RawAxiosRequestConfig) {
+        return AdminsApiFp(this.configuration).getLogFiles(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns Hardware and system  information.
      * @summary Returns system information
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -801,7 +953,7 @@ export class AdminsApi extends BaseAPI {
     }
 
     /**
-     * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes 
+     * Returns the current system load measured by Agent.Workbench that includes CPU-, memory- and Java Heap - load. Further, the number of threads and agents will be returnes
      * @summary Returns the current System load
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -834,7 +986,7 @@ export class AdminsApi extends BaseAPI {
 export const InfoApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 
+         *
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -856,7 +1008,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -867,7 +1019,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * 
+         *
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -902,7 +1054,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             }
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -915,7 +1067,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
-         * @param {string} [xPerformative] 
+         * @param {string} [xPerformative]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -937,7 +1089,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             if (xPerformative != null) {
                 localVarHeaderParameter['X-Performative'] = String(xPerformative);
             }
@@ -975,7 +1127,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             localVarHeaderParameter['Content-Type'] = 'application/json';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -989,11 +1141,11 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * 
+         *
          * @summary Return the current version number of Agent.Workbench
-         * @param {SoftwareComponentType} [type] 
-         * @param {string} [filter] 
-         * @param {boolean} [isShowSource] 
+         * @param {SoftwareComponentType} [type]
+         * @param {string} [filter]
+         * @param {boolean} [isShowSource]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1027,7 +1179,7 @@ export const InfoApiAxiosParamCreator = function (configuration?: Configuration)
             }
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1048,7 +1200,7 @@ export const InfoApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = InfoApiAxiosParamCreator(configuration)
     return {
         /**
-         * 
+         *
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1059,7 +1211,7 @@ export const InfoApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 
+         *
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1075,7 +1227,7 @@ export const InfoApiFp = function(configuration?: Configuration) {
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
-         * @param {string} [xPerformative] 
+         * @param {string} [xPerformative]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1099,11 +1251,11 @@ export const InfoApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 
+         *
          * @summary Return the current version number of Agent.Workbench
-         * @param {SoftwareComponentType} [type] 
-         * @param {string} [filter] 
-         * @param {boolean} [isShowSource] 
+         * @param {SoftwareComponentType} [type]
+         * @param {string} [filter]
+         * @param {boolean} [isShowSource]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1124,7 +1276,7 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
     const localVarFp = InfoApiFp(configuration)
     return {
         /**
-         * 
+         *
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1132,7 +1284,7 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.aliveGet(options).then((request) => request(axios, basePath));
         },
         /**
-         * 
+         *
          * @summary get logs of specific type
          * @param {EventLogTypes} type The type which is retrieved by awb
          * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1145,7 +1297,7 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
         /**
          * Returns required base configuration settings for the curren web application
          * @summary Returns required base configuration settings for the curren web application
-         * @param {string} [xPerformative] 
+         * @param {string} [xPerformative]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1163,11 +1315,11 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.setAppSettings(properties, options).then((request) => request(axios, basePath));
         },
         /**
-         * 
+         *
          * @summary Return the current version number of Agent.Workbench
-         * @param {SoftwareComponentType} [type] 
-         * @param {string} [filter] 
-         * @param {boolean} [isShowSource] 
+         * @param {SoftwareComponentType} [type]
+         * @param {string} [filter]
+         * @param {boolean} [isShowSource]
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1185,7 +1337,7 @@ export const InfoApiFactory = function (configuration?: Configuration, basePath?
  */
 export class InfoApi extends BaseAPI {
     /**
-     * 
+     *
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
@@ -1195,7 +1347,7 @@ export class InfoApi extends BaseAPI {
     }
 
     /**
-     * 
+     *
      * @summary get logs of specific type
      * @param {EventLogTypes} type The type which is retrieved by awb
      * @param {number} [amount] the maximum number of logs to retrieve. If no number is specified the default is 10
@@ -1210,7 +1362,7 @@ export class InfoApi extends BaseAPI {
     /**
      * Returns required base configuration settings for the curren web application
      * @summary Returns required base configuration settings for the curren web application
-     * @param {string} [xPerformative] 
+     * @param {string} [xPerformative]
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
@@ -1232,11 +1384,11 @@ export class InfoApi extends BaseAPI {
     }
 
     /**
-     * 
+     *
      * @summary Return the current version number of Agent.Workbench
-     * @param {SoftwareComponentType} [type] 
-     * @param {string} [filter] 
-     * @param {boolean} [isShowSource] 
+     * @param {SoftwareComponentType} [type]
+     * @param {string} [filter]
+     * @param {boolean} [isShowSource]
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof InfoApi
@@ -1255,7 +1407,7 @@ export class InfoApi extends BaseAPI {
 export const UserApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 
+         *
          * @summary Changes the user password
          * @param {PasswordChange} [passwordChange] The credentials to login.
          * @param {*} [options] Override http request option.
@@ -1279,7 +1431,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             localVarHeaderParameter['Content-Type'] = 'application/json';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -1316,7 +1468,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1350,7 +1502,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1384,7 +1536,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             setBasicAuthToObject(localVarRequestOptions, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1395,7 +1547,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
-         * Effectively logs-out the user from the System 
+         * Effectively logs-out the user from the System
          * @summary Logs out the user from the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1418,7 +1570,7 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
-    
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
@@ -1439,7 +1591,7 @@ export const UserApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = UserApiAxiosParamCreator(configuration)
     return {
         /**
-         * 
+         *
          * @summary Changes the user password
          * @param {PasswordChange} [passwordChange] The credentials to login.
          * @param {*} [options] Override http request option.
@@ -1488,7 +1640,7 @@ export const UserApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Effectively logs-out the user from the System 
+         * Effectively logs-out the user from the System
          * @summary Logs out the user from the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1510,7 +1662,7 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
     const localVarFp = UserApiFp(configuration)
     return {
         /**
-         * 
+         *
          * @summary Changes the user password
          * @param {PasswordChange} [passwordChange] The credentials to login.
          * @param {*} [options] Override http request option.
@@ -1547,7 +1699,7 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.loginUser(options).then((request) => request(axios, basePath));
         },
         /**
-         * Effectively logs-out the user from the System 
+         * Effectively logs-out the user from the System
          * @summary Logs out the user from the system
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1566,7 +1718,7 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
  */
 export class UserApi extends BaseAPI {
     /**
-     * 
+     *
      * @summary Changes the user password
      * @param {PasswordChange} [passwordChange] The credentials to login.
      * @param {*} [options] Override http request option.
@@ -1611,7 +1763,7 @@ export class UserApi extends BaseAPI {
     }
 
     /**
-     * Effectively logs-out the user from the System 
+     * Effectively logs-out the user from the System
      * @summary Logs out the user from the system
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
