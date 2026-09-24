@@ -210,6 +210,14 @@ export function TabScreen({
       activeKey,
     ]);
 
+  const screenLayout =
+    (
+      activeTab ??
+      tabs[0]
+    )?.layout === "wide"
+      ? "wide"
+      : "default";
+
   const tabsKey =
     useMemo(
       () =>
@@ -223,7 +231,9 @@ export function TabScreen({
     );
 
   return (
-    <Screen>
+    <Screen
+      layout={screenLayout}
+    >
       <View
         style={[
           styles.container,

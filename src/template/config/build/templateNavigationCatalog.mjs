@@ -212,6 +212,27 @@ export const templateTabCatalog = {
     feature:
       "update.appInformation",
   },
+liveConsoleConsole: {
+  menu: "liveConsole",
+  tabKey: "console",
+  caption:
+    "liveConsole:tabs.console",
+  position: 1,
+  layout: "wide",
+  screen: "live-console",
+  feature: "liveConsole",
+},
+
+liveConsoleFiles: {
+  menu: "liveConsole",
+  tabKey: "files",
+  caption:
+    "liveConsole:tabs.files",
+  position: 2,
+  layout: "wide",
+  screen: "log-files",
+  feature: "liveConsole",
+},
 
   programStart: {
     menu: "programStart",

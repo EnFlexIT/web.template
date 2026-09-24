@@ -29,8 +29,36 @@
   "dockRight": "Dock right",
   "dockBottomShort": "Bottom",
   "dockRightShort": "Right",
-    "hideConsoleTitle": "Hide Developer Console?",
+  "hideConsoleTitle": "Hide Developer Console?",
   "hideConsoleDescription": "The Developer Console and its launcher bar will be hidden. You can reopen it from the Live Console screen or by pressing Ctrl + Shift + L.",
   "hideConsoleConfirm": "Hide",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "tabs": {
+    "console": "Console",
+    "files": "Files"
+  },
+"logFiles": {
+  "title": "Log files",
+  "description": "Stored server log files.",
+  "downloadRange": "Download date range",
+  "from": "From",
+  "to": "To",
+  "downloadZip": "Download ZIP",
+  "downloading": "Downloading …",
+  "availableFiles": "Available files",
+  "selectDateHint": "Click a date to select exactly that day.",
+  "date": "Date",
+  "reload": "Reload",
+  "loading": "Loading …",
+  "noFiles": "No log files available.",
+    "selected": "Selected",
+    "downloadRangeDescription": "Select a date range to download the corresponding log files.",
+"hintTitle": "Note",
+"hintText": "Selecting a file automatically sets the date range to that day.",
+"selectedRange": "Selected range",
+"status": "Status",
+"fileCount_one": "{{count}} file",
+"fileCount_other": "{{count}} files"
+
+}
 }

@@ -32,5 +32,32 @@
   "hideConsoleTitle": "Developer Console ausblenden?",
   "hideConsoleDescription": "Die Developer Console und die dazugehörige Leiste werden ausgeblendet. Du kannst sie über den Bildschirm „Live-Konsole“ oder mit Strg + Umschalt + L wieder öffnen.",
   "hideConsoleConfirm": "Ausblenden",
-  "cancel": "Abbrechen"
+  "cancel": "Abbrechen",
+  "tabs": {
+    "console": "Konsole",
+    "files": "Dateien"
+  },
+"logFiles": {
+  "title": "Log-Dateien",
+  "description": "Gespeicherte Log-Dateien des Servers.",
+  "downloadRange": "Zeitraum herunterladen",
+  "from": "Von",
+  "to": "Bis",
+  "downloadZip": "ZIP herunterladen",
+  "downloading": "Wird heruntergeladen …",
+  "availableFiles": "Verfügbare Dateien",
+  "selectDateHint": "Klicke auf ein Datum, um genau diesen Tag auszuwählen.",
+  "date": "Datum",
+  "reload": "Neu laden",
+  "loading": "Wird geladen …",
+  "noFiles": "Keine Log-Dateien verfügbar.",
+  "selected": "Ausgewählt",
+  "downloadRangeDescription": "Wählen Sie einen Zeitraum aus, um die entsprechenden Log-Dateien herunterzuladen.",
+"hintTitle": "Hinweis",
+"hintText": "Beim Auswählen einer Datei wird der Zeitraum automatisch auf diesen Tag gesetzt.",
+"selectedRange": "Ausgewählter Zeitraum",
+"status": "Status",
+"fileCount_one": "{{count}} Datei",
+"fileCount_other": "{{count}} Dateien"
+}
 }

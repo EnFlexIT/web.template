@@ -22,7 +22,7 @@ import appReleaseReducer from "@/template/state/release/appReleaseSlice";
 import userProfileReducer from "@/template/state/authentication/userProfileSlice";
 import liveConsoleReducer from "@/template/state/developer-tools/liveConsoleSlice";
 import developerConsoleReducer from "@/template/state/developer-tools/developerConsoleSlice";
-
+import logFilesReducer from "@/template/state/developer-tools/logFilesSlice";
 import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
 import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
 import dbSettingsReducer from "@/template/state/agent-workbench/dbSettingsSlice";
@@ -52,6 +52,7 @@ export const templateReducers = {
   appRelease: appReleaseReducer,
   userProfile: userProfileReducer,
   liveConsole: liveConsoleReducer,
+  logFiles: logFilesReducer,
   developerConsole: developerConsoleReducer,
 
   dataAnalysis: dataAnalysisReducer,

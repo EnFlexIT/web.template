@@ -544,6 +544,15 @@ function renderTabItem(
   }
 
   if (
+    tab.layout !==
+    undefined
+  ) {
+    lines.push(
+      `    layout: ${JSON.stringify(tab.layout)},`,
+    );
+  }
+
+  if (
     tab.featureID !==
     undefined
   ) {
@@ -1302,28 +1311,31 @@ for (
       tabCatalogKey
     ];
 
-  tabItems.push({
-    menuID:
-      getMenuId(
-        definition.menu,
-      ),
+tabItems.push({
+  menuID:
+    getMenuId(
+      definition.menu,
+    ),
 
-    tabKey:
-      definition.tabKey,
+  tabKey:
+    definition.tabKey,
 
-    caption:
-      definition.caption,
+  caption:
+    definition.caption,
 
-    position:
-      definition.position,
+  position:
+    definition.position,
 
-    featureID:
-      runtimeRule?.featureID ??
-      definition.runtimeFeatureID,
+  layout:
+    definition.layout,
 
-    screen:
-      definition.screen,
-  });
+  featureID:
+    runtimeRule?.featureID ??
+    definition.runtimeFeatureID,
+
+  screen:
+    definition.screen,
+});
 
   enabledTemplateTabKeys.add(
     tabCatalogKey,

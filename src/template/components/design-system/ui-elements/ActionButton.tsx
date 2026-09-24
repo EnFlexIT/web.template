@@ -1,20 +1,44 @@
-﻿import React, { useState } from "react";
-import { Pressable, View } from "react-native";
+﻿import React, {
+  useState,
+} from "react";
+
+import {
+  Pressable,
+  View,
+} from "react-native";
+
 import {
   StyleSheet,
   useUnistyles,
 } from "react-native-unistyles";
 
-import { Icon, IconName } from "./Icon/Icon";
-import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import {
+  Icon,
+  IconName,
+} from "./Icon/Icon";
+
+import {
+  ThemedText,
+} from "@/template/components/design-system/themed/ThemedText";
 
 interface ActionButtonProps {
   label?: string;
-  variant?: "primary" | "secondary";
-  size?: "xs" | "sm" | "md";
+
+  variant?:
+    | "primary"
+    | "secondary"
+    | "filled";
+
+  size?:
+    | "xs"
+    | "sm"
+    | "md";
+
   onPress: () => void;
+
   icon?: IconName;
   iconSize?: number;
+
   disabled?: boolean;
   tooltip?: string;
 }
@@ -29,28 +53,69 @@ export function ActionButton({
   disabled = false,
   tooltip,
 }: ActionButtonProps) {
-  const { theme } = useUnistyles();
+  const { theme } =
+    useUnistyles();
 
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
-  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [
+    hovered,
+    setHovered,
+  ] = useState(false);
 
-  const isPrimary = variant === "primary";
+  const [
+    pressed,
+    setPressed,
+  ] = useState(false);
 
-  const backgroundColor = isPrimary
-    ? theme.colors.highlight
-    : pressed
-      ? theme.colors.border
-      : hovered
-        ? theme.colors.highlight
-        : "transparent";
+  const [
+    tooltipVisible,
+    setTooltipVisible,
+  ] = useState(false);
 
-  const textColor = isPrimary
-    ? theme.colors.background
-    : theme.colors.text;
+  const isPrimary =
+    variant === "primary";
+
+  const isFilled =
+    variant === "filled";
+
+  const backgroundColor =
+    isPrimary
+      ? theme.colors.highlight
+      : isFilled
+        ? theme.colors.text
+        : pressed
+          ? theme.colors.border
+          : hovered
+            ? theme.colors.highlight
+            : "transparent";
+
+  const textColor =
+    isPrimary
+      ? theme.colors.background
+      : isFilled
+        ? theme.colors.card
+        : theme.colors.text;
+
+  const buttonOpacity =
+    disabled
+      ? isFilled
+        ? 0.35
+        : 0.6
+      : isFilled
+        ? pressed
+          ? 0.78
+          : hovered
+            ? 0.88
+            : 1
+        : 1;
 
   function showTooltip() {
-    if (!tooltip || disabled) return;
+    if (
+      !tooltip ||
+      disabled
+    ) {
+      return;
+    }
+
     setTooltipVisible(true);
   }
 
@@ -62,21 +127,31 @@ export function ActionButton({
     <View
       style={[
         styles.wrapper,
-        tooltipVisible && styles.wrapperWithTooltip,
+
+        tooltipVisible &&
+          styles.wrapperWithTooltip,
       ]}
     >
-      {tooltipVisible && tooltip ? (
+      {tooltipVisible &&
+      tooltip ? (
         <View
           pointerEvents="none"
           style={[
             styles.tooltip,
             {
-              backgroundColor: theme.colors.card,
-              borderColor: theme.colors.border,
+              backgroundColor:
+                theme.colors.card,
+
+              borderColor:
+                theme.colors.border,
             },
           ]}
         >
-          <ThemedText style={styles.tooltipText}>
+          <ThemedText
+            style={
+              styles.tooltipText
+            }
+          >
             {tooltip}
           </ThemedText>
         </View>
@@ -94,9 +169,15 @@ export function ActionButton({
           setPressed(false);
           hideTooltip();
         }}
-        onPressIn={() => setPressed(true)}
-        onPressOut={() => setPressed(false)}
-        onLongPress={showTooltip}
+        onPressIn={() => {
+          setPressed(true);
+        }}
+        onPressOut={() => {
+          setPressed(false);
+        }}
+        onLongPress={
+          showTooltip
+        }
         delayLongPress={250}
         onFocus={() => {
           setHovered(true);
@@ -112,23 +193,38 @@ export function ActionButton({
           sizeStyles[size],
           {
             backgroundColor,
-            borderColor: theme.colors.border,
-            opacity: disabled ? 0.6 : 1,
+
+            borderColor:
+              theme.colors.border,
+
+            opacity:
+              buttonOpacity,
           },
         ]}
       >
         {icon ? (
-          <View style={styles.icon}>
+          <View
+            style={
+              styles.icon
+            }
+          >
             <Icon
               name={icon}
               size={iconSize}
-              color={textColor}
+              color={
+                textColor
+              }
             />
           </View>
         ) : null}
 
         {label ? (
-          <ThemedText style={{ color: textColor }}>
+          <ThemedText
+            style={{
+              color:
+                textColor,
+            }}
+          >
             {label}
           </ThemedText>
         ) : null}
@@ -137,67 +233,75 @@ export function ActionButton({
   );
 }
 
-const styles = StyleSheet.create(() => ({
-  wrapper: {
-    position: "relative",
-    alignSelf: "stretch",
-    overflow: "visible",
-  },
-
-  wrapperWithTooltip: {
-    zIndex: 10000,
-    elevation: 20,
-  },
-
-  button: {
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
-  icon: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  tooltip: {
-    position: "absolute",
-
-    // Der Button steht rechts neben dem Eingabefeld.
-    // Deshalb Ã¶ffnet sich der Tooltip nach links.
-    right: 0,
-    bottom: "100%",
-    marginBottom: 8,
-
-    minWidth: 180,
-    maxWidth: 280,
-
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-
-    borderWidth: 1,
-    borderRadius: 4,
-
-    zIndex: 10001,
-    elevation: 21,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const styles =
+  StyleSheet.create(() => ({
+    wrapper: {
+      position: "relative",
+      alignSelf: "stretch",
+      overflow: "visible",
     },
-  },
 
-  tooltipText: {
-    fontSize: 12,
-    lineHeight: 16,
-    flexShrink: 1,
-  },
-}));
+    wrapperWithTooltip: {
+      zIndex: 10000,
+      elevation: 20,
+    },
+
+    button: {
+      borderWidth: 1,
+
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "center",
+
+      gap: 8,
+    },
+
+    icon: {
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
+
+    tooltip: {
+      position: "absolute",
+
+      /*
+       * The tooltip opens above the
+       * action button.
+       */
+      right: 0,
+      bottom: "100%",
+      marginBottom: 8,
+
+      minWidth: 180,
+      maxWidth: 280,
+
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+
+      borderWidth: 1,
+      borderRadius: 4,
+
+      zIndex: 10001,
+      elevation: 21,
+
+      shadowColor: "rgb(120, 118, 118)",
+      shadowOpacity: 0.15,
+      shadowRadius: 5,
+
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+    },
+
+    tooltipText: {
+      fontSize: 12,
+      lineHeight: 16,
+      flexShrink: 1,
+    },
+  }));
 
 const sizeStyles = {
   xs: {
@@ -205,11 +309,13 @@ const sizeStyles = {
     paddingHorizontal: 8,
     minHeight: 28,
   },
+
   sm: {
     paddingVertical: 5,
     paddingHorizontal: 9,
     minHeight: 30,
   },
+
   md: {
     paddingVertical: 10,
     paddingHorizontal: 16,

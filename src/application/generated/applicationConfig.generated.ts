@@ -201,6 +201,22 @@ const tabItems:
     Content: resolveApplicationScreen("update-app-information"),
   },
   {
+    menuID: 3026,
+    tabKey: "console",
+    caption: "liveConsole:tabs.console",
+    position: 1,
+    layout: "wide",
+    Content: resolveApplicationScreen("live-console"),
+  },
+  {
+    menuID: 3026,
+    tabKey: "files",
+    caption: "liveConsole:tabs.files",
+    position: 2,
+    layout: "wide",
+    Content: resolveApplicationScreen("log-files"),
+  },
+  {
     menuID: 3023,
     tabKey: "program-start",
     caption: "Program Start",

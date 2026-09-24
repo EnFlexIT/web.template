@@ -19,6 +19,9 @@ import {
 } from "@/template/screens/dev/Dev-Home-Screen";
 
 import {
+  LogFilesTab,
+} from "@/template/screens/liveConsole/LogFilesTab";
+import {
   ServerSettingsScreen,
 } from "@/template/screens/server/ServerSettings";
 
@@ -122,6 +125,8 @@ export const templateScreenRegistry:
 
   "live-console":
     LiveConsoleScreen,
+    "log-files":
+    LogFilesTab,
 
   "dev-home":
     DevHomeScreen,
