@@ -6,6 +6,6 @@ export const applicationBuildInfo =
   "application": {},
   "template": {
     "packageName": "enflex.it-template",
-    "version": "0.0.6"
+    "version": "0.0.7"
   }
 } as const;

@@ -1274,6 +1274,29 @@ for (
   );
 }
 
+const applicationRootChildPositionOffset =
+  navigationRootMode === "unified"
+    ? enabledApplicationMenus
+        .filter(
+          (item) =>
+            item.parent ===
+            applicationRootMenuKey,
+        )
+        .reduce(
+          (
+            maximum,
+            item,
+            index,
+          ) =>
+            Math.max(
+              maximum,
+              item.position ??
+                index + 1,
+            ),
+          0,
+        )
+    : 0;
+
 const menuItems = [];
 
 /**
@@ -1320,10 +1343,21 @@ if (
         : undefined,
 
     position:
-      definition.position ??
-      automaticTemplateMenuPositions.get(
-        menuKey,
-      ),
+      navigationRootMode ===
+        "unified" &&
+      definition.parent ===
+        templateSettingsRootMenuKey
+        ? applicationRootChildPositionOffset +
+          (
+            definition.position ??
+            automaticTemplateMenuPositions.get(
+              menuKey,
+            )
+          )
+        : definition.position ??
+          automaticTemplateMenuPositions.get(
+            menuKey,
+          ),
 
     icon:
       definition.icon,
