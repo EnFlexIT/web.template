@@ -66,6 +66,21 @@ const generatedThemeFilePath = path.join(
 
 const customMenuIdStart = 3900;
 
+const navigationRootModes =
+  new Set([
+    "split",
+    "unified",
+  ]);
+
+const defaultNavigationRootMode =
+  "split";
+
+const applicationRootMenuKey =
+  "applicationRoot";
+
+const templateSettingsRootMenuKey =
+  "settings";
+
 /**
  * Parses the simple key=value subset of the
  * Java .properties format used by applications.
@@ -655,8 +670,31 @@ const applicationNavigationProperties = {
   ...navigationProperties,
 };
 
+const navigationRootMode =
+  navigationProperties[
+    "NavigationRootMode"
+  ]?.trim() ||
+  defaultNavigationRootMode;
+
+if (
+  !navigationRootModes.has(
+    navigationRootMode,
+  )
+) {
+  throw new Error(
+    [
+      `Invalid NavigationRootMode "${navigationRootMode}".`,
+      'Expected "split" or "unified".',
+    ].join(" "),
+  );
+}
+
 delete applicationNavigationProperties[
   "NavigationMenuIconsEnabled"
+];
+
+delete applicationNavigationProperties[
+  "NavigationRootMode"
 ];
 
 const applicationId =
@@ -930,6 +968,44 @@ function getMenuId(
   menuKey,
 ) {
   if (
+    navigationRootMode ===
+      "unified" &&
+    menuKey ===
+      templateSettingsRootMenuKey
+  ) {
+    const applicationRoot =
+      getApplicationMenu(
+        applicationRootMenuKey,
+      );
+
+    if (
+      !applicationRoot ||
+      applicationRoot.enabled ===
+        false
+    ) {
+      throw new Error(
+        'NavigationRootMode "unified" requires an enabled "applicationRoot" menu.',
+      );
+    }
+
+    const applicationRootMenuID =
+      customMenuIds.get(
+        applicationRootMenuKey,
+      );
+
+    if (
+      applicationRootMenuID ===
+      undefined
+    ) {
+      throw new Error(
+        'Unable to resolve the "applicationRoot" menu ID.',
+      );
+    }
+
+    return applicationRootMenuID;
+  }
+
+  if (
     Object.hasOwn(
       templateMenuCatalog,
       menuKey,
@@ -972,6 +1048,15 @@ function getApplicationMenu(
 function getMenuParent(
   menuKey,
 ) {
+  if (
+    navigationRootMode ===
+      "unified" &&
+    menuKey ===
+      templateSettingsRootMenuKey
+  ) {
+    return applicationRootMenuKey;
+  }
+
   if (
     Object.hasOwn(
       templateMenuCatalog,
@@ -1204,12 +1289,21 @@ for (
   )
 ) {
   if (
-    !selectedMenuKeys.has(
-      menuKey,
-    )
-  ) {
-    continue;
-  }
+  !selectedMenuKeys.has(
+    menuKey,
+  )
+) {
+  continue;
+}
+
+if (
+  navigationRootMode ===
+    "unified" &&
+  menuKey ===
+    templateSettingsRootMenuKey
+) {
+  continue;
+}
 
   menuItems.push({
     caption:
