@@ -138,7 +138,7 @@ A concrete Application provides product-specific composition on top of the Base 
 
 Plant Assist is the first separate concrete consumer repository currently used to validate this contract.
 
-HEMS remains a future example of a concrete Application that can follow the same consumer model.
+HEMS is now also a current concrete consumer Application and follows the same consumer model.
 
 A concrete Application may own:
 
@@ -499,7 +499,7 @@ createTemplateApp(...)
 Base Template
 ```
 
-The same consumer model can be used by HEMS and future concrete Applications.
+The same consumer model is now used by Plant Assist and HEMS and can also be used by future concrete Applications.
 
 There is no separate Agent.Workbench Application repository in this model because Agent.Workbench standard functionality is already part of the Base Template.
 
@@ -549,17 +549,52 @@ ThemeDarkPrimary=#35C4D2
 ThemeDarkBackground=#0E1C22
 ```
 
-Application navigation may additionally enable optional menu icons:
+Application navigation may additionally configure its root composition and optional menu presentation.
+
+The supported navigation root modes are:
+
+```properties
+NavigationRootMode=split
+```
+
+and:
+
+```properties
+NavigationRootMode=unified
+```
+
+`split` is the default and allows Application navigation and Template settings navigation to remain separate.
+
+`unified` composes Application navigation and reusable Template settings below the semantic Application root:
+
+```properties
+NavigationRootMode=unified
+
+menu.applicationRoot.enabled=true
+menu.applicationRoot.caption=application
+menu.applicationRoot.position=1
+menu.applicationRoot.screen=home-screen
+
+menu.home.enabled=true
+menu.home.caption=home
+menu.home.parent=applicationRoot
+menu.home.position=1
+menu.home.screen=home-screen
+```
+
+Applications should use semantic Application-owned relationships such as `applicationRoot` rather than depending on internal Template navigation keys.
+
+Optional navigation icons remain supported:
 
 ```properties
 NavigationMenuIconsEnabled=true
+menu.home.icon=home
+```
 
-menu.plantAssist.enabled=true
-menu.plantAssist.caption=plantAssist
-menu.plantAssist.parent=settings
-menu.plantAssist.position=99
-menu.plantAssist.screen=plant-assist-screen
-menu.plantAssist.icon=appstore
+Detailed navigation composition is documented in:
+
+```text
+doc/architecture/application-navigation.md
 ```
 
 Application branding and visual customization therefore remain Application-owned without requiring modifications to reusable Template source files.
@@ -820,7 +855,7 @@ When menu icons are disabled or not configured, the classic text-oriented naviga
 
 ---
 
-# 19. Application Navigation Extensions
+# 19. Application Navigation
 
 Application-specific navigation is configured through:
 
@@ -828,86 +863,189 @@ Application-specific navigation is configured through:
 src/application/config/navigation.properties
 ```
 
-A concrete Application can define its own navigation extension semantically.
+A concrete Application describes its own navigation semantically.
 
-Example:
+The supported root composition modes are:
 
-```properties
-NavigationMenuIconsEnabled=true
-
-menu.plantAssist.enabled=true
-menu.plantAssist.caption=plantAssist
-menu.plantAssist.parent=settings
-menu.plantAssist.position=99
-menu.plantAssist.screen=plant-assist-screen
-menu.plantAssist.icon=appstore
+```text
+split
+unified
 ```
 
-The Application describes its own extension and its optional presentation metadata.
+The default is:
 
-It does not manually assign or maintain Template internal numeric IDs.
+```text
+split
+```
+
+A concrete Application may define a semantic Application root:
+
+```properties
+menu.applicationRoot.enabled=true
+menu.applicationRoot.caption=application
+menu.applicationRoot.position=1
+menu.applicationRoot.screen=home-screen
+```
+
+Application-owned children may reference that root:
+
+```properties
+menu.home.enabled=true
+menu.home.caption=home
+menu.home.parent=applicationRoot
+menu.home.position=1
+menu.home.screen=home-screen
+```
+
+The Application does not manually assign or maintain Template internal numeric menu IDs.
 
 Custom IDs are generated or resolved internally.
 
-Application translation files provide the visible localized caption and optional related descriptive text.
+Application translation files provide the visible localized captions.
+
+Detailed navigation architecture is documented in:
+
+```text
+doc/architecture/application-navigation.md
+```
 
 ---
 
-# 20. Navigation Composition
+# 20. Navigation Root Composition
 
-Runtime navigation combines Template-owned navigation with Application-owned extensions.
+Runtime navigation combines Template-owned navigation with Application-owned navigation.
+
+The concrete Application selects the composition mode through:
+
+```properties
+NavigationRootMode=split
+```
+
+or:
+
+```properties
+NavigationRootMode=unified
+```
+
+## Split mode
+
+Split mode allows Application navigation and Template settings navigation to remain separate roots.
 
 Conceptually:
 
 ```text
-
-Template navigation
-
-        +
-
-Application navigation extensions
-
-        |
-
-        v
-
-runtime navigation
-
+Application Root             Settings Root
+├── Application Menu         ├── Notifications
+└── Application Menu         ├── System Settings
+                             └── Personal Settings
 ```
 
-Template owns reusable navigation.
+This is the default behavior.
 
-Application owns only concrete product-specific additions.
+## Unified mode
 
-This is different from the previous model where a concrete Application was expected to provide the full Template menu and tab structure.
+Unified mode composes Application-owned navigation and reusable Template settings below the semantic `applicationRoot`.
+
+Conceptually:
+
+```text
+Application Root
+├── Application Menu
+├── Application Menu
+├── Notifications
+├── System Settings
+└── Personal Settings
+```
+
+In unified mode, the internal Template Settings root itself is not materialized as an additional visible root.
+
+Its direct children are composed below `applicationRoot`.
+
+Deeper Template-owned navigation remains unchanged.
+
+For example:
+
+```text
+System Settings
+├── Server Settings
+├── Update
+├── Log
+└── Configuration
+```
+
+remains Template-owned.
+
+The same applies to reusable Personal Settings navigation.
+
+Applications therefore do not need to reproduce or depend on the internal Template Settings hierarchy.
 
 ---
 
-# 21. Template Menu Ordering
+# 21. Navigation Ownership and Ordering
 
-Normal Template menu positions are derived automatically from the order of sibling entries in the Template menu catalog.
+Template owns reusable navigation infrastructure and internal navigation definitions.
 
-Template developers therefore do not need to maintain explicit numeric positions for standard Template menu items.
-
-Application custom menu `position` remains optional.
-
-For items without an explicit position, MenuHub uses:
-
-```ts
-
-Number.MAX_SAFE_INTEGER
-
-```
-
-The relevant implementation is located in:
+This includes:
 
 ```text
-
-src/template/screens/menu/MenuHubScreen.tsx
-
+internal Template menu IDs
+internal Template parent IDs
+Template screen registry keys
+authentication visibility
+runtime visibility rules
+Template navigation definitions
+navigation rendering
+generated runtime composition
 ```
 
-This keeps the reusable navigation ordering consistent.
+Applications must not depend on those internal details.
+
+The semantic Application root is:
+
+```text
+applicationRoot
+```
+
+Concrete Applications may use `applicationRoot` as a supported Application-owned relationship.
+
+The internal Template key:
+
+```text
+settings
+```
+
+is not part of the public Application navigation contract.
+
+Application custom menu positions remain Application-controlled.
+
+Example:
+
+```properties
+menu.home.position=1
+menu.projectSetup.position=2
+```
+
+In unified mode, direct Template Settings children are positioned after the direct Application children.
+
+Conceptually:
+
+```text
+Home                 position 1
+Project Setup        position 2
+Notifications        position 3
+System Settings      position 4
+Personal Settings    position 5
+```
+
+The configuration generator resolves the final composition and orders the generated menu collection by position before runtime configuration is materialized.
+
+Items without an explicit position continue to use the established navigation fallback behavior based on:
+
+```ts
+Number.MAX_SAFE_INTEGER
+```
+
+Applications configure navigation through the documented semantic contract instead of reproducing Template internals.
 
 ---
 
@@ -1275,24 +1413,28 @@ Application versioning and Template versioning are separate concerns.
 
 A concrete product release represents an Application release. The Template version used by that Application is supporting build information, not a separate end-user update channel by default.
 
-Detailed BuildInfo and release-note presentation are planned architectural extensions and are not yet part of the implemented contract.
+BuildInfo and Application information presentation are implemented. Human-readable release-note metadata and optional release-note automation remain planned architectural extensions.
 
 ---
 
-# 34. Current Plant Assist Consumer and Future HEMS Repository
+# 34. Current Concrete Consumers
 
-Plant Assist is the first separate concrete Application repository currently used to validate the Base Template consumer model.
+Plant Assist is the first separate concrete Application repository used to validate the Base Template consumer model.
+
+HEMS is now also a current separate concrete Application consumer.
 
 Conceptually:
 
 ```text
-Plant Assist Application Repository
-        |
-        v
-Base Template
-        |
-        v
-Core
+Plant Assist           HEMS             future Applications
+   current              current
+   consumer             consumer
+        \                  |                  /
+         \                 |                 /
+              Base Template
+                   |
+                   v
+                  Core
 ```
 
 Plant Assist currently demonstrates:
@@ -1312,34 +1454,20 @@ deployment configuration
 
 Plant Assist remains an MVP used to validate the Application contract. It is not intended to represent final product behavior or final product design.
 
-HEMS remains a future concrete Application.
-
-A future HEMS consumer repository may contain:
+HEMS currently demonstrates:
 
 ```text
 HEMS Application configuration
 HEMS screens
 HEMS translations
-HEMS navigation extensions
-optional HEMS-specific Redux state
-HEMS product behavior
-HEMS branding
-HEMS build and deployment configuration
+Application-owned HEMS navigation
+NavigationRootMode=unified
+semantic applicationRoot composition
+Template Settings integration below applicationRoot
+independent HEMS Application versioning
 ```
 
-Conceptually:
-
-```text
-Plant Assist      HEMS       future Applications
-   current        future
-   consumer       consumer
-        \           |            /
-         \          |           /
-             Base Template
-                  |
-                  v
-                 Core
-```
+The HEMS navigation therefore validates the unified navigation contract in a real consumer repository.
 
 No equivalent Agent.Workbench Application repository is required by the current architecture.
 
@@ -1525,7 +1653,7 @@ navigation rendering
 
 Plant Assist validates this contract as a separate consumer repository.
 
-BuildInfo, Application information screens and release-note metadata are planned extensions rather than currently implemented contract features.
+BuildInfo and Application information screens are implemented contract features. Human-readable release-note metadata remains a planned extension.
 
 ---
 
@@ -1599,7 +1727,7 @@ The Application contract must preserve the following invariants:
 5. Agent.Workbench standard functionality belongs to Template.
 6. Agent.Workbench state belongs to Template.
 7. Plant Assist is a current concrete consumer Application.
-8. HEMS remains a future concrete consumer Application.
+8. HEMS is a current concrete consumer Application.
 9. A separate Agent.Workbench Application repository is not required.
 10. Developer-facing Application configuration uses `.properties`.
 11. Template owns reusable navigation internals.
@@ -1734,7 +1862,7 @@ The Application contract is successful when:
 13. Optional Application-specific Redux state can be integrated without Template importing concrete reducers.
 14. Agent.Workbench standard functionality remains reusable Base Template functionality.
 15. Plant Assist can consume the Base Template as an independent concrete Application.
-16. HEMS can follow the same consumer model in the future.
+16. HEMS consumes the Base Template through the same consumer model.
 17. Developer-facing configuration remains properties-based.
 18. Generated implementation details remain hidden from normal Application configuration.
 19. A concrete consumer can own its own version, build, release and deployment process.
@@ -1756,7 +1884,7 @@ Agent.Workbench is the current in-repository Application identity/composition, b
 
 Plant Assist is the first separate concrete consumer currently used to validate the Application contract.
 
-HEMS remains a future concrete consumer Application.
+HEMS is now a current concrete consumer Application.
 
 Concrete Applications configure the Base Template through supported integration surfaces.
 
@@ -1790,6 +1918,6 @@ Concrete consumer repositories own their own product version, build, release and
 
 Plant Assist has already validated independent consumer configuration and release ownership.
 
-BuildInfo, Application information screens, Template/Application version presentation and release-note metadata are planned follow-up topics rather than currently implemented contract features.
+BuildInfo, Application information screens and Template/Application version presentation are implemented. Human-readable release-note metadata and optional release-note automation remain planned follow-up topics.
 
 The Application contract exists to keep concrete product composition outside Template while preserving the Base Template as the reusable platform.
