@@ -41,18 +41,26 @@ type TabFeatureRule = {
 const menuItems:
   readonly StaticMenuItem[] = [
   {
-    caption: "settings",
-    menuID: 3003,
-    icon: "setting",
-    Screen: resolveApplicationScreen("settings"),
-  },
-  {
     caption: "notifications",
     menuID: 3015,
     icon: "notification",
     parentID: 3003,
     position: 1,
     Screen: resolveApplicationScreen("notifications"),
+  },
+  {
+    caption: "Appearance",
+    menuID: 3004,
+    parentID: 3022,
+    position: 1,
+    Screen: resolveApplicationScreen("unauthenticated-settings"),
+  },
+  {
+    caption: "serverSettings",
+    menuID: 3012,
+    parentID: 3021,
+    position: 1,
+    Screen: resolveApplicationScreen("server-settings"),
   },
   {
     caption: "SystemSettings",
@@ -63,47 +71,11 @@ const menuItems:
     Screen: resolveApplicationScreen("menu-hub"),
   },
   {
-    caption: "personalSettings",
-    menuID: 3022,
-    icon: "user",
-    parentID: 3003,
-    position: 3,
-    Screen: resolveApplicationScreen("menu-hub"),
-  },
-  {
-    caption: "Appearance",
-    menuID: 3004,
-    parentID: 3022,
-    position: 1,
-    Screen: resolveApplicationScreen("unauthenticated-settings"),
-  },
-  {
     caption: "privacysettings",
     menuID: 3005,
     parentID: 3022,
     position: 2,
     Screen: resolveApplicationScreen("privacy-settings"),
-  },
-  {
-    caption: "UserProfile",
-    menuID: 3025,
-    parentID: 3022,
-    position: 3,
-    Screen: resolveApplicationScreen("user-profile"),
-  },
-  {
-    caption: "changePassword",
-    menuID: 3013,
-    parentID: 3022,
-    position: 4,
-    Screen: resolveApplicationScreen("change-password"),
-  },
-  {
-    caption: "serverSettings",
-    menuID: 3012,
-    parentID: 3021,
-    position: 1,
-    Screen: resolveApplicationScreen("server-settings"),
   },
   {
     caption: "appInfo",
@@ -113,11 +85,33 @@ const menuItems:
     Screen: resolveApplicationScreen("update-web-app"),
   },
   {
+    caption: "personalSettings",
+    menuID: 3022,
+    icon: "user",
+    parentID: 3003,
+    position: 3,
+    Screen: resolveApplicationScreen("menu-hub"),
+  },
+  {
+    caption: "UserProfile",
+    menuID: 3025,
+    parentID: 3022,
+    position: 3,
+    Screen: resolveApplicationScreen("user-profile"),
+  },
+  {
     caption: "options",
     menuID: 3023,
     parentID: 3021,
     position: 3,
     Screen: resolveApplicationScreen("program-start"),
+  },
+  {
+    caption: "changePassword",
+    menuID: 3013,
+    parentID: 3022,
+    position: 4,
+    Screen: resolveApplicationScreen("change-password"),
   },
   {
     caption: "liveConsole",
@@ -146,6 +140,12 @@ const menuItems:
     parentID: 3003,
     position: 99,
     Screen: resolveApplicationScreen("example-screen"),
+  },
+  {
+    caption: "settings",
+    menuID: 3003,
+    icon: "setting",
+    Screen: resolveApplicationScreen("settings"),
   },
 ];
 

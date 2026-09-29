@@ -1563,7 +1563,18 @@ for (
 }
 
 const renderedMenuItems =
-  menuItems
+  [...menuItems]
+    .sort(
+      (left, right) =>
+        (
+          left.position ??
+          Number.MAX_SAFE_INTEGER
+        ) -
+        (
+          right.position ??
+          Number.MAX_SAFE_INTEGER
+        ),
+    )
     .map(
       renderMenuItem,
     )
