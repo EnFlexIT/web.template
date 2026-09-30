@@ -12,8 +12,10 @@
   "serverWeb": {
     "title": "Web-App",
     "updateTitle": "Web-App Update",
+    "updateSubtitle": "Aktueller Stand und verfügbare Updates der Web-App.",
     "build": {
       "title": "Build & Release",
+      "subtitle": "Technische Informationen zum aktuellen Build.",
       "application": "Anwendung",
       "release": "Release",
       "template": "Basis-Template",
@@ -21,7 +23,29 @@
       "commit": "Commit"
     },
     "releaseNotes": {
-      "title": "Was ist neu?"
+      "title": "Was ist neu?",
+      "subtitle": "Übersicht der letzten Änderungen und Verbesserungen.",
+      "searchPlaceholder": "Änderungen durchsuchen…",
+      "filters": {
+        "all": "Alle",
+        "application": "Anwendung",
+        "template": "Basis-Template"
+      },
+      "history": {
+        "latest": "Letztes Update",
+        "previous": "Frühere Updates"
+      },
+      "sources": {
+        "application": "Anwendung",
+        "template": "Basis-Template"
+      },
+      "empty": {
+        "title": "Keine Einträge verfügbar",
+        "history": "Für frühere Updates sind noch keine Historien-Daten verfügbar.",
+        "template": "Für das Basis-Template sind in diesem Build noch keine separaten Release Notes verfügbar.",
+        "notes": "Für diesen Build sind keine Release Notes verfügbar.",
+        "search": "Keine Änderungen entsprechen der aktuellen Suche."
+      }
     },
     "fields": {
       "releaseVersion": "Version (Release)",

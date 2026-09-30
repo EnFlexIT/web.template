@@ -182,11 +182,12 @@ export const templateTabCatalog = {
     feature: "update.general",
   },
 
-  updateWebApp: {
+   updateWebApp: {
     menu: "update",
     tabKey: "webapp",
     caption: "Update:serverWeb.title",
     position: 2,
+    layout: "wide",
     screen: "update-web-app",
     feature: "update.webapp",
   },

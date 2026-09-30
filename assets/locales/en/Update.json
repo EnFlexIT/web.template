@@ -12,8 +12,10 @@
   "serverWeb": {
     "title": "Web App",
     "updateTitle": "Web App Update",
+    "updateSubtitle": "Current status and available Web App updates.",
     "build": {
       "title": "Build & Release",
+      "subtitle": "Technical information about the current build.",
       "application": "Application",
       "release": "Release",
       "template": "Base Template",
@@ -21,7 +23,29 @@
       "commit": "Commit"
     },
     "releaseNotes": {
-      "title": "What's new?"
+      "title": "What's new?",
+      "subtitle": "Overview of the latest changes and improvements.",
+      "searchPlaceholder": "Search changes…",
+      "filters": {
+        "all": "All",
+        "application": "Application",
+        "template": "Base Template"
+      },
+      "history": {
+        "latest": "Latest update",
+        "previous": "Previous updates"
+      },
+      "sources": {
+        "application": "Application",
+        "template": "Base Template"
+      },
+      "empty": {
+        "title": "No entries available",
+        "history": "Historical data for previous updates is not available yet.",
+        "template": "Separate release notes for the Base Template are not available in this build yet.",
+        "notes": "No release notes are available for this build.",
+        "search": "No changes match the current search."
+      }
     },
     "fields": {
       "releaseVersion": "Version (Release)",

@@ -184,6 +184,7 @@ const tabItems:
     tabKey: "webapp",
     caption: "Update:serverWeb.title",
     position: 2,
+    layout: "wide",
     Content: resolveApplicationScreen("update-web-app"),
   },
   {

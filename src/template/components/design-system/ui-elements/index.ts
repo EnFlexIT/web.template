@@ -6,6 +6,7 @@ export { ConfirmDialog } from "./ConfirmDialog";
 export { ConfirmModal } from "./ConfirmModal";
 export { DataPermissionsDialog } from "./DataPermissionsDialog";
 export { Dropdown } from "./Dropdown";
+export { FilterChip } from "./FilterChip";
 export { HeroCard } from "./HeroCard";
 export { Icon } from "./Icon/Icon";
 export { Infobox } from "./Infobox";
