@@ -58,6 +58,15 @@ jobs:
         id: time-selector
         run: echo "time=$(date +%Y%m%d-%H%M)" >> "$GITHUB_OUTPUT"
 
+      - name: Set build metadata
+        run: |
+          echo "ENFLEX_APPLICATION_RELEASE_TAG=v${{ steps.version-selector.outputs.version }}" >> "$GITHUB_ENV"
+          echo "ENFLEX_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "ENFLEX_APPLICATION_COMMIT_SHA=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_ENV"
+
+      - name: Generate application configuration
+        run: npm run config:generate
+
       - name: Export
         run: npx expo export -p web
 
