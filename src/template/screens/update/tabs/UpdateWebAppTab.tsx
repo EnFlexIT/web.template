@@ -15,6 +15,10 @@ import {
 } from "react-i18next";
 
 import {
+  useApplicationConfig,
+} from "@/template/application/ApplicationConfigContext";
+
+import {
   Card,
 } from "@/template/components/design-system/ui-elements/Card";
 
@@ -72,6 +76,33 @@ function wait(
   });
 }
 
+function formatBuildTimestamp(
+  value: string | undefined,
+): string {
+  if (!value) {
+    return "-";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    undefined,
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(date);
+}
+
 function sanitizeVersionValue(
   value: unknown,
 ): string {
@@ -120,6 +151,29 @@ export function UpdateWebAppTab() {
   const { t } =
     useTranslation(["Update"]);
 
+  const application =
+    useApplicationConfig();
+
+  const buildInfo =
+    application.buildInfo;
+
+  const applicationVersion =
+    buildInfo?.application.version ??
+    "-";
+
+  const releaseTag =
+    buildInfo?.application.releaseTag ??
+    "-";
+
+  const templateVersion =
+    buildInfo?.template.version ??
+    "-";
+
+  const buildTimestamp =
+    formatBuildTimestamp(
+      buildInfo?.build?.timestamp,
+    );
+
   const dispatch =
     useAppDispatch();
 
@@ -167,13 +221,6 @@ export function UpdateWebAppTab() {
       "installing",
     );
 
-  /*
-   * Nur die installierte Version laden.
-   *
-   * Der Tab startet keinen versteckten Update-Check.
-   * Bei manueller Strategie entscheidet der Benutzer über den Button.
-   * Bei automatischer Strategie übernehmen die zentralen Watcher die Suche.
-   */
   useEffect(() => {
     if (
       !ip ||
@@ -214,12 +261,6 @@ export function UpdateWebAppTab() {
       setIsChecking(true);
 
       try {
-        /*
-         * Nur suchen.
-         *
-         * Ein Suchergebnis löst niemals eine Installation
-         * und niemals einen Reload aus.
-         */
         await dispatch(
           checkFrontendUpdate(),
         ).unwrap();
@@ -252,13 +293,6 @@ export function UpdateWebAppTab() {
       updateState.frontend.version,
     );
 
-  /*
-   * Ein "-" vom Server ist kein Versionswert.
-   *
-   * Der Button erscheint nur, wenn eine echte Zielversion
-   * vorliegt und sie von der aktuell geladenen Redux-Version
-   * abweicht.
-   */
   const hasFrontendUpdate =
     !updateState.frontend.isPending &&
     updateState.frontend.isAvailable &&
@@ -331,11 +365,6 @@ export function UpdateWebAppTab() {
           );
         }
 
-        /*
-         * Der Execute-Request war erfolgreich.
-         * Auch wenn der Versions-Endpunkt etwas später aktualisiert wird,
-         * führen wir den vom Benutzer gewünschten Voll-Reload aus.
-         */
         return latestVersion;
       },
       [dispatch],
@@ -369,9 +398,6 @@ export function UpdateWebAppTab() {
         currentVersion;
 
       try {
-        /*
-         * Installation ausschließlich nach Benutzerklick.
-         */
         await dispatch(
           executeFrontendUpdate(),
         ).unwrap();
@@ -556,6 +582,53 @@ export function UpdateWebAppTab() {
             "Letzte Prüfung",
           )}
           value={lastCheckedAt}
+        />
+
+        <H3>
+          {t(
+            "appInformation.application.title",
+            "Application",
+          )}
+        </H3>
+
+        <Row
+          label={t(
+            "appInformation.application.name",
+            "Name",
+          )}
+          value={application.displayName}
+        />
+
+        <Row
+          label={t(
+            "appInformation.application.version",
+            "Application Version",
+          )}
+          value={applicationVersion}
+        />
+
+        <Row
+          label={t(
+            "appInformation.application.release",
+            "Release",
+          )}
+          value={releaseTag}
+        />
+
+        <Row
+          label={t(
+            "appInformation.template.version",
+            "Base Template Version",
+          )}
+          value={templateVersion}
+        />
+
+        <Row
+          label={t(
+            "appInformation.build.createdAt",
+            "Build",
+          )}
+          value={buildTimestamp}
         />
 
         <View style={s.btnRow}>

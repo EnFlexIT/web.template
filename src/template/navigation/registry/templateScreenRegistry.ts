@@ -61,9 +61,6 @@ import {
   UpdateBackendTab,
 } from "@/template/screens/update/tabs/UpdateBackendTab";
 
-import {
-  AppInformationTab,
-} from "@/template/screens/update/tabs/AppInformationTab";
 
 import {
   ProgramStartTab,
@@ -120,8 +117,7 @@ export const templateScreenRegistry:
   "update-backend":
     UpdateBackendTab,
 
-  "update-app-information":
-    AppInformationTab,
+
 
   "live-console":
     LiveConsoleScreen,

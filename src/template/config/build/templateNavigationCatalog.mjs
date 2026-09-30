@@ -93,8 +93,7 @@ export const templateMenuCatalog = {
     features: [
       "update.general",
       "update.webapp",
-      "update.backend",
-      "update.appInformation",
+      "update.backend" ,
     ],
   },
 
@@ -201,17 +200,6 @@ export const templateTabCatalog = {
     feature: "update.backend",
   },
 
-  updateAppInformation: {
-    menu: "update",
-    tabKey: "app-information",
-    caption:
-      "Update:appInformation.tabTitle",
-    position: 4,
-    screen:
-      "update-app-information",
-    feature:
-      "update.appInformation",
-  },
 liveConsoleConsole: {
   menu: "liveConsole",
   tabKey: "console",
@@ -223,16 +211,16 @@ liveConsoleConsole: {
   feature: "liveConsole",
 },
 
-liveConsoleFiles: {
-  menu: "liveConsole",
-  tabKey: "files",
-  caption:
-    "liveConsole:tabs.files",
-  position: 2,
-  layout: "wide",
-  screen: "log-files",
-  feature: "liveConsole",
-},
+  liveConsoleFiles: {
+    menu: "liveConsole",
+    tabKey: "files",
+    caption:
+      "liveConsole:tabs.files",
+    position: 2,
+    layout: "wide",
+    screen: "log-files",
+    feature: "liveConsole",
+  },
 
   programStart: {
     menu: "programStart",

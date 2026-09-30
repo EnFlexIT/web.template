@@ -194,13 +194,6 @@ const tabItems:
     Content: resolveApplicationScreen("update-backend"),
   },
   {
-    menuID: 3014,
-    tabKey: "app-information",
-    caption: "Update:appInformation.tabTitle",
-    position: 4,
-    Content: resolveApplicationScreen("update-app-information"),
-  },
-  {
     menuID: 3026,
     tabKey: "console",
     caption: "liveConsole:tabs.console",
