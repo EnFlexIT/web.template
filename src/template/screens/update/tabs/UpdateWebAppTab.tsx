@@ -157,10 +157,6 @@ export function UpdateWebAppTab() {
   const buildInfo =
     application.buildInfo;
 
-  const applicationVersion =
-    buildInfo?.application.version ??
-    "-";
-
   const releaseTag =
     buildInfo?.application.releaseTag ??
     "-";
@@ -536,7 +532,7 @@ export function UpdateWebAppTab() {
     !ip;
 
   return (
-    <Card>
+    <View style={s.page}>
       <UpdateProgressDialog
         visible={showUpdateDialog}
         statusText={statusText}
@@ -544,140 +540,138 @@ export function UpdateWebAppTab() {
         onClose={closeErrorDialog}
       />
 
-      <View style={s.container}>
-        <H3>
-          {t(
-            "serverWeb.title",
-            "Web-App",
-          )}
-        </H3>
+      <Card>
+        <View style={s.cardContent}>
+          <H3>
+            {t(
+              "serverWeb.updateTitle",
+              "Web-App Update",
+            )}
+          </H3>
 
-        <Row
-          label={t(
-            "serverWeb.fields.acceptedVersion",
-            "Version",
-          )}
-          value={displayedCurrentVersion}
-        />
+          <Row
+            label={t(
+              "serverWeb.fields.acceptedVersion",
+              "Installierte Version",
+            )}
+            value={displayedCurrentVersion}
+          />
 
-        <Row
-          label={t(
-            "serverWeb.fields.newVersion",
-            "Neue Version",
-          )}
-          value={newVersion}
-        />
+          <Row
+            label={t(
+              "serverWeb.fields.newVersion",
+              "Verfügbare Version",
+            )}
+            value={newVersion}
+          />
 
-        <Row
-          label={t(
-            "serverWeb.fields.status",
-            "Update-Status",
-          )}
-          value={updateStatus}
-        />
+          <Row
+            label={t(
+              "serverWeb.fields.status",
+              "Update-Status",
+            )}
+            value={updateStatus}
+          />
 
-        <Row
-          label={t(
-            "serverWeb.fields.lastCheck",
-            "Letzte Prüfung",
-          )}
-          value={lastCheckedAt}
-        />
+          <Row
+            label={t(
+              "serverWeb.fields.lastCheck",
+              "Letzte Prüfung",
+            )}
+            value={lastCheckedAt}
+          />
 
-        <H3>
-          {t(
-            "appInformation.application.title",
-            "Application",
-          )}
-        </H3>
+          <View style={s.btnRow}>
+            {!updateState.autoUpdate ? (
+              <ActionButton
+                label={
+                  isChecking
+                    ? t(
+                        "serverWeb.actions.checking",
+                        "Prüfe…",
+                      )
+                    : t(
+                        "serverWeb.actions.checkNow",
+                        "Nach Updates suchen",
+                      )
+                }
+                variant="secondary"
+                size="xs"
+                onPress={checkNow}
+                disabled={controlsDisabled}
+              />
+            ) : null}
 
-        <Row
-          label={t(
-            "appInformation.application.name",
-            "Name",
-          )}
-          value={application.displayName}
-        />
-
-        <Row
-          label={t(
-            "appInformation.application.version",
-            "Application Version",
-          )}
-          value={applicationVersion}
-        />
-
-        <Row
-          label={t(
-            "appInformation.application.release",
-            "Release",
-          )}
-          value={releaseTag}
-        />
-
-        <Row
-          label={t(
-            "appInformation.template.version",
-            "Base Template Version",
-          )}
-          value={templateVersion}
-        />
-
-        <Row
-          label={t(
-            "appInformation.build.createdAt",
-            "Build",
-          )}
-          value={buildTimestamp}
-        />
-
-        <View style={s.btnRow}>
-          {!updateState.autoUpdate ? (
-            <ActionButton
-              label={
-                isChecking
-                  ? t(
-                      "serverWeb.actions.checking",
-                      "Prüfe…",
-                    )
-                  : t(
-                      "serverWeb.actions.checkNow",
-                      "Nach Updates suchen",
-                    )
-              }
-              variant="secondary"
-              size="xs"
-              onPress={checkNow}
-              disabled={controlsDisabled}
-            />
-          ) : null}
-
-          {hasFrontendUpdate ? (
-            <ActionButton
-              label={
-                isInstalling
-                  ? t(
-                      "serverWeb.actions.installing",
-                      "Update wird installiert…",
-                    )
-                  : t(
-                      "serverWeb.actions.executeUpdate",
-                      "Update installieren",
-                    )
-              }
-              variant="primary"
-              size="xs"
-              onPress={
-                installFrontendUpdate
-              }
-              disabled={
-                controlsDisabled
-              }
-            />
-          ) : null}
+            {hasFrontendUpdate ? (
+              <ActionButton
+                label={
+                  isInstalling
+                    ? t(
+                        "serverWeb.actions.installing",
+                        "Update wird installiert…",
+                      )
+                    : t(
+                        "serverWeb.actions.executeUpdate",
+                        "Update installieren",
+                      )
+                }
+                variant="primary"
+                size="xs"
+                onPress={
+                  installFrontendUpdate
+                }
+                disabled={
+                  controlsDisabled
+                }
+              />
+            ) : null}
+          </View>
         </View>
-      </View>
-    </Card>
+      </Card>
+
+      <Card>
+        <View style={s.cardContent}>
+          <H3>
+            {t(
+              "serverWeb.build.title",
+              "Build & Release",
+            )}
+          </H3>
+
+          <Row
+            label={t(
+              "serverWeb.build.application",
+              "Anwendung",
+            )}
+            value={application.displayName}
+          />
+
+          <Row
+            label={t(
+              "serverWeb.build.release",
+              "Release",
+            )}
+            value={releaseTag}
+          />
+
+          <Row
+            label={t(
+              "serverWeb.build.template",
+              "Basis-Template",
+            )}
+            value={templateVersion}
+          />
+
+          <Row
+            label={t(
+              "serverWeb.build.createdAt",
+              "Erstellt am",
+            )}
+            value={buildTimestamp}
+          />
+        </View>
+      </Card>
+    </View>
   );
 }
 
@@ -702,7 +696,11 @@ function Row({
 }
 
 const s = StyleSheet.create({
-  container: {
+  page: {
+    gap: 14,
+  },
+
+  cardContent: {
     gap: 14,
   },
 
@@ -714,9 +712,9 @@ const s = StyleSheet.create({
   },
 
   label: {
+    flex: 1,
     fontSize: 12,
     opacity: 0.75,
-    flex: 1,
   },
 
   value: {

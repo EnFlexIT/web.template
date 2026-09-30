@@ -11,6 +11,14 @@
   },
   "serverWeb": {
     "title": "Web-App",
+    "updateTitle": "Web-App Update",
+    "build": {
+      "title": "Build & Release",
+      "application": "Anwendung",
+      "release": "Release",
+      "template": "Basis-Template",
+      "createdAt": "Erstellt am"
+    },
     "fields": {
       "releaseVersion": "Version (Release)",
       "acceptedVersion": "Installierte Version",
@@ -103,23 +111,6 @@
         "logout": "Die Anmeldung wird zurückgesetzt. Bitte melde dich anschließend erneut an.",
         "failedReconnect": "Der Server konnte nach dem Update nicht wieder erreicht werden."
       }
-    }
-  },
-  "appInformation": {
-    "tabTitle": "App-Informationen",
-    "application": {
-      "title": "Anwendung",
-      "name": "Name",
-      "version": "Version",
-      "release": "Release"
-    },
-    "template": {
-      "title": "Basis-Template",
-      "version": "Version"
-    },
-    "build": {
-      "title": "Build",
-      "createdAt": "Erstellt am"
     }
   },
   "InstalledFeatures": "Installierte Features"

@@ -11,6 +11,14 @@
   },
   "serverWeb": {
     "title": "Web App",
+    "updateTitle": "Web App Update",
+    "build": {
+      "title": "Build & Release",
+      "application": "Application",
+      "release": "Release",
+      "template": "Base Template",
+      "createdAt": "Created at"
+    },
     "fields": {
       "releaseVersion": "Version (Release)",
       "acceptedVersion": "Installed version",
@@ -105,22 +113,5 @@
       }
     }
   },
-"appInformation": {
-  "tabTitle": "App Information",
-  "application": {
-    "title": "Application",
-    "name": "Name",
-    "version": "Version",
-    "release": "Release"
-  },
-  "template": {
-    "title": "Base Template",
-    "version": "Version"
-  },
-  "build": {
-    "title": "Build",
-    "createdAt": "Created at"
-  }
-},
-  "InstalledFeatures": "Installed features"
+  "InstalledFeatures": "Installed Features"
 }
