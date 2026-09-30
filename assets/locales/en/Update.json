@@ -17,7 +17,11 @@
       "application": "Application",
       "release": "Release",
       "template": "Base Template",
-      "createdAt": "Created at"
+      "createdAt": "Created at",
+      "commit": "Commit"
+    },
+    "releaseNotes": {
+      "title": "What's new?"
     },
     "fields": {
       "releaseVersion": "Version (Release)",

@@ -170,6 +170,14 @@ export function UpdateWebAppTab() {
       buildInfo?.build?.timestamp,
     );
 
+  const commitSha =
+    buildInfo?.build?.commitSha ??
+    "-";
+
+  const releaseNotes =
+    buildInfo?.release?.notes ??
+    [];
+
   const dispatch =
     useAppDispatch();
 
@@ -669,8 +677,52 @@ export function UpdateWebAppTab() {
             )}
             value={buildTimestamp}
           />
+
+          <Row
+            label={t(
+              "serverWeb.build.commit",
+              "Commit",
+            )}
+            value={commitSha}
+          />
         </View>
       </Card>
+
+      {releaseNotes.length > 0 ? (
+        <Card>
+          <View style={s.cardContent}>
+            <H3>
+              {t(
+                "serverWeb.releaseNotes.title",
+                "Was ist neu?",
+              )}
+            </H3>
+
+            <View style={s.releaseNotesList}>
+              {releaseNotes.map(
+                (note, index) => (
+                  <View
+                    key={`${index}-${note}`}
+                    style={s.releaseNoteItem}
+                  >
+                    <ThemedText
+                      style={s.releaseNoteBullet}
+                    >
+                      {"•"}
+                    </ThemedText>
+
+                    <ThemedText
+                      style={s.releaseNoteText}
+                    >
+                      {note}
+                    </ThemedText>
+                  </View>
+                ),
+              )}
+            </View>
+          </View>
+        </Card>
+      ) : null}
     </View>
   );
 }
@@ -728,5 +780,26 @@ const s = StyleSheet.create({
     gap: 10,
     justifyContent: "flex-start",
     paddingTop: 4,
+  },
+
+  releaseNotesList: {
+    gap: 8,
+  },
+
+  releaseNoteItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+
+  releaseNoteBullet: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+
+  releaseNoteText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
   },
 });
