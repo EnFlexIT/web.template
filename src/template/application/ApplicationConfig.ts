@@ -66,7 +66,12 @@ export type ApplicationBuildInfo = {
   };
 
   build?: {
-    timestamp: string;
+    timestamp?: string;
+    commitSha?: string;
+  };
+
+  release?: {
+    notes: string[];
   };
 };
 

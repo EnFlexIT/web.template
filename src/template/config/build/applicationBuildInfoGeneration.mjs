@@ -101,6 +101,31 @@ function optionalValue(
   );
 }
 
+function optionalReleaseNotes(
+  value,
+) {
+  const normalized =
+    optionalValue(value);
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  const notes =
+    normalized
+      .split(/\r?\n/)
+      .map((note) =>
+        note.trim(),
+      )
+      .filter(Boolean);
+
+  return (
+    notes.length > 0
+      ? notes
+      : undefined
+  );
+}
+
 function readPackageJson(
   rootDirectory,
 ) {
@@ -219,6 +244,18 @@ export function generateApplicationBuildInfo(
         .ENFLEX_BUILD_TIMESTAMP,
     );
 
+  const commitSha =
+    optionalValue(
+      process.env
+        .ENFLEX_APPLICATION_COMMIT_SHA,
+    );
+
+  const releaseNotes =
+    optionalReleaseNotes(
+      process.env
+        .ENFLEX_APPLICATION_RELEASE_NOTES,
+    );
+
   const application = {
     packageName:
       isTemplateRepository
@@ -245,10 +282,21 @@ export function generateApplicationBuildInfo(
   };
 
   const build =
-    buildTimestamp
+    buildTimestamp ||
+    commitSha
       ? {
           timestamp:
             buildTimestamp,
+
+          commitSha,
+        }
+      : undefined;
+
+  const release =
+    releaseNotes
+      ? {
+          notes:
+            releaseNotes,
         }
       : undefined;
 
@@ -256,6 +304,7 @@ export function generateApplicationBuildInfo(
     application,
     template,
     build,
+    release,
   };
 }
 
