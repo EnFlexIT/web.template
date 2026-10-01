@@ -6,6 +6,13 @@ export const applicationBuildInfo =
   "application": {},
   "template": {
     "packageName": "enflex.it-template",
-    "version": "0.0.8"
+    "version": "0.0.9"
+  },
+  "release": {
+    "templateNotes": [
+      "\"Was ist neu?\" im Update-Bereich wurde erweitert und übersichtlicher gestaltet.",
+      "Update-Prüfzeiten werden jetzt korrekt von UTC in die lokale Zeit des Benutzers umgerechnet.",
+      "Abstände, Breiten und Inhaltsausrichtung im Update- und Developer-Tools-Bereich wurden vereinheitlicht."
+    ]
   }
 } as const;

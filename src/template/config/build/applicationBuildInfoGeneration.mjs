@@ -126,6 +126,58 @@ function optionalReleaseNotes(
   );
 }
 
+
+function readTemplateReleaseNotes(
+  templateMetadata,
+) {
+  const notes =
+    Object.entries(
+      templateMetadata,
+    )
+      .map(
+        ([key, value]) => {
+          const match =
+            /^TemplateReleaseNote\.(\d+)$/.exec(
+              key,
+            );
+
+          if (!match) {
+            return undefined;
+          }
+
+          const note =
+            optionalValue(value);
+
+          if (!note) {
+            return undefined;
+          }
+
+          return {
+            index:
+              Number(match[1]),
+
+            note,
+          };
+        },
+      )
+      .filter(Boolean)
+      .sort(
+        (left, right) =>
+          left.index -
+          right.index,
+      )
+      .map(
+        (entry) =>
+          entry.note,
+      );
+
+  return (
+    notes.length > 0
+      ? notes
+      : undefined
+  );
+}
+
 function readPackageJson(
   rootDirectory,
 ) {
@@ -250,10 +302,42 @@ export function generateApplicationBuildInfo(
         .ENFLEX_APPLICATION_COMMIT_SHA,
     );
 
-  const releaseNotes =
+  const configuredApplicationReleaseNotes =
     optionalReleaseNotes(
       process.env
         .ENFLEX_APPLICATION_RELEASE_NOTES,
+    );
+
+  const configuredTemplateReleaseNotes =
+    optionalReleaseNotes(
+      process.env
+        .ENFLEX_TEMPLATE_RELEASE_NOTES,
+    );
+
+  const storedTemplateReleaseNotes =
+    readTemplateReleaseNotes(
+      templateMetadata,
+    );
+
+  /*
+   * The Template repository itself historically uses the
+   * Application release-notes environment variable as well.
+   *
+   * Keep that behaviour compatible, but classify those notes
+   * as Template notes when this repository is the Base Template.
+   */
+  const applicationReleaseNotes =
+    isTemplateRepository
+      ? undefined
+      : configuredApplicationReleaseNotes;
+
+  const templateReleaseNotes =
+    configuredTemplateReleaseNotes ??
+    storedTemplateReleaseNotes ??
+    (
+      isTemplateRepository
+        ? configuredApplicationReleaseNotes
+        : undefined
     );
 
   const application = {
@@ -293,10 +377,14 @@ export function generateApplicationBuildInfo(
       : undefined;
 
   const release =
-    releaseNotes
+    applicationReleaseNotes ||
+    templateReleaseNotes
       ? {
           notes:
-            releaseNotes,
+            applicationReleaseNotes,
+
+          templateNotes:
+            templateReleaseNotes,
         }
       : undefined;
 

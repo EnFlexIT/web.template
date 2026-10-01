@@ -312,11 +312,23 @@ export function UpdateWebAppTab() {
 
     "-";
 
-  const releaseNotes =
-
+  /**
+   * Release notes are separated by their owner.
+   *
+   * "notes" belongs to the concrete Application.
+   * "templateNotes" belongs to the reusable Base Template.
+   */
+  const applicationReleaseNotes =
     buildInfo?.release?.notes ??
-
     [];
+
+  const templateReleaseNotes =
+    buildInfo?.release?.templateNotes ??
+    [];
+
+  const releaseNotesCount =
+    applicationReleaseNotes.length +
+    templateReleaseNotes.length;
 
   const [
 
@@ -388,89 +400,87 @@ export function UpdateWebAppTab() {
 
       .toLocaleLowerCase();
 
+  /**
+   * Decide which release-note source is currently visible.
+   *
+   * "all"         -> Application + Base Template
+   * "application" -> Application only
+   * "template"    -> Base Template only
+   */
   const sourceShowsApplication =
-
     releaseSourceFilter === "all" ||
-
     releaseSourceFilter ===
-
       "application";
 
+  const sourceShowsTemplate =
+    releaseSourceFilter === "all" ||
+    releaseSourceFilter ===
+      "template";
+
+  /**
+   * Build the visible release-note list according to
+   * source, history selection and search text.
+   */
   const visibleReleaseNotes =
-
     releaseHistoryFilter ===
-
-      "latest" &&
-
-    sourceShowsApplication
-
-      ? releaseNotes.filter(
-
+      "latest"
+      ? [
+          ...(
+            sourceShowsApplication
+              ? applicationReleaseNotes
+              : []
+          ),
+          ...(
+            sourceShowsTemplate
+              ? templateReleaseNotes
+              : []
+          ),
+        ].filter(
           (note) =>
-
             !normalizedReleaseSearch ||
-
             note
-
               .toLocaleLowerCase()
-
               .includes(
-
                 normalizedReleaseSearch,
-
               ),
-
         )
-
       : [];
 
+  /**
+   * Select the correct empty-state message.
+   */
   const releaseEmptyText =
-
     releaseHistoryFilter ===
-
     "previous"
-
       ? t(
-
           "serverWeb.releaseNotes.empty.history",
-
           "Für frühere Updates sind noch keine Historien-Daten verfügbar.",
-
         )
-
       : releaseSourceFilter ===
-
-          "template"
-
+            "template" &&
+          templateReleaseNotes.length === 0
         ? t(
-
             "serverWeb.releaseNotes.empty.template",
-
             "Für das Basis-Template sind in diesem Build noch keine separaten Release Notes verfügbar.",
-
           )
-
-        : releaseNotes.length === 0
-
+        : releaseSourceFilter ===
+              "application" &&
+            applicationReleaseNotes.length === 0
           ? t(
-
               "serverWeb.releaseNotes.empty.notes",
-
               "Für diesen Build sind keine Release Notes verfügbar.",
-
             )
-
-          : visibleReleaseNotes.length === 0
-
+          : releaseNotesCount === 0
             ? t(
-
-                "serverWeb.releaseNotes.empty.search",
-
-                "Keine Änderungen entsprechen der aktuellen Suche.",
-
+                "serverWeb.releaseNotes.empty.notes",
+                "Für diesen Build sind keine Release Notes verfügbar.",
               )
-
-            : undefined;
+            : visibleReleaseNotes.length === 0
+              ? t(
+                  "serverWeb.releaseNotes.empty.search",
+                  "Keine Änderungen entsprechen der aktuellen Suche.",
+                )
+              : undefined;
 
   const dispatch =
 
@@ -1072,6 +1082,91 @@ const lastCheckedAt =
     updateState.frontend.lastCheck,
   );
 
+  /**
+   * Determine which source should own the visible timeline entry.
+   *
+   * If "All" is selected but only one source actually contains
+   * release notes, that source is shown directly.
+   */
+  const releaseEntrySource:
+    ReleaseSourceFilter =
+    releaseSourceFilter !== "all"
+      ? releaseSourceFilter
+      : applicationReleaseNotes.length ===
+            0 &&
+          templateReleaseNotes.length > 0
+        ? "template"
+        : templateReleaseNotes.length ===
+              0 &&
+            applicationReleaseNotes.length >
+              0
+          ? "application"
+          : "all";
+
+  /**
+   * Use a source-specific icon in the release timeline.
+   */
+  const releaseEntryIcon =
+    releaseEntrySource === "template"
+      ? "codepen"
+      : releaseEntrySource ===
+          "application"
+        ? "appstore"
+        : "notification";
+
+  /**
+   * Human-readable title for the timeline entry.
+   */
+  const releaseEntryTitle =
+    releaseEntrySource === "template"
+      ? t(
+          "serverWeb.build.template",
+          "Basis-Template",
+        )
+      : releaseEntrySource ===
+          "application"
+        ? application.displayName
+        : t(
+            "serverWeb.releaseNotes.filters.all",
+            "Alle",
+          );
+
+  /**
+   * Badge displayed beside the timeline title.
+   */
+  const releaseEntrySourceLabel =
+    releaseEntrySource === "template"
+      ? t(
+          "serverWeb.releaseNotes.sources.template",
+          "Basis-Template",
+        )
+      : releaseEntrySource ===
+          "application"
+        ? t(
+            "serverWeb.releaseNotes.sources.application",
+            "Anwendung",
+          )
+        : t(
+            "serverWeb.releaseNotes.filters.all",
+            "Alle",
+          );
+
+  /**
+   * The Application uses its release tag/current version.
+   * The Base Template uses TemplateVersion.
+   */
+  const releaseEntryVersion =
+    releaseEntrySource === "template"
+      ? templateVersion
+      : releaseEntrySource ===
+          "application"
+        ? (
+            releaseTag !== "-"
+              ? releaseTag
+              : displayedCurrentVersion
+          )
+        : undefined;
+
   const controlsDisabled =
 
     isChecking ||
@@ -1568,7 +1663,7 @@ const lastCheckedAt =
 
                     )}
 
-                    count={releaseNotes.length}
+                    count={releaseNotesCount}
 
                     selected={
 
@@ -1602,7 +1697,7 @@ const lastCheckedAt =
 
                     icon="appstore"
 
-                    count={releaseNotes.length}
+                    count={applicationReleaseNotes.length}
 
                     selected={
 
@@ -1636,7 +1731,7 @@ const lastCheckedAt =
 
                     icon="codepen"
 
-                    count={0}
+                    count={templateReleaseNotes.length}
 
                     selected={
 
@@ -1790,7 +1885,7 @@ const lastCheckedAt =
 
                           <Icon
 
-                            name="appstore"
+                            name={releaseEntryIcon}
 
                             size={16}
 
@@ -1804,7 +1899,7 @@ const lastCheckedAt =
 
                           >
 
-                            {application.displayName}
+                            {releaseEntryTitle}
 
                           </ThemedText>
 
@@ -1836,13 +1931,7 @@ const lastCheckedAt =
 
                             >
 
-                              {t(
-
-                                "serverWeb.releaseNotes.sources.application",
-
-                                "Anwendung",
-
-                              )}
+                              {releaseEntrySourceLabel}
 
                             </ThemedText>
 
@@ -1858,11 +1947,10 @@ const lastCheckedAt =
 
                           {[
 
-                            releaseTag !== "-"
-
-                              ? releaseTag
-
-                              : displayedCurrentVersion,
+                            releaseEntryVersion &&
+                              releaseEntryVersion !== "-"
+                                ? releaseEntryVersion
+                                : undefined,
 
                             buildTimestamp !== "-"
 

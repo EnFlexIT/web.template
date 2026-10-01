@@ -70,9 +70,22 @@ export type ApplicationBuildInfo = {
     commitSha?: string;
   };
 
-  release?: {
-    notes: string[];
-  };
+release?: {
+  /**
+   * Application-specific release notes.
+   *
+   * Generated build metadata is immutable, therefore
+   * the release-note arrays are readonly.
+   */
+  notes?: readonly string[];
+
+  /**
+   * Release notes belonging to the reusable Base Template.
+   *
+   * These notes are shipped together with the Template version.
+   */
+  templateNotes?: readonly string[];
+};
 };
 
 export type ApplicationConfig<
