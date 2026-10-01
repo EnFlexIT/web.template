@@ -8,7 +8,9 @@ import React, {
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-
+import {
+  formatUpdateTimestamp,
+} from "@/template/update/formatUpdateTimestamp";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 
@@ -683,14 +685,25 @@ export function UpdateBackendTab() {
           />
 
           <InfoRow
-            label={t("backend.fields.lastCheck", "Letzte Prüfung")}
-            value={updateState.backend.lastCheck || "-"}
-          />
+                      label={t(
+                        "backend.fields.lastCheck",
+                        "Letzte Prüfung",
+                      )}
+                      value={formatUpdateTimestamp(
+                        updateState.backend.lastCheck,
+                      )}
+                />
 
           <InfoRow
-            label={t("backend.fields.backendStatus", "Backend-Status")}
-            value={updateState.backend.status || "-"}
-          />
+    label={t(
+      "backend.fields.backendStatus",
+      "Backend-Status",
+    )}
+    value={
+      updateState.backend.status ||
+      "-"
+    }
+  />
         </View>
 
         <View style={s.buttonRow}>

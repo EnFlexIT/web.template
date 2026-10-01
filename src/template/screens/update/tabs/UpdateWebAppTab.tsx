@@ -9,7 +9,9 @@ import React, {
   useState,
 
 } from "react";
-
+import {
+  formatUpdateTimestamp,
+} from "@/template/update/formatUpdateTimestamp";
 import {
 
   StyleSheet,
@@ -1065,12 +1067,10 @@ export function UpdateWebAppTab() {
       ? availableVersion
 
       : "-";
-
-  const lastCheckedAt =
-
-    updateState.frontend.lastCheck ||
-
-    "-";
+const lastCheckedAt =
+  formatUpdateTimestamp(
+    updateState.frontend.lastCheck,
+  );
 
   const controlsDisabled =
 
