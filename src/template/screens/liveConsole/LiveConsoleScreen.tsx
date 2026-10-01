@@ -324,9 +324,7 @@ export function LiveConsoleScreen({
 const s = StyleSheet.create(
   (theme) => ({
     container: {
-      padding: 24,
       width: "100%",
-      maxWidth: 1200,
     },
 
     containerEmbedded: {
@@ -338,7 +336,7 @@ const s = StyleSheet.create(
     },
 
     content: {
-      gap: 16,
+      gap: 14,
     },
 
     contentEmbedded: {
@@ -424,7 +422,7 @@ const s = StyleSheet.create(
       borderWidth: 1,
       borderColor:
         theme.colors.border,
-      borderRadius: 10,
+    
       overflow: "hidden",
       backgroundColor:
         "#0b0f14",
@@ -438,7 +436,7 @@ const s = StyleSheet.create(
       marginHorizontal: 8,
       marginBottom: 8,
       marginTop: 0,
-      borderRadius: 6,
+      
       borderColor:
         theme.colors.border,
     },

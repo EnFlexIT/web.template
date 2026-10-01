@@ -276,18 +276,6 @@ export function UpdateWebAppTab() {
 
     useUnistyles();
 
-  const [
-
-    contentWidth,
-
-    setContentWidth,
-
-  ] = useState(0);
-
-  const isWideLayout =
-
-    contentWidth >= 980;
-
   const application =
 
     useApplicationConfig();
@@ -1094,33 +1082,7 @@ export function UpdateWebAppTab() {
 
   return (
 
-    <View
-
-      style={s.page}
-
-      onLayout={(event) => {
-
-        const nextWidth =
-
-          event.nativeEvent.layout.width;
-
-        setContentWidth((currentWidth) =>
-
-          Math.abs(
-
-            currentWidth - nextWidth,
-
-          ) > 1
-
-            ? nextWidth
-
-            : currentWidth,
-
-        );
-
-      }}
-
-    >
+    <View style={s.page}>
 
       <UpdateProgressDialog
 
@@ -1134,37 +1096,9 @@ export function UpdateWebAppTab() {
 
       />
 
-      <View
+   <View style={s.contentGrid}>
 
-        style={[
-
-          s.contentGrid,
-
-          isWideLayout
-
-            ? s.contentGridWide
-
-            : s.contentGridStacked,
-
-        ]}
-
-      >
-
-        <View
-
-          style={[
-
-            s.leftColumn,
-
-            isWideLayout
-
-              ? s.leftColumnWide
-
-              : s.columnFullWidth,
-
-          ]}
-
-        >
+    <View style={s.leftColumn}>
 
           <Card
 
@@ -1542,29 +1476,13 @@ export function UpdateWebAppTab() {
 
         </View>
 
-        <View
-
-          style={[
-
-            s.rightColumn,
-
-            isWideLayout
-
-              ? s.rightColumnWide
-
-              : s.columnFullWidth,
-
-          ]}
-
-        >
+        <View style={s.rightColumn}>
 
           <Card
 
             padding="md"
 
             style={s.releaseCard}
-
-            contentStyle={s.releaseCardPressable}
 
           >
 
@@ -2119,68 +2037,33 @@ function Row({
 const s = StyleSheet.create({
 
   page: {
+
     width: "100%",
+
     paddingBottom: 24,
+
   },
 
-  contentGrid: {
+contentGrid: {
     width: "100%",
-    gap: 24,
-
+    gap: 14,
     alignItems: "stretch",
-
-  },
-
-  contentGridWide: {
-
-    flexDirection: "row",
-
-  },
-
-  contentGridStacked: {
-
-    flexDirection: "column",
-
   },
 
   leftColumn: {
-    gap: 18,
-
-  },
-
-  leftColumnWide: {
-    width: 380,
-    maxWidth: 400,
-    minWidth: 350,
-
-    flexShrink: 0,
-
+    width: "100%",
+    gap: 14,
   },
 
   rightColumn: {
-
-    flex: 1,
-
-    minWidth: 0,
-
-  },
-
-  rightColumnWide: {
-
-    flexGrow: 1,
-
-  },
-
-  columnFullWidth: {
-
     width: "100%",
-
-    maxWidth: undefined,
-
+    minWidth: 0,
   },
 
   summaryCard: {
+
     borderRadius: 0,
+
   },
 
   compactCardContent: {
@@ -2190,41 +2073,41 @@ const s = StyleSheet.create({
   },
 
   releaseCard: {
-    flex: 1,
-    minHeight: 520,
     borderRadius: 0,
   },
 
-  releaseCardPressable: {
-
-    flex: 1,
-
-  },
-
   releaseCardContent: {
-    flex: 1,
-    gap: 18,
-
+    gap: 14,
   },
 
   sectionHeadingRow: {
+
     flexDirection: "row",
+
     alignItems: "flex-start",
+
     gap: 12,
 
   },
 
   sectionHeadingText: {
+
     flex: 1,
+
     minWidth: 0,
+
     gap: 3,
 
   },
 
   sectionIcon: {
+
     width: 40,
+
     height: 40,
+
     borderWidth: 1,
+
     borderRadius: 0,
 
     alignItems: "center",
@@ -2296,10 +2179,15 @@ const s = StyleSheet.create({
   },
 
   releaseToolbar: {
+
     flexDirection: "row",
+
     flexWrap: "wrap",
+
     alignItems: "flex-start",
+
     justifyContent: "space-between",
+
     gap: 12,
 
   },
@@ -2319,6 +2207,7 @@ const s = StyleSheet.create({
   },
 
   historyDropdown: {
+
     width: 200,
 
     flexShrink: 0,
@@ -2326,8 +2215,11 @@ const s = StyleSheet.create({
   },
 
   releaseDivider: {
+
     height: 1,
+
     width: "100%",
+
     marginTop: 2,
 
   },
@@ -2481,14 +2373,23 @@ const s = StyleSheet.create({
   },
 
   emptyState: {
+
     flex: 1,
+
     minHeight: 270,
+
     borderWidth: 1,
+
     paddingHorizontal: 24,
+
     paddingTop: 76,
+
     paddingBottom: 32,
+
     alignItems: "center",
+
     justifyContent: "flex-start",
+
     gap: 10,
 
   },
@@ -2504,6 +2405,7 @@ const s = StyleSheet.create({
   },
 
   emptyStateText: {
+
     maxWidth: 460,
 
     fontSize: 12,

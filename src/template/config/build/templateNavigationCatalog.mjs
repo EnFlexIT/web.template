@@ -183,14 +183,13 @@ export const templateTabCatalog = {
   },
 
    updateWebApp: {
-    menu: "update",
-    tabKey: "webapp",
-    caption: "Update:serverWeb.title",
-    position: 2,
-    layout: "wide",
-    screen: "update-web-app",
-    feature: "update.webapp",
-  },
+  menu: "update",
+  tabKey: "webapp",
+  caption: "Update:serverWeb.title",
+  position: 2,
+  screen: "update-web-app",
+  feature: "update.webapp",
+},
 
   updateBackend: {
     menu: "update",
@@ -207,7 +206,7 @@ liveConsoleConsole: {
   caption:
     "liveConsole:tabs.console",
   position: 1,
-  layout: "wide",
+  //layout: "wide",
   screen: "live-console",
   feature: "liveConsole",
 },
@@ -218,7 +217,7 @@ liveConsoleConsole: {
     caption:
       "liveConsole:tabs.files",
     position: 2,
-    layout: "wide",
+    //layout: "wide",
     screen: "log-files",
     feature: "liveConsole",
   },

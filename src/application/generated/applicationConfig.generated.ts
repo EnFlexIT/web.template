@@ -184,7 +184,6 @@ const tabItems:
     tabKey: "webapp",
     caption: "Update:serverWeb.title",
     position: 2,
-    layout: "wide",
     Content: resolveApplicationScreen("update-web-app"),
   },
   {
@@ -199,7 +198,6 @@ const tabItems:
     tabKey: "console",
     caption: "liveConsole:tabs.console",
     position: 1,
-    layout: "wide",
     Content: resolveApplicationScreen("live-console"),
   },
   {
@@ -207,7 +205,6 @@ const tabItems:
     tabKey: "files",
     caption: "liveConsole:tabs.files",
     position: 2,
-    layout: "wide",
     Content: resolveApplicationScreen("log-files"),
   },
   {
