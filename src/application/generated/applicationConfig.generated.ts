@@ -368,6 +368,9 @@ export const applicationConfig:
 
   navigation: {
     menu: {
+      defaultMenuID:
+        3003,
+
       showIcons:
         false,
 

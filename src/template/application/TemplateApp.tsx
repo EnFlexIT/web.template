@@ -4,6 +4,8 @@ import {
 
 import {
   NavigationContainer,
+  useNavigationContainerRef,
+  type ParamListBase,
 } from "@react-navigation/native";
 
 import * as Linking from "expo-linking";
@@ -64,7 +66,6 @@ import {
   OfflineOverlay,
   ServerSwitchOverlay,
   buildMenuPaths,
-  checkAlive,
   hasId,
   initializeDataPermissions,
   initializeLanguage,
@@ -103,19 +104,28 @@ import type {
 import {
   ApplicationConfigProvider,
 } from "@/template/application/ApplicationConfigContext";
+
+
 type RootStackProps<
   TState = unknown,
 > = {
-  config: ApplicationConfig<TState>;
+  config:
+    ApplicationConfig<TState>;
 };
+
 
 type TemplateAppProps<
   TState = unknown,
-> = RootStackProps<TState> & {
-  store: TemplateStore;
-};
+> =
+  RootStackProps<TState> & {
+    store:
+      TemplateStore;
+  };
+
+
 const Drawer =
   createDrawerNavigator();
+
 
 function normalizePath(
   path: string,
@@ -128,7 +138,9 @@ function normalizePath(
     path.trim();
 
   if (
-    !normalized.startsWith("/")
+    !normalized.startsWith(
+      "/",
+    )
   ) {
     normalized =
       `/${normalized}`;
@@ -147,6 +159,7 @@ function normalizePath(
   return normalized;
 }
 
+
 function getNumericIdFromPath(
   pathname: string,
 ): number | null {
@@ -156,11 +169,16 @@ function getNumericIdFromPath(
     )
       .split("?")[0]
       .split("#")[0]
-      .replace(/^\/+/, "")
+      .replace(
+        /^\/+/,
+        "",
+      )
       .split("/")[0];
 
   const numericId =
-    Number(segment);
+    Number(
+      segment,
+    );
 
   return (
     Number.isFinite(
@@ -172,6 +190,7 @@ function getNumericIdFromPath(
     : null;
 }
 
+
 function RootStack<
   TState = unknown,
 >({
@@ -180,7 +199,26 @@ function RootStack<
   const dispatch =
     useAppDispatch();
 
-  const { theme } =
+  /**
+   * React Navigation owns the actually rendered screen.
+   *
+   * Redux and the browser URL alone are not enough to
+   * switch the visible Drawer screen reliably.
+   */
+  const navigationRef =
+    useNavigationContainerRef<
+      ParamListBase
+    >();
+
+  const [
+    isNavigationReady,
+    setIsNavigationReady,
+  ] =
+    useState(false);
+
+  const {
+    theme,
+  } =
     useUnistyles();
 
   const isLoggedIn =
@@ -196,7 +234,8 @@ function RootStack<
   const [
     isLoading,
     setIsLoading,
-  ] = useState(true);
+  ] =
+    useState(true);
 
   /**
    * The session activity endpoint is used only
@@ -220,15 +259,28 @@ function RootStack<
     menu,
     activeMenuId,
     rawMenu,
-  } = useAppSelector(
-    selectMenu,
-  );
+  } =
+    useAppSelector(
+      selectMenu,
+    );
 
   const didBootRef =
     useRef(false);
 
   const didHandleUrlRef =
     useRef(false);
+
+  /**
+   * Tracks whether the Application has been in
+   * the logged-out state.
+   *
+   * After a real login the configured default
+   * menu must win over an old browser URL.
+   */
+  const wasLoggedOutRef =
+    useRef(
+      !isLoggedIn,
+    );
 
   /**
    * Resolves menu visibility through the
@@ -242,12 +294,13 @@ function RootStack<
       (
         menuID: number,
       ): boolean =>
-        config.navigation.menu.isEnabled(
-          menuID,
-          {
-            authenticationMethod,
-          },
-        ),
+        config.navigation.menu
+          .isEnabled(
+            menuID,
+            {
+              authenticationMethod,
+            },
+          ),
       [
         config.navigation.menu,
         authenticationMethod,
@@ -257,52 +310,62 @@ function RootStack<
   const {
     pathById,
     idByPath,
-  } = useMemo(
-    () =>
-      buildMenuPaths(
+  } =
+    useMemo(
+      () =>
+        buildMenuPaths(
+          rawMenu,
+        ),
+      [
         rawMenu,
-      ),
-    [rawMenu],
-  );
+      ],
+    );
 
   const screensConfig =
-    useMemo(() => {
-      const result:
-        Record<
-          string,
-          string
-        > = {};
+    useMemo(
+      () => {
+        const result:
+          Record<
+            string,
+            string
+          > = {};
 
-      for (
-        const item of
-        rawMenu
-      ) {
-        if (
-          !item.menuID
+        for (
+          const item of
+          rawMenu
         ) {
-          continue;
+          if (
+            !item.menuID
+          ) {
+            continue;
+          }
+
+          const path =
+            pathById[
+              item.menuID
+            ];
+
+          if (path) {
+            result[
+              String(
+                item.menuID,
+              )
+            ] =
+              path;
+          }
         }
 
-        const path =
-          pathById[
-            item.menuID
-          ];
+        return result;
+      },
+      [
+        rawMenu,
+        pathById,
+      ],
+    );
 
-        if (path) {
-          result[
-            String(
-              item.menuID,
-            )
-          ] = path;
-        }
-      }
-
-      return result;
-    }, [
-      rawMenu,
-      pathById,
-    ]);
-
+  /**
+   * Initial Application boot.
+   */
   useEffect(() => {
     if (
       didBootRef.current
@@ -313,7 +376,8 @@ function RootStack<
     didBootRef.current =
       true;
 
-    let alive = true;
+    let alive =
+      true;
 
     const boot =
       async () => {
@@ -347,7 +411,9 @@ function RootStack<
           await dispatch(
             initializeMenu(),
           ).unwrap?.();
-        } catch (error) {
+        } catch (
+          error
+        ) {
           console.error(
             "BOOT ERROR:",
             error,
@@ -364,10 +430,23 @@ function RootStack<
     void boot();
 
     return () => {
-      alive = false;
+      alive =
+        false;
     };
-  }, [dispatch]);
+  }, [
+    dispatch,
+  ]);
 
+  /**
+   * Handles an explicit URL once when the
+   * Application initially starts.
+   *
+   * This keeps normal deep links working.
+   *
+   * A later real login is handled separately
+   * and may intentionally override this URL
+   * with NavigationDefaultMenu.
+   */
   useEffect(() => {
     if (
       didHandleUrlRef.current
@@ -407,7 +486,9 @@ function RootStack<
     }
 
     const slugId =
-      idByPath[pathname];
+      idByPath[
+        pathname
+      ];
 
     if (
       slugId &&
@@ -463,18 +544,38 @@ function RootStack<
     isConfiguredMenuEnabled,
   ]);
 
+  /**
+   * Opens the configured default menu after
+   * an actual login.
+   *
+   * Important:
+   *
+   * Redux activeMenuId,
+   * React Navigation,
+   * and the browser URL
+   *
+   * must all point to the same menu.
+   *
+   * When the Application is already authenticated
+   * and opened with an explicit deep link, that
+   * deep link remains untouched.
+   */
   useEffect(() => {
     if (isLoading) {
       return;
     }
 
     if (!isLoggedIn) {
+      wasLoggedOutRef.current =
+        true;
+
       return;
     }
 
     if (
       !rawMenu ||
-      rawMenu.length === 0
+      rawMenu.length === 0 ||
+      !isNavigationReady
     ) {
       return;
     }
@@ -485,154 +586,154 @@ function RootStack<
           .pathname || "/",
       );
 
-    if (
+    const justLoggedIn =
+      wasLoggedOutRef.current;
+
+    const shouldOpenDefaultMenu =
+      justLoggedIn ||
       pathname === "/login" ||
       pathname ===
         "/base-login" ||
-      pathname === "/"
+      pathname === "/";
+
+    if (
+      !shouldOpenDefaultMenu
     ) {
-      const fallbackId =
-        rawMenu.find(
-          (item) =>
-            Boolean(
-              item.menuID,
-            ) &&
-            isConfiguredMenuEnabled(
-              item.menuID,
-            ),
-        )?.menuID;
+      return;
+    }
 
-      const targetId =
-        activeMenuId &&
-        isConfiguredMenuEnabled(
-          activeMenuId,
-        )
-          ? activeMenuId
-          : fallbackId;
+    const configuredDefaultMenuID =
+      config.navigation.menu
+        .defaultMenuID;
 
-      if (!targetId) {
-        return;
-      }
+    const defaultMenuID =
+      configuredDefaultMenuID !==
+        undefined &&
+      rawMenu.some(
+        (item) =>
+          item.menuID ===
+          configuredDefaultMenuID,
+      ) &&
+      isConfiguredMenuEnabled(
+        configuredDefaultMenuID,
+      )
+        ? configuredDefaultMenuID
+        : undefined;
 
-      const targetPath =
-        pathById[
-          targetId
-        ];
+    /**
+     * Fallback is used only when an Application
+     * has no usable NavigationDefaultMenu.
+     */
+    const fallbackMenuID =
+      rawMenu.find(
+        (item) =>
+          Boolean(
+            item.menuID,
+          ) &&
+          isConfiguredMenuEnabled(
+            item.menuID,
+          ),
+      )?.menuID;
 
-      if (!targetPath) {
-        return;
-      }
+    const targetMenuID =
+      defaultMenuID ??
+      fallbackMenuID;
 
+    if (
+      !targetMenuID
+    ) {
+      return;
+    }
+
+    const targetPath =
+      pathById[
+        targetMenuID
+      ];
+
+    if (
+      !targetPath
+    ) {
+      return;
+    }
+
+    /**
+     * Consume the login transition before
+     * synchronizing navigation.
+     */
+    wasLoggedOutRef.current =
+      false;
+
+    /**
+     * 1. Redux state
+     */
+    dispatch(
+      setActiveMenuId(
+        targetMenuID,
+      ),
+    );
+
+    /**
+     * 2. Actual React Navigation route
+     *
+     * Drawer.Screen names are generated from
+     * String(menuID), therefore "3003" resolves
+     * directly to the Settings screen.
+     */
+    navigationRef
+      .resetRoot({
+        index: 0,
+
+        routes: [
+          {
+            name:
+              String(
+                targetMenuID,
+              ),
+          },
+        ],
+      });
+
+    /**
+     * 3. Browser URL
+     */
+    if (
+      typeof window !==
+        "undefined"
+    ) {
       window.history
         .replaceState(
           null,
           "",
           targetPath,
         );
-
-      dispatch(
-        setActiveMenuId(
-          targetId,
-        ),
-      );
     }
   }, [
     isLoading,
     isLoggedIn,
     rawMenu,
-    activeMenuId,
     pathById,
     dispatch,
     isConfiguredMenuEnabled,
-  ]);
-
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
-    if (!isLoggedIn) {
-      return;
-    }
-
-    let active = true;
-
-    const runCheck =
-      async () => {
-        if (!active) {
-          return;
-        }
-
-        try {
-          await dispatch(
-            checkAlive({
-              silent: true,
-            }),
-          ).unwrap();
-        } catch {
-          /**
-           * OfflineOverlay consumes
-           * the corresponding Redux state.
-           */
-        }
-      };
-
-    void runCheck();
-
-    const intervalId =
-      setInterval(
-        () => {
-          void runCheck();
-        },
-        40_000,
-      );
-
-    const onFocus = () => {
-      void runCheck();
-    };
-
-    if (
-      typeof window !==
-      "undefined"
-    ) {
-      window.addEventListener(
-        "focus",
-        onFocus,
-      );
-    }
-
-    return () => {
-      active = false;
-
-      clearInterval(
-        intervalId,
-      );
-
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        window.removeEventListener(
-          "focus",
-          onFocus,
-        );
-      }
-    };
-  }, [
-    dispatch,
-    isLoading,
-    isLoggedIn,
+    config.navigation.menu
+      .defaultMenuID,
+    navigationRef,
+    isNavigationReady,
   ]);
 
   const navigationMenu =
-    menu.find(
-      (node) =>
-        hasId(
-          node,
-          activeMenuId,
-        ),
-    ) ??
-    menu[0];
+    activeMenuId !==
+      undefined
+      ? (
+          menu.find(
+            (node) =>
+              hasId(
+                node,
+                activeMenuId,
+              ),
+          ) ??
+          menu[0]
+        )
+      : menu[0];
 
   const navTheme =
     useMemo(
@@ -643,10 +744,12 @@ function RootStack<
               .background,
 
           border:
-            theme.colors.border,
+            theme.colors
+              .border,
 
           card:
-            theme.colors.card,
+            theme.colors
+              .card,
 
           notification:
             theme.colors
@@ -657,13 +760,19 @@ function RootStack<
               .primary,
 
           text:
-            theme.colors.text,
+            theme.colors
+              .text,
         },
 
-        dark: false,
-        fonts: theme.fonts,
+        dark:
+          false,
+
+        fonts:
+          theme.fonts,
       }),
-      [theme],
+      [
+        theme,
+      ],
     );
 
   if (isLoading) {
@@ -680,7 +789,17 @@ function RootStack<
 
   return (
     <NavigationContainer
-      theme={navTheme}
+      ref={
+        navigationRef
+      }
+      onReady={() => {
+        setIsNavigationReady(
+          true,
+        );
+      }}
+      theme={
+        navTheme
+      }
       linking={{
         prefixes: [
           Linking.createURL(
@@ -698,7 +817,8 @@ function RootStack<
             BaseLogin:
               "/base-login",
 
-            NotFound: "*",
+            NotFound:
+              "*",
           },
         },
       }}
@@ -749,7 +869,9 @@ function RootStack<
         drawerContent={(
           props,
         ) => {
-          if (!isLoggedIn) {
+          if (
+            !isLoggedIn
+          ) {
             return undefined;
           }
 
@@ -777,9 +899,13 @@ function RootStack<
             }
           >
             <DataPermissionsDialog />
+
             <OfflineOverlay />
+
             <ServerSwitchOverlay />
+
             <InitialPasswordChangeDialog />
+
             <NotificationPopup />
 
             <DeveloperConsole
@@ -804,9 +930,11 @@ function RootStack<
                     node.menuID ??
                     index
                   }
-                  name={String(
-                    node.menuID,
-                  )}
+                  name={
+                    String(
+                      node.menuID,
+                    )
+                  }
                   children={() => {
                     if (
                       !isConfiguredMenuEnabled(
@@ -887,6 +1015,7 @@ function RootStack<
   );
 }
 
+
 export default function TemplateApp<
   TState = unknown,
 >({
@@ -895,10 +1024,14 @@ export default function TemplateApp<
 }: TemplateAppProps<TState>) {
   return (
     <ApplicationConfigProvider
-      config={config}
+      config={
+        config
+      }
     >
       <Provider
-        store={store}
+        store={
+          store
+        }
       >
         <DeveloperConsoleConnection />
 
@@ -926,6 +1059,7 @@ export default function TemplateApp<
   );
 }
 
+
 const styles =
   StyleSheet.create({
     appContainer: {
@@ -944,13 +1078,16 @@ const styles =
     layoutContainer: {
       flex: 1,
       minHeight: 0,
-      overflow: "hidden",
+      overflow:
+        "hidden",
     },
 
     loadingScreen: {
       flex: 1,
+
       justifyContent:
         "center",
+
       alignItems:
         "center",
     },

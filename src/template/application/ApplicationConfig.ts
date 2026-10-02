@@ -119,6 +119,12 @@ export type ApplicationConfig<
        */
       showIcons?: boolean;
 
+      /**
+       * Internal menu ID resolved from the semantic
+       * NavigationDefaultMenu configuration.
+       */
+      defaultMenuID?: number;
+
       items: readonly StaticMenuItem[];
 
       isEnabled:

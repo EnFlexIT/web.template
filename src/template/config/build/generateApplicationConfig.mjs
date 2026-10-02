@@ -763,6 +763,11 @@ const navigationRootMode =
   ]?.trim() ||
   defaultNavigationRootMode;
 
+const navigationDefaultMenuKey =
+  navigationProperties[
+    "NavigationDefaultMenu"
+  ]?.trim() || undefined;
+
 if (
   !navigationRootModes.has(
     navigationRootMode,
@@ -782,6 +787,10 @@ delete applicationNavigationProperties[
 
 delete applicationNavigationProperties[
   "NavigationRootMode"
+];
+
+delete applicationNavigationProperties[
+  "NavigationDefaultMenu"
 ];
 
 const applicationId =
@@ -1595,6 +1604,34 @@ for (
   });
 }
 
+let navigationDefaultMenuID;
+
+if (navigationDefaultMenuKey) {
+  try {
+    navigationDefaultMenuID =
+      getMenuId(
+        navigationDefaultMenuKey,
+      );
+  } catch {
+    throw new Error(
+      `Unknown NavigationDefaultMenu "${navigationDefaultMenuKey}". Use a semantic Template or Application menu key.`,
+    );
+  }
+
+  const defaultMenuExists =
+    menuItems.some(
+      (item) =>
+        item.menuID ===
+        navigationDefaultMenuID,
+    );
+
+  if (!defaultMenuExists) {
+    throw new Error(
+      `NavigationDefaultMenu "${navigationDefaultMenuKey}" is not available with the current feature and navigation configuration.`,
+    );
+  }
+}
+
 const tabItems = [];
 
 const enabledTemplateTabKeys =
@@ -2035,6 +2072,11 @@ export const applicationConfig:
 ${renderedApplicationBranding}
   navigation: {
     menu: {
+      defaultMenuID:
+        ${navigationDefaultMenuID === undefined
+          ? "undefined"
+          : navigationDefaultMenuID},
+
       showIcons:
         ${navigationMenuIconsEnabled},
 

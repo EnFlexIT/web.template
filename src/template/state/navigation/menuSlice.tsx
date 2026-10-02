@@ -11,6 +11,7 @@ import type {
 import type {
   IconName,
 } from "@/template/components/design-system/ui-elements/Icon/Icon";
+
 import type {
   MenuItem as ApiMenuItem,
 } from "@/api/implementation/Dynamic-Content-Api";
@@ -27,6 +28,7 @@ import {
   getNavigationRuntime,
 } from "@/template/navigation/navigationRuntime";
 
+
 interface BaseMenuItem<P = {}> {
   menuID: number;
   parentID?: number;
@@ -35,11 +37,14 @@ interface BaseMenuItem<P = {}> {
   icon?: IconName;
   Screen?: any;
 }
+
+
 interface DynamicMenuItem
   extends BaseMenuItem {
   position: number;
   Screen: undefined;
 }
+
 
 interface StaticMenuItem<P = {}>
   extends BaseMenuItem<P> {
@@ -47,22 +52,31 @@ interface StaticMenuItem<P = {}>
   Screen: any;
 }
 
+
 export type MenuItem<P = {}> =
   | DynamicMenuItem
   | StaticMenuItem<P>;
 
-export type MenuTree = MenuNode;
+
+export type MenuTree =
+  MenuNode;
+
 
 interface MenuNode {
   val: MenuItem;
   children: MenuNode[];
 }
 
+
 export interface MenuState {
   menu: MenuTree[];
+
   rawMenu: MenuItem[];
-  activeMenuId: number;
+
+  activeMenuId:
+    number | undefined;
 }
+
 
 /**
  * Returns the static menu configured by the active Application.
@@ -72,18 +86,36 @@ export interface MenuState {
 function getConfiguredStaticMenu(
   authenticationMethod?: AuthMethod,
 ): MenuItem[] {
-  const { menu } =
+  const {
+    menu,
+  } =
     getNavigationRuntime();
 
-  return menu.items.filter((item) =>
-    menu.isEnabled(
-      item.menuID,
-      {
-        authenticationMethod,
-      },
-    ),
+  return menu.items.filter(
+    (item) =>
+      menu.isEnabled(
+        item.menuID,
+        {
+          authenticationMethod,
+        },
+      ),
   );
 }
+
+
+/**
+ * Returns the configured default menu ID.
+ *
+ * The ID has already been resolved from the semantic
+ * NavigationDefaultMenu value by the build-time generator.
+ */
+function getConfiguredDefaultMenuID():
+  number | undefined {
+  return getNavigationRuntime()
+    .menu
+    .defaultMenuID;
+}
+
 
 /**
  * Checks Application-specific menu visibility.
@@ -104,6 +136,7 @@ function isConfiguredMenuEnabled(
     );
 }
 
+
 function addNodeToTree(
   tree: MenuTree,
   node: MenuNode,
@@ -113,7 +146,9 @@ function addNodeToTree(
     node.val.parentID
   ) {
     return {
-      val: tree.val,
+      val:
+        tree.val,
+
       children: [
         ...tree.children,
         node,
@@ -122,7 +157,9 @@ function addNodeToTree(
   }
 
   return {
-    val: tree.val,
+    val:
+      tree.val,
+
     children:
       tree.children.map(
         (child) =>
@@ -134,13 +171,16 @@ function addNodeToTree(
   };
 }
 
+
 export function getDepthFromList(
   listOfNodes: MenuItem[],
   id: number,
 ): number {
   const item =
     listOfNodes.find(
-      ({ menuID }) =>
+      ({
+        menuID,
+      }) =>
         menuID === id,
     );
 
@@ -161,12 +201,16 @@ export function getDepthFromList(
   );
 }
 
+
 export function rawListToTrees(
   items: MenuItem[],
 ): MenuTree[] {
   const sortedItems =
     items.toSorted(
-      (a, b) =>
+      (
+        a,
+        b,
+      ) =>
         getDepthFromList(
           items,
           a.menuID,
@@ -180,12 +224,17 @@ export function rawListToTrees(
   return sortedItems.reduce<
     MenuTree[]
   >(
-    (acc, curr) =>
+    (
+      acc,
+      curr,
+    ) =>
       !curr.parentID
         ? [
             ...acc,
             {
-              val: curr,
+              val:
+                curr,
+
               children: [],
             },
           ]
@@ -194,7 +243,9 @@ export function rawListToTrees(
               addNodeToTree(
                 node,
                 {
-                  val: curr,
+                  val:
+                    curr,
+
                   children: [],
                 },
               ),
@@ -202,6 +253,7 @@ export function rawListToTrees(
     [],
   );
 }
+
 
 /**
  * Returns the menu ID path from the root
@@ -213,7 +265,9 @@ export function getIdPath(
 ): number[] | undefined {
   const node =
     items.find(
-      ({ menuID }) =>
+      ({
+        menuID,
+      }) =>
         menuID === menuId,
     );
 
@@ -236,8 +290,11 @@ export function getIdPath(
       : undefined;
   }
 
-  return [menuId];
+  return [
+    menuId,
+  ];
 }
+
 
 export function isDynamicMenuItem(
   node: MenuItem,
@@ -246,6 +303,7 @@ export function isDynamicMenuItem(
     node.Screen === undefined
   );
 }
+
 
 export function hasId(
   tree: MenuTree,
@@ -263,6 +321,7 @@ export function hasId(
   );
 }
 
+
 /**
  * Returns the first available menu item.
  *
@@ -271,7 +330,7 @@ export function hasId(
  */
 function getFirstUsableMenuId(
   items: MenuItem[],
-): number {
+): number | undefined {
   const first =
     items.find(
       (item) =>
@@ -280,8 +339,42 @@ function getFirstUsableMenuId(
         ),
     );
 
-  return first?.menuID ?? 3003;
+  return first?.menuID;
 }
+
+
+/**
+ * Resolves the configured default menu against
+ * the currently available menu items.
+ *
+ * If the configured menu is not available,
+ * undefined is returned so the caller may use
+ * another fallback.
+ */
+function resolveDefaultMenuId(
+  items: MenuItem[],
+  defaultMenuID:
+    number | undefined,
+): number | undefined {
+  if (
+    defaultMenuID ===
+      undefined
+  ) {
+    return undefined;
+  }
+
+  const exists =
+    items.some(
+      (item) =>
+        item.menuID ===
+        defaultMenuID,
+    );
+
+  return exists
+    ? defaultMenuID
+    : undefined;
+}
+
 
 /**
  * Merges static and dynamic menu items.
@@ -316,6 +409,7 @@ function mergeMenus(
   ];
 }
 
+
 /**
  * The initial Redux state intentionally contains
  * no concrete Application menu.
@@ -323,29 +417,58 @@ function mergeMenus(
  * Navigation is initialized through initializeMenu
  * after the navigation runtime has been configured.
  */
-const initialState: MenuState = {
-  menu: [],
-  rawMenu: [],
-  activeMenuId: 3003,
+const initialState:
+  MenuState = {
+    menu: [],
+
+    rawMenu: [],
+
+    activeMenuId:
+      undefined,
+  };
+
+
+type InitializeMenuResult = {
+  dynamicMenu: MenuItem[];
+
+  staticMenu: MenuItem[];
+
+  authenticationMethod?:
+    AuthMethod;
+
+  defaultMenuID?:
+    number;
 };
 
+
 export const initializeMenu =
-  createAsyncThunk(
+  createAsyncThunk<
+    InitializeMenuResult
+  >(
     "menu/initialize",
-    async (_, thunkAPI) => {
+
+    async (
+      _,
+      thunkAPI,
+    ) => {
       const state =
-        thunkAPI.getState() as TemplateRootState;
+        thunkAPI.getState() as
+          TemplateRootState;
 
       const lang =
         state.language.language;
 
       const authenticationMethod =
-        state.api.authenticationMethod;
+        state.api
+          .authenticationMethod;
 
       const staticMenu =
         getConfiguredStaticMenu(
           authenticationMethod,
         );
+
+      const defaultMenuID =
+        getConfiguredDefaultMenuID();
 
       if (
         !state.api
@@ -357,6 +480,7 @@ export const initializeMenu =
           dynamicMenu: [],
           staticMenu,
           authenticationMethod,
+          defaultMenuID,
         };
       }
 
@@ -370,13 +494,16 @@ export const initializeMenu =
             );
 
         const raw =
-          response?.data as unknown;
+          response?.data as
+            unknown;
 
         const rawRecord =
           raw &&
           typeof raw ===
             "object" &&
-          !Array.isArray(raw)
+          !Array.isArray(
+            raw,
+          )
             ? (
                 raw as Record<
                   string,
@@ -387,27 +514,39 @@ export const initializeMenu =
 
         const data:
           ApiMenuItem[] =
-          Array.isArray(raw)
+          Array.isArray(
+            raw,
+          )
             ? (
-                raw as ApiMenuItem[]
+                raw as
+                  ApiMenuItem[]
               )
             : Array.isArray(
-                  rawRecord?.data,
+                  rawRecord
+                    ?.data,
                 )
               ? (
-                  rawRecord.data as ApiMenuItem[]
+                  rawRecord
+                    .data as
+                      ApiMenuItem[]
                 )
               : Array.isArray(
-                    rawRecord?.items,
+                    rawRecord
+                      ?.items,
                   )
                 ? (
-                    rawRecord.items as ApiMenuItem[]
+                    rawRecord
+                      .items as
+                        ApiMenuItem[]
                   )
                 : Array.isArray(
-                      rawRecord?.menu,
+                      rawRecord
+                        ?.menu,
                     )
                   ? (
-                      rawRecord.menu as ApiMenuItem[]
+                      rawRecord
+                        .menu as
+                          ApiMenuItem[]
                     )
                   : [];
 
@@ -418,6 +557,7 @@ export const initializeMenu =
             dynamicMenu: [],
             staticMenu,
             authenticationMethod,
+            defaultMenuID,
           };
         }
 
@@ -432,12 +572,16 @@ export const initializeMenu =
               (node) => ({
                 menuID:
                   node.menuID!,
+
                 parentID:
                   node.parentID,
+
                 position:
                   node.position,
+
                 caption:
                   node.caption,
+
                 Screen:
                   undefined,
               }),
@@ -454,8 +598,11 @@ export const initializeMenu =
           dynamicMenu,
           staticMenu,
           authenticationMethod,
+          defaultMenuID,
         };
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
           "initializeMenu failed, fallback to static menu",
           error,
@@ -465,34 +612,52 @@ export const initializeMenu =
           dynamicMenu: [],
           staticMenu,
           authenticationMethod,
+          defaultMenuID,
         };
       }
     },
   );
 
+
 export const updateMenu =
   createAsyncThunk(
     "menu/update",
-    async (_, thunkAPI) => {
+
+    async (
+      _,
+      thunkAPI,
+    ) => {
       const state =
-        thunkAPI.getState() as TemplateRootState;
+        thunkAPI.getState() as
+          TemplateRootState;
 
       const previousActiveMenuId =
-        state.menu.activeMenuId;
+        state.menu
+          .activeMenuId;
 
       await thunkAPI.dispatch(
         initializeMenu(),
       );
 
+      if (
+        previousActiveMenuId ===
+          undefined
+      ) {
+        return;
+      }
+
       const nextState =
-        thunkAPI.getState() as TemplateRootState;
+        thunkAPI.getState() as
+          TemplateRootState;
 
       const stillValid =
-        nextState.menu.rawMenu.some(
-          (item) =>
-            item.menuID ===
-            previousActiveMenuId,
-        );
+        nextState.menu
+          .rawMenu
+          .some(
+            (item) =>
+              item.menuID ===
+              previousActiveMenuId,
+          );
 
       if (stillValid) {
         thunkAPI.dispatch(
@@ -504,9 +669,19 @@ export const updateMenu =
     },
   );
 
+
+type ReplaceWithStaticMenuPayload = {
+  items: MenuItem[];
+
+  defaultMenuID?:
+    number;
+};
+
+
 export const menuSlice =
   createSlice({
-    name: "menu",
+    name:
+      "menu",
 
     initialState,
 
@@ -514,7 +689,9 @@ export const menuSlice =
       setActiveMenuId: (
         state,
         action:
-          PayloadAction<number>,
+          PayloadAction<
+            number
+          >,
       ) => {
         state.activeMenuId =
           action.payload;
@@ -523,18 +700,22 @@ export const menuSlice =
       /**
        * Internal pure reducer.
        *
-       * The Application navigation has already
-       * been resolved before this action reaches
-       * the reducer.
+       * Navigation runtime values are resolved
+       * before this action reaches the reducer.
        */
       replaceWithStaticMenu: (
         state,
         action:
           PayloadAction<
-            MenuItem[]
+            ReplaceWithStaticMenuPayload
           >,
       ) => {
-        const staticMenu =
+        const {
+          items:
+            staticMenu,
+
+          defaultMenuID,
+        } =
           action.payload;
 
         state.rawMenu =
@@ -546,6 +727,10 @@ export const menuSlice =
           );
 
         state.activeMenuId =
+          resolveDefaultMenuId(
+            staticMenu,
+            defaultMenuID,
+          ) ??
           getFirstUsableMenuId(
             staticMenu,
           );
@@ -556,7 +741,8 @@ export const menuSlice =
       builder,
     ) => {
       builder.addCase(
-        initializeMenu.fulfilled,
+        initializeMenu
+          .fulfilled,
         (
           state,
           action,
@@ -564,6 +750,7 @@ export const menuSlice =
           const {
             dynamicMenu,
             staticMenu,
+            defaultMenuID,
           } =
             action.payload;
 
@@ -587,6 +774,10 @@ export const menuSlice =
 
           if (!stillValid) {
             state.activeMenuId =
+              resolveDefaultMenuId(
+                state.rawMenu,
+                defaultMenuID,
+              ) ??
               getFirstUsableMenuId(
                 state.rawMenu,
               );
@@ -604,14 +795,18 @@ export const menuSlice =
     },
   });
 
+
 const {
   setActiveMenuId,
   replaceWithStaticMenu,
-} = menuSlice.actions;
+} =
+  menuSlice.actions;
+
 
 export {
   setActiveMenuId,
 };
+
 
 /**
  * Public compatibility action creator.
@@ -632,13 +827,22 @@ export function clearMenu(
       authenticationMethod,
     );
 
-  return replaceWithStaticMenu(
-    staticMenu,
-  );
+  const defaultMenuID =
+    getConfiguredDefaultMenuID();
+
+  return replaceWithStaticMenu({
+    items:
+      staticMenu,
+
+    defaultMenuID,
+  });
 }
+
 
 export const selectMenu = (
   state: TemplateRootState,
-) => state.menu;
+) =>
+  state.menu;
+
 
 export default menuSlice.reducer;
