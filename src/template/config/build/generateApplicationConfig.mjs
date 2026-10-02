@@ -193,6 +193,42 @@ function parseBoolean(value, description) {
   );
 }
 
+function getFeatureHierarchy(
+  featureName,
+) {
+  const segments =
+    featureName.split(".");
+
+  return segments.map(
+    (
+      _segment,
+      index,
+    ) =>
+      segments
+        .slice(
+          0,
+          index + 1,
+        )
+        .join("."),
+  );
+}
+
+function addKnownFeatureName(
+  featureNames,
+  featureName,
+) {
+  for (
+    const hierarchyFeature of
+    getFeatureHierarchy(
+      featureName,
+    )
+  ) {
+    featureNames.add(
+      hierarchyFeature,
+    );
+  }
+}
+
 function getKnownFeatureNames() {
   const featureNames = new Set();
 
@@ -200,8 +236,16 @@ function getKnownFeatureNames() {
     const definition of
     Object.values(templateMenuCatalog)
   ) {
+    if (definition.gateFeature) {
+      addKnownFeatureName(
+        featureNames,
+        definition.gateFeature,
+      );
+    }
+
     if (definition.feature) {
-      featureNames.add(
+      addKnownFeatureName(
+        featureNames,
         definition.feature,
       );
     }
@@ -210,7 +254,8 @@ function getKnownFeatureNames() {
       const feature of
       definition.features ?? []
     ) {
-      featureNames.add(
+      addKnownFeatureName(
+        featureNames,
         feature,
       );
     }
@@ -221,7 +266,8 @@ function getKnownFeatureNames() {
     Object.values(templateTabCatalog)
   ) {
     if (definition.feature) {
-      featureNames.add(
+      addKnownFeatureName(
+        featureNames,
         definition.feature,
       );
     }
@@ -278,6 +324,47 @@ function parseTemplateFeatureConfiguration(
         key,
       ),
     );
+  }
+
+  /**
+   * Every configured child feature must declare all of its
+   * semantic parents explicitly.
+   *
+   * Example:
+   *
+   * feature.personalSettings.enabled=true
+   * feature.personalSettings.appearance.enabled=true
+   */
+  for (
+    const featureName of
+    enabledFeatures.keys()
+  ) {
+    const hierarchy =
+      getFeatureHierarchy(
+        featureName,
+      );
+
+    for (
+      const parentFeatureName of
+      hierarchy.slice(0, -1)
+    ) {
+      if (
+        enabledFeatures.has(
+          parentFeatureName,
+        )
+      ) {
+        continue;
+      }
+
+      throw new Error(
+        [
+          `Feature "${featureName}" is missing its parent configuration.`,
+          `Add "feature.${parentFeatureName}.enabled=true" or`,
+          `explicitly disable that parent with`,
+          `"feature.${parentFeatureName}.enabled=false".`,
+        ].join(" "),
+      );
+    }
   }
 
   return enabledFeatures;
@@ -900,10 +987,20 @@ for (
 function isFeatureEnabled(
   featureName,
 ) {
-  return (
-    enabledFeatures.get(
-      featureName,
-    ) === true
+  /**
+   * Feature enablement is inherited through the semantic
+   * property hierarchy.
+   *
+   * A child can only be enabled when every parent in its
+   * feature path is explicitly enabled as well.
+   */
+  return getFeatureHierarchy(
+    featureName,
+  ).every(
+    (hierarchyFeature) =>
+      enabledFeatures.get(
+        hierarchyFeature,
+      ) === true,
   );
 }
 
@@ -1074,6 +1171,67 @@ function getMenuParent(
 }
 
 /**
+ * Checks Template navigation gates recursively.
+ *
+ * Feature hierarchy and navigation hierarchy are intentionally
+ * separate concerns. This allows semantic feature paths such as
+ * "personalSettings.appearance" while the Template still owns
+ * the internal parent menu relationship to "settings".
+ */
+function isMenuAllowedByTemplateFeatureGates(
+  menuKey,
+  visitedMenuKeys =
+    new Set(),
+) {
+  if (
+    visitedMenuKeys.has(
+      menuKey,
+    )
+  ) {
+    throw new Error(
+      `Circular menu parent relationship detected at "${menuKey}".`,
+    );
+  }
+
+  const nextVisitedMenuKeys =
+    new Set(
+      visitedMenuKeys,
+    );
+
+  nextVisitedMenuKeys.add(
+    menuKey,
+  );
+
+  const templateDefinition =
+    templateMenuCatalog[
+      menuKey
+    ];
+
+  if (
+    templateDefinition?.gateFeature &&
+    !isFeatureEnabled(
+      templateDefinition.gateFeature,
+    )
+  ) {
+    return false;
+  }
+
+  const parent =
+    getMenuParent(
+      menuKey,
+    );
+
+  if (!parent) {
+    return true;
+  }
+
+  return isMenuAllowedByTemplateFeatureGates(
+    parent,
+    nextVisitedMenuKeys,
+  );
+}
+
+/**
  * Prevent an enabled Application menu from depending on
  * an explicitly disabled Application parent.
  */
@@ -1134,7 +1292,8 @@ const selectedMenuKeys =
 
 /**
  * Select Template menus when at least one associated
- * Template feature is enabled.
+ * Template feature is enabled and all navigation gates
+ * in the parent chain allow the menu.
  */
 for (
   const [
@@ -1145,6 +1304,14 @@ for (
     templateMenuCatalog,
   )
 ) {
+  if (
+    !isMenuAllowedByTemplateFeatureGates(
+      menuKey,
+    )
+  ) {
+    continue;
+  }
+
   const hasEnabledFeature =
     definition.feature
       ? isFeatureEnabled(
@@ -1166,12 +1333,21 @@ for (
 }
 
 /**
- * Add enabled Application-owned menus.
+ * Add enabled Application-owned menus when their complete
+ * parent chain is allowed by Template feature gates.
  */
 for (
   const item of
   enabledApplicationMenus
 ) {
+  if (
+    !isMenuAllowedByTemplateFeatureGates(
+      item.key,
+    )
+  ) {
+    continue;
+  }
+
   selectedMenuKeys.add(
     item.key,
   );
@@ -1179,12 +1355,21 @@ for (
 
 /**
  * An Application tab may also extend a Template menu.
- * In that case the referenced menu must be selected.
+ * In that case the referenced menu must be selected, but
+ * only when the Template feature gates allow that branch.
  */
 for (
   const item of
   enabledApplicationTabs
 ) {
+  if (
+    !isMenuAllowedByTemplateFeatureGates(
+      item.menuKey,
+    )
+  ) {
+    continue;
+  }
+
   selectedMenuKeys.add(
     item.menuKey,
   );
@@ -1368,12 +1553,21 @@ if (
 }
 
 /**
- * Materialize enabled Application-owned menus.
+ * Materialize enabled Application-owned menus that survived
+ * Template feature-gate filtering.
  */
 for (
   const item of
   enabledApplicationMenus
 ) {
+  if (
+    !selectedMenuKeys.has(
+      item.key,
+    )
+  ) {
+    continue;
+  }
+
   menuItems.push({
     caption:
       item.caption,
@@ -1471,12 +1665,21 @@ tabItems.push({
 }
 
 /**
- * Materialize Application-owned tabs.
+ * Materialize Application-owned tabs only when their menu
+ * survived Template feature-gate filtering.
  */
 for (
   const item of
   enabledApplicationTabs
 ) {
+  if (
+    !selectedMenuKeys.has(
+      item.menuKey,
+    )
+  ) {
+    continue;
+  }
+
   tabItems.push({
     menuID:
       getMenuId(
