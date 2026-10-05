@@ -594,6 +594,7 @@ export function Navigation({
             isBaseMode={
               isBaseMode
             }
+            compact
           />
         </View>
       )}

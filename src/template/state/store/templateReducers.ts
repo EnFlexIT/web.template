@@ -26,6 +26,7 @@ import logFilesReducer from "@/template/state/developer-tools/logFilesSlice";
 import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSlice";
 import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
 import dbSettingsReducer from "@/template/state/agent-workbench/dbSettingsSlice";
+import authorizationReducer from "@/template/state/authorization/authorizationSlice";
 /**
  * Reducers owned by the reusable Base Template.
  *
@@ -58,6 +59,7 @@ export const templateReducers = {
   dataAnalysis: dataAnalysisReducer,
   execSettings: execSettingsReducer,
   dbSettings: dbSettingsReducer,
+  authorization: authorizationReducer,
 };
 
 /**
