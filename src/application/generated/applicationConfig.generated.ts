@@ -27,9 +27,14 @@ import {
   ApplicationImages,
 } from "./applicationAssets.generated";
 
+import type {
+  EffectiveUserRole,
+} from "@/template/authorization/roles";
+
 type MenuFeatureRule = {
   authInclude?: readonly string[];
   authExclude?: readonly string[];
+  roles?: readonly EffectiveUserRole[];
 };
 
 type TabFeatureRule = {
@@ -231,8 +236,20 @@ const menuFeatureRules:
       MenuFeatureRule
     >
   > = {
-  3013: { authExclude: ["oidc"] },
-  3025: { authInclude: ["oidc","unset"] },
+  3013: { authExclude: ["oidc"], roles: ["user","frontendEditor","backendEditor"] },
+  3025: { authInclude: ["oidc","unset"], roles: ["user","frontendEditor","backendEditor"] },
+  3003: { roles: ["user","frontendEditor","backendEditor"] },
+  3015: { roles: ["user","frontendEditor","backendEditor"] },
+  3021: { roles: ["frontendEditor","backendEditor"] },
+  3022: { roles: ["user","frontendEditor","backendEditor"] },
+  3004: { roles: ["user","frontendEditor","backendEditor"] },
+  3005: { roles: ["user","frontendEditor","backendEditor"] },
+  3012: { roles: ["backendEditor"] },
+  3014: { roles: ["frontendEditor","backendEditor"] },
+  3023: { roles: ["backendEditor"] },
+  3026: { roles: ["backendEditor"] },
+  3010: { roles: ["backendEditor"] },
+  3024: { roles: ["backendEditor"] },
 };
 
 const tabFeatureRules:
@@ -307,6 +324,19 @@ const isApplicationMenuEnabled:
     if (
       rule.authExclude?.includes(
         authenticationMethod,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      rule.roles &&
+      context.effectiveRoles &&
+      !rule.roles.some(
+        (role) =>
+          context.effectiveRoles?.includes(
+            role,
+          ),
       )
     ) {
       return false;

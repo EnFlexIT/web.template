@@ -55,6 +55,10 @@ import {
   selectAuthenticationMethod,
 } from "@/template/state/api/apiSlice";
 
+import {
+  selectEffectiveRoles,
+} from "@/template/state/authorization/authorizationSlice";
+
 const SETTINGS_ROOT_ID = 3003;
 
 type UiNode = {
@@ -231,6 +235,11 @@ export function SettingsScreen() {
       selectAuthenticationMethod,
     );
 
+  const effectiveRoles =
+    useAppSelector(
+      selectEffectiveRoles,
+    );
+
   const {
     menu: menuConfiguration,
   } = getNavigationRuntime();
@@ -250,12 +259,14 @@ export function SettingsScreen() {
               item.menuID,
               {
                 authenticationMethod,
+          effectiveRoles,
               },
             ),
           ),
       [
         menuConfiguration,
         authenticationMethod,
+        effectiveRoles,
       ],
     );
 

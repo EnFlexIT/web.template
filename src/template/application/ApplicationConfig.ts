@@ -7,6 +7,10 @@ import type {
 } from "@/template/state/api/apiSlice";
 
 import type {
+  EffectiveUserRole,
+} from "@/template/authorization/roles";
+
+import type {
   StaticMenuItem,
 } from "@template";
 
@@ -14,27 +18,62 @@ import type {
   StaticTabItem,
 } from "@template";
 
+
 export type MenuVisibilityContext = {
+  /**
+   * Authentication mechanism of the current session.
+   */
   authenticationMethod?: AuthMethod;
+
+  /**
+   * Effective authorization roles of the current user.
+   *
+   * superAdmin itself is intentionally not an effective role.
+   * It is resolved to:
+   *
+   * user
+   * frontendEditor
+   * backendEditor
+   */
+  effectiveRoles?:
+    readonly EffectiveUserRole[];
 };
+
 
 export type TabVisibilityContext<
   TState = unknown,
 > = {
+  /**
+   * Application / Template Redux state.
+   */
   state?: TState;
+
+  /**
+   * Prepared for role-based tab visibility.
+   *
+   * Tab authorization will be connected separately because
+   * the current tab runtime only evaluates tabs that have a
+   * runtime feature ID.
+   */
+  effectiveRoles?:
+    readonly EffectiveUserRole[];
 };
+
 
 export type MenuVisibilityResolver = (
   menuID: number,
   context: MenuVisibilityContext,
 ) => boolean;
 
+
 export type TabVisibilityResolver<
   TState = unknown,
 > = (
   featureID: number,
-  context: TabVisibilityContext<TState>,
+  context:
+    TabVisibilityContext<TState>,
 ) => boolean;
+
 
 export type ApplicationBranding = {
   /**
@@ -46,6 +85,7 @@ export type ApplicationBranding = {
   logo?: ImageSourcePropType;
 };
 
+
 /**
  * Stable version and release information of the
  * concrete Application and the reusable Base Template.
@@ -56,37 +96,43 @@ export type ApplicationBranding = {
 export type ApplicationBuildInfo = {
   application: {
     packageName?: string;
+
     version?: string;
+
     releaseTag?: string;
   };
 
   template: {
     packageName: string;
+
     version: string;
   };
 
   build?: {
     timestamp?: string;
+
     commitSha?: string;
   };
 
-release?: {
-  /**
-   * Application-specific release notes.
-   *
-   * Generated build metadata is immutable, therefore
-   * the release-note arrays are readonly.
-   */
-  notes?: readonly string[];
+  release?: {
+    /**
+     * Application-specific release notes.
+     *
+     * Generated build metadata is immutable, therefore
+     * the release-note arrays are readonly.
+     */
+    notes?: readonly string[];
 
-  /**
-   * Release notes belonging to the reusable Base Template.
-   *
-   * These notes are shipped together with the Template version.
-   */
-  templateNotes?: readonly string[];
+    /**
+     * Release notes belonging to the reusable Base Template.
+     *
+     * These notes are shipped together with the Template version.
+     */
+    templateNotes?:
+      readonly string[];
+  };
 };
-};
+
 
 export type ApplicationConfig<
   TState = unknown,
@@ -96,21 +142,26 @@ export type ApplicationConfig<
    */
   id: string;
 
+
   /**
    * Visible application name.
    */
   displayName: string;
+
 
   /**
    * Optional Application-specific branding.
    */
   branding?: ApplicationBranding;
 
+
   /**
    * Generated Application, Template and release
    * metadata.
    */
-  buildInfo?: ApplicationBuildInfo;
+  buildInfo?:
+    ApplicationBuildInfo;
+
 
   navigation: {
     menu: {
@@ -119,20 +170,27 @@ export type ApplicationConfig<
        */
       showIcons?: boolean;
 
+
       /**
        * Internal menu ID resolved from the semantic
        * NavigationDefaultMenu configuration.
        */
       defaultMenuID?: number;
 
-      items: readonly StaticMenuItem[];
+
+      items:
+        readonly StaticMenuItem[];
+
 
       isEnabled:
         MenuVisibilityResolver;
     };
 
+
     tabs: {
-      items: readonly StaticTabItem[];
+      items:
+        readonly StaticTabItem[];
+
 
       isEnabled:
         TabVisibilityResolver<TState>;

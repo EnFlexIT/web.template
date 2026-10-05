@@ -48,6 +48,10 @@ import {
 } from "@/template/state/api/apiSlice";
 
 import {
+  selectEffectiveRoles,
+} from "@/template/state/authorization/authorizationSlice";
+
+import {
   getNavigationRuntime,
 } from "@/template/navigation/navigationRuntime";
 
@@ -125,6 +129,11 @@ function DrawerItem({
       selectAuthenticationMethod,
     );
 
+  const effectiveRoles =
+    useAppSelector(
+      selectEffectiveRoles,
+    );
+
   const [
     hovered,
     setHovered,
@@ -152,6 +161,7 @@ function DrawerItem({
       id,
       {
         authenticationMethod,
+        effectiveRoles,
       },
     );
 

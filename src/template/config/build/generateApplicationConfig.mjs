@@ -42,6 +42,11 @@ const featuresPropertiesPath = path.join(
   "features.properties",
 );
 
+const accessPropertiesPath = path.join(
+  configDirectory,
+  "access.properties",
+);
+
 const navigationPropertiesPath = path.join(
   configDirectory,
   "navigation.properties",
@@ -80,6 +85,13 @@ const applicationRootMenuKey =
 
 const templateSettingsRootMenuKey =
   "settings";
+
+const effectiveAccessRoles =
+  new Set([
+    "user",
+    "frontendEditor",
+    "backendEditor",
+  ]);
 
 /**
  * Parses the simple key=value subset of the
@@ -369,6 +381,161 @@ function parseTemplateFeatureConfiguration(
 
   return enabledFeatures;
 }
+
+
+function parseTemplateAccessConfiguration(
+  properties,
+) {
+  const accessRolesByFeature =
+    new Map();
+
+  const pattern =
+    /^access\.(.+)\.roles$/;
+
+  for (
+    const [
+      key,
+      value,
+    ] of
+    Object.entries(properties)
+  ) {
+    const match =
+      key.match(pattern);
+
+    if (!match) {
+      throw new Error(
+        `Unknown template access property: "${key}".`,
+      );
+    }
+
+    const featureName =
+      match[1];
+
+    if (
+      !knownFeatureNames.has(
+        featureName,
+      )
+    ) {
+      throw new Error(
+        `Unknown template access feature: "${featureName}".`,
+      );
+    }
+
+    const roles =
+      value
+        .split(",")
+        .map(
+          (role) =>
+            role.trim(),
+        )
+        .filter(Boolean);
+
+    if (
+      roles.length === 0
+    ) {
+      throw new Error(
+        `Access property "${key}" must contain at least one role.`,
+      );
+    }
+
+    const uniqueRoles =
+      new Set();
+
+    for (
+      const role of roles
+    ) {
+      if (
+        !effectiveAccessRoles.has(
+          role,
+        )
+      ) {
+        throw new Error(
+          [
+            `Unknown access role "${role}" in "${key}".`,
+            "Supported roles are:",
+            [...effectiveAccessRoles].join(", "),
+          ].join(" "),
+        );
+      }
+
+      if (
+        uniqueRoles.has(
+          role,
+        )
+      ) {
+        throw new Error(
+          `Duplicate access role "${role}" in "${key}".`,
+        );
+      }
+
+      uniqueRoles.add(
+        role,
+      );
+    }
+
+    accessRolesByFeature.set(
+      featureName,
+      uniqueRoles,
+    );
+  }
+
+  /*
+   * A child rule may further restrict its parent.
+   * It must never re-enable a role excluded by an
+   * explicitly configured parent rule.
+   */
+  for (
+    const [
+      featureName,
+      roles,
+    ] of
+    accessRolesByFeature.entries()
+  ) {
+    const hierarchy =
+      getFeatureHierarchy(
+        featureName,
+      );
+
+    for (
+      const parentFeatureName of
+      hierarchy.slice(
+        0,
+        -1,
+      )
+    ) {
+      const parentRoles =
+        accessRolesByFeature.get(
+          parentFeatureName,
+        );
+
+      if (!parentRoles) {
+        continue;
+      }
+
+      for (
+        const role of roles
+      ) {
+        if (
+          parentRoles.has(
+            role,
+          )
+        ) {
+          continue;
+        }
+
+        throw new Error(
+          [
+            `Access rule "${featureName}" attempts to re-enable role "${role}".`,
+            `Parent rule "${parentFeatureName}" does not allow that role.`,
+          ].join(" "),
+        );
+      }
+    }
+  }
+
+  return accessRolesByFeature;
+}
+
 
 function parseApplicationNavigation(
   properties,
@@ -693,6 +860,14 @@ function renderMenuRule(
     );
   }
 
+  if (
+    rule.roles
+  ) {
+    properties.push(
+      `roles: ${JSON.stringify(rule.roles)}`,
+    );
+  }
+
   return `  ${menuID}: { ${properties.join(", ")} },`;
 }
 
@@ -734,6 +909,11 @@ const applicationProperties =
 const featureProperties =
   readPropertiesFile(
     featuresPropertiesPath,
+  );
+
+const accessProperties =
+  readOptionalPropertiesFile(
+    accessPropertiesPath,
   );
 
 const navigationProperties =
@@ -889,6 +1069,11 @@ const applicationThemeOverrides = {
 const enabledFeatures =
   parseTemplateFeatureConfiguration(
     featureProperties,
+  );
+
+const accessRolesByFeature =
+  parseTemplateAccessConfiguration(
+    accessProperties,
   );
 
 const {
@@ -1737,6 +1922,96 @@ for (
   });
 }
 
+function getAccessRolesForFeature(
+  featureName,
+) {
+  const configuredRoleSets =
+    getFeatureHierarchy(
+      featureName,
+    )
+      .map(
+        (hierarchyFeature) =>
+          accessRolesByFeature.get(
+            hierarchyFeature,
+          ),
+      )
+      .filter(Boolean);
+
+  if (
+    configuredRoleSets.length === 0
+  ) {
+    return undefined;
+  }
+
+  return [
+    ...effectiveAccessRoles,
+  ].filter(
+    (role) =>
+      configuredRoleSets.every(
+        (roles) =>
+          roles.has(
+            role,
+          ),
+      ),
+  );
+}
+
+
+function getAccessRolesForMenuDefinition(
+  definition,
+) {
+  if (
+    definition.gateFeature
+  ) {
+    return getAccessRolesForFeature(
+      definition.gateFeature,
+    );
+  }
+
+  if (
+    definition.feature
+  ) {
+    return getAccessRolesForFeature(
+      definition.feature,
+    );
+  }
+
+  const featureNames =
+    definition.features ?? [];
+
+  if (
+    featureNames.length === 0
+  ) {
+    return undefined;
+  }
+
+  const roleLists =
+    featureNames.map(
+      getAccessRolesForFeature,
+    );
+
+  /*
+   * One unrestricted child feature makes the shared menu
+   * unrestricted at menu level. More specific restrictions
+   * belong to its child tabs/screens.
+   */
+  if (
+    roleLists.some(
+      (roles) =>
+        roles === undefined,
+    )
+  ) {
+    return undefined;
+  }
+
+  return [
+    ...new Set(
+      roleLists.flat(),
+    ),
+  ];
+}
+
+
 const menuRules =
   new Map();
 
@@ -1767,6 +2042,61 @@ for (
     rule,
   );
 }
+
+/**
+ * Add Application-configured role restrictions to Template
+ * menu runtime rules.
+ *
+ * Authentication and authorization restrictions are merged
+ * into one generated rule per menu ID.
+ */
+for (
+  const [
+    menuKey,
+    definition,
+  ] of
+  Object.entries(
+    templateMenuCatalog,
+  )
+) {
+  if (
+    !selectedMenuKeys.has(
+      menuKey,
+    )
+  ) {
+    continue;
+  }
+
+  const roles =
+    getAccessRolesForMenuDefinition(
+      definition,
+    );
+
+  if (
+    roles === undefined
+  ) {
+    continue;
+  }
+
+  const menuID =
+    getMenuId(
+      menuKey,
+    );
+
+  const existingRule =
+    menuRules.get(
+      menuID,
+    ) ?? {};
+
+  menuRules.set(
+    menuID,
+    {
+      ...existingRule,
+      roles,
+    },
+  );
+}
+
 
 const tabRules =
   new Map();
@@ -1913,9 +2243,14 @@ import {
   applicationBuildInfo,
 } from "./applicationBuildInfo.generated";
 ${renderedApplicationAssetsImport}
+import type {
+  EffectiveUserRole,
+} from "@/template/authorization/roles";
+
 type MenuFeatureRule = {
   authInclude?: readonly string[];
   authExclude?: readonly string[];
+  roles?: readonly EffectiveUserRole[];
 };
 
 type TabFeatureRule = {
@@ -2016,6 +2351,19 @@ const isApplicationMenuEnabled:
     if (
       rule.authExclude?.includes(
         authenticationMethod,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      rule.roles &&
+      context.effectiveRoles &&
+      !rule.roles.some(
+        (role) =>
+          context.effectiveRoles?.includes(
+            role,
+          ),
       )
     ) {
       return false;

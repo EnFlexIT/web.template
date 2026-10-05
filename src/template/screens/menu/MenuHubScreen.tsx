@@ -65,6 +65,10 @@ import {
 } from "@/template/state/api/apiSlice";
 
 import {
+  selectEffectiveRoles,
+} from "@/template/state/authorization/authorizationSlice";
+
+import {
   useMenuNavigation,
 } from "@/template/navigation/routing/useMenuNavigation";
 
@@ -207,6 +211,11 @@ export function MenuHubScreen() {
       selectAuthenticationMethod,
     );
 
+  const effectiveRoles =
+    useAppSelector(
+      selectEffectiveRoles,
+    );
+
   const {
     activeMenuId,
   } =
@@ -251,12 +260,14 @@ export function MenuHubScreen() {
                 item.menuID,
                 {
                   authenticationMethod,
+            effectiveRoles,
                 },
               ),
           ),
       [
         menuConfiguration,
         authenticationMethod,
+        effectiveRoles,
       ],
     );
 
