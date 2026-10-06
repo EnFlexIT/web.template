@@ -26,14 +26,15 @@ export type MenuVisibilityContext = {
   authenticationMethod?: AuthMethod;
 
   /**
-   * Effective authorization roles of the current user.
+   * Effective Base Template roles of the current user.
    *
-   * superAdmin itself is intentionally not an effective role.
-   * It is resolved to:
+   * The current role model supports:
    *
-   * user
-   * frontendEditor
-   * backendEditor
+   * USER
+   * EDITOR
+   * ADMIN
+   *
+   * ADMIN may temporarily preview USER or EDITOR.
    */
   effectiveRoles?:
     readonly EffectiveUserRole[];
@@ -49,11 +50,8 @@ export type TabVisibilityContext<
   state?: TState;
 
   /**
-   * Prepared for role-based tab visibility.
-   *
-   * Tab authorization will be connected separately because
-   * the current tab runtime only evaluates tabs that have a
-   * runtime feature ID.
+   * Effective Base Template roles used for
+   * role-aware tab visibility.
    */
   effectiveRoles?:
     readonly EffectiveUserRole[];
