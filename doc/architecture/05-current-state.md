@@ -720,7 +720,9 @@ src/application/config/
 
 ├── features.properties
 
-└── navigation.properties
+├── navigation.properties
+
+└── access.properties
 
 \`\`\`
 
@@ -747,6 +749,10 @@ navigation.properties
     Application-owned navigation extensions
 
     Application navigation presentation options
+
+access.properties
+
+    role-based access policy for reusable Template features
 
 \`\`\`
 
@@ -1228,7 +1234,8 @@ src/application/
 
 │   ├── features.properties
 
-│   └── navigation.properties
+│   ├── navigation.properties
+│   └── access.properties
 
 ├── generated/
 
@@ -2226,6 +2233,7 @@ The current logical architecture is:
 \| features.properties                                        |
 
 \| navigation.properties                                      |
+\| access.properties                                           |
 
 \| Application assets                                         |
 
@@ -2583,6 +2591,8 @@ features.properties
 
 navigation.properties
 
+access.properties
+
 \`\`\`
 
 Current generated Application artifacts include:
@@ -2626,6 +2636,18 @@ The in-repository Agent.Workbench Application composition validates the Applicat
 \`web.plantAssist\` and \`web.hems\` additionally validate the same contract as separate consumer repositories.
 
 Developer-facing Application configuration is properties-based.
+
+Role-aware frontend authorization is implemented for Base Template functionality.
+
+The current Base Template roles are USER, EDITOR and ADMIN.
+
+Access policy is configured through access.properties and materialized by the Template configuration generator.
+
+Template owns the reusable authorization engine, while concrete Applications must remain able to own their product-specific access policy.
+
+Frontend authorization controls navigation and presentation only. Authoritative API and resource authorization remains a backend responsibility.
+
+The detailed authorization ownership model is documented in authorization-architecture.md.
 
 Template owns internal feature and navigation implementation details.
 

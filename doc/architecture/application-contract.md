@@ -254,7 +254,8 @@ assets/
 config/
 ├── application.properties
 ├── features.properties
-└── navigation.properties
+├── navigation.properties
+└── access.properties
 
 generated/
 ├── applicationAssets.generated.ts
@@ -515,7 +516,8 @@ The supported developer-facing configuration files are:
 src/application/config/
 ├── application.properties
 ├── features.properties
-└── navigation.properties
+├── navigation.properties
+└── access.properties
 ```
 
 Their responsibilities are:
@@ -533,6 +535,9 @@ features.properties
 navigation.properties
     Application-specific navigation extensions
     Application navigation presentation options
+
+access.properties
+    role-based access policy
 ```
 
 Examples of supported Application configuration include:
@@ -621,6 +626,7 @@ Their responsibilities are now covered by the current configuration model:
 application.properties
 features.properties
 navigation.properties
+access.properties
 ```
 
 Generated implementation artifacts must not replace these files as the developer-facing configuration surface.
@@ -1668,6 +1674,7 @@ The logical Application contract is:
 | application.properties                           |
 | features.properties                              |
 | navigation.properties                            |
+| access.properties                                |
 | Application assets                               |
 | Application branding                             |
 | Application theme overrides                      |
@@ -1867,6 +1874,9 @@ The Application contract is successful when:
 18. Generated implementation details remain hidden from normal Application configuration.
 19. A concrete consumer can own its own version, build, release and deployment process.
 20. The contract remains small, explicit and maintainable.
+21. Template owns the reusable authorization engine.
+22. Concrete Applications can own product-specific access policy without adding product roles to Template source code.
+23. Frontend authorization remains separate from authoritative backend security.
 
 ---
 
@@ -1888,12 +1898,23 @@ HEMS is now a current concrete consumer Application.
 
 Concrete Applications configure the Base Template through supported integration surfaces.
 
+Authorization follows the same ownership boundary.
+
+Template owns the reusable authorization mechanism.
+
+Concrete Applications own product-specific access policy.
+
+The backend remains authoritative for the roles or permissions actually assigned to a user.
+
+The detailed authorization ownership model is documented in authorization-architecture.md.
+
 Developer-facing configuration is based on:
 
 ```text
 application.properties
 features.properties
 navigation.properties
+access.properties
 ```
 
 Applications select reusable Template features semantically.
