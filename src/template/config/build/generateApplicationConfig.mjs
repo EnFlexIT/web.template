@@ -88,9 +88,9 @@ const templateSettingsRootMenuKey =
 
 const effectiveAccessRoles =
   new Set([
-    "user",
-    "frontendEditor",
-    "backendEditor",
+    "USER",
+    "EDITOR",
+    "ADMIN",
   ]);
 
 /**
@@ -827,6 +827,15 @@ function renderTabItem(
   ) {
     lines.push(
       `    featureID: ${tab.featureID},`,
+    );
+  }
+
+  if (
+    tab.roles !==
+    undefined
+  ) {
+    lines.push(
+      `    roles: ${JSON.stringify(tab.roles)},`,
     );
   }
 
@@ -1876,6 +1885,11 @@ tabItems.push({
   featureID:
     runtimeRule?.featureID ??
     definition.runtimeFeatureID,
+
+  roles:
+    getAccessRolesForFeature(
+      definition.feature,
+    ),
 
   screen:
     definition.screen,

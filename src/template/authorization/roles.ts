@@ -1,35 +1,31 @@
 export type EffectiveUserRole =
-  | "user"
-  | "frontendEditor"
-  | "backendEditor";
+  | "USER"
+  | "EDITOR"
+  | "ADMIN";
+
 
 export type AssignedUserRole =
-  | EffectiveUserRole
-  | "superAdmin";
+  EffectiveUserRole;
 
-export type RolePreview =
-  EffectiveUserRole | null;
 
 /**
- * A Super Admin aggregates all effective roles.
+ * An Admin may temporarily preview the Base Template
+ * with the permissions of another Base Template role.
  *
- * The backend will eventually provide the assigned role.
- * Until then the frontend can use this structure for
- * authorization preparation and role-preview demonstrations.
+ * The assigned role itself is never overwritten.
  */
-export const SUPER_ADMIN_ROLES:
-  readonly EffectiveUserRole[] = [
-    "user",
-    "frontendEditor",
-    "backendEditor",
-  ];
+export type RolePreview =
+  | "USER"
+  | "EDITOR"
+  | null;
 
-export const ROLE_LABELS: Record<
-  AssignedUserRole,
-  string
-> = {
-  superAdmin: "Super Admin",
-  user: "User",
-  frontendEditor: "Frontend Editor",
-  backendEditor: "Backend Editor",
-};
+
+export const ROLE_LABELS:
+  Record<
+    AssignedUserRole,
+    string
+  > = {
+    ADMIN: "Admin",
+    USER: "User",
+    EDITOR: "Editor",
+  };

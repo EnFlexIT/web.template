@@ -30,6 +30,10 @@ import {
 } from "@/template/state/store/useAppSelector";
 
 import {
+  selectEffectiveRoles,
+} from "@/template/state/authorization/authorizationSlice";
+
+import {
   selectMenu,
 } from "@/template/state/navigation/menuSlice";
 
@@ -84,6 +88,11 @@ export function TabScreen({
         currentState,
     );
 
+  const effectiveRoles =
+    useAppSelector(
+      selectEffectiveRoles,
+    );
+
   const effectiveMenuId =
     menuID ?? activeMenuId;
 
@@ -105,6 +114,18 @@ export function TabScreen({
         )
         .filter((tab) => {
           if (
+            tab.roles &&
+            !tab.roles.some(
+              (role) =>
+                effectiveRoles.includes(
+                  role,
+                ),
+            )
+          ) {
+            return false;
+          }
+
+          if (
             tab.featureID ===
             undefined
           ) {
@@ -116,6 +137,7 @@ export function TabScreen({
               tab.featureID,
               {
                 state,
+                effectiveRoles,
               },
             )
           );
@@ -128,6 +150,7 @@ export function TabScreen({
     }, [
       effectiveMenuId,
       state,
+      effectiveRoles,
       tabConfiguration,
     ]);
 

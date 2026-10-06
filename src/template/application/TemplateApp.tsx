@@ -80,6 +80,10 @@ import {
 } from "@template";
 
 import {
+  selectEffectiveRoles,
+} from "@/template/state/authorization/authorizationSlice";
+
+import {
   initializeApi,
   selectAuthenticationMethod,
   selectIsLoggedIn,
@@ -231,6 +235,11 @@ function RootStack<
       selectAuthenticationMethod,
     );
 
+  const effectiveRoles =
+    useAppSelector(
+      selectEffectiveRoles,
+    );
+
   const [
     isLoading,
     setIsLoading,
@@ -299,11 +308,13 @@ function RootStack<
             menuID,
             {
               authenticationMethod,
+              effectiveRoles,
             },
           ),
       [
         config.navigation.menu,
         authenticationMethod,
+        effectiveRoles,
       ],
     );
 
@@ -718,6 +729,139 @@ function RootStack<
       .defaultMenuID,
     navigationRef,
     isNavigationReady,
+  ]);
+
+  /**
+   * Redirect away from inaccessible Base Template menus.
+   *
+   * Synchronize Redux, React Navigation and the web URL.
+   * This is a frontend guard, not API authorization.
+   */
+  useEffect(() => {
+    if (
+      isLoading ||
+      !isLoggedIn ||
+      !isNavigationReady ||
+      rawMenu.length === 0
+    ) {
+      return;
+    }
+
+    const isDenied = (
+      menuID: number | undefined,
+    ): boolean =>
+      menuID !== undefined &&
+      rawMenu.some(
+        (item) => item.menuID === menuID,
+      ) &&
+      !isConfiguredMenuEnabled(menuID);
+
+    const routeName =
+      navigationRef.getCurrentRoute()?.name;
+
+    const routeMenuID =
+      routeName &&
+      /^\d+$/.test(routeName)
+        ? Number(routeName)
+        : undefined;
+
+    const urlMenuID =
+      typeof window !== "undefined"
+        ? (
+            idByPath[
+              normalizePath(
+                window.location.pathname,
+              )
+            ] ??
+            getNumericIdFromPath(
+              window.location.pathname,
+            ) ??
+            undefined
+          )
+        : undefined;
+
+    if (
+      !isDenied(activeMenuId) &&
+      !isDenied(routeMenuID) &&
+      !isDenied(urlMenuID)
+    ) {
+      return;
+    }
+
+    const configuredDefaultMenuID =
+      config.navigation.menu.defaultMenuID;
+
+    const targetMenuID =
+      configuredDefaultMenuID !== undefined &&
+      rawMenu.some(
+        (item) =>
+          item.menuID === configuredDefaultMenuID,
+      ) &&
+      isConfiguredMenuEnabled(
+        configuredDefaultMenuID,
+      ) &&
+      Boolean(
+        pathById[configuredDefaultMenuID],
+      )
+        ? configuredDefaultMenuID
+        : rawMenu.find(
+            (item) =>
+              Boolean(item.menuID) &&
+              isConfiguredMenuEnabled(item.menuID) &&
+              Boolean(pathById[item.menuID]),
+          )?.menuID;
+
+    if (targetMenuID === undefined) {
+      return;
+    }
+
+    const targetPath =
+      pathById[targetMenuID];
+
+    if (activeMenuId !== targetMenuID) {
+      dispatch(
+        setActiveMenuId(targetMenuID),
+      );
+    }
+
+    if (
+      routeName !== String(targetMenuID)
+    ) {
+      navigationRef.resetRoot({
+        index: 0,
+        routes: [
+          {
+            name: String(targetMenuID),
+          },
+        ],
+      });
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      targetPath &&
+      normalizePath(
+        window.location.pathname,
+      ) !== targetPath
+    ) {
+      window.history.replaceState(
+        null,
+        "",
+        targetPath,
+      );
+    }
+  }, [
+    activeMenuId,
+    config.navigation.menu.defaultMenuID,
+    dispatch,
+    idByPath,
+    isConfiguredMenuEnabled,
+    isLoading,
+    isLoggedIn,
+    isNavigationReady,
+    navigationRef,
+    pathById,
+    rawMenu,
   ]);
 
   const navigationMenu =

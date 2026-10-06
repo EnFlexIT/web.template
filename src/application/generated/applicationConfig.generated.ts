@@ -161,6 +161,7 @@ const tabItems:
     tabKey: "general",
     caption: "General",
     position: 1,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("general-settings"),
   },
   {
@@ -168,6 +169,7 @@ const tabItems:
     tabKey: "factory",
     caption: "Factory Settings",
     position: 2,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("factory-settings"),
   },
   {
@@ -175,6 +177,7 @@ const tabItems:
     tabKey: "derby",
     caption: "Derby Network Server",
     position: 3,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("derby-network-server"),
   },
   {
@@ -182,6 +185,7 @@ const tabItems:
     tabKey: "general",
     caption: "Update:general.title",
     position: 1,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("update-general"),
   },
   {
@@ -189,6 +193,7 @@ const tabItems:
     tabKey: "webapp",
     caption: "Update:serverWeb.title",
     position: 2,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("update-web-app"),
   },
   {
@@ -196,6 +201,7 @@ const tabItems:
     tabKey: "backend",
     caption: "Update:backend.title",
     position: 3,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("update-backend"),
   },
   {
@@ -203,6 +209,7 @@ const tabItems:
     tabKey: "console",
     caption: "liveConsole:tabs.console",
     position: 1,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("live-console"),
   },
   {
@@ -210,6 +217,7 @@ const tabItems:
     tabKey: "files",
     caption: "liveConsole:tabs.files",
     position: 2,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("log-files"),
   },
   {
@@ -217,6 +225,7 @@ const tabItems:
     tabKey: "program-start",
     caption: "Program Start",
     position: 1,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("program-start"),
   },
   {
@@ -225,6 +234,7 @@ const tabItems:
     caption: "Data Analyzing",
     position: 2,
     featureID: 3000,
+    roles: ["EDITOR","ADMIN"],
     Content: resolveApplicationScreen("data-analyzing"),
   },
 ];
@@ -236,20 +246,15 @@ const menuFeatureRules:
       MenuFeatureRule
     >
   > = {
-  3013: { authExclude: ["oidc"], roles: ["user","frontendEditor","backendEditor"] },
-  3025: { authInclude: ["oidc","unset"], roles: ["user","frontendEditor","backendEditor"] },
-  3003: { roles: ["user","frontendEditor","backendEditor"] },
-  3015: { roles: ["user","frontendEditor","backendEditor"] },
-  3021: { roles: ["frontendEditor","backendEditor"] },
-  3022: { roles: ["user","frontendEditor","backendEditor"] },
-  3004: { roles: ["user","frontendEditor","backendEditor"] },
-  3005: { roles: ["user","frontendEditor","backendEditor"] },
-  3012: { roles: ["backendEditor"] },
-  3014: { roles: ["frontendEditor","backendEditor"] },
-  3023: { roles: ["backendEditor"] },
-  3026: { roles: ["backendEditor"] },
-  3010: { roles: ["backendEditor"] },
-  3024: { roles: ["backendEditor"] },
+  3013: { authExclude: ["oidc"] },
+  3025: { authInclude: ["oidc","unset"] },
+  3021: { roles: ["EDITOR","ADMIN"] },
+  3012: { roles: ["EDITOR","ADMIN"] },
+  3014: { roles: ["EDITOR","ADMIN"] },
+  3023: { roles: ["EDITOR","ADMIN"] },
+  3026: { roles: ["EDITOR","ADMIN"] },
+  3010: { roles: ["EDITOR","ADMIN"] },
+  3024: { roles: ["EDITOR","ADMIN"] },
 };
 
 const tabFeatureRules:

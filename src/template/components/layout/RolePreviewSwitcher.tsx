@@ -28,17 +28,14 @@ const roleOptions:
     AssignedUserRole,
     string
   > = {
-    superAdmin:
-      ROLE_LABELS.superAdmin,
+    ADMIN:
+      ROLE_LABELS.ADMIN,
 
-    user:
-      ROLE_LABELS.user,
+    USER:
+      ROLE_LABELS.USER,
 
-    frontendEditor:
-      ROLE_LABELS.frontendEditor,
-
-    backendEditor:
-      ROLE_LABELS.backendEditor,
+    EDITOR:
+      ROLE_LABELS.EDITOR,
   };
 
 
@@ -80,7 +77,7 @@ export function RolePreviewSwitcher() {
         dispatch(
           setRolePreview(
             nextRole ===
-              "superAdmin"
+              "ADMIN"
               ? null
               : nextRole,
           ),
@@ -88,7 +85,7 @@ export function RolePreviewSwitcher() {
       }}
       size="sm"
       appearance="menu"
-      menuWidth={180}
+      menuWidth={80}
     />
   );
 }

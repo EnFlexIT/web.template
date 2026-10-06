@@ -3,6 +3,10 @@ import type {
   ReactNode,
 } from "react";
 
+import type {
+  EffectiveUserRole,
+} from "@/template/authorization/roles";
+
 export type TabContent =
   | ComponentType<any>
   | (() => ReactNode);
@@ -17,6 +21,7 @@ export type StaticTabItem = {
   caption: string;
   position?: number;
   featureID?: number;
+  roles?: readonly EffectiveUserRole[];
   layout?: TabLayout;
   Content: TabContent;
 };

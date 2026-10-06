@@ -7,17 +7,17 @@ import type {
   TemplateRootState,
 } from "@/template/state/store/templateStoreTypes";
 
-import {
-  SUPER_ADMIN_ROLES,
-  type AssignedUserRole,
-  type EffectiveUserRole,
-  type RolePreview,
+import type {
+  AssignedUserRole,
+  EffectiveUserRole,
+  RolePreview,
 } from "@/template/authorization/roles";
 
 
 type AuthorizationState = {
   /**
-   * Real role assigned to the authenticated user.
+   * Real Base Template role assigned to the
+   * authenticated user.
    *
    * Temporary frontend fallback:
    * The backend does not provide the final role yet.
@@ -25,24 +25,25 @@ type AuthorizationState = {
   assignedRole: AssignedUserRole;
 
   /**
-   * Optional role simulation used only by Super Admin.
+   * Optional role simulation available only to ADMIN.
    *
-   * null means that the Super Admin operates with the
-   * combined permissions of all effective roles.
+   * null means that ADMIN operates with its own
+   * permissions.
    */
   previewRole: RolePreview;
 };
 
 
-const initialState: AuthorizationState = {
-  /*
-   * Temporary demo value until the backend exposes
-   * the authenticated user's real role.
-   */
-  assignedRole: "superAdmin",
+const initialState:
+  AuthorizationState = {
+    /*
+     * Temporary demo value until the backend exposes
+     * the authenticated user's real Base Template role.
+     */
+    assignedRole: "ADMIN",
 
-  previewRole: null,
-};
+    previewRole: null,
+  };
 
 
 const authorizationSlice =
@@ -55,18 +56,19 @@ const authorizationSlice =
       setAssignedRole: (
         state,
         action:
-          PayloadAction<AssignedUserRole>,
+          PayloadAction<
+            AssignedUserRole
+          >,
       ) => {
         state.assignedRole =
           action.payload;
 
         /*
-         * Role preview is valid only while the
-         * authenticated user is a Super Admin.
+         * Role preview is available only to ADMIN.
          */
         if (
           action.payload !==
-          "superAdmin"
+          "ADMIN"
         ) {
           state.previewRole =
             null;
@@ -76,11 +78,13 @@ const authorizationSlice =
       setRolePreview: (
         state,
         action:
-          PayloadAction<RolePreview>,
+          PayloadAction<
+            RolePreview
+          >,
       ) => {
         if (
           state.assignedRole !==
-          "superAdmin"
+          "ADMIN"
         ) {
           state.previewRole =
             null;
@@ -129,7 +133,20 @@ export const selectCanPreviewRoles = (
 ) =>
   state.authorization
     .assignedRole ===
-  "superAdmin";
+  "ADMIN";
+
+
+const EFFECTIVE_ROLE_SETS:
+  Readonly<
+    Record<
+      EffectiveUserRole,
+      readonly EffectiveUserRole[]
+    >
+  > = {
+    USER: ["USER"],
+    EDITOR: ["EDITOR"],
+    ADMIN: ["ADMIN"],
+  };
 
 
 export const selectEffectiveRoles = (
@@ -138,27 +155,18 @@ export const selectEffectiveRoles = (
   const {
     assignedRole,
     previewRole,
-  } =
-    state.authorization;
+  } = state.authorization;
 
-  if (
-    assignedRole ===
-    "superAdmin"
-  ) {
-    if (previewRole) {
-      return [
-        previewRole,
-      ];
-    }
+  const effectiveRole =
+    assignedRole === "ADMIN" &&
+    previewRole
+      ? previewRole
+      : assignedRole;
 
-    return SUPER_ADMIN_ROLES;
-  }
-
-  return [
-    assignedRole,
+  return EFFECTIVE_ROLE_SETS[
+    effectiveRole
   ];
 };
-
 
 export default
   authorizationSlice.reducer;
