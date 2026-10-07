@@ -6,13 +6,19 @@ export const applicationBuildInfo =
   "application": {},
   "template": {
     "packageName": "enflex.it-template",
-    "version": "0.0.9"
+    "version": "0.0.10"
   },
   "release": {
     "templateNotes": [
-      "\"Was ist neu?\" im Update-Bereich wurde erweitert und übersichtlicher gestaltet.",
-      "Update-Prüfzeiten werden jetzt korrekt von UTC in die lokale Zeit des Benutzers umgerechnet.",
-      "Abstände, Breiten und Inhaltsausrichtung im Update- und Developer-Tools-Bereich wurden vereinheitlicht."
+      "Rollenbasierte Zugriffssteuerung für Menüs, Tabs und Routen wurde ergänzt.",
+      "Die Base-Template-Rollen USER, EDITOR und ADMIN unterstützen jetzt unterschiedliche sichtbare Bereiche.",
+      "ADMIN kann mit der Role Preview die Anwendung aus Sicht von USER oder EDITOR prüfen.",
+      "Zugriffsregeln können über access.properties hierarchisch für Template-Features definiert werden.",
+      "Untergeordnete Features können strengere Zugriffsregeln als ihr übergeordnetes Feature erhalten.",
+      "Als Beispiel ist Data Analyzing nur für ADMIN sichtbar, während EDITOR weiterhin auf die übrigen System Settings zugreifen kann.",
+      "Bei einem Rollenwechsel wird automatisch auf einen weiterhin erlaubten Bereich weitergeleitet.",
+      "Authorization-Logik und Generatorverhalten sind durch automatisierte Tests abgesichert.",
+      "Die Architektur ist für eine spätere Rollen- und Permission-Übernahme aus dem Backend vorbereitet."
     ]
   }
 } as const;
