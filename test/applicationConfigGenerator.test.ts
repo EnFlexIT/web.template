@@ -1,4 +1,4 @@
-﻿import {
+import {
   execFileSync,
 } from "node:child_process";
 
@@ -161,7 +161,7 @@ describe(
     );
 
     it(
-      "combines Data Analyzing role and runtime restrictions",
+      "combines the ADMIN-only Data Analyzing role restriction with its runtime rule",
       () => {
         const dataAnalyzingTab =
           generatedConfig.match(
@@ -181,7 +181,7 @@ describe(
         expect(
           dataAnalyzingTab,
         ).toContain(
-          'roles: ["EDITOR","ADMIN"]',
+          'roles: ["ADMIN"]',
         );
       },
     );

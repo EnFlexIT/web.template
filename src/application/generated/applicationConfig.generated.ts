@@ -234,7 +234,7 @@ const tabItems:
     caption: "Data Analyzing",
     position: 2,
     featureID: 3000,
-    roles: ["EDITOR","ADMIN"],
+    roles: ["ADMIN"],
     Content: resolveApplicationScreen("data-analyzing"),
   },
 ];
