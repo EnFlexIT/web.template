@@ -19,6 +19,16 @@ export const applicationBuildInfo =
       "Bei einem Rollenwechsel wird automatisch auf einen weiterhin erlaubten Bereich weitergeleitet.",
       "Authorization-Logik und Generatorverhalten sind durch automatisierte Tests abgesichert.",
       "Die Architektur ist für eine spätere Rollen- und Permission-Übernahme aus dem Backend vorbereitet."
+    ],
+    "templateHistory": [
+      {
+        "version": "0.0.9",
+        "notes": [
+          "\"Was ist neu?\" im Update-Bereich wurde erweitert und übersichtlicher gestaltet.",
+          "Update-Prüfzeiten werden jetzt korrekt von UTC in die lokale Zeit des Benutzers umgerechnet.",
+          "Abstände, Breiten und Inhaltsausrichtung im Update- und Developer-Tools-Bereich wurden vereinheitlicht."
+        ]
+      }
     ]
   }
 } as const;

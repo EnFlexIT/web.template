@@ -128,6 +128,17 @@ export type ApplicationBuildInfo = {
      */
     templateNotes?:
       readonly string[];
+
+    /**
+     * Previous Base Template releases.
+     */
+    templateHistory?:
+      readonly {
+        version: string;
+
+        notes:
+          readonly string[];
+      }[];
   };
 };
 

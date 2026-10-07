@@ -178,6 +178,88 @@ function readTemplateReleaseNotes(
   );
 }
 
+
+function readTemplateReleaseHistory(
+  templateMetadata,
+) {
+  const releases =
+    new Map();
+
+  for (
+    const [key, value] of
+    Object.entries(
+      templateMetadata,
+    )
+  ) {
+    const match =
+      /^TemplateRelease\.(\d+\.\d+\.\d+)\.Note\.(\d+)$/.exec(
+        key,
+      );
+
+    if (!match) {
+      continue;
+    }
+
+    const note =
+      optionalValue(value);
+
+    if (!note) {
+      continue;
+    }
+
+    const version =
+      match[1];
+
+    const index =
+      Number(match[2]);
+
+    const notes =
+      releases.get(version) ??
+      [];
+
+    notes.push({
+      index,
+      note,
+    });
+
+    releases.set(
+      version,
+      notes,
+    );
+  }
+
+  return Array.from(
+    releases.entries(),
+  )
+    .map(
+      ([version, notes]) => ({
+        version,
+
+        notes:
+          notes
+            .sort(
+              (left, right) =>
+                left.index -
+                right.index,
+            )
+            .map(
+              (entry) =>
+                entry.note,
+            ),
+      }),
+    )
+    .sort(
+      (left, right) =>
+        right.version.localeCompare(
+          left.version,
+          undefined,
+          {
+            numeric: true,
+          },
+        ),
+    );
+}
+
 function readPackageJson(
   rootDirectory,
 ) {
@@ -314,7 +396,19 @@ export function generateApplicationBuildInfo(
         .ENFLEX_TEMPLATE_RELEASE_NOTES,
     );
 
+  const storedTemplateReleaseHistory =
+    readTemplateReleaseHistory(
+      templateMetadata,
+    );
+
   const storedTemplateReleaseNotes =
+    storedTemplateReleaseHistory
+      .find(
+        (release) =>
+          release.version ===
+          templateVersion,
+      )
+      ?.notes ??
     readTemplateReleaseNotes(
       templateMetadata,
     );
@@ -339,6 +433,14 @@ export function generateApplicationBuildInfo(
         ? configuredApplicationReleaseNotes
         : undefined
     );
+
+  const templateReleaseHistory =
+    storedTemplateReleaseHistory
+      .filter(
+        (release) =>
+          release.version !==
+          templateVersion,
+      );
 
   const application = {
     packageName:
@@ -378,13 +480,17 @@ export function generateApplicationBuildInfo(
 
   const release =
     applicationReleaseNotes ||
-    templateReleaseNotes
+    templateReleaseNotes ||
+    templateReleaseHistory.length > 0
       ? {
           notes:
             applicationReleaseNotes,
 
           templateNotes:
             templateReleaseNotes,
+
+          templateHistory:
+            templateReleaseHistory,
         }
       : undefined;
 

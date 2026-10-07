@@ -326,6 +326,17 @@ export function UpdateWebAppTab() {
     buildInfo?.release?.templateNotes ??
     [];
 
+  const templateReleaseHistory =
+    buildInfo?.release?.templateHistory ??
+    [];
+
+  const previousTemplateRelease =
+    templateReleaseHistory[0];
+
+  const previousTemplateReleaseNotes =
+    previousTemplateRelease?.notes ??
+    [];
+
   const releaseNotesCount =
     applicationReleaseNotes.length +
     templateReleaseNotes.length;
@@ -421,61 +432,81 @@ export function UpdateWebAppTab() {
    * Build the visible release-note list according to
    * source, history selection and search text.
    */
+
   const visibleReleaseNotes =
-    releaseHistoryFilter ===
+    (
+      releaseHistoryFilter ===
       "latest"
-      ? [
-          ...(
-            sourceShowsApplication
-              ? applicationReleaseNotes
-              : []
-          ),
-          ...(
+        ? [
+            ...(
+              sourceShowsApplication
+                ? applicationReleaseNotes
+                : []
+            ),
+            ...(
+              sourceShowsTemplate
+                ? templateReleaseNotes
+                : []
+            ),
+          ]
+        : (
             sourceShowsTemplate
-              ? templateReleaseNotes
+              ? previousTemplateReleaseNotes
               : []
+          )
+    ).filter(
+      (note) =>
+        !normalizedReleaseSearch ||
+        note
+          .toLocaleLowerCase()
+          .includes(
+            normalizedReleaseSearch,
           ),
-        ].filter(
-          (note) =>
-            !normalizedReleaseSearch ||
-            note
-              .toLocaleLowerCase()
-              .includes(
-                normalizedReleaseSearch,
-              ),
-        )
-      : [];
+    );
 
   /**
    * Select the correct empty-state message.
    */
+
   const releaseEmptyText =
     releaseHistoryFilter ===
-    "previous"
+      "previous" &&
+    releaseSourceFilter ===
+      "application"
       ? t(
           "serverWeb.releaseNotes.empty.history",
-          "Für frühere Updates sind noch keine Historien-Daten verfügbar.",
+          "Für frühere Application-Updates sind noch keine Historien-Daten verfügbar.",
         )
-      : releaseSourceFilter ===
-            "template" &&
-          templateReleaseNotes.length === 0
+      : releaseHistoryFilter ===
+          "previous" &&
+        previousTemplateReleaseNotes.length ===
+          0
         ? t(
-            "serverWeb.releaseNotes.empty.template",
-            "Für das Basis-Template sind in diesem Build noch keine separaten Release Notes verfügbar.",
+            "serverWeb.releaseNotes.empty.history",
+            "Für frühere Updates sind noch keine Historien-Daten verfügbar.",
           )
         : releaseSourceFilter ===
-              "application" &&
-            applicationReleaseNotes.length === 0
+              "template" &&
+            templateReleaseNotes.length ===
+              0 &&
+            releaseHistoryFilter ===
+              "latest"
           ? t(
-              "serverWeb.releaseNotes.empty.notes",
-              "Für diesen Build sind keine Release Notes verfügbar.",
+              "serverWeb.releaseNotes.empty.template",
+              "Für das Basis-Template sind in diesem Build noch keine separaten Release Notes verfügbar.",
             )
-          : releaseNotesCount === 0
+          : releaseSourceFilter ===
+                "application" &&
+              applicationReleaseNotes.length ===
+                0 &&
+              releaseHistoryFilter ===
+                "latest"
             ? t(
                 "serverWeb.releaseNotes.empty.notes",
                 "Für diesen Build sind keine Release Notes verfügbar.",
               )
-            : visibleReleaseNotes.length === 0
+            : visibleReleaseNotes.length ===
+                0
               ? t(
                   "serverWeb.releaseNotes.empty.search",
                   "Keine Änderungen entsprechen der aktuellen Suche.",
@@ -1088,20 +1119,25 @@ const lastCheckedAt =
    * If "All" is selected but only one source actually contains
    * release notes, that source is shown directly.
    */
+
   const releaseEntrySource:
     ReleaseSourceFilter =
-    releaseSourceFilter !== "all"
-      ? releaseSourceFilter
-      : applicationReleaseNotes.length ===
-            0 &&
-          templateReleaseNotes.length > 0
-        ? "template"
-        : templateReleaseNotes.length ===
+    releaseHistoryFilter ===
+      "previous" &&
+    sourceShowsTemplate
+      ? "template"
+      : releaseSourceFilter !== "all"
+        ? releaseSourceFilter
+        : applicationReleaseNotes.length ===
               0 &&
-            applicationReleaseNotes.length >
-              0
-          ? "application"
-          : "all";
+            templateReleaseNotes.length > 0
+          ? "template"
+          : templateReleaseNotes.length ===
+                0 &&
+              applicationReleaseNotes.length >
+                0
+            ? "application"
+            : "all";
 
   /**
    * Use a source-specific icon in the release timeline.
@@ -1155,17 +1191,29 @@ const lastCheckedAt =
    * The Application uses its release tag/current version.
    * The Base Template uses TemplateVersion.
    */
+
   const releaseEntryVersion =
-    releaseEntrySource === "template"
-      ? templateVersion
+    releaseHistoryFilter ===
+      "previous"
+      ? previousTemplateRelease?.version
       : releaseEntrySource ===
-          "application"
-        ? (
-            releaseTag !== "-"
-              ? releaseTag
-              : displayedCurrentVersion
-          )
-        : undefined;
+          "template"
+        ? templateVersion
+        : releaseEntrySource ===
+            "application"
+          ? (
+              releaseTag !== "-"
+                ? releaseTag
+                : displayedCurrentVersion
+            )
+          : undefined;
+
+  const releaseEntryTimestamp =
+    releaseHistoryFilter ===
+      "latest" &&
+    buildTimestamp !== "-"
+      ? buildTimestamp
+      : undefined;
 
   const controlsDisabled =
 
@@ -1952,11 +2000,7 @@ const lastCheckedAt =
                                 ? releaseEntryVersion
                                 : undefined,
 
-                            buildTimestamp !== "-"
-
-                              ? buildTimestamp
-
-                              : undefined,
+                            releaseEntryTimestamp,
 
                           ]
 
