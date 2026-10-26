@@ -549,4 +549,173 @@ describe("useLocalEditorDraft", () => {
     expect(mockedSave).toHaveBeenCalledTimes(1);
     expect(result.current.storageError).not.toBe("");
   });
+  it("retries the latest local draft after a failed save", async () => {
+    mockedLoad.mockResolvedValue(null);
+    mockedSave
+      .mockRejectedValueOnce(new Error("Temporary failure"))
+      .mockResolvedValue(undefined);
+
+    const { result } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:retry",
+          title: "Änderungen erhalten",
+          blocks: [],
+        }],
+      }));
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+    expect(result.current.canRetrySave).toBe(true);
+
+    await act(async () => {
+      await result.current.retrySave();
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    expect(result.current.storageError).toBe("");
+    expect(mockedSave).toHaveBeenCalledTimes(2);
+    expect(mockedSave).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        pages: [
+          expect.objectContaining({
+            id: "page:retry",
+            title: "Änderungen erhalten",
+          }),
+        ],
+      }),
+      "preview",
+    );
+  });
+  it("keeps the error state if retry fails again", async () => {
+    mockedLoad.mockResolvedValue(null);
+    mockedSave
+      .mockRejectedValueOnce(new Error("First failure"))
+      .mockRejectedValueOnce(new Error("Second failure"));
+
+    const { result } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:retry-failed",
+          title: "Ungesicherter Entwurf",
+          blocks: [],
+        }],
+      }));
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    await act(async () => {
+      await result.current.retrySave();
+    });
+
+    expect(mockedSave).toHaveBeenCalledTimes(2);
+    expect(result.current.status).toBe("error");
+    expect(result.current.storageError).not.toBe("");
+    expect(result.current.canRetrySave).toBe(true);
+    expect(result.current.draft.pages[0].title)
+      .toBe("Ungesicherter Entwurf");
+  });
+
+  it("does not allow retry after loading failure", async () => {
+    mockedLoad.mockRejectedValueOnce(
+      new Error("Storage read failed"),
+    );
+
+    const { result } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    expect(result.current.canRetrySave).toBe(false);
+
+    await act(async () => {
+      await result.current.retrySave();
+    });
+
+    expect(mockedSave).not.toHaveBeenCalled();
+    expect(result.current.status).toBe("error");
+  });
+  it("blocks retry when editing permission is revoked", async () => {
+    mockedLoad.mockResolvedValue(null);
+    mockedSave.mockRejectedValueOnce(
+      new Error("Initial storage failure"),
+    );
+
+    const reduxMock = jest.requireMock("react-redux");
+    const state = reduxMock.useStore().getState();
+    const previousRole = state.authorization.assignedRole;
+
+    try {
+      const { result } = renderHook(
+        () => useLocalEditorDraft(options),
+      );
+
+      await waitFor(() => {
+        expect(result.current.status).toBe("ready");
+      });
+
+      await act(async () => {
+        result.current.setDraft(previous => ({
+          ...previous,
+          pages: [{
+            id: "page:revoked",
+            title: "Nicht überschreiben",
+            blocks: [],
+          }],
+        }));
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe("error");
+      });
+
+      expect(mockedSave).toHaveBeenCalledTimes(1);
+
+      // Simulate a backend/effective-role change before retry.
+      state.authorization.assignedRole = "USER";
+
+      await act(async () => {
+        await result.current.retrySave();
+      });
+
+      expect(mockedSave).toHaveBeenCalledTimes(1);
+      expect(result.current.status).toBe("error");
+      expect(result.current.storageError).not.toBe("");
+      expect(result.current.draft.pages[0].title)
+        .toBe("Nicht überschreiben");
+    } finally {
+      state.authorization.assignedRole = previousRole;
+    }
+  });
 });

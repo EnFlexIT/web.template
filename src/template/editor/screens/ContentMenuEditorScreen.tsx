@@ -89,6 +89,8 @@ export function ContentMenuEditorBody({
     setDraft,
     status,
     storageError,
+    canRetrySave,
+    retrySave,
   } = draftState;
 
   const editorReady = status === "ready" || status === "saving";
@@ -697,6 +699,15 @@ export function ContentMenuEditorBody({
       <View style={{ padding: 24, gap: 12 }}>
         <ThemedText>Lokale Speicherung fehlgeschlagen.</ThemedText>
         <ThemedText>{storageError}</ThemedText>
+        {canRetrySave && (
+          <ActionButton
+            label="Erneut speichern"
+            variant="secondary"
+            onPress={() => {
+              void retrySave();
+            }}
+          />
+        )}
       </View>
     );
   }

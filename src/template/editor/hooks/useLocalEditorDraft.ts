@@ -85,6 +85,7 @@ export function useLocalEditorDraft({
   );
 
   const lastSavedDraft = useRef<EditorDraft | null>(null);
+  const retryInProgress = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,10 +215,77 @@ export function useLocalEditorDraft({
     };
   }, [draft, loaded, canEdit, store]);
 
+  async function retrySave(): Promise<void> {
+    if (
+      !loaded ||
+      status !== "error" ||
+      !canEdit ||
+      retryInProgress.current
+    ) {
+      return;
+    }
+
+    retryInProgress.current = true;
+    setStatus("saving");
+    setStorageError("");
+
+    try {
+      // Wait for previously queued writes to settle.
+      // Never restart those operations implicitly.
+      await saveQueue.current.catch(() => undefined);
+
+      const currentRoles = selectEffectiveRoles(
+        store.getState() as TemplateRootState,
+      );
+
+      if (!canEditLocalContent(currentRoles)) {
+        throw new Error("Editing permission no longer available.");
+      }
+
+      const snapshot = cloneDraft(draft);
+
+      const nextSave = enqueueLocalEditorDraftOperation(
+        snapshot.applicationId,
+        storageScope,
+        async () => {
+          const roles = selectEffectiveRoles(
+            store.getState() as TemplateRootState,
+          );
+
+          if (!canEditLocalContent(roles)) {
+            throw new Error("Editing permission no longer available.");
+          }
+
+          await saveLocalEditorDraft(snapshot, storageScope);
+
+          notifyLocalEditorDraftSaved({
+            applicationId: snapshot.applicationId,
+            scope: storageScope,
+          });
+        },
+      );
+
+      saveQueue.current = nextSave;
+      await nextSave;
+
+      lastSavedDraft.current = draft;
+      setStatus("ready");
+    } catch {
+      setStorageError(
+        "Lokaler Entwurf konnte nicht gespeichert werden. " +
+        "Änderungen nicht neu laden. Erneut speichern versuchen.",
+      );
+      setStatus("error");
+    } finally {
+      retryInProgress.current = false;
+    }
+  }
   return {
     draft,
     setDraft,
     status,
     storageError,
+    canRetrySave: loaded && status === "error" && canEdit,
+    retrySave,
   };
 }
