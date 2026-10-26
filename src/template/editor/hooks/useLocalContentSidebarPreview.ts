@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  selectIsLoggedIn,
+  selectIsLoggingOut,
+} from "@/template/state/api/apiSlice";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
+
+import {
   useApplicationConfig,
 } from "@/template/application/ApplicationConfigContext";
 
@@ -31,7 +37,13 @@ export function useLocalContentSidebarPreview():
     navigation,
   } = useApplicationConfig();
 
-  const enabled = isLocalContentPreviewEnabled();
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const isLoggingOut = useAppSelector(selectIsLoggingOut);
+
+  const enabled =
+    isLocalContentPreviewEnabled() &&
+    isLoggedIn &&
+    !isLoggingOut;
 
   const snapshot = useMemo(
     () => enabled
