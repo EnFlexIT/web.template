@@ -77,6 +77,33 @@ describe("LocalContentPreviewProvider", () => {
     authState.api.isLoggingOut = false;
   });
 
+  it("keeps the live page setter stable within one session", () => {
+    const view = render(
+      <LocalContentPreviewProvider>
+        <Reader />
+      </LocalContentPreviewProvider>,
+    );
+
+    const originalSetter = currentLivePage.setLivePage;
+
+    act(() => {
+      originalSetter(page);
+    });
+
+    expect(currentLivePage.livePage).toEqual(page);
+    expect(currentLivePage.setLivePage).toBe(originalSetter);
+
+    act(() => {
+      view.rerender(
+        <LocalContentPreviewProvider>
+          <Reader />
+        </LocalContentPreviewProvider>,
+      );
+    });
+
+    expect(currentLivePage.setLivePage).toBe(originalSetter);
+    expect(currentLivePage.livePage).toEqual(page);
+  });
   it("provides temporary live pages while logged in", () => {
     render(
       <LocalContentPreviewProvider>

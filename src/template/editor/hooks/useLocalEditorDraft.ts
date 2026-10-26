@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "react-redux";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {
@@ -92,7 +92,7 @@ export function useLocalEditorDraft({
 
   const generation = sessionRef.current.generation;
 
-  function canWriteInSession(): boolean {
+  const canWriteInSession = useCallback((): boolean => {
     const state = store.getState() as TemplateRootState;
 
     return (
@@ -102,27 +102,30 @@ export function useLocalEditorDraft({
       !selectIsLoggingOut(state) &&
       canEditLocalContent(selectEffectiveRoles(state))
     );
-  }
+  }, [generation, store]);
 
   const [draft, setDraft] = useState<EditorDraft>(
     () => cloneDraft(initialDraft),
   );
 
-  const guardedSetDraft: typeof setDraft = value => {
-    if (!canWriteInSession()) {
-      return;
-    }
-
-    setDraft(previous => {
+  const guardedSetDraft = useCallback<typeof setDraft>(
+    value => {
       if (!canWriteInSession()) {
-        return previous;
+        return;
       }
 
-      return typeof value === "function"
-        ? value(previous)
-        : value;
-    });
-  };
+      setDraft(previous => {
+        if (!canWriteInSession()) {
+          return previous;
+        }
+
+        return typeof value === "function"
+          ? value(previous)
+          : value;
+      });
+    },
+    [canWriteInSession],
+  );
 
   const [status, setStatus] =
     useState<LocalDraftStatus>("loading");

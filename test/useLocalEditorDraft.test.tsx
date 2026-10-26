@@ -138,6 +138,25 @@ describe("useLocalEditorDraft", () => {
     mockedSave.mockResolvedValue(undefined);
   });
 
+  it("keeps the draft setter stable within one session", async () => {
+    mockedLoad.mockResolvedValue(null);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    const originalSetter = result.current.setDraft;
+
+    act(() => {
+      rerender({});
+    });
+
+    expect(result.current.setDraft).toBe(originalSetter);
+  });
   it("does not load storage while logged out", () => {
     const state = jest.requireMock("react-redux")
       .useStore().getState();

@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -68,27 +69,30 @@ export function LocalContentPreviewProvider({
 
   const generation = sessionRef.current.generation;
 
-  const guardedSetLivePage: typeof setLivePage = value => {
-    if (
-      !sessionRef.current.allowed ||
-      sessionRef.current.generation !== generation
-    ) {
-      return;
-    }
-
-    setLivePage(previous => {
+  const guardedSetLivePage = useCallback<typeof setLivePage>(
+    value => {
       if (
         !sessionRef.current.allowed ||
         sessionRef.current.generation !== generation
       ) {
-        return previous;
+        return;
       }
 
-      return typeof value === "function"
-        ? value(previous)
-        : value;
-    });
-  };
+      setLivePage(previous => {
+        if (
+          !sessionRef.current.allowed ||
+          sessionRef.current.generation !== generation
+        ) {
+          return previous;
+        }
+
+        return typeof value === "function"
+          ? value(previous)
+          : value;
+      });
+    },
+    [generation],
+  );
 
   useEffect(() => {
     if (!canShowLivePage) {
