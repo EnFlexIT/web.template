@@ -76,44 +76,22 @@ describe(
     );
 
     it(
-      "generates the editor menu with a role restriction",
+      "does not generate a standalone content editor menu",
       () => {
-        const editorMenu = generatedConfig.match(
-          /\{\s*caption:\s*"[^"]*",\s*menuID:\s*3027,[\s\S]*?Screen:\s*resolveApplicationScreen\("content-menu-editor"\),\s*\}/,
-        )?.[0];
+        expect(generatedConfig).not.toMatch(
+          /menuID:\s*3027\b/,
+        );
 
-        expect(editorMenu).toBeDefined();
+        expect(generatedConfig).not.toMatch(
+          /3027:\s*\{/,
+        );
 
-        const menuRules = generatedConfig.match(
-          /const menuFeatureRules:[\s\S]*?const tabFeatureRules:/,
-        )?.[0];
-
-        expect(menuRules).toMatch(
-          /3027:\s*\{\s*roles:\s*\["EDITOR","ADMIN"\]\s*\}/,
+        expect(generatedConfig).not.toContain(
+          'caption: "Content- und Menü-Editor"',
         );
       },
     );
 
-    it.each([
-      ["USER", false],
-      ["EDITOR", true],
-      ["ADMIN", true],
-    ] as const)(
-      "editor menu access for USER, EDITOR and ADMIN: %s",
-      (role, expected) => {
-        const editorRule = generatedConfig.match(
-          /3027:\s*\{\s*roles:\s*\[([^\]]+)\]\s*\}/,
-        );
-
-        expect(editorRule).not.toBeNull();
-
-        const allowedRoles = JSON.parse(
-          `[${editorRule![1]}]`,
-        ) as string[];
-
-        expect(allowedRoles.includes(role)).toBe(expected);
-      },
-    );
     it(
       "uses EDITOR and ADMIN for system settings access",
       () => {
