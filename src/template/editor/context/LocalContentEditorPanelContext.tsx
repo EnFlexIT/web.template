@@ -8,6 +8,9 @@ import React, {
   type ReactNode,
 } from "react";
 
+import { selectIsLoggedIn } from "@/template/state/api/apiSlice";
+import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { canEditLocalContent } from "@/template/editor/authorization/canEditLocalContent";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 import {
@@ -67,8 +70,29 @@ export function LocalContentEditorPanelProvider({
   const { isOpen: isConsoleOpen } =
     useAppSelector(selectDeveloperConsole);
 
+  const isLoggedIn =
+    useAppSelector(selectIsLoggedIn);
+
+  const effectiveRoles =
+    useAppSelector(selectEffectiveRoles);
+
+  const canEdit =
+    isLoggedIn && canEditLocalContent(effectiveRoles);
+
+  // Authentication and role changes must close the panel
+  // without waiting for an unsaved-changes confirmation.
+  useEffect(() => {
+    if (canEdit) return;
+
+    setRequest(null);
+    setUnsavedChanges(false);
+    setPendingAction(null);
+  }, [canEdit]);
+
   const openPanel = useCallback(
     (next: LocalEditorPanelRequest) => {
+      if (!canEdit) return;
+
       if (request && unsavedChanges) {
         setPendingAction({ kind: "open", next });
         return;
@@ -78,7 +102,7 @@ export function LocalContentEditorPanelProvider({
       dispatch(closeDeveloperConsole());
       setRequest(next);
     },
-    [request, unsavedChanges, dispatch],
+    [request, unsavedChanges, dispatch, canEdit],
   );
 
   const closePanel = useCallback(() => {
@@ -141,9 +165,9 @@ export function LocalContentEditorPanelProvider({
 
   const value = useMemo(
     () => ({
-      request,
-      unsavedChanges,
-      confirmationPending: pendingAction !== null,
+      request: canEdit ? request : null,
+      unsavedChanges: canEdit ? unsavedChanges : false,
+      confirmationPending: canEdit && pendingAction !== null,
       setUnsavedChanges,
       openPanel,
       closePanel,
@@ -155,6 +179,7 @@ export function LocalContentEditorPanelProvider({
       request,
       unsavedChanges,
       pendingAction,
+      canEdit,
       openPanel,
       closePanel,
       toggleConsoleFromFooter,
