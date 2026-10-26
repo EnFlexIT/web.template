@@ -1,5 +1,9 @@
 jest.mock("react-redux", () => {
   const state = {
+    api: {
+      isLoggedIn: true,
+      isLoggingOut: false,
+    },
     authorization: {
       assignedRole: "ADMIN",
       previewRole: null,
@@ -22,9 +26,38 @@ jest.mock("react-redux", () => {
     useSelector,
   };
 });
+jest.mock(
+  "../src/template/state/api/apiSlice",
+  () => ({
+    selectIsLoggedIn: (state: {
+      api: { isLoggedIn: boolean };
+    }) => state.api.isLoggedIn,
+    selectIsLoggingOut: (state: {
+      api: { isLoggingOut: boolean };
+    }) => state.api.isLoggingOut,
+  }),
+);
+
+jest.mock(
+  "../src/template/editor/config/localContentPreviewConfig",
+  () => ({
+    isLocalContentPreviewEnabled: jest.fn(() => true),
+  }),
+);
+jest.mock(
+  "../src/template/editor/adapters/createRuntimeMenuSnapshot",
+  () => ({
+    createRuntimeMenuSnapshot: jest.fn(() => ({
+      entries: [],
+      protectedEntries: [],
+      inventory: {},
+    })),
+  }),
+);
 import React from "react";
 
 import {
+  act,
   render,
   screen,
 } from "@testing-library/react-native";
@@ -61,8 +94,13 @@ jest.mock(
     const { Text } = require("react-native");
 
     return {
-      LocalContentPageInlineEditor: ({ page }: any) =>
-        React.createElement(Text, null, `Seite: ${page.title}`),
+      LocalContentPageInlineEditor: ({
+        page,
+        onSave,
+      }: any) => {
+        (globalThis as any).__previewTestOnSave = onSave;
+        return React.createElement(Text, null, `Seite: ${page.title}`);
+      },
     };
   },
 );
@@ -157,6 +195,24 @@ describe("LocalContentPagePreviewScreen", () => {
   beforeEach(() => {
     jest.resetAllMocks();
 
+    jest.requireMock(
+      "../src/template/editor/config/localContentPreviewConfig"
+    ).isLocalContentPreviewEnabled.mockReturnValue(true);
+
+    jest.requireMock(
+      "../src/template/editor/adapters/createRuntimeMenuSnapshot"
+    ).createRuntimeMenuSnapshot.mockReturnValue({
+      entries: [],
+      protectedEntries: [],
+      inventory: {},
+    });
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    state.api.isLoggedIn = true;
+    state.api.isLoggingOut = false;
+
     mockedRoute.mockReturnValue({
       params: { pageId: "page:guide" },
     } as ReturnType<typeof useRoute>);
@@ -164,6 +220,98 @@ describe("LocalContentPagePreviewScreen", () => {
     mockedPreview.mockReturnValue(validPreview);
   });
 
+  it("rejects an old save callback after logout and re-login", async () => {
+    const saveModule = require(
+      "../src/template/editor/storage/saveLocalContentPage"
+    );
+
+    const saveSpy = jest.spyOn(saveModule, "saveLocalContentPage")
+      .mockResolvedValue({ status: "saved" });
+
+    try {
+      const view = render(<LocalContentPagePreviewScreen />);
+
+      const oldSave = (globalThis as any).__previewTestOnSave;
+      expect(typeof oldSave).toBe("function");
+
+      const state = jest.requireMock("react-redux")
+        .useStore().getState();
+
+      await act(async () => {
+        await oldSave(validPreview.pages[0], {
+          ...validPreview.pages[0],
+          title: "Alter Auftrag",
+        });
+      });
+
+
+      expect(saveSpy).toHaveBeenCalledTimes(1);
+
+      const oldCanWrite = saveSpy.mock.calls[0][6] as () => boolean;
+      expect(oldCanWrite()).toBe(true);
+
+      act(() => {
+        state.api.isLoggingOut = true;
+        view.rerender(<LocalContentPagePreviewScreen />);
+      });
+
+      expect(oldCanWrite()).toBe(false);
+
+      act(() => {
+        state.api.isLoggedIn = false;
+        state.api.isLoggingOut = false;
+        view.rerender(<LocalContentPagePreviewScreen />);
+      });
+
+      act(() => {
+        state.api.isLoggedIn = true;
+        view.rerender(<LocalContentPagePreviewScreen />);
+      });
+
+      expect(oldCanWrite()).toBe(false);
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
+  it("rejects new save requests during logout", async () => {
+    const saveModule = require(
+      "../src/template/editor/storage/saveLocalContentPage"
+    );
+
+    const saveSpy = jest.spyOn(saveModule, "saveLocalContentPage")
+      .mockResolvedValue({ status: "saved" });
+
+    try {
+      const view = render(<LocalContentPagePreviewScreen />);
+
+      const state = jest.requireMock("react-redux")
+        .useStore().getState();
+
+      act(() => {
+        state.api.isLoggingOut = true;
+        view.rerender(<LocalContentPagePreviewScreen />);
+      });
+
+      const onSave = (globalThis as any).__previewTestOnSave;
+
+      let result: unknown;
+
+      await act(async () => {
+        result = await onSave(
+          validPreview.pages[0],
+          {
+            ...validPreview.pages[0],
+            title: "Nicht speichern",
+          },
+        );
+      });
+
+      expect(result).toEqual({ status: "forbidden" });
+      expect(saveSpy).not.toHaveBeenCalled();
+    } finally {
+      saveSpy.mockRestore();
+    }
+  });
   it("renders a registered local content page", () => {
     render(<LocalContentPagePreviewScreen />);
 

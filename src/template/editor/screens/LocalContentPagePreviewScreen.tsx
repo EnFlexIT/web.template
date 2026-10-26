@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useStore } from "react-redux";
 import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import {
+  selectIsLoggedIn,
+  selectIsLoggingOut,
+} from "@/template/state/api/apiSlice";
 import { canEditLocalContent } from "../authorization/canEditLocalContent";
 import { useApplicationConfig } from "@/template/application/ApplicationConfigContext";
 import { createRuntimeMenuSnapshot } from "../adapters/createRuntimeMenuSnapshot";
@@ -70,13 +74,39 @@ export function LocalContentPagePreviewScreen() {
   const { id: applicationId, navigation } = useApplicationConfig();
   const store = useStore();
   const effectiveRoles = useAppSelector(selectEffectiveRoles);
-  const canEdit = canEditLocalContent(effectiveRoles);
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const isLoggingOut = useAppSelector(selectIsLoggingOut);
 
-  const canWrite = () =>
-    isLocalContentPreviewEnabled() &&
-    canEditLocalContent(
-      selectEffectiveRoles(store.getState() as TemplateRootState),
+  const sessionAllowed = isLoggedIn && !isLoggingOut;
+  const canEdit =
+    sessionAllowed && canEditLocalContent(effectiveRoles);
+
+  const sessionRef = useRef({
+    allowed: sessionAllowed,
+    generation: 0,
+  });
+
+  if (sessionRef.current.allowed !== sessionAllowed) {
+    sessionRef.current = {
+      allowed: sessionAllowed,
+      generation: sessionRef.current.generation + 1,
+    };
+  }
+
+  const generation = sessionRef.current.generation;
+
+  const canWrite = () => {
+    const state = store.getState() as TemplateRootState;
+
+    return (
+      sessionRef.current.allowed &&
+      sessionRef.current.generation === generation &&
+      selectIsLoggedIn(state) &&
+      !selectIsLoggingOut(state) &&
+      isLocalContentPreviewEnabled() &&
+      canEditLocalContent(selectEffectiveRoles(state))
     );
+  };
 
   const savePage = async (
     originalPage: EditorContentPage,
@@ -84,7 +114,8 @@ export function LocalContentPagePreviewScreen() {
   ) => {
     if (
       !isLocalContentPreviewEnabled() ||
-      !canEdit
+      !canEdit ||
+      !canWrite()
     ) {
       return { status: "forbidden" as const };
     }
