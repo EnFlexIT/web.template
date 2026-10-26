@@ -1,3 +1,34 @@
+type PreviewAuthState = {
+  api: {
+    isLoggedIn: boolean;
+    isLoggingOut: boolean;
+  };
+};
+
+const authState: PreviewAuthState = {
+  api: {
+    isLoggedIn: true,
+    isLoggingOut: false,
+  },
+};
+
+jest.mock(
+  "../src/template/state/api/apiSlice",
+  () => ({
+    selectIsLoggedIn: (state: PreviewAuthState) =>
+      state.api.isLoggedIn,
+    selectIsLoggingOut: (state: PreviewAuthState) =>
+      state.api.isLoggingOut,
+  }),
+);
+
+jest.mock(
+  "../src/template/state/store/useAppSelector",
+  () => ({
+    useAppSelector: (selector: (state: PreviewAuthState) => unknown) =>
+      selector(authState),
+  }),
+);
 import {
   act,
   renderHook,
@@ -85,6 +116,9 @@ describe("useLocalContentPagePreview", () => {
   beforeEach(() => {
     jest.resetAllMocks();
 
+    authState.api.isLoggedIn = true;
+    authState.api.isLoggingOut = false;
+
     mockedEnabled.mockReturnValue(false);
 
     mockedSnapshot.mockReturnValue({
@@ -97,6 +131,100 @@ describe("useLocalContentPagePreview", () => {
     });
   });
 
+  it("does not load a preview while logged out", () => {
+    mockedEnabled.mockReturnValue(true);
+    authState.api.isLoggedIn = false;
+
+    const { result } = renderHook(
+      () => useLocalContentPagePreview(),
+    );
+
+    expect(result.current).toEqual({
+      status: "disabled",
+      roots: [],
+      pages: [],
+    });
+
+    expect(mockedLoad).not.toHaveBeenCalled();
+    expect(mockedSnapshot).not.toHaveBeenCalled();
+  });
+
+  it("hides an existing preview when logout starts", async () => {
+    mockedEnabled.mockReturnValue(true);
+    mockedLoad.mockResolvedValue({
+      status: "ready",
+      roots: previewRoots,
+      pages: previewPages,
+    });
+
+    const { result, rerender } = renderHook(
+      () => useLocalContentPagePreview(),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      authState.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    expect(result.current).toEqual({
+      status: "disabled",
+      roots: [],
+      pages: [],
+    });
+
+    expect(mockedLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a pending preview load after logout", async () => {
+    mockedEnabled.mockReturnValue(true);
+
+    let resolveLoad!: (
+      value: Awaited<ReturnType<typeof loadLocalContentPreview>>,
+    ) => void;
+
+    const pending = new Promise<
+      Awaited<ReturnType<typeof loadLocalContentPreview>>
+    >(resolve => {
+      resolveLoad = resolve;
+    });
+
+    mockedLoad.mockReturnValue(pending);
+
+    const { result, rerender } = renderHook(
+      () => useLocalContentPagePreview(),
+    );
+
+    expect(mockedLoad).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      authState.api.isLoggedIn = false;
+      rerender({});
+    });
+
+    expect(result.current.status).toBe("disabled");
+
+    await act(async () => {
+      resolveLoad({
+        status: "ready",
+        roots: previewRoots,
+        pages: previewPages,
+      });
+
+      await pending;
+    });
+
+    expect(result.current).toEqual({
+      status: "disabled",
+      roots: [],
+      pages: [],
+    });
+
+    expect(mockedLoad).toHaveBeenCalledTimes(1);
+  });
   it("does not load storage when disabled", () => {
     const { result } = renderHook(
       () => useLocalContentPagePreview(),
