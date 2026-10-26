@@ -10,6 +10,22 @@ import {
 
 import * as Linking from "expo-linking";
 
+import {
+  LocalContentPreviewProvider,
+} from "@/template/editor/context/LocalContentPreviewContext";
+
+import {
+  LocalContentPagePreviewScreen,
+} from "@/template/editor/screens/LocalContentPagePreviewScreen";
+
+import {
+  isLocalContentPreviewEnabled,
+} from "@/template/editor/config/localContentPreviewConfig";
+
+import {
+  LocalContentEditorPanelProvider,
+} from "@/template/editor/context/LocalContentEditorPanelContext";
+import { LocalContentEditorPanel } from "@/template/editor/components/LocalContentEditorPanel";
 import React, {
   useCallback,
   useEffect,
@@ -1031,6 +1047,9 @@ function RootStack<
               menu={
                 navigationMenu
               }
+              rootMenus={
+                menu
+              }
             />
           );
         }}
@@ -1057,7 +1076,18 @@ function RootStack<
                 isLoggedIn
               }
             >
-              {children}
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  minWidth: 0,
+                }}
+              >
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  {children}
+                </View>
+                <LocalContentEditorPanel />
+              </View>
             </DeveloperConsole>
           </View>
         )}
@@ -1120,6 +1150,15 @@ function RootStack<
               ),
             )}
 
+            {isLocalContentPreviewEnabled() && (
+              <Drawer.Screen
+                name="LocalContentPreview"
+                component={LocalContentPagePreviewScreen}
+                options={{
+                  title: config.displayName,
+                }}
+              />
+            )}
             <Drawer.Screen
               name="NotFound"
               component={
@@ -1160,6 +1199,8 @@ function RootStack<
 }
 
 
+import { RegularLocalEditorDraftProvider } from "@/template/editor/context/RegularLocalEditorDraftProvider";
+
 export default function TemplateApp<
   TState = unknown,
 >({
@@ -1179,25 +1220,31 @@ export default function TemplateApp<
       >
         <DeveloperConsoleConnection />
 
-        <View
-          style={{
-            flex: 1,
-          }}
-        >
+        <LocalContentEditorPanelProvider>
           <View
             style={{
               flex: 1,
             }}
           >
-            <RootStack
-              config={
-                config
-              }
-            />
+            <View
+            style={{
+              flex: 1,
+            }}
+          >
+            <LocalContentPreviewProvider>
+              <RegularLocalEditorDraftProvider>
+                <RootStack
+                  config={
+                    config
+                  }
+                />
+              </RegularLocalEditorDraftProvider>
+            </LocalContentPreviewProvider>
           </View>
 
           <Footer />
         </View>
+        </LocalContentEditorPanelProvider>
       </Provider>
     </ApplicationConfigProvider>
   );

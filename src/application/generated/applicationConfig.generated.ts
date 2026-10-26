@@ -126,6 +126,14 @@ const menuItems:
     Screen: resolveApplicationScreen("live-console"),
   },
   {
+    caption: "Content- und Menü-Editor",
+    menuID: 3027,
+    icon: "setting",
+    parentID: 3003,
+    position: 4,
+    Screen: resolveApplicationScreen("content-menu-editor"),
+  },
+  {
     caption: "databaseConnectionsAndSettings",
     menuID: 3010,
     parentID: 3021,
@@ -254,6 +262,7 @@ const menuFeatureRules:
   3023: { roles: ["EDITOR","ADMIN"] },
   3026: { roles: ["EDITOR","ADMIN"] },
   3010: { roles: ["EDITOR","ADMIN"] },
+  3027: { roles: ["EDITOR","ADMIN"] },
   3024: { roles: ["EDITOR","ADMIN"] },
 };
 
@@ -402,6 +411,11 @@ export const applicationConfig:
   },
 
   navigation: {
+      editor: {
+        allowedContentParentIds:
+          ["static:3900"],
+      },
+
     menu: {
       defaultMenuID:
         3003,

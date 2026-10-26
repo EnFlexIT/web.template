@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   EditorDraft,
   EditorMenuEntry,
 } from "../model/editorTypes";
@@ -122,7 +122,13 @@ export function validateMenuDraft(
     }
 
     if (entry.source === "content") {
-      if (!entry.contentPageId || !pagesById.has(entry.contentPageId)) {
+      if (
+        entry.contentPageId !== undefined &&
+        (
+          !entry.contentPageId.trim() ||
+          !pagesById.has(entry.contentPageId)
+        )
+      ) {
         errors.push({
           code: "MISSING_CONTENT_PAGE",
           entryId: entry.id,

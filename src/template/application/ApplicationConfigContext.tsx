@@ -16,6 +16,7 @@ export type ApplicationConfigContextValue = Pick<
   | "buildInfo"
 > & {
   navigation: {
+    editor?: ApplicationConfig<unknown>["navigation"]["editor"];
     menu: {
       showIcons?: boolean;
     };

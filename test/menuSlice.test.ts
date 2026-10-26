@@ -36,7 +36,7 @@ describe("menuSlice", () => {
 
     expect(
       state.activeMenuId,
-    ).toBe(3003);
+    ).toBeUndefined();
 
     expect(
       state.rawMenu,

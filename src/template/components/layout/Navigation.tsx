@@ -16,6 +16,9 @@ import {
 
 import {
   useLinkTo,
+  useNavigation,
+  type NavigationProp,
+  type ParamListBase,
 } from "@react-navigation/native";
 
 import {
@@ -56,6 +59,10 @@ import {
 } from "@/template/navigation/navigationRuntime";
 
 import {
+  filterVisibleMenuRoots,
+} from "@/template/navigation/filterVisibleMenuRoots";
+
+import {
   useAppDispatch,
 } from "@/template/state/store/useAppDispatch";
 
@@ -75,6 +82,27 @@ import {
   buildMenuPaths,
 } from "@/template/navigation/routing/menuPaths";
 
+import {
+  getLocalPreviewChildren,
+} from "@/template/editor/utils/getLocalPreviewChildren";
+
+import {
+  LocalContentSidebarTree,
+} from "@/template/editor/components/LocalContentSidebarTree";
+
+import type {
+  LocalContentPreviewNode,
+} from "@/template/editor/adapters/buildLocalContentPreview";
+
+import {
+  useSharedLocalContentPreview,
+} from "@/template/editor/context/LocalContentPreviewContext";
+
+import { canEditLocalContent } from "@/template/editor/authorization/canEditLocalContent";
+import { useLocalContentEditorPanel } from "@/template/editor/context/LocalContentEditorPanelContext";
+
+import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
+
 interface DrawerItemProps {
   node: MenuTree;
 
@@ -93,6 +121,10 @@ interface DrawerItemProps {
 
   showIcons:
     boolean;
+  localPreviewRoots: readonly LocalContentPreviewNode[];
+  onLocalPagePress: (pageId: string) => void;
+  onLocalCreate?: (mode: "folder" | "page", parentId: string) => void;
+  onLocalManage?: (entryId: string) => void;
 }
 
 function DrawerItem({
@@ -101,6 +133,10 @@ function DrawerItem({
   setExpanded,
   pathById,
   showIcons,
+  localPreviewRoots,
+  onLocalPagePress,
+  onLocalCreate,
+  onLocalManage,
 }: DrawerItemProps) {
   const linkTo =
     useLinkTo();
@@ -139,11 +175,20 @@ function DrawerItem({
     setHovered,
   ] = useState(false);
 
+
   const id =
     node.val.menuID;
 
+  const localChildren =
+    getNavigationRuntime().menu.items.some(
+      item => item.menuID === id,
+    )
+      ? getLocalPreviewChildren(localPreviewRoots, id)
+      : [];
+
   const isFolder =
-    node.children.length > 0;
+    node.children.length > 0 ||
+    localChildren.length > 0;
 
   const isOpen =
     expanded[id] ?? false;
@@ -361,8 +406,28 @@ function DrawerItem({
                   showIcons={
                     showIcons
                   }
+                  localPreviewRoots={localPreviewRoots}
+                  onLocalPagePress={onLocalPagePress}
+                  onLocalCreate={onLocalCreate}
+                  onLocalManage={onLocalManage}
                 />
               ),
+            )}
+            {localChildren.length > 0 && (
+              <LocalContentSidebarTree
+                roots={localChildren}
+                onPagePress={onLocalPagePress}
+                onCreate={
+                  canEditLocalContent(effectiveRoles)
+                    ? onLocalCreate
+                    : undefined
+                }
+                onManage={
+                  canEditLocalContent(effectiveRoles)
+                    ? onLocalManage
+                    : undefined
+                }
+              />
             )}
           </View>
         )}
@@ -371,31 +436,85 @@ function DrawerItem({
 }
 
 interface NavigationProps {
+
   isWide: boolean;
   isLoggedIn: boolean;
   menu: MenuTree;
+  rootMenus?: MenuTree[];
 }
 
 export function Navigation({
   menu,
+  rootMenus,
   isLoggedIn,
   isWide,
+
 }: NavigationProps) {
-  const linkTo =
-    useLinkTo();
+  const localPreview =
+    useSharedLocalContentPreview();
 
-  const dispatch =
-    useAppDispatch();
+  const localPreviewRoots = localPreview.roots;
 
-  const {
-    theme,
-  } = useUnistyles();
+  const localNavigation =
+    useNavigation<NavigationProp<ParamListBase>>();
 
-  const { t } =
-    useTranslation([
-      "Drawer",
-    ]);
 
+  const { openPanel } = useLocalContentEditorPanel();
+
+  const onLocalPagePress = (pageId: string) => {
+    localNavigation.navigate("LocalContentPreview", { pageId });
+  };
+
+  const localRequestCounter = React.useRef(0);
+
+
+  const onLocalCreate = (
+    createMode: "folder" | "page",
+    parentId: string,
+  ) => {
+    if (!canEditLocalContent(effectiveRoles)) return;
+
+    if (createMode === "folder" || createMode === "page") {
+      openPanel({ kind: "create", parentId, mode: createMode });
+      return;
+    }
+
+    localRequestCounter.current += 1;
+    localNavigation.navigate("3027", {
+      createMode,
+      parentId,
+      requestId: `${Date.now()}-${localRequestCounter.current}`,
+    });
+  };
+
+  const onLocalManage = (
+    entryId: string,
+    manageAction: "rename" | "move" | "delete" | "open" = "open",
+  ) => {
+    if (!canEditLocalContent(effectiveRoles)) return;
+
+    if (
+      manageAction === "rename" ||
+      manageAction === "move" ||
+      manageAction === "delete" ||
+      manageAction === "open"
+    ) {
+      openPanel({ kind: "manage", entryId, action: manageAction });
+      return;
+    }
+
+    localRequestCounter.current += 1;
+
+    localNavigation.navigate("3027", {
+      parentId: entryId,
+      createMode: undefined,
+      manageAction,
+      requestId: `manage-${Date.now()}-${localRequestCounter.current}`,
+    });
+  };
+
+  const availableRootMenus =
+    rootMenus ?? [menu];
   const api =
     useAppSelector(
       selectApi,
@@ -410,6 +529,25 @@ export function Navigation({
   } = useAppSelector(
     selectMenu,
   );
+
+  const authenticationMethod =
+    useAppSelector(selectAuthenticationMethod);
+
+  const effectiveRoles =
+    useAppSelector(selectEffectiveRoles);
+
+  const visibleRootMenus =
+    filterVisibleMenuRoots(
+      availableRootMenus,
+      id =>
+        getNavigationRuntime().menu.isEnabled(
+          id,
+          {
+            authenticationMethod,
+            effectiveRoles,
+          },
+        ),
+    );
 
   const {
     pathById,
@@ -439,17 +577,6 @@ export function Navigation({
     navigation.menu.showIcons ===
     true;
 
-  const rootPath =
-    pathById[
-      menu.val.menuID
-    ] ??
-    `/${menu.val.menuID}`;
-
-  const rootIconColor =
-    activeMenuId ===
-    menu.val.menuID
-      ? theme.colors.primary
-      : theme.colors.text;
 
   return (
     <View
@@ -490,107 +617,49 @@ export function Navigation({
             styles.menuContainer,
           ]}
         >
-          <Pressable
-            onPress={() => {
-              dispatch(
-                setActiveMenuId(
-                  menu.val
-                    .menuID,
-                ),
-              );
-
-              linkTo(
-                rootPath,
-              );
-            }}
-            style={
-              styles.row
-            }
-          >
-            <View
-              style={
-                styles.chevronSlot
-              }
+          {visibleRootMenus.map(root => (
+            <DrawerItem
+              key={root.val.menuID}
+              node={root}
+              expanded={expanded}
+              setExpanded={setExpanded}
+              pathById={pathById}
+              showIcons={showIcons}
+              localPreviewRoots={localPreviewRoots}
+              onLocalPagePress={onLocalPagePress}
+              onLocalCreate={onLocalCreate}
+              onLocalManage={onLocalManage}
             />
-
-            {showIcons && (
-              <View
-                style={
-                  styles.iconSlot
-                }
-              >
-                {menu.val.icon ? (
-                  <Icon
-                    name={
-                      menu.val.icon
-                    }
-                    size={16}
-                    color={
-                      rootIconColor
-                    }
-                  />
-                ) : null}
-              </View>
-            )}
-
-            <Text
-              style={[
-                styles.currentlyActiveMenuID,
-                styles.highlight,
-                styles.noSelect,
-              ]}
-            >
-              {isDynamicMenuItem(
-                menu.val,
-              )
-                ? menu.val
-                    .caption
-                : t(
-                    menu.val
-                      .caption,
-                  )}
-            </Text>
-          </Pressable>
-
-          <View
-            style={[
-              styles.innerContainer,
-              styles.childrenContainer,
-            ]}
-          >
-            {menu.children.map(
-              (
-                node,
-                index,
-              ) => (
-                <DrawerItem
-                  key={
-                    node.val
-                      .menuID ??
-                    index
-                  }
-                  node={
-                    node
-                  }
-                  expanded={
-                    expanded
-                  }
-                  setExpanded={
-                    setExpanded
-                  }
-                  pathById={
-                    pathById
-                  }
-                  showIcons={
-                    showIcons
-                  }
-                />
-              ),
-            )}
-          </View>
+          ))}
         </View>
       </View>
 
+      {canEditLocalContent(effectiveRoles) &&
+        navigation.editor?.allowedContentParentIds?.includes("static:3900") && (
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: "#d9d9d9",
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+            }}
+          >
+            <Dropdown<"folder" | "page">
+              value="folder"
+              options={{
+                folder: "Neuer Menüordner",
+                page: "Neue Inhaltsseite",
+              }}
+              triggerLabel="+ Hinzufügen"
+              minimalMenu
+              menuPlacement="above"
+              onChange={mode => onLocalCreate(mode, "static:3900")}
+              appearance="menu"
+              size="sm"
+              menuWidth={180}
+            />
+          </View>
+        )}
       {!isWide && (
         <View
           style={

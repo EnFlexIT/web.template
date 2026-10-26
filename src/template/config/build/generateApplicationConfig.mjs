@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  resolveContentEditorAllowedParents,
+} from "./resolveContentEditorAllowedParents.mjs";
+
+import {
   templateMenuCatalog,
   templateMenuRuntimeRules,
   templateTabCatalog,
@@ -982,6 +986,15 @@ delete applicationNavigationProperties[
   "NavigationDefaultMenu"
 ];
 
+  const contentEditorAllowedParentsRaw =
+    navigationProperties[
+      "contentEditor.allowedParents"
+    ]?.trim() || "";
+
+  delete applicationNavigationProperties[
+    "contentEditor.allowedParents"
+  ];
+
 const applicationId =
   requireProperty(
     applicationProperties,
@@ -1797,6 +1810,14 @@ for (
       item.screen,
   });
 }
+  const contentEditorAllowedParentIds =
+    resolveContentEditorAllowedParents({
+      rawValue: contentEditorAllowedParentsRaw,
+      enabledApplicationMenus,
+      selectedMenuKeys,
+      menuItems,
+      getMenuId,
+    });
 
 let navigationDefaultMenuID;
 
@@ -2433,6 +2454,11 @@ export const applicationConfig:
     applicationBuildInfo,
 ${renderedApplicationBranding}
   navigation: {
+      editor: {
+        allowedContentParentIds:
+          ${JSON.stringify(contentEditorAllowedParentIds)},
+      },
+
     menu: {
       defaultMenuID:
         ${navigationDefaultMenuID === undefined

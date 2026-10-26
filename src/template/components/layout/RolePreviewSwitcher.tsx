@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { Platform } from "react-native";
+
 import {
   Dropdown,
 } from "@design-system";
@@ -39,9 +42,13 @@ const roleOptions:
   };
 
 
+const ROLE_PREVIEW_KEY = "web-template:role-preview:v1";
+
 export function RolePreviewSwitcher() {
   const dispatch =
     useAppDispatch();
+
+  const [restored, setRestored] = useState(false);
 
   const assignedRole =
     useAppSelector(
@@ -58,9 +65,30 @@ export function RolePreviewSwitcher() {
       selectCanPreviewRoles,
     );
 
-  if (
-    !canPreviewRoles
-  ) {
+  useEffect(() => {
+    if (!__DEV__ || Platform.OS !== "web") {
+      setRestored(true);
+      return;
+    }
+
+    try {
+      if (canPreviewRoles) {
+        const saved = window.localStorage.getItem(ROLE_PREVIEW_KEY);
+
+        if (saved === "USER" || saved === "EDITOR") {
+          dispatch(setRolePreview(saved));
+        }
+      } else {
+        window.localStorage.removeItem(ROLE_PREVIEW_KEY);
+      }
+    } catch {
+      // Storage unavailable: continue without persistence.
+    }
+
+    setRestored(true);
+  }, [canPreviewRoles, dispatch]);
+
+  if (!canPreviewRoles || !restored) {
     return null;
   }
 
@@ -74,12 +102,24 @@ export function RolePreviewSwitcher() {
       value={value}
       options={roleOptions}
       onChange={(nextRole) => {
+        if (__DEV__ && Platform.OS === "web") {
+          try {
+            if (nextRole === "ADMIN") {
+              window.localStorage.removeItem(ROLE_PREVIEW_KEY);
+            } else {
+              window.localStorage.setItem(
+                ROLE_PREVIEW_KEY,
+                nextRole,
+              );
+            }
+          } catch {
+            // Storage unavailable: role preview still works.
+          }
+        }
+
         dispatch(
           setRolePreview(
-            nextRole ===
-              "ADMIN"
-              ? null
-              : nextRole,
+            nextRole === "ADMIN" ? null : nextRole,
           ),
         );
       }}

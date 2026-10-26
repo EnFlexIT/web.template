@@ -16,6 +16,13 @@ import type {
   MenuItem as ApiMenuItem,
 } from "@/api/implementation/Dynamic-Content-Api";
 
+import {
+  normalizeBackendMenus,
+} from "./adapters/normalizeBackendMenus";
+
+import {
+  filterValidDynamicMenuHierarchy,
+} from "./adapters/filterValidDynamicMenuHierarchy";
 import type {
   AuthMethod,
 } from "@/template/state/api/apiSlice";
@@ -493,65 +500,13 @@ export const initializeMenu =
               lang,
             );
 
-        const raw =
-          response?.data as
-            unknown;
-
-        const rawRecord =
-          raw &&
-          typeof raw ===
-            "object" &&
-          !Array.isArray(
-            raw,
-          )
-            ? (
-                raw as Record<
-                  string,
-                  unknown
-                >
-              )
-            : null;
-
-        const data:
-          ApiMenuItem[] =
-          Array.isArray(
-            raw,
-          )
-            ? (
-                raw as
-                  ApiMenuItem[]
-              )
-            : Array.isArray(
-                  rawRecord
-                    ?.data,
-                )
-              ? (
-                  rawRecord
-                    .data as
-                      ApiMenuItem[]
-                )
-              : Array.isArray(
-                    rawRecord
-                      ?.items,
-                  )
-                ? (
-                    rawRecord
-                      .items as
-                        ApiMenuItem[]
-                  )
-                : Array.isArray(
-                      rawRecord
-                        ?.menu,
-                    )
-                  ? (
-                      rawRecord
-                        .menu as
-                          ApiMenuItem[]
-                    )
-                  : [];
+        const dynamicMenuCandidates =
+          normalizeBackendMenus(
+            response?.data as unknown,
+          );
 
         if (
-          data.length === 0
+          dynamicMenuCandidates.length === 0
         ) {
           return {
             dynamicMenu: [],
@@ -565,34 +520,21 @@ export const initializeMenu =
          * Dynamic entries are filtered here,
          * before they reach the Redux reducer.
          */
+        const visibleDynamicMenu =
+          dynamicMenuCandidates.filter(
+            (item) =>
+              isConfiguredMenuEnabled(
+                item.menuID,
+                authenticationMethod,
+              ),
+          );
+
         const dynamicMenu:
           MenuItem[] =
-          data
-            .map(
-              (node) => ({
-                menuID:
-                  node.menuID!,
-
-                parentID:
-                  node.parentID,
-
-                position:
-                  node.position,
-
-                caption:
-                  node.caption,
-
-                Screen:
-                  undefined,
-              }),
-            )
-            .filter(
-              (item) =>
-                isConfiguredMenuEnabled(
-                  item.menuID,
-                  authenticationMethod,
-                ),
-            );
+          filterValidDynamicMenuHierarchy(
+            visibleDynamicMenu,
+            staticMenu,
+          );
 
         return {
           dynamicMenu,

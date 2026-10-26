@@ -9,6 +9,7 @@ import {
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
+import Feather from "@expo/vector-icons/Feather";
 
 type DropdownSize = "xs" | "sm" | "md";
 type DropdownAppearance = "field" | "menu";
@@ -27,11 +28,18 @@ interface DropdownProps<T extends string> {
   maxMenuHeight?: number;
   size?: DropdownSize;
   appearance?: DropdownAppearance;
+  triggerLabel?: string;
   menuWidth?: number;
+  triggerWidth?: number;
+  hideChevron?: boolean;
+  minimalMenu?: boolean;
   optionMeta?: Partial<Record<T, DropdownOptionMeta>>;
+  optionIcons?: Partial<Record<T, React.ComponentProps<typeof Feather>["name"]>>;
+  destructiveOptions?: readonly T[];
   showSelectedToneDot?: boolean;
   showOptionToneDot?: boolean;
   menuOffsetY?: number;
+  menuPlacement?: "auto" | "above" | "below";
   onOpen?: () => void;
   onClose?: () => void;
 }
@@ -51,11 +59,18 @@ export function Dropdown<T extends string>({
   maxMenuHeight = 220,
   size = "md",
   appearance = "field",
+  triggerLabel,
   menuWidth = 180,
+  triggerWidth,
+  hideChevron = false,
+  minimalMenu = false,
   optionMeta,
+  optionIcons,
+  destructiveOptions,
   showSelectedToneDot = false,
   showOptionToneDot = false,
   menuOffsetY,
+  menuPlacement,
   onOpen,
   onClose,
 }: DropdownProps<T>) {
@@ -66,8 +81,9 @@ export function Dropdown<T extends string>({
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
 
-  const selectedLabel = options[value] ?? String(value);
+  const selectedLabel = triggerLabel ?? options[value] ?? String(value);
   const selectedMeta = optionMeta?.[value];
+  const [hoveredOption, setHoveredOption] = useState<T | null>(null);
   const keys = useMemo(() => Object.keys(options) as T[], [options]);
 
   const rowH = sizeStyles[size].menuItemMinHeight;
@@ -125,7 +141,27 @@ export function Dropdown<T extends string>({
       top = anchor.y + anchor.height + DEFAULT_GAP;
     }
 
-    if (top + menuH > screenH - 8) {
+    if (menuPlacement) {
+      const below = anchor.y + anchor.height + DEFAULT_GAP;
+      const above = anchor.y - menuH - footerMenuGap;
+      const fitsBelow = below + menuH <= screenH - 8;
+      const fitsAbove = above >= 8;
+
+      if (menuPlacement === "above") {
+        top = fitsAbove ? above : below;
+      } else if (menuPlacement === "below") {
+        top = fitsBelow ? below : above;
+      } else if (fitsBelow) {
+        top = below;
+      } else if (fitsAbove) {
+        top = above;
+      } else {
+        const spaceBelow = screenH - below - 8;
+        const spaceAbove = anchor.y - footerMenuGap - 8;
+        top = spaceBelow >= spaceAbove ? below : above;
+      }
+    }
+if (top + menuH > screenH - 8) {
       top = Math.max(8, screenH - menuH - 8);
     }
 
@@ -153,13 +189,14 @@ export function Dropdown<T extends string>({
     screenW,
     screenH,
     menuOffsetY,
+    menuPlacement,
   ]);
 
   return (
     <View
       style={[
         styles.wrapper,
-        appearance === "menu" && { width: menuWidth },
+        appearance === "menu" && { width: triggerWidth ?? menuWidth },
       ]}
     >
       <Pressable
@@ -174,8 +211,7 @@ export function Dropdown<T extends string>({
             ? [
                 styles.buttonMenu,
                 {
-                  width: menuWidth,
-                  backgroundColor: "transparent",
+                  width: triggerWidth ?? menuWidth, backgroundColor: "transparent",
                 },
               ]
             : {
@@ -194,9 +230,7 @@ export function Dropdown<T extends string>({
             {selectedLabel}
           </ThemedText>
 
-          <Text style={{ opacity: 0.6, marginLeft: 8 }}>
-            {open ? "▲" : "▼"}
-          </Text>
+          {!hideChevron && (<Text style={{ opacity: 0.6, marginLeft: 8 }}>{open ? "▲" : "▼"}</Text>)}
         </View>
       </Pressable>
 
@@ -206,11 +240,12 @@ export function Dropdown<T extends string>({
         animationType="fade"
         onRequestClose={handleClose}
       >
-        <Pressable style={styles.backdrop} onPress={handleClose}>
+        <Pressable style={[styles.backdrop, minimalMenu && { backgroundColor: "transparent" }]} onPress={handleClose}>
           <Pressable
             onPress={() => {}}
             style={[
               styles.menuBase,
+              minimalMenu && { borderRadius: 10 },
               menuStyle,
               {
                 borderColor: theme.colors.border,
@@ -227,11 +262,18 @@ export function Dropdown<T extends string>({
               {keys.map((key, index) => {
                 const active = key === value;
                 const meta = optionMeta?.[key];
+                const destructive = destructiveOptions?.includes(key) ?? false;
                 const isLast = index === keys.length - 1;
 
                 return (
                   <Pressable
                     key={key}
+                    onHoverIn={() => {
+                      if (minimalMenu) setHoveredOption(key);
+                    }}
+                    onHoverOut={() => {
+                      if (minimalMenu) setHoveredOption(null);
+                    }}
                     onPress={() => {
                       onChange(key);
                       handleClose();
@@ -241,20 +283,38 @@ export function Dropdown<T extends string>({
                       sizeStyles[size].item,
                       {
                         borderBottomColor: theme.colors.border,
-                        borderBottomWidth: isLast ? 0 : 1,
+                        borderBottomWidth: minimalMenu ? 0 : (isLast ? 0 : 1),
+                          borderTopWidth: minimalMenu && destructive ? 1 : 0,
+                          borderTopColor: theme.colors.border,
                       },
-                      active && {
+                      minimalMenu && hoveredOption === key && {
+                        backgroundColor: theme.colors.background,
+                      },
+                      active && !minimalMenu && {
                         backgroundColor: theme.colors.background,
                       },
                     ]}
                   >
                     <View style={styles.itemContent}>
                       <View style={styles.itemMainRow}>
+                        {optionIcons?.[key] ? (
+                          <Feather
+                            name={optionIcons[key]!}
+                            size={15}
+                            color={destructive ? "#DC2626" : theme.colors.text}
+                          />
+                        ) : null}
                         {showOptionToneDot ? (
                           <StatusDot tone={meta?.tone ?? "neutral"} />
                         ) : null}
 
-                        <ThemedText numberOfLines={1} style={styles.itemLabel}>
+                        <ThemedText
+                          numberOfLines={1}
+                          style={[
+                            styles.itemLabel,
+                            destructive && { color: "#DC2626" },
+                          ]}
+                        >
                           {options[key]}
                         </ThemedText>
                       </View>

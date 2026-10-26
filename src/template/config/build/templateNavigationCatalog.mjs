@@ -149,6 +149,14 @@ export const templateMenuCatalog = {
     ],
   },
 
+  contentMenuEditor: {
+    menuID: 3027,
+    caption: "Content- und Menü-Editor",
+    icon: "setting",
+    parent: "settings",
+    screen: "content-menu-editor",
+    feature: "settings.contentMenuEditor",
+  },
   devHome: {
     menuID: 3011,
     caption: "devHome",

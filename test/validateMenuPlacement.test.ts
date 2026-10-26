@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   EditorMenuEntry,
 } from "../src/template/editor/model/editorTypes";
 
@@ -24,10 +24,18 @@ describe("validateMenuPlacement", () => {
     allowedContentParentIds: ["applicationRoot", "home"],
   };
 
-  it("accepts an explicitly allowed parent", () => {
+  it("accepts an explicitly allowed application parent", () => {
+    const applicationRoot: EditorMenuEntry = {
+      id: "applicationRoot",
+      source: "application",
+      caption: "Application",
+      position: 1,
+      menuID: 100,
+    };
+
     expect(
       validateMenuPlacement(
-        [contentMenu("applicationRoot")],
+        [applicationRoot, contentMenu("applicationRoot")],
         policy,
       ),
     ).toEqual([]);
