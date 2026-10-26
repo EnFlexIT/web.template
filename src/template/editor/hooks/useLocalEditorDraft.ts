@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "react-redux";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
+import {
+  selectIsLoggedIn,
+  selectIsLoggingOut,
+} from "@/template/state/api/apiSlice";
 import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
 import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { canEditLocalContent } from "../authorization/canEditLocalContent";
@@ -67,11 +71,58 @@ export function useLocalEditorDraft({
 }: Options) {
   const store = useStore();
   const effectiveRoles = useAppSelector(selectEffectiveRoles);
-  const canEdit = canEditLocalContent(effectiveRoles);
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const isLoggingOut = useAppSelector(selectIsLoggingOut);
+
+  const sessionAllowed = isLoggedIn && !isLoggingOut;
+  const canEdit =
+    sessionAllowed && canEditLocalContent(effectiveRoles);
+
+  const sessionRef = useRef({
+    allowed: sessionAllowed,
+    generation: 0,
+  });
+
+  if (sessionRef.current.allowed !== sessionAllowed) {
+    sessionRef.current = {
+      allowed: sessionAllowed,
+      generation: sessionRef.current.generation + 1,
+    };
+  }
+
+  const generation = sessionRef.current.generation;
+
+  function canWriteInSession(): boolean {
+    const state = store.getState() as TemplateRootState;
+
+    return (
+      sessionRef.current.allowed &&
+      sessionRef.current.generation === generation &&
+      selectIsLoggedIn(state) &&
+      !selectIsLoggingOut(state) &&
+      canEditLocalContent(selectEffectiveRoles(state))
+    );
+  }
 
   const [draft, setDraft] = useState<EditorDraft>(
     () => cloneDraft(initialDraft),
   );
+
+  const guardedSetDraft: typeof setDraft = value => {
+    if (!canWriteInSession()) {
+      return;
+    }
+
+    setDraft(previous => {
+      if (!canWriteInSession()) {
+        return previous;
+      }
+
+      return typeof value === "function"
+        ? value(previous)
+        : value;
+    });
+  };
 
   const [status, setStatus] =
     useState<LocalDraftStatus>("loading");
@@ -90,6 +141,21 @@ export function useLocalEditorDraft({
   useEffect(() => {
     let cancelled = false;
 
+    if (!sessionAllowed) {
+      setDraft(cloneDraft(initialDraft));
+      setLoaded(false);
+      setStatus("loading");
+      setStorageError("");
+      lastSavedDraft.current = null;
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoaded(false);
+    setStatus("loading");
+
     async function load() {
       try {
         const stored = await loadLocalEditorDraft(
@@ -97,7 +163,7 @@ export function useLocalEditorDraft({
           storageScope,
         );
 
-        if (cancelled) return;
+        if (cancelled || !canWriteInSession()) return;
 
         let nextDraft = cloneDraft(initialDraft);
 
@@ -129,7 +195,7 @@ export function useLocalEditorDraft({
         setLoaded(true);
         setStatus("ready");
       } catch {
-        if (cancelled) return;
+        if (cancelled || !canWriteInSession()) return;
 
         setStorageError(
           "Lokaler Entwurf konnte nicht geladen werden. " +
@@ -150,6 +216,8 @@ export function useLocalEditorDraft({
     placementPolicy,
     inventory,
     storageScope,
+    sessionAllowed,
+    generation,
   ]);
 
   useEffect(() => {
@@ -171,11 +239,7 @@ export function useLocalEditorDraft({
         snapshot.applicationId,
         storageScope,
         async () => {
-          const currentRoles = selectEffectiveRoles(
-            store.getState() as TemplateRootState,
-          );
-
-          if (!canEditLocalContent(currentRoles)) {
+          if (!canWriteInSession()) {
             return;
           }
 
@@ -226,19 +290,27 @@ export function useLocalEditorDraft({
     }
 
     retryInProgress.current = true;
+    const retryGeneration = generation;
     setStatus("saving");
     setStorageError("");
+
+    const isCurrentRetry = () => {
+      const state = store.getState() as TemplateRootState;
+
+      return (
+        sessionRef.current.allowed &&
+        sessionRef.current.generation === retryGeneration &&
+        selectIsLoggedIn(state) &&
+        !selectIsLoggingOut(state)
+      );
+    };
 
     try {
       // Wait for previously queued writes to settle.
       // Never restart those operations implicitly.
       await saveQueue.current.catch(() => undefined);
 
-      const currentRoles = selectEffectiveRoles(
-        store.getState() as TemplateRootState,
-      );
-
-      if (!canEditLocalContent(currentRoles)) {
+      if (!canWriteInSession()) {
         throw new Error("Editing permission no longer available.");
       }
 
@@ -248,11 +320,7 @@ export function useLocalEditorDraft({
         snapshot.applicationId,
         storageScope,
         async () => {
-          const roles = selectEffectiveRoles(
-            store.getState() as TemplateRootState,
-          );
-
-          if (!canEditLocalContent(roles)) {
+          if (!canWriteInSession()) {
             throw new Error("Editing permission no longer available.");
           }
 
@@ -268,9 +336,17 @@ export function useLocalEditorDraft({
       saveQueue.current = nextSave;
       await nextSave;
 
+      if (!isCurrentRetry()) {
+        return;
+      }
+
       lastSavedDraft.current = draft;
       setStatus("ready");
     } catch {
+      if (!isCurrentRetry()) {
+        return;
+      }
+
       setStorageError(
         "Lokaler Entwurf konnte nicht gespeichert werden. " +
         "Änderungen nicht neu laden. Erneut speichern versuchen.",
@@ -281,8 +357,8 @@ export function useLocalEditorDraft({
     }
   }
   return {
-    draft,
-    setDraft,
+    draft: sessionAllowed ? draft : cloneDraft(initialDraft),
+    setDraft: guardedSetDraft,
     status,
     storageError,
     canRetrySave: loaded && status === "error" && canEdit,

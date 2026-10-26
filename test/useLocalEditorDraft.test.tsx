@@ -1,5 +1,9 @@
 jest.mock("react-redux", () => {
   const state = {
+    api: {
+      isLoggedIn: true,
+      isLoggingOut: false,
+    },
     authorization: {
       assignedRole: "ADMIN",
       previewRole: null,
@@ -28,6 +32,17 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 
+jest.mock(
+  "../src/template/state/api/apiSlice",
+  () => ({
+    selectIsLoggedIn: (state: {
+      api: { isLoggedIn: boolean };
+    }) => state.api.isLoggedIn,
+    selectIsLoggingOut: (state: {
+      api: { isLoggingOut: boolean };
+    }) => state.api.isLoggingOut,
+  }),
+);
 import { useLocalEditorDraft } from "../src/template/editor/hooks/useLocalEditorDraft";
 
 import {
@@ -113,9 +128,429 @@ function deferred<T>() {
 describe("useLocalEditorDraft", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    state.api.isLoggedIn = true;
+    state.api.isLoggingOut = false;
+
     mockedSave.mockResolvedValue(undefined);
   });
 
+  it("does not load storage while logged out", () => {
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    state.api.isLoggedIn = false;
+
+    const { result } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    expect(mockedLoad).not.toHaveBeenCalled();
+    expect(mockedSave).not.toHaveBeenCalled();
+    expect(result.current.canRetrySave).toBe(false);
+    expect(result.current.draft.pages).toEqual([]);
+  });
+
+  it("ignores a pending load after logout", async () => {
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    const loading = deferred<unknown | null>();
+
+    mockedLoad.mockReturnValue(loading.promise);
+    mockedRestore.mockReturnValue(restoredDraft);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    expect(mockedLoad).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      loading.resolve({
+        schemaVersion: 1,
+        applicationId: "hook-test",
+        entries: [],
+        pages: [],
+      });
+
+      await loading.promise;
+    });
+
+    expect(mockedRestore).not.toHaveBeenCalled();
+    expect(mockedSave).not.toHaveBeenCalled();
+    expect(result.current.draft.pages).toEqual([]);
+    expect(result.current.canRetrySave).toBe(false);
+  });
+
+  it("rejects a queued write after logout and re-login", async () => {
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    const firstSave = deferred<void>();
+    mockedLoad.mockResolvedValue(null);
+    mockedSave.mockImplementationOnce(() => firstSave.promise);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:one",
+          title: "Erste Sitzung",
+          blocks: [],
+        }],
+      }));
+    });
+
+    await waitFor(() => {
+      expect(mockedSave).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:two",
+          title: "Alter wartender Auftrag",
+          blocks: [],
+        }],
+      }));
+    });
+
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = false;
+      state.api.isLoggingOut = false;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      firstSave.resolve();
+      await firstSave.promise;
+    });
+
+    await waitFor(() => {
+      expect(mockedLoad).toHaveBeenCalledTimes(2);
+    });
+
+    expect(mockedSave).toHaveBeenCalledTimes(1);
+    expect(mockedSave.mock.calls[0][0].pages[0].title)
+      .toBe("Erste Sitzung");
+  });
+  it("hides the previous draft immediately when logout starts", async () => {
+    mockedLoad.mockResolvedValue(null);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:private",
+          title: "Alte Sitzung",
+          blocks: [],
+        }],
+      }));
+    });
+
+    expect(result.current.draft.pages).toHaveLength(1);
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    expect(result.current.draft.pages).toEqual([]);
+    expect(result.current.canRetrySave).toBe(false);
+  });
+
+  it("rejects an old draft setter after logout and re-login", async () => {
+    mockedLoad.mockResolvedValue(null);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    const oldSetter = result.current.setDraft;
+    const updater = jest.fn((previous: EditorDraft) => ({
+      ...previous,
+      pages: [{
+        id: "page:stale",
+        title: "Veralteter Setter",
+        blocks: [],
+      }],
+    }));
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = false;
+      state.api.isLoggingOut = false;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = true;
+      rerender({});
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      oldSetter(updater);
+    });
+
+    expect(updater).not.toHaveBeenCalled();
+    expect(result.current.draft.pages).toEqual([]);
+    expect(mockedSave).not.toHaveBeenCalled();
+  });
+  it("does not expose an old draft while a new session loads", async () => {
+    const secondLoad = deferred<unknown | null>();
+
+    mockedLoad
+      .mockResolvedValueOnce(null)
+      .mockReturnValueOnce(secondLoad.promise);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:old",
+          title: "Sitzung A",
+          blocks: [],
+        }],
+      }));
+    });
+
+    expect(result.current.draft.pages).toHaveLength(1);
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = false;
+      state.api.isLoggingOut = false;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = true;
+      rerender({});
+    });
+
+    expect(result.current.status).toBe("loading");
+    expect(result.current.draft.pages).toEqual([]);
+
+    await act(async () => {
+      secondLoad.resolve(null);
+      await secondLoad.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+  });
+
+  it("reloads a stored draft after a new login without saving it", async () => {
+    mockedLoad.mockResolvedValueOnce(null);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    mockedLoad.mockResolvedValueOnce({
+      schemaVersion: 1,
+      applicationId: "hook-test",
+      entries: [],
+      pages: [],
+    });
+
+    mockedRestore.mockReturnValue(restoredDraft);
+
+    await act(async () => {
+      state.api.isLoggedIn = false;
+      state.api.isLoggingOut = false;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = true;
+      rerender({});
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+      expect(result.current.draft.pages[0].title)
+        .toBe("Wiederhergestellt");
+    });
+
+    expect(mockedLoad).toHaveBeenCalledTimes(2);
+    expect(mockedSave).not.toHaveBeenCalled();
+  });
+  it("does not let an old retry alter the new session", async () => {
+    const firstSave = deferred<void>();
+
+    mockedLoad.mockResolvedValue(null);
+    mockedSave.mockImplementationOnce(() => firstSave.promise);
+
+    const { result, rerender } = renderHook(
+      () => useLocalEditorDraft(options),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    await act(async () => {
+      result.current.setDraft(previous => ({
+        ...previous,
+        pages: [{
+          id: "page:retry-session",
+          title: "Alter Entwurf",
+          blocks: [],
+        }],
+      }));
+    });
+
+    await waitFor(() => {
+      expect(mockedSave).toHaveBeenCalledTimes(1);
+    });
+
+    const state = jest.requireMock("react-redux")
+      .useStore().getState();
+
+    await act(async () => {
+      firstSave.reject(new Error("Save failed"));
+
+      try {
+        await firstSave.promise;
+      } catch {
+        // Expected failure.
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    const waiting = deferred<void>();
+
+    // Keep the existing per-hook queue pending before retry.
+    mockedSave.mockImplementationOnce(() => waiting.promise);
+
+    let retryPromise!: Promise<void>;
+
+    await act(async () => {
+      retryPromise = result.current.retrySave();
+    });
+
+    await waitFor(() => {
+      expect(mockedSave).toHaveBeenCalledTimes(2);
+    });
+
+    await act(async () => {
+      state.api.isLoggingOut = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = false;
+      state.api.isLoggingOut = false;
+      rerender({});
+    });
+
+    await act(async () => {
+      state.api.isLoggedIn = true;
+      rerender({});
+    });
+
+    await act(async () => {
+      waiting.resolve();
+      await waiting.promise;
+      await retryPromise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ready");
+    });
+
+    expect(result.current.storageError).toBe("");
+    expect(result.current.draft.pages).toEqual([]);
+    expect(mockedSave).toHaveBeenCalledTimes(2);
+  });
   it("loads a saved draft without overwriting it during initialization", async () => {
     const loading = deferred<unknown | null>();
 
