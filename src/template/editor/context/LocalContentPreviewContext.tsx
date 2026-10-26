@@ -1,6 +1,8 @@
 import React, {
   createContext,
   useContext,
+  useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -9,6 +11,12 @@ import {
   useLocalContentPagePreview,
   type LocalContentPagePreview,
 } from "../hooks/useLocalContentPagePreview";
+
+import {
+  selectIsLoggedIn,
+  selectIsLoggingOut,
+} from "@/template/state/api/apiSlice";
+import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import type { EditorContentPage } from "../model/editorTypes";
 
@@ -38,12 +46,62 @@ export function LocalContentPreviewProvider({
   children: ReactNode;
 }) {
   const preview = useLocalContentPagePreview();
+
+  const isLoggedIn = useAppSelector(selectIsLoggedIn);
+  const isLoggingOut = useAppSelector(selectIsLoggingOut);
+  const canShowLivePage = isLoggedIn && !isLoggingOut;
+
   const [livePage, setLivePage] =
     useState<EditorContentPage | null>(null);
 
+  const sessionRef = useRef({
+    allowed: canShowLivePage,
+    generation: 0,
+  });
+
+  if (sessionRef.current.allowed !== canShowLivePage) {
+    sessionRef.current = {
+      allowed: canShowLivePage,
+      generation: sessionRef.current.generation + 1,
+    };
+  }
+
+  const generation = sessionRef.current.generation;
+
+  const guardedSetLivePage: typeof setLivePage = value => {
+    if (
+      !sessionRef.current.allowed ||
+      sessionRef.current.generation !== generation
+    ) {
+      return;
+    }
+
+    setLivePage(previous => {
+      if (
+        !sessionRef.current.allowed ||
+        sessionRef.current.generation !== generation
+      ) {
+        return previous;
+      }
+
+      return typeof value === "function"
+        ? value(previous)
+        : value;
+    });
+  };
+
+  useEffect(() => {
+    if (!canShowLivePage) {
+      setLivePage(null);
+    }
+  }, [canShowLivePage]);
+
   return (
     <LocalContentLivePageContext.Provider
-      value={{ livePage, setLivePage }}
+      value={{
+        livePage: canShowLivePage ? livePage : null,
+        setLivePage: guardedSetLivePage,
+      }}
     >
       <LocalContentPreviewContext.Provider value={preview}>
         {children}
