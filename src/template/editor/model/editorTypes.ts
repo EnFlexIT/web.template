@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Describes the origin of a menu entry.
  *
  * Application and Template entries are registered
@@ -26,6 +26,7 @@ export interface EditorMenuEntry {
   position: number;
 
   contentPageId?: string;
+  hidden?: boolean;
 }
 
 /**

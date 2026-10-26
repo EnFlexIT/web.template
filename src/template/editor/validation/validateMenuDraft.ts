@@ -12,6 +12,7 @@ export interface MenuValidationError {
     | "INVALID_MENU_ID"
     | "INVALID_CAPTION"
     | "INVALID_POSITION"
+    | "INVALID_VISIBILITY"
     | "MISSING_PARENT"
     | "CYCLIC_PARENT"
     | "MISSING_CONTENT_PAGE"
@@ -65,6 +66,17 @@ export function validateMenuDraft(
   }
 
   for (const entry of draft.entries) {
+    if (
+      entry.hidden !== undefined &&
+      typeof entry.hidden !== "boolean"
+    ) {
+      errors.push({
+        code: "INVALID_VISIBILITY",
+        entryId: entry.id,
+        message: `Invalid menu visibility: ${entry.id}`,
+      });
+    }
+
     if (!entry.caption.trim()) {
       errors.push({
         code: "INVALID_CAPTION",

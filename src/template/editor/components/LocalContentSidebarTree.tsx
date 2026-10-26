@@ -12,7 +12,7 @@ export interface LocalContentSidebarTreeProps {
   roots: readonly LocalContentPreviewNode[];
   onPagePress?: (pageId: string) => void;
   onCreate?: (mode: CreateMode, parentId: string) => void;
-  onManage?: (entryId: string, action: "rename" | "move" | "delete" | "open") => void;
+  onManage?: (entryId: string, action: "rename" | "move" | "delete" | "open" | "visibility") => void;
 }
 
 interface LocalContentSidebarItemProps
@@ -63,15 +63,22 @@ const isFolder = node.contentPageId === undefined;
           <Text style={{ color: theme.colors.text }}>
             {isFolder ? (expanded ? "▾" : "▸") : " "}
           </Text>
-          <Text style={{ color: theme.colors.text, flexShrink: 1 }}>
+          <Text
+            style={{
+              color: theme.colors.text,
+              flexShrink: 1,
+              opacity: node.hidden ? 0.5 : 1,
+            }}
+          >
             {node.caption}
+            {node.hidden ? " (ausgeblendet)" : ""}
           </Text>
           <Text style={{
             color: theme.colors.text,
             opacity: 0.55,
             fontSize: 11,
           }}>
-            (lokal)
+
           </Text>
         </Pressable>
 
@@ -91,6 +98,7 @@ const isFolder = node.contentPageId === undefined;
                     rename: "Umbenennen",
                     move: "Verschieben",
                     open: "Bearbeiten",
+                    visibility: node.hidden ? "Einblenden" : "Ausblenden",
                     delete: "Löschen",
                   }
                 : {}),
@@ -101,6 +109,7 @@ const isFolder = node.contentPageId === undefined;
               rename: "edit-2",
               move: "folder",
               open: "external-link",
+              visibility: node.hidden ? "eye" : "eye-off",
               delete: "trash-2",
             }}
             destructiveOptions={["delete"]}
@@ -125,6 +134,7 @@ const isFolder = node.contentPageId === undefined;
                 action === "rename" ||
                 action === "move" ||
                 action === "open" ||
+                action === "visibility" ||
                 action === "delete"
               ) {
                 onManage?.(node.id, action);

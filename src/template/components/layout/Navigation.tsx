@@ -102,6 +102,9 @@ import { canEditLocalContent } from "@/template/editor/authorization/canEditLoca
 import { useLocalContentEditorPanel } from "@/template/editor/context/LocalContentEditorPanelContext";
 
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
+import { useOptionalSharedLocalEditorDraft } from "@/template/editor/context/LocalEditorDraftContext";
+import { setContentMenuVisibility } from "@/template/editor/utils/setContentMenuVisibility";
+import { filterVisibleLocalContent } from "@/template/editor/utils/filterVisibleLocalContent";
 
 interface DrawerItemProps {
   node: MenuTree;
@@ -453,13 +456,14 @@ export function Navigation({
   const localPreview =
     useSharedLocalContentPreview();
 
-  const localPreviewRoots = localPreview.roots;
+
 
   const localNavigation =
     useNavigation<NavigationProp<ParamListBase>>();
 
 
   const { openPanel } = useLocalContentEditorPanel();
+  const localDraftState = useOptionalSharedLocalEditorDraft();
 
   const onLocalPagePress = (pageId: string) => {
     localNavigation.navigate("LocalContentPreview", { pageId });
@@ -489,9 +493,27 @@ export function Navigation({
 
   const onLocalManage = (
     entryId: string,
-    manageAction: "rename" | "move" | "delete" | "open" = "open",
+    manageAction: "rename" | "move" | "delete" | "open" | "visibility" = "open",
   ) => {
-    if (!canEditLocalContent(effectiveRoles)) return;
+    if (!isLoggedIn || !canEditLocalContent(effectiveRoles)) return;
+
+    if (manageAction === "visibility") {
+      if (!localDraftState || localDraftState.status !== "ready") return;
+
+      localDraftState.setDraft(previous => {
+        const entry = previous.entries.find(item => item.id === entryId);
+        if (!entry || entry.source !== "content") return previous;
+
+        const result = setContentMenuVisibility(
+          previous,
+          entryId,
+          entry.hidden !== true,
+        );
+
+        return result.ok ? result.draft : previous;
+      });
+      return;
+    }
 
     if (
       manageAction === "rename" ||
@@ -535,6 +557,10 @@ export function Navigation({
 
   const effectiveRoles =
     useAppSelector(selectEffectiveRoles);
+
+  const localPreviewRoots = canEditLocalContent(effectiveRoles)
+    ? localPreview.roots
+    : filterVisibleLocalContent(localPreview.roots);
 
   const visibleRootMenus =
     filterVisibleMenuRoots(

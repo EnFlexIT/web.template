@@ -34,7 +34,11 @@ export function isStoredContentEntry(
         value.contentPageId.trim().length > 0
       )
     ) &&
-    value.menuID === undefined
+    value.menuID === undefined &&
+    (
+      value.hidden === undefined ||
+      typeof value.hidden === "boolean"
+    )
   );
 }
 

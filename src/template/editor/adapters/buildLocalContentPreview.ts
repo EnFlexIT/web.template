@@ -22,6 +22,7 @@ export interface LocalContentPreviewNode {
   caption: string;
   position: number;
   contentPageId?: string;
+  hidden?: boolean;
   children: LocalContentPreviewNode[];
 }
 
@@ -83,6 +84,7 @@ export function buildLocalContentPreview(
       caption: entry.caption,
       position: entry.position,
       contentPageId: entry.contentPageId,
+      hidden: entry.hidden,
       children,
     };
   }
