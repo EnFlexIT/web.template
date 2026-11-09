@@ -98,7 +98,7 @@ describe(
         expect(
           accessConfig,
         ).toContain(
-          "access.systemSettings.roles=EDITOR,ADMIN",
+          "access.settings.systemSettings.roles=EDITOR,ADMIN",
         );
 
         expect(
