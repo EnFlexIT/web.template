@@ -1,3 +1,4 @@
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
 import React, {
   createContext,
   useCallback,
@@ -9,7 +10,7 @@ import React, {
 } from "react";
 
 import { selectIsLoggedIn } from "@/template/state/api/apiSlice";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
 import { canEditLocalContent } from "@/template/editor/authorization/canEditLocalContent";
 import { useAppDispatch } from "@/template/state/store/useAppDispatch";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
@@ -76,8 +77,11 @@ export function LocalContentEditorPanelProvider({
   const effectiveRoles =
     useAppSelector(selectEffectiveRoles);
 
+  const canEditInUiPreview =
+    useAppSelector(selectCanEditInUiPreview);
+
   const canEdit =
-    isLoggedIn && canEditLocalContent(effectiveRoles);
+    isLoggedIn && canEditLocalContent(effectiveRoles) && canEditInUiPreview;
 
   // Authentication and role changes must close the panel
   // without waiting for an unsaved-changes confirmation.

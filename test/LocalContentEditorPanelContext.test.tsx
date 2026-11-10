@@ -31,6 +31,11 @@ type MockState = {
   api: {
     isLoggedIn: boolean;
   };
+  backendRoles: {
+    status: "ready";
+    roles: string[];
+    selectedPreviewRole?: "USER" | "EDITOR" | "ADMIN" | null;
+  };
   authorization: {
     assignedRole: "USER" | "EDITOR" | "ADMIN";
     previewRole: "USER" | "EDITOR" | null;
@@ -66,6 +71,11 @@ describe("LocalContentEditorPanelProvider authorization lifecycle", () => {
 
     state = {
       api: { isLoggedIn: true },
+      backendRoles: {
+        status: "ready",
+        roles: ["ADMIN", "EDITOR"],
+        selectedPreviewRole: "EDITOR",
+      },
       authorization: {
         assignedRole: "ADMIN",
         previewRole: null,
@@ -83,7 +93,7 @@ describe("LocalContentEditorPanelProvider authorization lifecycle", () => {
     );
   });
 
-  it("opens for an authenticated ADMIN", () => {
+  it("opens for ADMIN with assigned EDITOR role", () => {
     const { result } = renderHook(
       () => useLocalContentEditorPanel(),
       { wrapper },
@@ -119,7 +129,7 @@ describe("LocalContentEditorPanelProvider authorization lifecycle", () => {
     expect(result.current.confirmationPending).toBe(false);
   });
 
-  it("closes when ADMIN previews USER", () => {
+  it("keeps EDITOR rights when preview changes", () => {
     const { result, rerender } = renderHook(
       () => useLocalContentEditorPanel(),
       { wrapper },
@@ -139,6 +149,78 @@ describe("LocalContentEditorPanelProvider authorization lifecycle", () => {
 
     rerender({});
 
+    expect(result.current.request).toEqual(createRequest());
+  });
+
+  it("closes the panel when UI preview switches to USER", () => {
+    const { result, rerender } = renderHook(
+      () => useLocalContentEditorPanel(),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.openPanel(createRequest());
+      result.current.setUnsavedChanges(true);
+    });
+
+    expect(result.current.request).toEqual(createRequest());
+
+    state = {
+      ...state,
+      backendRoles: {
+        ...state.backendRoles,
+        selectedPreviewRole: "USER",
+      },
+    };
+
+    rerender({});
+
+    expect(result.current.request).toBeNull();
+    expect(result.current.unsavedChanges).toBe(false);
+    expect(result.current.confirmationPending).toBe(false);
+  });
+  it("rejects ADMIN without EDITOR", () => {
+    state = {
+      ...state,
+      backendRoles: {
+        status: "ready",
+        roles: ["ADMIN"],
+      },
+    };
+
+    const { result } = renderHook(
+      () => useLocalContentEditorPanel(),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.openPanel(createRequest());
+    });
+
+    expect(result.current.request).toBeNull();
+  });
+
+  it("closes when backend EDITOR role is revoked", () => {
+    const { result, rerender } = renderHook(
+      () => useLocalContentEditorPanel(),
+      { wrapper },
+    );
+
+    act(() => {
+      result.current.openPanel(createRequest());
+    });
+
+    expect(result.current.request).toEqual(createRequest());
+
+    state = {
+      ...state,
+      backendRoles: {
+        status: "ready",
+        roles: ["ADMIN"],
+      },
+    };
+
+    rerender({});
     expect(result.current.request).toBeNull();
   });
 
@@ -193,6 +275,10 @@ describe("LocalContentEditorPanelProvider authorization lifecycle", () => {
   it("rejects opening for USER", () => {
     state = {
       ...state,
+      backendRoles: {
+        status: "ready",
+        roles: ["USER"],
+      },
       authorization: {
         assignedRole: "USER",
         previewRole: null,

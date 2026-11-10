@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { useStore } from "react-redux";
 import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
 import {
   selectIsLoggedIn,
   selectIsLoggingOut,

@@ -15,6 +15,6 @@ export function canEditLocalContent(
   }
 
   return effectiveRoles.some(
-    role => role === "EDITOR" || role === "ADMIN",
+    role => role === "EDITOR",
   );
 }

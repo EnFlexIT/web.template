@@ -13,6 +13,7 @@ export interface MenuValidationError {
     | "INVALID_CAPTION"
     | "INVALID_POSITION"
     | "INVALID_VISIBILITY"
+    | "INVALID_GROUP_ROLES"
     | "MISSING_PARENT"
     | "CYCLIC_PARENT"
     | "MISSING_CONTENT_PAGE"
@@ -77,6 +78,27 @@ export function validateMenuDraft(
       });
     }
 
+    const assignedGroups: unknown = entry.groupRoles;
+
+    if (
+      assignedGroups !== undefined &&
+      (
+        !Array.isArray(assignedGroups) ||
+        !assignedGroups.every(
+          (role: unknown) =>
+            typeof role === "string" &&
+            role.length > 0 &&
+            role.trim() === role,
+        ) ||
+        new Set(assignedGroups).size !== assignedGroups.length
+      )
+    ) {
+      errors.push({
+        code: "INVALID_GROUP_ROLES",
+        entryId: entry.id,
+        message: `Invalid group roles: ${entry.id}`,
+      });
+    }
     if (!entry.caption.trim()) {
       errors.push({
         code: "INVALID_CAPTION",

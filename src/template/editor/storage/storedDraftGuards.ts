@@ -34,6 +34,19 @@ export function isStoredContentEntry(
         value.contentPageId.trim().length > 0
       )
     ) &&
+    (
+      value.groupRoles === undefined ||
+      (
+        Array.isArray(value.groupRoles) &&
+        value.groupRoles.every(
+          (role: unknown) =>
+            typeof role === "string" &&
+            role.length > 0 &&
+            role.trim() === role,
+        ) &&
+        new Set(value.groupRoles).size === value.groupRoles.length
+      )
+    ) &&
     value.menuID === undefined &&
     (
       value.hidden === undefined ||

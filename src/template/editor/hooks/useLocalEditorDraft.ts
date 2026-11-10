@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "react-redux";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
 import {
   selectIsLoggedIn,
   selectIsLoggingOut,
 } from "@/template/state/api/apiSlice";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
 import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
 import { canEditLocalContent } from "../authorization/canEditLocalContent";
 import type { EditorStorageScope } from "../storage/localEditorDraftStorage";
@@ -74,9 +75,14 @@ export function useLocalEditorDraft({
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
   const isLoggingOut = useAppSelector(selectIsLoggingOut);
 
+  const canEditInUiPreview =
+    useAppSelector(selectCanEditInUiPreview);
+
   const sessionAllowed = isLoggedIn && !isLoggingOut;
   const canEdit =
-    sessionAllowed && canEditLocalContent(effectiveRoles);
+    sessionAllowed &&
+    canEditLocalContent(effectiveRoles) &&
+    canEditInUiPreview;
 
   const sessionRef = useRef({
     allowed: sessionAllowed,
@@ -100,7 +106,8 @@ export function useLocalEditorDraft({
       sessionRef.current.generation === generation &&
       selectIsLoggedIn(state) &&
       !selectIsLoggingOut(state) &&
-      canEditLocalContent(selectEffectiveRoles(state))
+      canEditLocalContent(selectEffectiveRoles(state)) &&
+      selectCanEditInUiPreview(state)
     );
   }, [generation, store]);
 
@@ -221,6 +228,7 @@ export function useLocalEditorDraft({
     storageScope,
     sessionAllowed,
     generation,
+    canEdit,
   ]);
 
   useEffect(() => {
@@ -287,7 +295,8 @@ export function useLocalEditorDraft({
       !loaded ||
       status !== "error" ||
       !canEdit ||
-      retryInProgress.current
+      retryInProgress.current ||
+      !canWriteInSession()
     ) {
       return;
     }

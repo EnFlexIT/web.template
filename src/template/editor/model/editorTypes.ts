@@ -27,6 +27,7 @@ export interface EditorMenuEntry {
 
   contentPageId?: string;
   hidden?: boolean;
+  groupRoles?: string[];
 }
 
 /**

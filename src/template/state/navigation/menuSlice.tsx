@@ -21,6 +21,11 @@ import {
 } from "./adapters/normalizeBackendMenus";
 
 import {
+  captureBackendMenuRequestIdentity,
+  isCurrentBackendMenuRequest,
+} from "./isCurrentBackendMenuRequest";
+
+import {
   filterValidDynamicMenuHierarchy,
 } from "./adapters/filterValidDynamicMenuHierarchy";
 import type {
@@ -79,6 +84,12 @@ export interface MenuState {
   menu: MenuTree[];
 
   rawMenu: MenuItem[];
+
+  /**
+   * Latest menu initialization request.
+   * Null invalidates all earlier responses.
+   */
+  pendingRequestId?: string | null;
 
   activeMenuId:
     number | undefined;
@@ -477,6 +488,9 @@ export const initializeMenu =
       const defaultMenuID =
         getConfiguredDefaultMenuID();
 
+      const requestIdentity =
+        captureBackendMenuRequestIdentity(state);
+
       if (
         !state.api
           .isPointingToServer ||
@@ -498,12 +512,33 @@ export const initializeMenu =
             .defaultApi
             .menuGet(
               lang,
+              {
+                params:
+                  requestIdentity.role === null
+                    ? {}
+                    : { forRole: requestIdentity.role },
+              },
             );
+
+        if (
+          !isCurrentBackendMenuRequest(
+            thunkAPI.getState() as TemplateRootState,
+            requestIdentity,
+          )
+        ) {
+          return {
+            dynamicMenu: [],
+            staticMenu,
+            authenticationMethod,
+            defaultMenuID,
+          };
+        }
 
         const dynamicMenuCandidates =
           normalizeBackendMenus(
             response?.data as unknown,
           );
+
 
         if (
           dynamicMenuCandidates.length === 0
@@ -536,6 +571,7 @@ export const initializeMenu =
             staticMenu,
           );
 
+
         return {
           dynamicMenu,
           staticMenu,
@@ -545,6 +581,20 @@ export const initializeMenu =
       } catch (
         error
       ) {
+        if (
+          !isCurrentBackendMenuRequest(
+            thunkAPI.getState() as TemplateRootState,
+            requestIdentity,
+          )
+        ) {
+          return {
+            dynamicMenu: [],
+            staticMenu,
+            authenticationMethod,
+            defaultMenuID,
+          };
+        }
+
         console.warn(
           "initializeMenu failed, fallback to static menu",
           error,
@@ -612,6 +662,31 @@ export const updateMenu =
   );
 
 
+/**
+ * Immediately hides dynamic backend menus.
+ * Keeps previously validated static application entries.
+ */
+function invalidateDynamicMenu(
+  state: MenuState,
+): void {
+  const staticMenu = state.rawMenu.filter(
+    (item) => !isDynamicMenuItem(item),
+  );
+
+  state.pendingRequestId = null;
+  state.rawMenu = staticMenu;
+  state.menu = rawListToTrees(staticMenu);
+
+  if (
+    !staticMenu.some(
+      (item) => item.menuID === state.activeMenuId,
+    )
+  ) {
+    state.activeMenuId =
+      getFirstUsableMenuId(staticMenu);
+  }
+}
+
 type ReplaceWithStaticMenuPayload = {
   items: MenuItem[];
 
@@ -660,6 +735,8 @@ export const menuSlice =
         } =
           action.payload;
 
+        state.pendingRequestId = null;
+
         state.rawMenu =
           staticMenu;
 
@@ -683,12 +760,31 @@ export const menuSlice =
       builder,
     ) => {
       builder.addCase(
+        initializeMenu.pending,
+        (state, action) => {
+          invalidateDynamicMenu(state);
+          state.pendingRequestId =
+            action.meta.requestId;
+        },
+      );
+
+      builder.addCase(
         initializeMenu
           .fulfilled,
         (
           state,
           action,
         ) => {
+          if (
+            state.pendingRequestId !== undefined &&
+            action.meta?.requestId !==
+              state.pendingRequestId
+          ) {
+            return;
+          }
+
+          state.pendingRequestId = null;
+
           const {
             dynamicMenu,
             staticMenu,
@@ -729,9 +825,37 @@ export const menuSlice =
 
       builder.addCase(
         internalSetLanguage,
-        () => {
-          // No reducer change required.
-          // Menu initialization is handled separately.
+        (state) => {
+          invalidateDynamicMenu(state);
+        },
+      );
+
+      const invalidateActions = new Set([
+        "groupRoles/selectGroupRole",
+        "groupRoles/selectPublicGroupView",
+        "groupRoles/groupRolesRequested",
+        "groupRoles/groupRolesReceived",
+        "groupRoles/groupRolesFailed",
+        "groupRoles/resetGroupRoles",
+        "backendRoles/backendRolesRequested",
+        "backendRoles/backendRolesReceived",
+        "backendRoles/backendRolesFailed",
+        "backendRoles/backendRolesReset",
+        "api/initialize/pending",
+        "api/setIpAsync/pending",
+        "api/switchServer/pending",
+        "api/login/pending",
+        "api/setConnectionLocal",
+        "api/setJwtLocal",
+        "api/logoutLocal",
+        "api/logoutAsync/pending",
+        "api/resetAuthAfterConfigurationChange/pending",
+      ]);
+
+      builder.addMatcher(
+        (action) => invalidateActions.has(action.type),
+        (state) => {
+          invalidateDynamicMenu(state);
         },
       );
     },

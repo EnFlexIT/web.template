@@ -4,6 +4,10 @@ jest.mock("react-redux", () => {
       isLoggedIn: true,
       isLoggingOut: false,
     },
+    backendRoles: {
+      status: "ready",
+      roles: ["EDITOR"],
+    },
     authorization: {
       assignedRole: "ADMIN",
       previewRole: null,
@@ -212,6 +216,8 @@ describe("LocalContentPagePreviewScreen", () => {
 
     state.api.isLoggedIn = true;
     state.api.isLoggingOut = false;
+    state.backendRoles.status = "ready";
+    state.backendRoles.roles = ["EDITOR"];
 
     mockedRoute.mockReturnValue({
       params: { pageId: "page:guide" },

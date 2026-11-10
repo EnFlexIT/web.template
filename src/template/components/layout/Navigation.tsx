@@ -50,9 +50,7 @@ import {
   selectApi,
 } from "@/template/state/api/apiSlice";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 import {
   getNavigationRuntime,
@@ -98,7 +96,7 @@ import {
   useSharedLocalContentPreview,
 } from "@/template/editor/context/LocalContentPreviewContext";
 
-import { canEditLocalContent } from "@/template/editor/authorization/canEditLocalContent";
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
 import { useLocalContentEditorPanel } from "@/template/editor/context/LocalContentEditorPanelContext";
 
 import { Dropdown } from "@/template/components/design-system/ui-elements/Dropdown";
@@ -172,6 +170,8 @@ function DrawerItem({
     useAppSelector(
       selectEffectiveRoles,
     );
+  const canUseContentEditor =
+    useAppSelector(selectCanEditInUiPreview);
 
   const [
     hovered,
@@ -421,12 +421,12 @@ function DrawerItem({
                 roots={localChildren}
                 onPagePress={onLocalPagePress}
                 onCreate={
-                  canEditLocalContent(effectiveRoles)
+                  canUseContentEditor
                     ? onLocalCreate
                     : undefined
                 }
                 onManage={
-                  canEditLocalContent(effectiveRoles)
+                  canUseContentEditor
                     ? onLocalManage
                     : undefined
                 }
@@ -476,7 +476,7 @@ export function Navigation({
     createMode: "folder" | "page",
     parentId: string,
   ) => {
-    if (!canEditLocalContent(effectiveRoles)) return;
+    if (!canUseContentEditor) return;
 
     if (createMode === "folder" || createMode === "page") {
       openPanel({ kind: "create", parentId, mode: createMode });
@@ -495,7 +495,7 @@ export function Navigation({
     entryId: string,
     manageAction: "rename" | "move" | "delete" | "open" | "visibility" = "open",
   ) => {
-    if (!isLoggedIn || !canEditLocalContent(effectiveRoles)) return;
+    if (!isLoggedIn || !canUseContentEditor) return;
 
     if (manageAction === "visibility") {
       if (!localDraftState || localDraftState.status !== "ready") return;
@@ -557,8 +557,10 @@ export function Navigation({
 
   const effectiveRoles =
     useAppSelector(selectEffectiveRoles);
+  const canUseContentEditor =
+    useAppSelector(selectCanEditInUiPreview);
 
-  const localPreviewRoots = canEditLocalContent(effectiveRoles)
+  const localPreviewRoots = canUseContentEditor
     ? localPreview.roots
     : filterVisibleLocalContent(localPreview.roots);
 
@@ -574,6 +576,7 @@ export function Navigation({
           },
         ),
     );
+
 
   const {
     pathById,
@@ -660,7 +663,7 @@ export function Navigation({
         </View>
       </View>
 
-      {canEditLocalContent(effectiveRoles) &&
+      {canUseContentEditor &&
         navigation.editor?.allowedContentParentIds?.includes("static:3900") && (
           <View
             style={{

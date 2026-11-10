@@ -4,6 +4,10 @@ jest.mock("react-redux", () => {
       isLoggedIn: true,
       isLoggingOut: false,
     },
+    backendRoles: {
+      status: "ready",
+      roles: ["EDITOR"],
+    },
     authorization: {
       assignedRole: "ADMIN",
       previewRole: null,
@@ -134,6 +138,9 @@ describe("useLocalEditorDraft", () => {
 
     state.api.isLoggedIn = true;
     state.api.isLoggingOut = false;
+    state.backendRoles.status = "ready";
+    state.backendRoles.roles = ["EDITOR"];
+    state.backendRoles.selectedPreviewRole = "EDITOR";
 
     mockedSave.mockResolvedValue(undefined);
   });
@@ -1158,6 +1165,7 @@ describe("useLocalEditorDraft", () => {
 
       // Simulate a backend/effective-role change before retry.
       state.authorization.assignedRole = "USER";
+      state.backendRoles.roles = [];
 
       await act(async () => {
         await result.current.retrySave();

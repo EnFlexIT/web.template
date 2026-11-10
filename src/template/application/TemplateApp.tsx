@@ -95,15 +95,17 @@ import {
   useIsWide,
 } from "@template";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 import {
   initializeApi,
   selectAuthenticationMethod,
   selectIsLoggedIn,
 } from "@/template/state/api/apiSlice";
+
+import { useBackendRolesSync } from "@/template/state/authorization/useBackendRolesSync";
+import { useGroupRolesSync } from "@/template/state/authorization/useGroupRolesSync";
+import { selectBackendMenuPreviewRole } from "@/template/state/authorization/selectBackendMenuPreviewRole";
 
 import type {
   TemplateStore,
@@ -277,6 +279,53 @@ function RootStack<
         "oidc",
   });
 
+  /*
+   * Fetch authenticated backend roles after application boot.
+   * Backend roles do not control frontend permissions yet.
+   */
+  useBackendRolesSync({
+    enabled: !isLoading,
+  });
+
+  useGroupRolesSync({
+    enabled: !isLoading,
+  });
+
+  /**
+   * Load the dynamic menu for the selected,
+   * backend-verified role.
+   *
+   * This selection changes only menu presentation,
+   * never the user's actual permissions.
+   */
+  const backendMenuPreviewRole = useAppSelector(
+    selectBackendMenuPreviewRole,
+  );
+
+  const backendRolesStatus = useAppSelector(
+    state => state.backendRoles.status,
+  );
+
+  const groupRolesStatus = useAppSelector(
+    state => state.groupRoles.status,
+  );
+
+  useEffect(() => {
+    // A null group role is the valid public menu view.
+    // Reload after login, role synchronization or group changes.
+    if (isLoading || !isLoggedIn) {
+      return;
+    }
+
+    void dispatch(initializeMenu());
+  }, [
+    dispatch,
+    isLoading,
+    isLoggedIn,
+    backendMenuPreviewRole,
+    backendRolesStatus,
+    groupRolesStatus,
+  ]);
   const isWide =
     useIsWide();
 
