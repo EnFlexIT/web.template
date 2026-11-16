@@ -146,6 +146,28 @@ export function BackendMenuContentScreenV2({
   const [moveMessage, setMoveMessage] = useState("");
   const moveBusyRef = useRef(false);
 
+  const moveMessageSuccess =
+    moveMessage.startsWith("Reihenfolge erfolgreich") ||
+    moveMessage.startsWith("Sortierung gespeichert");
+
+  const moveMessageWarning =
+    moveMessage.includes("Möglicherweise") ||
+    moveMessage.includes("nicht sicher") ||
+    moveMessage.includes("nicht sicher bestaetigt") ||
+    moveMessage.includes("erneutes Laden fehlgeschlagen");
+
+  useEffect(() => {
+    if (!moveMessageSuccess) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setMoveMessage("");
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [moveMessage, moveMessageSuccess]);
+
   const [pendingRemoval, setPendingRemoval] = useState<{
     elementId: number;
     scopeKey: string;
@@ -750,7 +772,55 @@ export function BackendMenuContentScreenV2({
         )}
 
         {!!moveMessage && (
-          <ThemedText>{moveMessage}</ThemedText>
+          <View
+            testID="backend-order-save-notification"
+            accessibilityRole="alert"
+            style={{
+              padding: 14,
+              borderRadius: 8,
+              borderWidth: 1,
+              gap: 6,
+              backgroundColor: moveMessageSuccess
+                ? "#e8f5e9"
+                : moveMessageWarning
+                  ? "#fff3e0"
+                  : "#ffebee",
+              borderColor: moveMessageSuccess
+                ? "#81c784"
+                : moveMessageWarning
+                  ? "#ffb74d"
+                  : "#e57373",
+            }}
+          >
+            <ThemedText
+              style={{
+                fontWeight: "700",
+                color: moveMessageSuccess
+                  ? "#1b5e20"
+                  : moveMessageWarning
+                    ? "#8a4b00"
+                    : "#b71c1c",
+              }}
+            >
+              {moveMessageSuccess
+                ? "✓ Reihenfolge gespeichert"
+                : moveMessageWarning
+                  ? "⚠ Speicherung nicht vollständig bestätigt"
+                  : "✕ Speichern fehlgeschlagen"}
+            </ThemedText>
+
+            <ThemedText
+              style={{
+                color: moveMessageSuccess
+                  ? "#1b5e20"
+                  : moveMessageWarning
+                    ? "#8a4b00"
+                    : "#b71c1c",
+              }}
+            >
+              {moveMessage}
+            </ThemedText>
+          </View>
         )}
 
         {!!removeMessage && (
