@@ -1,3 +1,8 @@
+import { useStore } from "react-redux";
+import type {
+  TemplateRootState,
+} from "@/template/state/store/templateStoreTypes";
+
 import React, {
   type ReactNode,
   useEffect,
@@ -15,6 +20,9 @@ import {
 import {
   SiteContentList,
 } from "@/template/components/dynamic-content/content/SiteContentList";
+import {
+  normalizeDynSiteContentResponse,
+} from "./normalizeDynSiteContentResponse";
 
 import type {
   MenuItem,
@@ -25,7 +33,6 @@ import {
 } from "@/template/state/store/useAppSelector";
 
 import {
-  selectApi,
   selectAuthenticationMethod,
   selectIsLoggedIn,
   selectJwt,
@@ -50,10 +57,13 @@ interface DynamicScreenProps {
 export function DynamicScreen({
   node,
 }: DynamicScreenProps) {
-  const {
-    dynamic_content_api,
-  } = useAppSelector(
-    selectApi,
+  const store = useStore();
+
+  // JWT rotation replaces API clients, but must not reload this screen.
+  // Login/server changes still invalidate the current content request.
+  const dynamicScreenServer = useAppSelector(state => state.api.ip);
+  const dynamicScreenAuthGeneration = useAppSelector(
+    state => state.api.authGeneration,
   );
 
   const isLoggedIn =
@@ -138,21 +148,29 @@ export function DynamicScreen({
             return;
           }
 
+          // Resolve the current client only when a new request starts.
+          // A token-only rotation does not restart the loading effect.
+          const requestApi = (
+            store.getState() as TemplateRootState
+          ).api.dynamic_content_api.defaultApi;
+
           const response =
-            await dynamic_content_api
-              .defaultApi
-              .contentMenuIDGet(
-                -node.menuID,
-              );
+            await requestApi.contentMenuIDGet(
+              node.menuID,
+            );
 
           if (!alive) {
             return;
           }
 
+
+
+          const normalizedContent = normalizeDynSiteContentResponse(response.data);
+
           setElement(
             <SiteContentList
               siteContentList={
-                response.data
+                normalizedContent
               }
             />,
           );
@@ -204,7 +222,9 @@ export function DynamicScreen({
   }, [
     enabled,
     canLoad,
-    dynamic_content_api,
+    store,
+    dynamicScreenServer,
+    dynamicScreenAuthGeneration,
     node.menuID,
   ]);
 

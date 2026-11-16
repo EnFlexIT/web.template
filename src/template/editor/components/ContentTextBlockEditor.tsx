@@ -29,6 +29,7 @@ import {
 
 export interface ContentTextBlockEditorProps {
   blockId: string;
+  compactToolbar?: boolean;
   html: string;
   onChange: (
     blockId: string,
@@ -43,6 +44,7 @@ export interface ContentTextBlockEditorProps {
  */
 export function ContentTextBlockEditor({
   blockId,
+  compactToolbar = false,
   html,
   onChange,
 }: ContentTextBlockEditorProps) {
@@ -106,7 +108,7 @@ export function ContentTextBlockEditor({
         backgroundColor: theme.colors.card,
       }}
     >
-      <RichTextToolbar editor={editor} />
+      <RichTextToolbar editor={editor} compact={compactToolbar} />
 
       <View
         style={{

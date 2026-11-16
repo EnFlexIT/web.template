@@ -25,7 +25,8 @@ import {
 import {
   LocalContentEditorPanelProvider,
 } from "@/template/editor/context/LocalContentEditorPanelContext";
-import { LocalContentEditorPanel } from "@/template/editor/components/LocalContentEditorPanel";
+import { ResponsiveBackendEditorWorkspace } from "@/template/editor/components/ResponsiveBackendEditorWorkspace";
+import { BackendContentLivePreviewProvider } from "@/template/editor/context/BackendContentLivePreviewContext";
 import React, {
   useCallback,
   useEffect,
@@ -1020,6 +1021,8 @@ function RootStack<
           screens: {
             ...screensConfig,
 
+            "3027": "content-menu-editor",
+
             Login:
               "/login",
 
@@ -1125,18 +1128,9 @@ function RootStack<
                 isLoggedIn
               }
             >
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  minWidth: 0,
-                }}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  {children}
-                </View>
-                <LocalContentEditorPanel />
-              </View>
+              <ResponsiveBackendEditorWorkspace>
+                {children}
+              </ResponsiveBackendEditorWorkspace>
             </DeveloperConsole>
           </View>
         )}
@@ -1208,6 +1202,17 @@ function RootStack<
                 }}
               />
             )}
+            {/* Route independent of dynamically loaded backend menus. */}
+            {!rawMenu.some(item => item.menuID === 3027) && (
+              <Drawer.Screen
+                name="3027"
+                component={ContentMenuEditorEntryScreen}
+                options={{
+                  title: config.displayName,
+                  drawerItemStyle: { display: "none" },
+                }}
+              />
+            )}
             <Drawer.Screen
               name="NotFound"
               component={
@@ -1249,6 +1254,9 @@ function RootStack<
 
 
 import { RegularLocalEditorDraftProvider } from "@/template/editor/context/RegularLocalEditorDraftProvider";
+import {
+  ContentMenuEditorEntryScreen,
+} from "@/template/editor/screens/ContentMenuEditorEntryScreen";
 
 export default function TemplateApp<
   TState = unknown,
@@ -1281,6 +1289,7 @@ export default function TemplateApp<
             }}
           >
             <LocalContentPreviewProvider>
+              <BackendContentLivePreviewProvider>
               <RegularLocalEditorDraftProvider>
                 <RootStack
                   config={
@@ -1288,6 +1297,7 @@ export default function TemplateApp<
                   }
                 />
               </RegularLocalEditorDraftProvider>
+              </BackendContentLivePreviewProvider>
             </LocalContentPreviewProvider>
           </View>
 

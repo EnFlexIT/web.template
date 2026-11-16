@@ -7,7 +7,8 @@ import {
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
+import { selectAvailableGroupRoles } from "@/template/state/authorization/selectGroupMenuRole";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import { createRuntimeMenuSnapshot } from "../adapters/createRuntimeMenuSnapshot";
@@ -33,12 +34,19 @@ export function LocalContentFolderCreateForm({
   const { id: applicationId, navigation } = useApplicationConfig();
   const effectiveRoles = useAppSelector(selectEffectiveRoles);
   const canEdit = canEditLocalContent(effectiveRoles);
+  const availableGroupRoles = useAppSelector(selectAvailableGroupRoles);
 
   const { draft, setDraft, status, storageError } =
     useSharedLocalEditorDraft();
 
   const [folderTitle, setFolderTitle] = useState("");
   const [folderError, setFolderError] = useState("");
+  const [visibilityMode, setVisibilityMode] = useState<"public" | "groups">("public");
+  const [selectedGroupRoles, setSelectedGroupRoles] = useState<string[]>([]);
+
+  const validSelectedRoles = selectedGroupRoles.filter(
+    role => availableGroupRoles.includes(role),
+  );
 
   const snapshot = useMemo(
     () => createRuntimeMenuSnapshot(applicationId),
@@ -87,6 +95,11 @@ export function LocalContentFolderCreateForm({
       return;
     }
 
+    if (visibilityMode === "groups" && validSelectedRoles.length === 0) {
+      setFolderError("Bitte mindestens eine verfügbare Gruppenrolle auswählen.");
+      return;
+    }
+
     const existingErrors = validateEditorDraft(
       draft,
       snapshot.protectedEntries,
@@ -129,8 +142,23 @@ export function LocalContentFolderCreateForm({
       return;
     }
 
+    const preparedDraft = {
+      ...result.draft,
+      entries: result.draft.entries.map(entry =>
+        entry.id === result.entryId
+          ? {
+              ...entry,
+              groupRoles:
+                visibilityMode === "public"
+                  ? []
+                  : validSelectedRoles,
+            }
+          : entry,
+      ),
+    };
+
     const nextErrors = validateEditorDraft(
-      result.draft,
+      preparedDraft,
       snapshot.protectedEntries,
       placementPolicy,
       snapshot.inventory,
@@ -143,7 +171,7 @@ export function LocalContentFolderCreateForm({
       return;
     }
 
-    setDraft(result.draft);
+    setDraft(preparedDraft);
     setFolderTitle("");
     onClose();
   }
@@ -165,6 +193,51 @@ export function LocalContentFolderCreateForm({
         placeholder="Zum Beispiel: Dokumentation"
       />
 
+      <ThemedText style={{ fontWeight: "600" }}>
+        Menüsichtbarkeit
+      </ThemedText>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        <ActionButton
+          label={visibilityMode === "public" ? "Öffentlich (ausgewählt)" : "Öffentlich"}
+          onPress={() => setVisibilityMode("public")}
+        />
+        <ActionButton
+          label={visibilityMode === "groups" ? "Gruppen (ausgewählt)" : "Bestimmte Gruppen"}
+          disabled={availableGroupRoles.length === 0}
+          onPress={() => setVisibilityMode("groups")}
+        />
+      </View>
+
+      {availableGroupRoles.length === 0 && (
+        <ThemedText>
+          Die Gruppenauswahl ist verfügbar, sobald die zugewiesenen Gruppenrollen
+          vom Backend geladen wurden. Öffentliche Menüs sind bereits möglich.
+        </ThemedText>
+      )}
+
+      {visibilityMode === "groups" && (
+        <View style={{ gap: 8 }}>
+          <ThemedText>
+            Gruppenrollen auswählen:
+          </ThemedText>
+          {availableGroupRoles.map(role => {
+            const selected = validSelectedRoles.includes(role);
+
+            return (
+              <ActionButton
+                key={role}
+                label={selected ? `${role} (ausgewählt)` : role}
+                onPress={() => setSelectedGroupRoles(previous =>
+                  previous.includes(role)
+                    ? previous.filter(value => value !== role)
+                    : [...previous, role],
+                )}
+              />
+            );
+          })}
+        </View>
+      )}
       {status === "loading" && (
         <ThemedText>
           Lokaler Entwurf wird geladen.
@@ -206,6 +279,7 @@ export function LocalContentFolderCreateForm({
             !canEdit ||
             !editorReady ||
             !folderTitle.trim() ||
+            (visibilityMode === "groups" && validSelectedRoles.length === 0) ||
             !parent ||
             draft.applicationId !== applicationId
           }

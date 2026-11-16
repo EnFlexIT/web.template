@@ -88,6 +88,10 @@ import {
   LocalContentSidebarTree,
 } from "@/template/editor/components/LocalContentSidebarTree";
 
+import {
+  BackendMenuContextActionsV2,
+} from "@/template/editor/components/BackendMenuContextActionsV2";
+
 import type {
   LocalContentPreviewNode,
 } from "@/template/editor/adapters/buildLocalContentPreview";
@@ -293,6 +297,8 @@ function DrawerItem({
         styles.innerContainer
       }
     >
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
       <Pressable
         onPress={() => {
           dispatch(
@@ -374,6 +380,11 @@ function DrawerItem({
               )}
         </Text>
       </Pressable>
+        </View>
+        {isDynamicMenuItem(node.val) && (
+          <BackendMenuContextActionsV2 menuId={id} />
+        )}
+      </View>
 
       {isFolder &&
         isOpen && (

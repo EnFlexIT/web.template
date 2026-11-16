@@ -1,4 +1,4 @@
-﻿/// <reference types="jest" />
+/// <reference types="jest" />
 
 jest.mock(
   "@react-native-async-storage/async-storage",
@@ -67,6 +67,7 @@ jest.mock(
   },
 );
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import reducer, {
   initializeApi,
   login,
@@ -76,6 +77,9 @@ import reducer, {
   setIsLogoutDialogOpen,
   setJwtLocal,
   switchServer,
+  setJwtForServer,
+  loadJwtByServer,
+  jwtByServerKey,
 } from "@/template/state/api/apiSlice";
 
 /**
@@ -104,6 +108,101 @@ describe("apiSlice", () => {
     );
   });
 
+  it("V2 state: rotates the client on server changes", () => {
+    const first = reducer(
+      undefined,
+      setConnectionLocal({
+        ip: "https://server-a.example",
+        jwt: null,
+        isPointingToServer: true,
+        authenticationMethod: "jwt",
+        isBaseMode: false,
+        authenticated: false,
+      }),
+    );
+
+    const second = reducer(
+      first,
+      setConnectionLocal({
+        ip: "https://server-b.example",
+        jwt: null,
+        isPointingToServer: true,
+        authenticationMethod: "jwt",
+        isBaseMode: false,
+        authenticated: false,
+      }),
+    );
+
+    expect((first.dynamic_content_api_v2.defaultApi as unknown as { configuration: { basePath?: string } }).configuration.basePath)
+      .toBe("https://server-a.example/dc");
+    expect((second.dynamic_content_api_v2.defaultApi as unknown as { configuration: { basePath?: string } }).configuration.basePath)
+      .toBe("https://server-b.example/dc");
+    expect(second.dynamic_content_api_v2.defaultApi)
+      .not.toBe(first.dynamic_content_api_v2.defaultApi);
+  });
+
+  it("V2 state: refreshes the client after a JWT change", () => {
+    const first = reducer(
+      undefined,
+      setConnectionLocal({
+        ip: "https://server-a.example",
+        jwt: "old-token",
+        isPointingToServer: true,
+        authenticationMethod: "jwt",
+        isBaseMode: false,
+        authenticated: false,
+      }),
+    );
+
+    const second = reducer(first, setJwtLocal("new-token"));
+
+    const inspect = (state: typeof first) =>
+      state.dynamic_content_api_v2.defaultApi as unknown as {
+        configuration: {
+          baseOptions?: {
+            headers?: Record<string, string>;
+          };
+        };
+      };
+
+    expect(inspect(first).configuration.baseOptions?.headers?.Authorization)
+      .toBe("Bearer old-token");
+    expect(inspect(second).configuration.baseOptions?.headers?.Authorization)
+      .toBe("Bearer new-token");
+    expect(second.dynamic_content_api_v2.defaultApi)
+      .not.toBe(first.dynamic_content_api_v2.defaultApi);
+  });
+
+  it("V2 state: clears the JWT configuration on logout", () => {
+    const loggedIn = reducer(
+      undefined,
+      setConnectionLocal({
+        ip: "https://server-a.example",
+        jwt: VALID_TEST_JWT,
+        isPointingToServer: true,
+        authenticationMethod: "jwt",
+        isBaseMode: false,
+        authenticated: true,
+      }),
+    );
+
+    const loggedOut = reducer(loggedIn, logoutLocal());
+
+    const client = loggedOut.dynamic_content_api_v2.defaultApi as unknown as {
+      configuration: {
+        baseOptions?: {
+          headers?: Record<string, string>;
+        };
+      };
+    };
+
+    expect(loggedOut.jwt).toBeNull();
+    expect(loggedOut.isLoggedIn).toBe(false);
+    expect(client.configuration.baseOptions?.headers?.Authorization)
+      .toBeUndefined();
+    expect(loggedOut.dynamic_content_api_v2.defaultApi)
+      .not.toBe(loggedIn.dynamic_content_api_v2.defaultApi);
+  });
   it("should set connection local without jwt", () => {
     const state = reducer(
       undefined,
@@ -204,6 +303,9 @@ describe("apiSlice", () => {
         dynamic_content_api:
           current.dynamic_content_api,
 
+        dynamic_content_api_v2:
+          current.dynamic_content_api_v2,
+
         authenticationMethod: "jwt",
         ip: "http://localhost:8080",
         jwt: null,
@@ -270,5 +372,46 @@ describe("apiSlice", () => {
     expect(state.isSwitchingServer).toBe(
       false,
     );
+  });
+});
+
+describe("concurrent JWT storage writes", () => {
+  it("preserves tokens for two servers when writes overlap", async () => {
+    const storage = new Map<string, string>();
+    let firstRead = true;
+
+    const getSpy = jest.spyOn(AsyncStorage, "getItem").mockImplementation(
+      async (key) => {
+        const value = storage.get(key) ?? null;
+
+        if (key === jwtByServerKey && firstRead) {
+          firstRead = false;
+          await new Promise<void>((resolve) => setTimeout(resolve, 10));
+        }
+
+        return value;
+      },
+    );
+
+    const setSpy = jest.spyOn(AsyncStorage, "setItem").mockImplementation(
+      async (key, value) => {
+        storage.set(key, value);
+      },
+    );
+
+    try {
+      await Promise.all([
+        setJwtForServer("http://localhost:8080", "token-A"),
+        setJwtForServer("http://localhost:9090", "token-B"),
+      ]);
+
+      const saved = await loadJwtByServer();
+
+      expect(saved["http://localhost:8080"]).toBe("token-A");
+      expect(saved["http://localhost:9090"]).toBe("token-B");
+    } finally {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    }
   });
 });

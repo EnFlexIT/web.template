@@ -5,7 +5,7 @@ import { useApplicationConfig } from "@/template/application/ApplicationConfigCo
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
 import { ActionButton } from "@/template/components/design-system/ui-elements/ActionButton";
 import { TextInput } from "@/template/components/design-system/ui-elements/TextInput";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
 
 import { createRuntimeMenuSnapshot } from "../adapters/createRuntimeMenuSnapshot";

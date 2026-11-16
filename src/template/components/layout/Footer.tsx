@@ -51,8 +51,8 @@ import {
 
 import { ServerLoginModal } from "@/template/screens/login/ServerLoginModal";
 
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
-import { canEditLocalContent } from "@/template/editor/authorization/canEditLocalContent";
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
+
 import { useLocalContentEditorPanel } from "@/template/editor/context/LocalContentEditorPanelContext";
 const Feather = withUnistyles(Feather_);
 
@@ -72,7 +72,7 @@ function extractBearerToken(value: unknown): string | null {
 
 export function Footer() {
   const dispatch = useAppDispatch();
-  const effectiveRoles = useAppSelector(selectEffectiveRoles);
+  const canUseContentEditor = useAppSelector(selectCanEditInUiPreview);
   const {
     request: editorRequest,
     openPanel,
@@ -110,7 +110,7 @@ export function Footer() {
   Platform.OS === "web" && width >= 1024 &&!isMobileShellRuntime();
   const showContentEditorButton =
     showDeveloperConsoleButton &&
-    canEditLocalContent(effectiveRoles);
+    canUseContentEditor;
 
   useEffect(() => {
     async function loadReleaseType() {

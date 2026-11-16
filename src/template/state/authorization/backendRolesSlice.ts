@@ -13,6 +13,7 @@ export interface BackendRolesState {
   status: BackendRolesStatus;
   roles: string[];
   selectedPreviewRole: string | null;
+  previewRoleToRestore: string | null;
   error: string | null;
   requestId: string | null;
   sessionKey: string | null;
@@ -22,6 +23,7 @@ const initialState: BackendRolesState = {
   status: "idle",
   roles: [],
   selectedPreviewRole: null,
+  previewRoleToRestore: null,
   error: null,
   requestId: null,
   sessionKey: null,
@@ -49,6 +51,7 @@ const backendRolesSlice = createSlice({
       }
 
       state.selectedPreviewRole = action.payload === "USER" ? null : action.payload;
+      state.previewRoleToRestore = null;
     },
     backendRolesRequested(
       state,
@@ -81,8 +84,18 @@ const backendRolesSlice = createSlice({
       }
 
       state.status = "ready";
-      state.selectedPreviewRole = null;
       state.roles = action.payload.roles;
+
+      const requestedPreview = state.previewRoleToRestore;
+
+      state.selectedPreviewRole =
+        requestedPreview !== null &&
+        (requestedPreview === "EDITOR" || requestedPreview === "ADMIN") &&
+        state.roles.includes(requestedPreview)
+          ? requestedPreview
+          : null;
+
+      state.previewRoleToRestore = null;
       state.error = null;
     },
 
@@ -118,7 +131,7 @@ const backendRolesSlice = createSlice({
       "api/switchServer/pending",
       "api/login/pending",
       "api/setConnectionLocal",
-      "api/setJwtLocal",
+
       "api/logoutLocal",
       "api/logoutAsync/pending",
       "api/resetAuthAfterConfigurationChange/pending",
@@ -127,6 +140,23 @@ const backendRolesSlice = createSlice({
     builder.addMatcher(
       (action) => resetActions.has(action.type),
       () => initialState,
+    );
+
+    // JWT rotation invalidates verified roles, but keeps the requested
+    // preview dormant until the backend confirms it again.
+    builder.addMatcher(
+      (action) => action.type === "api/setJwtLocal",
+      (state) => {
+        const requestedPreview =
+          state.status === "ready"
+            ? state.selectedPreviewRole
+            : state.previewRoleToRestore;
+
+        return {
+          ...initialState,
+          previewRoleToRestore: requestedPreview,
+        };
+      },
     );
   },
 });

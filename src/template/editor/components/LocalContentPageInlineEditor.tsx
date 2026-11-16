@@ -4,9 +4,7 @@ import {
   useAppSelector,
 } from "@/template/state/store/useAppSelector";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
 
 import {
   canEditLocalContent,

@@ -123,9 +123,9 @@ export function RolePreviewSwitcher() {
           ),
         );
       }}
-      size="sm"
+      size="md"
       appearance="menu"
-      menuWidth={80}
+      menuWidth={50}
     />
   );
 }

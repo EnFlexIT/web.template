@@ -1,3 +1,19 @@
+import {
+  BackendMenuContentScreenV2,
+} from "./BackendMenuContentScreenV2";
+
+import {
+  useAppSelector,
+} from "@/template/state/store/useAppSelector";
+
+import {
+  selectBackendContentWriteContext,
+} from "../adapters/updateBackendContentElementFromStore";
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
+
+import {
+  ThemedText,
+} from "@/template/components/design-system/themed/ThemedText";
 import React, {
   useMemo,
 } from "react";
@@ -37,6 +53,7 @@ import type {
 type EditorRoute = RouteProp<
   {
     "3027": {
+      backendMenuId?: number;
       createMode?: "folder" | "page";
       parentId?: string;
       requestId?: string;
@@ -50,7 +67,22 @@ import { useSharedLocalEditorDraft } from "../context/LocalEditorDraftContext";
 
 export function ContentMenuEditorEntryScreen() {
   const draftState = useSharedLocalEditorDraft();
+
+  const canOpenBackendEditor = useAppSelector(state => {
+    const context = selectBackendContentWriteContext(state);
+
+    return (
+      state.backendRoles.status === "ready" &&
+      selectCanEditInUiPreview(state) &&
+      context.isLoggedIn &&
+      context.canEdit &&
+      !context.isSwitchingServer &&
+      !context.isLoggingOut &&
+      context.server.trim().length > 0
+    );
+  });
   const route = useRoute<EditorRoute>();
+  const backendMenuId = route.params?.backendMenuId;
   const createMode = route.params?.createMode;
   const parentId = route.params?.parentId;
   const requestId = route.params?.requestId;
@@ -93,6 +125,34 @@ export function ContentMenuEditorEntryScreen() {
       }),
       [navigation.editor],
     );
+
+  if (backendMenuId !== undefined) {
+    if (
+      !Number.isSafeInteger(backendMenuId) ||
+      backendMenuId <= 0
+    ) {
+      return (
+        <ThemedText>
+          Ungueltige Backend-Menue-ID.
+        </ThemedText>
+      );
+    }
+
+    if (!canOpenBackendEditor) {
+      return (
+        <ThemedText>
+          Backend-Editor nicht freigegeben.
+          Bitte Anmeldung und Backend-Berechtigungen pruefen.
+        </ThemedText>
+      );
+    }
+
+    return (
+      <BackendMenuContentScreenV2
+        menuId={backendMenuId}
+      />
+    );
+  }
 
   return (
     <ContentMenuEditorBody

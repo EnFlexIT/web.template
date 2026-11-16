@@ -1,3 +1,4 @@
+import { rotateJwtLocal } from "@/template/state/api/apiSlice";
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -243,7 +244,7 @@ export const renewJwtForSpecificServer = createAsyncThunk<
         await setJwtForServer(normalizedBaseUrl, newJwt);
 
         if (isActiveServer) {
-          thunkAPI.dispatch(setJwtLocal(newJwt));
+          thunkAPI.dispatch(rotateJwtLocal(newJwt));
           await AsyncStorage.setItem(JWT_KEY, newJwt);
 
           console.log("[JWT RENEW] active JWT updated:", normalizedBaseUrl);

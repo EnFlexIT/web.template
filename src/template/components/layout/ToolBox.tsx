@@ -30,9 +30,8 @@ import {
   useAppSelector,
 } from "@/template/state/store/useAppSelector";
 
-import {
-  RolePreviewSwitcher,
-} from "./RolePreviewSwitcher";
+import { BackendRoleSwitcher } from "./BackendRoleSwitcher";
+import { GroupRoleSwitcher } from "./GroupRoleSwitcher";
 
 import {
   logoutAsync,
@@ -837,14 +836,20 @@ const inUpdate =
       >
         {isLoggedIn ? (
           <View
-            style={
+            style={[
               compact
-                ? styles
-                    .roleSwitcherCompact
-                : undefined
-            }
+                ? styles.roleSwitcherCompact
+                : undefined,
+              {
+                flexDirection: "column",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                gap: 2,
+              },
+            ]}
           >
-            <RolePreviewSwitcher />
+            <BackendRoleSwitcher />
+            <GroupRoleSwitcher />
           </View>
         ) : null}
 

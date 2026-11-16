@@ -8,10 +8,12 @@ import { Hammer } from "lucide-react";
 
 type SiteContentTextProps = {
   content: SiteContentTextType;
+  canEdit: boolean;
   setChangerVisible: Dispatch<React.SetStateAction<boolean>>;
 };
 export function SiteContentText({
   content,
+  canEdit,
   setChangerVisible,
 }: SiteContentTextProps) {
   const { theme } = useUnistyles();
@@ -35,7 +37,7 @@ export function SiteContentText({
     }
   }, [content]);
 
-  if (content.editable) {
+  if (content.editable && canEdit) {
     return (
       <View>
         <Pressable onPress={() => setEditVisible(!editVisible)}>

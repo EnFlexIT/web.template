@@ -1,6 +1,8 @@
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/template/state/store/useAppSelector";
-import { selectEffectiveRoles } from "@/template/state/authorization/authorizationSlice";
+import { selectVerifiedBackendRoles as selectEffectiveRoles } from "@/template/state/authorization/selectVerifiedBackendRoles";
+import { selectAvailableGroupRoles } from "@/template/state/authorization/selectGroupMenuRole";
 import { canEditLocalContent } from "../authorization/canEditLocalContent";
 import { ScrollView, View } from "react-native";
 
@@ -82,7 +84,11 @@ export function ContentMenuEditorBody({
   draftState: ReturnType<typeof useLocalEditorDraft>;
 }) {
   const effectiveRoles = useAppSelector(selectEffectiveRoles);
-  const canEdit = canEditLocalContent(effectiveRoles);
+  const canEditInUiPreview =
+    useAppSelector(selectCanEditInUiPreview);
+  const canEdit =
+    canEditLocalContent(effectiveRoles) && canEditInUiPreview;
+  const availableGroupRoles = useAppSelector(selectAvailableGroupRoles);
 
   const {
     draft,
@@ -109,6 +115,13 @@ export function ContentMenuEditorBody({
   const [folderTitle, setFolderTitle] = useState("");
   const [folderParentId, setFolderParentId] = useState("");
   const [folderError, setFolderError] = useState("");
+  const [folderVisibility, setFolderVisibility] =
+    useState<"public" | "groups">("public");
+  const [folderGroupRoles, setFolderGroupRoles] = useState<string[]>([]);
+
+  const validFolderGroupRoles = folderGroupRoles.filter(
+    role => availableGroupRoles.includes(role),
+  );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -453,10 +466,24 @@ export function ContentMenuEditorBody({
       "",
     );
     setFolderError("");
+    setFolderVisibility("public");
+    setFolderGroupRoles([]);
     setFolderOpen(true);
   }
 
   function createFolder() {
+    if (!canEdit) {
+      setFolderError("Für diese Aktion fehlen die Bearbeitungsrechte.");
+      return;
+    }
+
+    if (
+      folderVisibility === "groups" &&
+      validFolderGroupRoles.length === 0
+    ) {
+      setFolderError("Bitte mindestens eine verfügbare Gruppenrolle auswählen.");
+      return;
+    }
     if (!editorReady || errors.length > 0) {
       setFolderError("Der Entwurf kann momentan nicht bearbeitet werden.");
       return;
@@ -488,8 +515,23 @@ export function ContentMenuEditorBody({
       return;
     }
 
+    const preparedDraft: EditorDraft = {
+      ...result.draft,
+      entries: result.draft.entries.map(entry =>
+        entry.id === result.entryId
+          ? {
+              ...entry,
+              groupRoles:
+                folderVisibility === "public"
+                  ? []
+                  : validFolderGroupRoles,
+            }
+          : entry,
+      ),
+    };
+
     const nextErrors = validateEditorDraft(
-      result.draft,
+      preparedDraft,
       protectedEntries,
       placementPolicy,
       inventory,
@@ -500,7 +542,7 @@ export function ContentMenuEditorBody({
       return;
     }
 
-    setDraft(result.draft);
+    setDraft(preparedDraft);
     setSelectedId(result.entryId);
     setFolderError("");
     setFolderOpen(false);
@@ -846,8 +888,7 @@ export function ContentMenuEditorBody({
         onClose={() => setDeleteOpen(false)}
         width={520}
       >
-        <View style={{ gap: 16 }}>
-          <ThemedText style={{ fontSize: 19, fontWeight: "600" }}>
+        <View style={{ gap: 16 }}><ThemedText style={{ fontSize: 19, fontWeight: "600" }}>
             Menü löschen?
           </ThemedText>
 
@@ -926,6 +967,50 @@ export function ContentMenuEditorBody({
         width={520}
       >
         <View style={{ gap: 16 }}>
+          <ThemedText style={{ fontWeight: "600" }}>
+            Menüsichtbarkeit
+          </ThemedText>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <ActionButton
+              label={folderVisibility === "public" ? "Öffentlich (ausgewählt)" : "Öffentlich"}
+              onPress={() => setFolderVisibility("public")}
+            />
+            <ActionButton
+              label={folderVisibility === "groups" ? "Gruppen (ausgewählt)" : "Bestimmte Gruppen"}
+              disabled={availableGroupRoles.length === 0}
+              onPress={() => setFolderVisibility("groups")}
+            />
+          </View>
+
+          {availableGroupRoles.length === 0 && (
+            <ThemedText>
+              Gruppenrollen sind noch nicht vom Backend geladen.
+              Öffentliche Menüs können bereits erstellt werden.
+            </ThemedText>
+          )}
+
+          {folderVisibility === "groups" && (
+            <View style={{ gap: 8 }}>
+              <ThemedText>Gruppenrollen auswählen:</ThemedText>
+              {availableGroupRoles.map(role => (
+                <ActionButton
+                  key={role}
+                  label={
+                    validFolderGroupRoles.includes(role)
+                      ? `${role} (ausgewählt)`
+                      : role
+                  }
+                  onPress={() => setFolderGroupRoles(previous =>
+                    previous.includes(role)
+                      ? previous.filter(value => value !== role)
+                      : [...previous, role],
+                  )}
+                />
+              ))}
+            </View>
+          )}
+
           <ThemedText style={{ fontSize: 19, fontWeight: "600" }}>
             Neues Menü erstellen
           </ThemedText>
