@@ -16,11 +16,23 @@ type LiveData = {
   newHtml: string | null;
 };
 
+export type BackendOrderSnapshotEntry = {
+  backendContentId: number;
+  position: number;
+};
+
 type LiveContext = {
   getLiveBlockHtml: (menuId: number, elementId: number) => string | undefined;
   getLiveNewHtml: (menuId: number) => string | null;
   setLiveBlockHtml: (menuId: number, elementId: number, html: string | null) => void;
   setLiveNewHtml: (menuId: number, html: string | null) => void;
+  getLiveOrder: (menuId: number) => number[] | null;
+  getOriginalOrder: (menuId: number) => BackendOrderSnapshotEntry[] | null;
+  setLiveOrder: (
+    menuId: number,
+    order: number[] | null,
+    original?: BackendOrderSnapshotEntry[],
+  ) => void;
   refreshVersion: number;
   requestRefresh: (menuId: number) => void;
   getSelectedBlockId: (menuId: number) => number | null;
@@ -39,6 +51,9 @@ const emptyContext: LiveContext = {
   getLiveNewHtml: () => null,
   setLiveBlockHtml: () => {},
   setLiveNewHtml: () => {},
+  getLiveOrder: () => null,
+  getOriginalOrder: () => null,
+  setLiveOrder: () => {},
   refreshVersion: 0,
   requestRefresh: () => {},
   getSelectedBlockId: () => null,
@@ -75,6 +90,12 @@ export function BackendContentLivePreviewProvider({
   const currentScope = useRef(scope);
   currentScope.current = scope;
   const [live, setLive] = useState<LiveData | null>(null);
+  const [liveOrder, setLiveOrderState] = useState<{
+    scope: string;
+    menuId: number;
+    ids: number[];
+    original: BackendOrderSnapshotEntry[];
+  } | null>(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
   const [selection, setSelection] = useState<{
@@ -90,6 +111,111 @@ export function BackendContentLivePreviewProvider({
     dirty: boolean;
     saving: boolean;
   } | null>(null);
+
+  const getLiveOrder = useCallback(
+    (menuId: number): number[] | null =>
+      writableScope &&
+      liveOrder?.scope === scope &&
+      liveOrder.menuId === menuId
+        ? [...liveOrder.ids]
+        : null,
+    [liveOrder, scope, writableScope],
+  );
+
+  const getOriginalOrder = useCallback(
+    (menuId: number): BackendOrderSnapshotEntry[] | null =>
+      writableScope &&
+      liveOrder?.scope === scope &&
+      liveOrder.menuId === menuId
+        ? liveOrder.original.map(entry => ({ ...entry }))
+        : null,
+    [liveOrder, scope, writableScope],
+  );
+
+  const setLiveOrder = useCallback(
+    (menuId: number, order: number[] | null, original?: BackendOrderSnapshotEntry[]) => {
+      if (
+        !writableScope ||
+        currentScope.current !== scope ||
+        !Number.isSafeInteger(menuId) ||
+        menuId <= 0
+      ) {
+        return;
+      }
+
+      if (
+        order !== null &&
+        (
+          !Array.isArray(order) ||
+          order.some(id => !Number.isSafeInteger(id) || id <= 0) ||
+          new Set(order).size !== order.length
+        )
+      ) {
+        return;
+      }
+
+      if (
+        original !== undefined &&
+        (
+          !Array.isArray(original) ||
+          original.some(entry =>
+            !Number.isSafeInteger(entry.backendContentId) ||
+            entry.backendContentId <= 0 ||
+            !Number.isSafeInteger(entry.position) ||
+            entry.position < 0
+          ) ||
+          new Set(original.map(entry => entry.backendContentId)).size !== original.length ||
+          new Set(original.map(entry => entry.position)).size !== original.length ||
+          (order !== null &&
+            (original.length !== order.length ||
+              original.some(entry => !order.includes(entry.backendContentId))))
+        )
+      ) {
+        return;
+      }
+
+      setLiveOrderState(previous => {
+        if (currentScope.current !== scope) {
+          return previous;
+        }
+
+        if (order === null) {
+          if (
+            previous?.scope !== scope ||
+            previous.menuId !== menuId
+          ) {
+            return previous;
+          }
+
+          return null;
+        }
+
+        const existing =
+          previous?.scope === scope && previous.menuId === menuId
+            ? previous
+            : null;
+
+        const baseline = existing?.original ??
+          original?.map(entry => ({ ...entry })) ??
+          [];
+
+        if (
+          baseline.length !== order.length ||
+          baseline.some(entry => !order.includes(entry.backendContentId))
+        ) {
+          return previous;
+        }
+
+        return {
+          scope,
+          menuId,
+          ids: [...order],
+          original: baseline.map(entry => ({ ...entry })),
+        };
+      });
+    },
+    [scope, writableScope],
+  );
 
   const getSelectedBlockId = useCallback(
     (menuId: number): number | null =>
@@ -276,6 +402,9 @@ export function BackendContentLivePreviewProvider({
       getLiveNewHtml,
       setLiveBlockHtml,
       setLiveNewHtml,
+      getLiveOrder,
+      getOriginalOrder,
+      setLiveOrder,
       refreshVersion,
       requestRefresh,
       getSelectedBlockId,

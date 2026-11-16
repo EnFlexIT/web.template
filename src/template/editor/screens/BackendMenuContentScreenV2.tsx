@@ -17,6 +17,11 @@ import {
 } from "../adapters/updateBackendContentElementFromStore";
 
 import {
+  executeBackendContentOrderSaveV2,
+  BackendOrderSaveError,
+} from "../adapters/executeBackendContentOrderSaveV2";
+
+import {
   sortBackendContentV2,
   planBackendContentReorderV2,
   type ReorderDirection,
@@ -86,6 +91,9 @@ export function BackendMenuContentScreenV2({
   const {
     getLiveBlockHtml,
     getLiveNewHtml,
+    getLiveOrder,
+    getOriginalOrder,
+    setLiveOrder,
     setLiveBlockHtml,
     refreshVersion,
     requestRefresh,
@@ -120,6 +128,10 @@ export function BackendMenuContentScreenV2({
 
   const [blocks, setBlocks] = useState<BackendEditorBlockV2[]>([]);
   const [expandedBlockId, setExpandedBlockId] = useState<number | null>(null);
+  const [desktopEditRequest, setDesktopEditRequest] = useState<{
+    elementId: number;
+    version: number;
+  } | null>(null);
   const [loadedScope, setLoadedScope] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -218,6 +230,42 @@ export function BackendMenuContentScreenV2({
 
   const ready = loadedScope === scopeKey;
 
+  const liveOrder = desktopSelectionEnabled
+    ? getLiveOrder(menuId)
+    : null;
+
+  const originalOrder = desktopSelectionEnabled
+    ? getOriginalOrder(menuId)
+    : null;
+
+  const baselineIds = originalOrder
+    ? [...originalOrder]
+        .sort((a, b) => a.position - b.position)
+        .map(entry => entry.backendContentId)
+    : blocks.map(block => block.backendContentId);
+
+  const validLiveOrder =
+    liveOrder !== null &&
+    liveOrder.length === blocks.length &&
+    liveOrder.every(id =>
+      blocks.some(block => block.backendContentId === id),
+    );
+
+  const displayedBlocks = validLiveOrder
+    ? [...blocks].sort(
+        (a, b) =>
+          liveOrder.indexOf(a.backendContentId) -
+          liveOrder.indexOf(b.backendContentId),
+      )
+    : blocks;
+
+  const hasLocalReorder =
+    validLiveOrder &&
+    displayedBlocks.some(
+      (block, index) =>
+        block.backendContentId !== baselineIds[index],
+    );
+
   const requestMove = (
     elementId: number,
     direction: ReorderDirection,
@@ -229,6 +277,40 @@ export function BackendMenuContentScreenV2({
       !ready ||
       !canMove
     ) {
+      return;
+    }
+
+    if (desktopEditorMode) {
+      const ids = displayedBlocks.map(block => block.backendContentId);
+      const index = ids.indexOf(elementId);
+
+      if (index < 0) {
+        return;
+      }
+
+      const targetIndex =
+        direction === "up" ? index - 1 : index + 1;
+
+      if (targetIndex < 0 || targetIndex >= ids.length) {
+        return;
+      }
+
+      const nextIds = [...ids];
+
+      [nextIds[index], nextIds[targetIndex]] = [
+        nextIds[targetIndex],
+        nextIds[index],
+      ];
+
+      setLiveOrder(
+        menuId,
+        nextIds,
+        blocks.map(block => ({
+          backendContentId: block.backendContentId,
+          position: block.position,
+        })),
+      );
+      setMoveMessage("");
       return;
     }
 
@@ -351,7 +433,116 @@ export function BackendMenuContentScreenV2({
       return draft !== undefined && draft !== block.html;
     });
 
+  const saveLiveOrder = async () => {
+    if (
+      !desktopEditorMode ||
+      !hasLocalReorder ||
+      !liveOrder ||
+      !ready ||
+      loading ||
+      moving ||
+      removing ||
+      !canMove ||
+      moveBusyRef.current ||
+      removeBusyRef.current
+    ) {
+      return;
+    }
+
+    if (hasUnsavedPreview()) {
+      setMoveMessage(
+        "Bitte zuerst ungespeicherte Textänderungen speichern oder verwerfen.",
+      );
+      return;
+    }
+
+    const saveScope = currentMoveScopeRef.current;
+    const desiredIds = [...liveOrder];
+
+    moveBusyRef.current = true;
+    setMoving(true);
+    setMoveMessage("");
+    setPendingMove(null);
+
+    try {
+      await executeBackendContentOrderSaveV2({
+        menuId,
+        original: originalOrder ?? blocks,
+        desiredIds,
+        load: () =>
+          loadBackendMenuContentFromStore({
+            menuId,
+            getState,
+          }),
+        move: request =>
+          moveBackendContentElementFromStoreV2({
+            request,
+            getState,
+          }),
+        isCurrent: () =>
+          currentMoveScopeRef.current === saveScope,
+      });
+
+      if (currentMoveScopeRef.current !== saveScope) {
+        return;
+      }
+
+      // Backend wurde bestätigt. Jetzt die Anzeige aktualisieren.
+      await reload();
+
+      if (currentMoveScopeRef.current !== saveScope) {
+        return;
+      }
+
+      setLiveOrder(menuId, null);
+      requestRefresh(menuId);
+
+      setMoveMessage(
+        "Reihenfolge erfolgreich gespeichert und vom Backend bestätigt.",
+      );
+    } catch (error) {
+      if (currentMoveScopeRef.current !== saveScope) {
+        return;
+      }
+
+      const attemptedWrites =
+        error instanceof BackendOrderSaveError
+          ? error.attemptedWrites
+          : 0;
+
+      if (attemptedWrites > 0) {
+        setMoveMessage(
+          "Die Reihenfolge konnte nicht sicher gespeichert werden. " +
+          "Möglicherweise wurden einzelne Änderungen bereits übernommen. " +
+          "Bitte den Backend-Zustand prüfen, bevor du erneut speicherst.",
+        );
+
+        // Nach einem möglichen Schreibzugriff den tatsächlichen
+        // Backend-Zustand laden. Lokalen Entwurf behalten.
+        try {
+          await reload();
+        } catch {
+          // reload() zeigt den Ladefehler bereits an.
+        }
+      } else {
+        setMoveMessage(
+          "Speichern abgebrochen. Es wurde keine Schreibanfrage gestartet. " +
+          "Bitte Berechtigungen und Backend-Reihenfolge überprüfen.",
+        );
+      }
+    } finally {
+      moveBusyRef.current = false;
+      setMoving(false);
+    }
+  };
   const requestRemoval = (elementId: number) => {
+    if (desktopEditorMode && hasLocalReorder) {
+      setRemoveMessage(
+        "Bitte zuerst die geänderte Reihenfolge speichern oder verwerfen.",
+      );
+      return;
+    }
+
     if (
       !editorMode ||
       !canMove ||
@@ -538,7 +729,7 @@ export function BackendMenuContentScreenV2({
         </ThemedText>
 
 
-        {editorMode && canMove && (
+        {editorMode && canMove && !hasLocalReorder && (
           <BackendNewTextDraftV2
             key={scopeKey}
             menuId={menuId}
@@ -617,6 +808,29 @@ export function BackendMenuContentScreenV2({
           </View>
         )}
 
+        {desktopEditorMode && hasLocalReorder && !moving && !removing && (
+          <View style={{ gap: 8 }}>
+            <ThemedText>
+              Die Reihenfolge wurde nur in der Vorschau geändert.
+              Die Änderungen sind noch nicht gespeichert.
+              Hinzufügen und Entfernen sind bis zum Speichern oder Verwerfen gesperrt.
+            </ThemedText>
+            <ActionButton
+              label="Reihenfolge speichern"
+              onPress={() => void saveLiveOrder()}
+            />
+            <ActionButton
+              label="Reihenfolge verwerfen"
+              variant="secondary"
+              onPress={() => {
+                setLiveOrder(menuId, null);
+                setPendingMove(null);
+                setMoveMessage("");
+              }}
+            />
+          </View>
+        )}
+
         {moving && (
           <ThemedText>
             Sortierung wird gespeichert. Bitte keine weitere Aktion starten.
@@ -651,20 +865,85 @@ export function BackendMenuContentScreenV2({
           </ThemedText>
         )}
 
-        {!loading && ready && blocks.map((block, index) => {
+        {desktopEditorMode &&
+         !loading &&
+         ready &&
+         blocks.length > 0 &&
+         (selectedBlockId === null ||
+           !blocks.some(item => item.backendContentId === selectedBlockId)) && (
+          <View
+            testID="backend-desktop-no-selection"
+            style={{
+              padding: 12,
+              gap: 12,
+              borderWidth: 1,
+              borderColor: "#d0d0d0",
+              backgroundColor: "#f2f2f2",
+              opacity: 0.65,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <ThemedText style={{ fontWeight: "600" }}>
+                Ausgewählter Text
+              </ThemedText>
+
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                <ActionButton
+                  icon="edit"
+                  iconSize={18}
+                  tooltip="Bitte zuerst einen Text auswählen"
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  icon="arrow-up"
+                  iconSize={18}
+                  tooltip="Bitte zuerst einen Text auswählen"
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  icon="arrow-down"
+                  iconSize={18}
+                  tooltip="Bitte zuerst einen Text auswählen"
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
+                <ActionButton
+                  icon="delete"
+                  iconSize={18}
+                  tooltip="Bitte zuerst einen Text auswählen"
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
+              </View>
+            </View>
+
+            <ThemedText>
+              Bitte links einen Text auswählen, um ihn zu bearbeiten.
+            </ThemedText>
+          </View>
+        )}
+
+        {!loading && ready && displayedBlocks.map((block, index) => {
           const key = String(block.backendContentId);
 
-          if (desktopEditorMode) {
-            const activeId =
-              selectedBlockId !== null &&
-              blocks.some(item => item.backendContentId === selectedBlockId)
-                ? selectedBlockId
-                : blocks.find(item => item.kind === "text")?.backendContentId ??
-                  blocks[0]?.backendContentId;
-
-            if (block.backendContentId !== activeId) {
-              return null;
-            }
+          if (
+            desktopEditorMode &&
+            block.backendContentId !== selectedBlockId
+          ) {
+            return null;
           }
 
           if (block.kind !== "text") {
@@ -747,16 +1026,34 @@ export function BackendMenuContentScreenV2({
                     {!desktopEditorMode && (expanded ? "▲" : "▼")}
                   </ThemedText>
                 </Pressable>
+                {desktopEditorMode && (
+                  <ActionButton
+                    icon="edit"
+                    iconSize={18}
+                    tooltip="Ausgewählten Text bearbeiten"
+                    variant="secondary"
+                    disabled={!block.editable || !isHtml}
+                    onPress={() =>
+                      setDesktopEditRequest(previous => ({
+                        elementId: block.backendContentId,
+                        version: (previous?.version ?? 0) + 1,
+                      }))
+                    }
+                  />
+                )}
                 {renderMoveActions(block.backendContentId, index, true)}
 
                 {canMove &&
-                 block.editable &&
+                 (desktopEditorMode || block.editable) &&
                  !removing &&
                  !moving && (
                   <ActionButton
                     icon="delete"
                     iconSize={18}
-                    tooltip="Inhalt entfernen"
+                    tooltip={!block.editable
+                       ? "Entfernen derzeit vom Backend gesperrt"
+                       : "Inhalt entfernen"}
+                    disabled={desktopEditorMode && (!block.editable || hasLocalReorder)}
                     variant="secondary"
                     onPress={() => requestRemoval(block.backendContentId)}
                   />
@@ -801,6 +1098,11 @@ export function BackendMenuContentScreenV2({
                     <BackendTextBlockEditorV2
                       block={block}
                       desktopCompact={desktopEditorMode}
+                      desktopEditRequest={
+                        desktopEditRequest?.elementId === block.backendContentId
+                          ? desktopEditRequest.version
+                          : 0
+                      }
                       onSaved={reload}
                       onDraftChange={value =>
                         setLiveBlockHtml(menuId, block.backendContentId, value)

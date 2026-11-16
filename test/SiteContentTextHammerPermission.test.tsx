@@ -39,7 +39,7 @@ const editableContent = {
   text: "<p>Testinhalt</p>",
 } as any;
 
-describe("SiteContentText: Hammer nur fuer berechtigte EDITOR", () => {
+describe("SiteContentText: keine alte Hammer-Bearbeitung", () => {
   it("zeigt USER auch bei editable-Inhalt keinen Hammer", () => {
     const openEditor = jest.fn();
 
@@ -59,7 +59,7 @@ describe("SiteContentText: Hammer nur fuer berechtigte EDITOR", () => {
     expect(openEditor).not.toHaveBeenCalled();
   });
 
-  it("zeigt bei EDITOR nach einem Klick den Hammer", () => {
+  it("zeigt bei EDITOR keinen Hammer und öffnet keinen alten Editor", () => {
     const openEditor = jest.fn();
 
     render(
@@ -70,13 +70,12 @@ describe("SiteContentText: Hammer nur fuer berechtigte EDITOR", () => {
       />,
     );
 
+    expect(screen.getByText("Textinhalt")).toBeTruthy();
+
     fireEvent.press(screen.getByText("Textinhalt"));
 
-    expect(screen.getByText("Hammer")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("Hammer"));
-
-    expect(openEditor).toHaveBeenCalledWith(true);
+    expect(screen.queryByText("Hammer")).toBeNull();
+    expect(openEditor).not.toHaveBeenCalled();
   });
 
   it("zeigt bei nicht bearbeitbarem Inhalt keinen Hammer", () => {

@@ -39,6 +39,7 @@ export interface BackendTextBlockEditorV2Props {
   onSaved?: () => Promise<void> | void;
   onDraftChange?: (html: string | null) => void;
   desktopCompact?: boolean;
+  desktopEditRequest?: number;
   onEditingStateChange?: (editing: boolean, saving: boolean, dirty: boolean) => void;
 }
 
@@ -52,6 +53,7 @@ export function BackendTextBlockEditorV2({
   onDraftChange,
   onEditingStateChange,
   desktopCompact = false,
+  desktopEditRequest = 0,
 }: BackendTextBlockEditorV2Props) {
   const store = useStore();
 
@@ -101,6 +103,34 @@ export function BackendTextBlockEditorV2({
     block.editable &&
     canWrite &&
     isHtmlContent;
+
+  const lastDesktopEditRequestRef = useRef(desktopEditRequest);
+
+  useEffect(() => {
+    if (
+      !desktopCompact ||
+      desktopEditRequest === lastDesktopEditRequestRef.current
+    ) {
+      return;
+    }
+
+    lastDesktopEditRequestRef.current = desktopEditRequest;
+
+    if (!allowed || editing || saving) {
+      return;
+    }
+
+    setHtml(block.html);
+    setMessage("");
+    setEditing(true);
+  }, [
+    desktopCompact,
+    desktopEditRequest,
+    allowed,
+    editing,
+    saving,
+    block.html,
+  ]);
 
   const save = async () => {
     if (!allowed || saving || !editing) {
@@ -162,7 +192,7 @@ export function BackendTextBlockEditorV2({
         </ThemedText>
       )}
 
-      {allowed && !editing && (
+      {allowed && !editing && !desktopCompact && (
         <ActionButton
           label={desktopCompact ? undefined : "Backend-Text bearbeiten"}
           icon={desktopCompact ? "edit" : undefined}
