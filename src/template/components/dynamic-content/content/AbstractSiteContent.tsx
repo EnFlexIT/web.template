@@ -7,6 +7,9 @@ import { SiteContentText } from "./SiteContentText"
 // import { ThemedView, ThemedText } from "enflex.it-styled-ui"
 import { SiteContentProperties } from "./SiteContentProperties"
 import { View } from "react-native"
+import { useAppSelector } from "@/template/state/store/useAppSelector"
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode"
+import { selectBackendContentWriteContext } from "@/template/editor/adapters/updateBackendContentElementFromStore"
 import { AbstractSiteContentEditor } from "../editors/AbstractSiteContentEditor"
 
 
@@ -15,6 +18,29 @@ interface AbstractSiteContentProps {
 }
 export function AbstractSiteContent({ abstractSiteContent }: AbstractSiteContentProps) {
     const [editorVisible, setEditorVisible] = useState(false)
+
+    // Eine bearbeitbare Content-Eigenschaft ist keine Benutzerberechtigung.
+    // Nur die bestätigte EDITOR-Perspektive und eine gültige
+    // Backend-Schreibsitzung dürfen den alten Editor öffnen.
+    const canEdit = useAppSelector(state => {
+        const context = selectBackendContentWriteContext(state)
+
+        return (
+            state.backendRoles.status === "ready" &&
+            selectCanEditInUiPreview(state) &&
+            context.isLoggedIn &&
+            context.canEdit &&
+            !context.isSwitchingServer &&
+            !context.isLoggingOut &&
+            context.server.trim().length > 0
+        )
+    })
+
+    useEffect(() => {
+        if (!canEdit) {
+            setEditorVisible(false)
+        }
+    }, [canEdit])
 
     const [content, setContent] = useState(abstractSiteContent)
 
@@ -27,27 +53,27 @@ export function AbstractSiteContent({ abstractSiteContent }: AbstractSiteContent
         return () => clearInterval(interval)
     }, [])
 
-    const editor = <AbstractSiteContentEditor abstractSiteContent={content} setVisible={setEditorVisible} visible={editorVisible} setContent={setContent} />
+    const editor = canEdit ? <AbstractSiteContentEditor abstractSiteContent={content} setVisible={setEditorVisible} visible={editorVisible} setContent={setContent} /> : null
 
     if (isSiteContentText(content)) {
         return (
             <View>
                 {editor}
-                <SiteContentText content={content} setChangerVisible={setEditorVisible} />
+                <SiteContentText content={content} canEdit={canEdit} setChangerVisible={setEditorVisible} />
             </View>
         )
     } else if (isSiteContentImage(content)) {
         return (
             <View>
                 {editor}
-                <SiteContentImage content={content} setChangerVisible={setEditorVisible} />
+                <SiteContentImage content={content} canEdit={canEdit} setChangerVisible={setEditorVisible} />
             </View>
         )
     } else if (isSiteContentProperties(content)) {
         return (
             <View>
                 {editor}
-                <SiteContentProperties content={content} setChangerVisible={setEditorVisible} />
+                <SiteContentProperties content={content} canEdit={canEdit} setChangerVisible={setEditorVisible} />
             </View>
         )
     } else {

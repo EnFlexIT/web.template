@@ -402,6 +402,11 @@ export const applicationConfig:
   },
 
   navigation: {
+      editor: {
+        allowedContentParentIds:
+          ["static:3900"],
+      },
+
     menu: {
       defaultMenuID:
         3003,

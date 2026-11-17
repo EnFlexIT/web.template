@@ -41,7 +41,7 @@ export const templateMenuCatalog = {
     screen: "menu-hub",
     container: true,
     gateFeature:
-      "systemSettings",
+      "settings.systemSettings",
   },
 
   personalSettings: {
@@ -52,7 +52,7 @@ export const templateMenuCatalog = {
     screen: "menu-hub",
     container: true,
     gateFeature:
-      "personalSettings",
+      "settings.personalSettings",
   },
 
   appearance: {
@@ -61,7 +61,7 @@ export const templateMenuCatalog = {
     parent: "personalSettings",
     screen: "unauthenticated-settings",
     feature:
-      "personalSettings.appearance",
+      "settings.personalSettings.appearance",
   },
 
   privacy: {
@@ -70,7 +70,7 @@ export const templateMenuCatalog = {
     parent: "personalSettings",
     screen: "privacy-settings",
     feature:
-      "personalSettings.privacy",
+      "settings.personalSettings.privacy",
   },
 
   userProfile: {
@@ -79,7 +79,7 @@ export const templateMenuCatalog = {
     parent: "personalSettings",
     screen: "user-profile",
     feature:
-      "personalSettings.userProfile",
+      "settings.personalSettings.userProfile",
   },
 
   changePassword: {
@@ -88,7 +88,7 @@ export const templateMenuCatalog = {
     parent: "personalSettings",
     screen: "change-password",
     feature:
-      "personalSettings.changePassword",
+      "settings.personalSettings.changePassword",
   },
 
   serverSettings: {
@@ -97,7 +97,7 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "server-settings",
     feature:
-      "systemSettings.serverSettings",
+      "settings.systemSettings.serverSettings",
   },
 
   update: {
@@ -106,11 +106,11 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "update-web-app",
     gateFeature:
-      "systemSettings.update",
+      "settings.systemSettings.update",
     features: [
-      "systemSettings.update.general",
-      "systemSettings.update.webapp",
-      "systemSettings.update.backend",
+      "settings.systemSettings.update.general",
+      "settings.systemSettings.update.webapp",
+      "settings.systemSettings.update.backend",
     ],
   },
 
@@ -120,8 +120,8 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "program-start",
     features: [
-      "systemSettings.programStart",
-      "systemSettings.dataAnalyzing",
+      "settings.systemSettings.programStart",
+      "settings.systemSettings.programStart.dataAnalyzing",
     ],
   },
 
@@ -131,7 +131,7 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "live-console",
     feature:
-      "systemSettings.liveConsole",
+      "settings.systemSettings.liveConsole",
   },
 
   database: {
@@ -141,11 +141,11 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "server-settings",
     gateFeature:
-      "systemSettings.database",
+      "settings.systemSettings.database",
     features: [
-      "systemSettings.database.general",
-      "systemSettings.database.factory",
-      "systemSettings.database.derby",
+      "settings.systemSettings.database.general",
+      "settings.systemSettings.database.factory",
+      "settings.systemSettings.database.derby",
     ],
   },
 
@@ -164,7 +164,7 @@ export const templateMenuCatalog = {
     parent: "systemSettings",
     screen: "settings-file-upload",
     feature:
-      "systemSettings.settingsFileUpload",
+      "settings.systemSettings.settingsFileUpload",
   },
 };
 
@@ -176,7 +176,7 @@ export const templateTabCatalog = {
     position: 1,
     screen: "general-settings",
     feature:
-      "systemSettings.database.general",
+      "settings.systemSettings.database.general",
   },
 
   databaseFactory: {
@@ -186,7 +186,7 @@ export const templateTabCatalog = {
     position: 2,
     screen: "factory-settings",
     feature:
-      "systemSettings.database.factory",
+      "settings.systemSettings.database.factory",
   },
 
   databaseDerby: {
@@ -196,7 +196,7 @@ export const templateTabCatalog = {
     position: 3,
     screen: "derby-network-server",
     feature:
-      "systemSettings.database.derby",
+      "settings.systemSettings.database.derby",
   },
 
   updateGeneral: {
@@ -206,7 +206,7 @@ export const templateTabCatalog = {
     position: 1,
     screen: "update-general",
     feature:
-      "systemSettings.update.general",
+      "settings.systemSettings.update.general",
   },
 
   updateWebApp: {
@@ -216,7 +216,7 @@ export const templateTabCatalog = {
     position: 2,
     screen: "update-web-app",
     feature:
-      "systemSettings.update.webapp",
+      "settings.systemSettings.update.webapp",
   },
 
   updateBackend: {
@@ -226,7 +226,7 @@ export const templateTabCatalog = {
     position: 3,
     screen: "update-backend",
     feature:
-      "systemSettings.update.backend",
+      "settings.systemSettings.update.backend",
   },
 
   liveConsoleConsole: {
@@ -238,7 +238,7 @@ export const templateTabCatalog = {
     // layout: "wide",
     screen: "live-console",
     feature:
-      "systemSettings.liveConsole",
+      "settings.systemSettings.liveConsole",
   },
 
   liveConsoleFiles: {
@@ -250,7 +250,7 @@ export const templateTabCatalog = {
     // layout: "wide",
     screen: "log-files",
     feature:
-      "systemSettings.liveConsole",
+      "settings.systemSettings.liveConsole",
   },
 
   programStart: {
@@ -260,7 +260,7 @@ export const templateTabCatalog = {
     position: 1,
     screen: "program-start",
     feature:
-      "systemSettings.programStart",
+      "settings.systemSettings.programStart",
   },
 
   dataAnalyzing: {
@@ -270,7 +270,7 @@ export const templateTabCatalog = {
     position: 2,
     screen: "data-analyzing",
     feature:
-      "systemSettings.dataAnalyzing",
+      "settings.systemSettings.programStart.dataAnalyzing",
     runtimeFeatureID: 3000,
   },
 };

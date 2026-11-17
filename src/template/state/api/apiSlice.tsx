@@ -20,6 +20,8 @@ import {
   DefaultApi,
 } from "@/api/implementation/Dynamic-Content-Api";
 import { clearMenu, initializeMenu } from "@/template/state/navigation/menuSlice";
+import { createDynamicContentApiV2 } from "./createDynamicContentApiV2";
+import type { DefaultApi as DynamicContentApiV2 } from "@/api/implementation/Dynamic-Content-Api-V2";
 
 const ipKey = "ip" as const;
 const jwtKey = "jwt" as const;
@@ -68,8 +70,20 @@ export async function loadJwtByServer(): Promise<JwtByServer> {
   }
 }
 
+let jwtByServerWriteQueue: Promise<void> = Promise.resolve();
+
+function serializeJwtByServerWrite(
+  operation: () => Promise<void>,
+): Promise<void> {
+  const result = jwtByServerWriteQueue.then(operation, operation);
+  jwtByServerWriteQueue = result.catch(() => undefined);
+  return result;
+}
+
 export async function saveJwtByServer(map: JwtByServer): Promise<void> {
-  await AsyncStorage.setItem(jwtByServerKey, JSON.stringify(map));
+  await serializeJwtByServerWrite(async () => {
+    await AsyncStorage.setItem(jwtByServerKey, JSON.stringify(map));
+  });
 }
 
 export async function getJwtForServer(baseUrl: string): Promise<string | null> {
@@ -83,15 +97,21 @@ export async function setJwtForServer(
   jwt: string | null,
 ): Promise<void> {
   const normalized = normalizeBaseUrl(baseUrl);
-  const jwtByServer = await loadJwtByServer();
 
-  if (jwt) {
-    jwtByServer[normalized] = jwt;
-  } else {
-    delete jwtByServer[normalized];
-  }
+  await serializeJwtByServerWrite(async () => {
+    const jwtByServer = await loadJwtByServer();
 
-  await saveJwtByServer(jwtByServer);
+    if (jwt) {
+      jwtByServer[normalized] = jwt;
+    } else {
+      delete jwtByServer[normalized];
+    }
+
+    await AsyncStorage.setItem(
+      jwtByServerKey,
+      JSON.stringify(jwtByServer),
+    );
+  });
 }
 
 async function loadSelectedServerBaseUrl(): Promise<string | null> {
@@ -208,6 +228,9 @@ function buildApis(params: {
     },
     dynamic_content_api: {
       defaultApi: new DefaultApi(dcConf),
+    },
+    dynamic_content_api_v2: {
+      defaultApi: createDynamicContentApiV2(dcConf),
     },
   };
 }
@@ -450,10 +473,14 @@ export interface ApiState {
   dynamic_content_api: {
     defaultApi: DefaultApi;
   };
+  dynamic_content_api_v2: {
+    defaultApi: DynamicContentApiV2;
+  };
 
   authenticationMethod: AuthMethod;
   ip: string;
   jwt: string | null;
+  authGeneration: number;
 
   isLoggedIn: boolean;
   isPointingToServer: boolean;
@@ -521,6 +548,7 @@ export const initializeApi = createAsyncThunk(
       authenticationMethod,
       ip,
       jwt: nextJwt,
+      authGeneration: 0,
       isLoggedIn,
       isPointingToServer,
       isBaseMode,
@@ -951,6 +979,7 @@ const initialState: ApiState = {
   authenticationMethod: defaultAuthenticationMethod,
   ip: initialBaseUrl,
   jwt: defaultJwt,
+  authGeneration: 0,
   isLoggedIn: false,
   isPointingToServer: false,
   isBaseMode: false,
@@ -974,6 +1003,7 @@ const initialState: ApiState = {
           authenticated: boolean;
         }>,
       ) => {
+        state.authGeneration += 1;
         state.ip = action.payload.ip;
         state.isPointingToServer = action.payload.isPointingToServer;
         state.authenticationMethod = action.payload.authenticationMethod;
@@ -988,6 +1018,7 @@ const initialState: ApiState = {
 
         state.awb_rest_api = apis.awb_rest_api;
         state.dynamic_content_api = apis.dynamic_content_api;
+        state.dynamic_content_api_v2 = apis.dynamic_content_api_v2;
       state.isLoggedIn = computeLoggedIn({
           authenticationMethod: action.payload.authenticationMethod,
           jwt: action.payload.jwt,
@@ -1008,6 +1039,28 @@ const initialState: ApiState = {
 
         state.awb_rest_api = apis.awb_rest_api;
         state.dynamic_content_api = apis.dynamic_content_api;
+        state.dynamic_content_api_v2 = apis.dynamic_content_api_v2;
+
+       state.isLoggedIn = computeLoggedIn({
+        authenticationMethod: state.authenticationMethod,
+        jwt: action.payload,
+      });
+      },
+
+      rotateJwtLocal: (state, action: PayloadAction<string | null>) => {
+        if (state.jwt === action.payload) return;
+
+        state.jwt = action.payload;
+
+        const apis = buildApis({
+          baseUrl: state.ip,
+          jwt: action.payload,
+          authenticationMethod: state.authenticationMethod,
+        });
+
+        state.awb_rest_api = apis.awb_rest_api;
+        state.dynamic_content_api = apis.dynamic_content_api;
+        state.dynamic_content_api_v2 = apis.dynamic_content_api_v2;
 
        state.isLoggedIn = computeLoggedIn({
         authenticationMethod: state.authenticationMethod,
@@ -1016,6 +1069,7 @@ const initialState: ApiState = {
       },
 
       logoutLocal: (state) => {
+        state.authGeneration += 1;
         state.isLoggedIn = false;
         state.jwt = null;
 
@@ -1027,6 +1081,7 @@ const initialState: ApiState = {
 
         state.awb_rest_api = apis.awb_rest_api;
         state.dynamic_content_api = apis.dynamic_content_api;
+        state.dynamic_content_api_v2 = apis.dynamic_content_api_v2;
       },
 
       setIsLoggingOut: (state, action: PayloadAction<boolean>) => {
@@ -1038,10 +1093,22 @@ const initialState: ApiState = {
       },
     },
     extraReducers: (builder) => {
+      builder.addCase(initializeApi.pending, (state) => {
+        state.authGeneration += 1;
+      });
+
+      builder.addCase(login.pending, (state) => {
+        state.authGeneration += 1;
+      });
+
+      builder.addCase(logoutAsync.pending, (state) => {
+        state.authGeneration += 1;
+      });
       builder.addCase(initializeApi.fulfilled, (state, action) => {
         state.authenticationMethod = action.payload.authenticationMethod;
         state.awb_rest_api = action.payload.awb_rest_api;
         state.dynamic_content_api = action.payload.dynamic_content_api;
+        state.dynamic_content_api_v2 = action.payload.dynamic_content_api_v2;
 
         state.ip = action.payload.ip;
         state.jwt = action.payload.jwt;
@@ -1057,7 +1124,34 @@ const initialState: ApiState = {
         state.isBaseMode = false;
       });
 
+      builder.addCase(resetAuthAfterConfigurationChange.pending, (state) => {
+        state.authGeneration += 1;
+        state.isLoggingOut = true;
+      });
+
+      builder.addCase(resetAuthAfterConfigurationChange.fulfilled, (state) => {
+        state.isLoggingOut = false;
+      });
+
+      builder.addCase(resetAuthAfterConfigurationChange.rejected, (state) => {
+        state.isLoggingOut = false;
+      });
+
+      builder.addCase(setIpAsync.pending, (state) => {
+        state.authGeneration += 1;
+        state.isSwitchingServer = true;
+      });
+
+      builder.addCase(setIpAsync.fulfilled, (state) => {
+        state.isSwitchingServer = false;
+      });
+
+      builder.addCase(setIpAsync.rejected, (state) => {
+        state.isSwitchingServer = false;
+      });
+
       builder.addCase(switchServer.pending, (state) => {
+        state.authGeneration += 1;
         state.isSwitchingServer = true;
       });
 
@@ -1078,6 +1172,7 @@ const initialState: ApiState = {
   export const {
     setConnectionLocal,
     setJwtLocal,
+  rotateJwtLocal,
     logoutLocal,
     setIsLoggingOut,
     setIsLogoutDialogOpen,

@@ -55,9 +55,7 @@ import {
   selectAuthenticationMethod,
 } from "@/template/state/api/apiSlice";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 const SETTINGS_ROOT_ID = 3003;
 

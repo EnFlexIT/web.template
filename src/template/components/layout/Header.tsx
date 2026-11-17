@@ -1,4 +1,4 @@
-import { DrawerHeaderProps, useDrawerStatus } from "@react-navigation/drawer";
+import { DrawerHeaderProps } from "@react-navigation/drawer";
 import { Pressable, View } from "react-native";
 import { Text } from "@/template/components/design-system/stylistic/Text";
 import { StyleSheet } from "react-native-unistyles";
@@ -88,10 +88,8 @@ function Breadcrumb({ pathById }: { pathById: Record<number, string> }) {
 export function Header({ navigation }: DrawerHeaderProps) {
   const isWide = useIsWide();
   const isLoggedIn = useAppSelector(selectIsLoggedIn);
-  const { menu, rawMenu } = useAppSelector(selectMenu);
+  const { rawMenu } = useAppSelector(selectMenu);
 
-  const drawerStatus = useDrawerStatus();
-  const isDrawerOpen = drawerStatus === "open";
 
   // Slug mapping einmal aus rawMenu bauen
   const { pathById } = useMemo(() => buildMenuPaths(rawMenu), [rawMenu]);
@@ -112,22 +110,7 @@ export function Header({ navigation }: DrawerHeaderProps) {
             </View>
           )}
 
-          {menu
-            .flatMap((node, i) => [
-              <MenuLink
-                node={node.val}
-                pathById={pathById}
-                key={2 * i}
-                style={[styles.headMenueTitle, styles.noSelect]}
-              />,
-              <Text
-                key={2 * i + 1}
-                style={[styles.headMenueTitle, styles.noSelect]}
-              >
-                |
-              </Text>,
-            ])
-            .slice(0, -1)}
+
         </View>
 
         <Breadcrumb pathById={pathById} />
@@ -153,10 +136,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     gap: 15,
   },
-  headMenueTitle: {
-    fontSize: 26,
-    fontWeight: "600",
-  },
+
   breadcrumbcontainer: {
     flexDirection: "row",
     gap: 5,

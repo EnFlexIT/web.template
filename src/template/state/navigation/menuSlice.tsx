@@ -16,6 +16,18 @@ import type {
   MenuItem as ApiMenuItem,
 } from "@/api/implementation/Dynamic-Content-Api";
 
+import {
+  normalizeBackendMenus,
+} from "./adapters/normalizeBackendMenus";
+
+import {
+  captureBackendMenuRequestIdentity,
+  isCurrentBackendMenuRequest,
+} from "./isCurrentBackendMenuRequest";
+
+import {
+  filterValidDynamicMenuHierarchy,
+} from "./adapters/filterValidDynamicMenuHierarchy";
 import type {
   AuthMethod,
 } from "@/template/state/api/apiSlice";
@@ -72,6 +84,12 @@ export interface MenuState {
   menu: MenuTree[];
 
   rawMenu: MenuItem[];
+
+  /**
+   * Latest menu initialization request.
+   * Null invalidates all earlier responses.
+   */
+  pendingRequestId?: string | null;
 
   activeMenuId:
     number | undefined;
@@ -470,6 +488,9 @@ export const initializeMenu =
       const defaultMenuID =
         getConfiguredDefaultMenuID();
 
+      const requestIdentity =
+        captureBackendMenuRequestIdentity(state);
+
       if (
         !state.api
           .isPointingToServer ||
@@ -491,67 +512,36 @@ export const initializeMenu =
             .defaultApi
             .menuGet(
               lang,
+              {
+                params:
+                  requestIdentity.role === null
+                    ? {}
+                    : { forRole: requestIdentity.role },
+              },
             );
 
-        const raw =
-          response?.data as
-            unknown;
-
-        const rawRecord =
-          raw &&
-          typeof raw ===
-            "object" &&
-          !Array.isArray(
-            raw,
+        if (
+          !isCurrentBackendMenuRequest(
+            thunkAPI.getState() as TemplateRootState,
+            requestIdentity,
           )
-            ? (
-                raw as Record<
-                  string,
-                  unknown
-                >
-              )
-            : null;
+        ) {
+          return {
+            dynamicMenu: [],
+            staticMenu,
+            authenticationMethod,
+            defaultMenuID,
+          };
+        }
 
-        const data:
-          ApiMenuItem[] =
-          Array.isArray(
-            raw,
-          )
-            ? (
-                raw as
-                  ApiMenuItem[]
-              )
-            : Array.isArray(
-                  rawRecord
-                    ?.data,
-                )
-              ? (
-                  rawRecord
-                    .data as
-                      ApiMenuItem[]
-                )
-              : Array.isArray(
-                    rawRecord
-                      ?.items,
-                  )
-                ? (
-                    rawRecord
-                      .items as
-                        ApiMenuItem[]
-                  )
-                : Array.isArray(
-                      rawRecord
-                        ?.menu,
-                    )
-                  ? (
-                      rawRecord
-                        .menu as
-                          ApiMenuItem[]
-                    )
-                  : [];
+        const dynamicMenuCandidates =
+          normalizeBackendMenus(
+            response?.data as unknown,
+          );
+
 
         if (
-          data.length === 0
+          dynamicMenuCandidates.length === 0
         ) {
           return {
             dynamicMenu: [],
@@ -565,34 +555,22 @@ export const initializeMenu =
          * Dynamic entries are filtered here,
          * before they reach the Redux reducer.
          */
+        const visibleDynamicMenu =
+          dynamicMenuCandidates.filter(
+            (item) =>
+              isConfiguredMenuEnabled(
+                item.menuID,
+                authenticationMethod,
+              ),
+          );
+
         const dynamicMenu:
           MenuItem[] =
-          data
-            .map(
-              (node) => ({
-                menuID:
-                  node.menuID!,
+          filterValidDynamicMenuHierarchy(
+            visibleDynamicMenu,
+            staticMenu,
+          );
 
-                parentID:
-                  node.parentID,
-
-                position:
-                  node.position,
-
-                caption:
-                  node.caption,
-
-                Screen:
-                  undefined,
-              }),
-            )
-            .filter(
-              (item) =>
-                isConfiguredMenuEnabled(
-                  item.menuID,
-                  authenticationMethod,
-                ),
-            );
 
         return {
           dynamicMenu,
@@ -603,6 +581,20 @@ export const initializeMenu =
       } catch (
         error
       ) {
+        if (
+          !isCurrentBackendMenuRequest(
+            thunkAPI.getState() as TemplateRootState,
+            requestIdentity,
+          )
+        ) {
+          return {
+            dynamicMenu: [],
+            staticMenu,
+            authenticationMethod,
+            defaultMenuID,
+          };
+        }
+
         console.warn(
           "initializeMenu failed, fallback to static menu",
           error,
@@ -670,6 +662,31 @@ export const updateMenu =
   );
 
 
+/**
+ * Immediately hides dynamic backend menus.
+ * Keeps previously validated static application entries.
+ */
+function invalidateDynamicMenu(
+  state: MenuState,
+): void {
+  const staticMenu = state.rawMenu.filter(
+    (item) => !isDynamicMenuItem(item),
+  );
+
+  state.pendingRequestId = null;
+  state.rawMenu = staticMenu;
+  state.menu = rawListToTrees(staticMenu);
+
+  if (
+    !staticMenu.some(
+      (item) => item.menuID === state.activeMenuId,
+    )
+  ) {
+    state.activeMenuId =
+      getFirstUsableMenuId(staticMenu);
+  }
+}
+
 type ReplaceWithStaticMenuPayload = {
   items: MenuItem[];
 
@@ -718,6 +735,8 @@ export const menuSlice =
         } =
           action.payload;
 
+        state.pendingRequestId = null;
+
         state.rawMenu =
           staticMenu;
 
@@ -741,12 +760,31 @@ export const menuSlice =
       builder,
     ) => {
       builder.addCase(
+        initializeMenu.pending,
+        (state, action) => {
+          invalidateDynamicMenu(state);
+          state.pendingRequestId =
+            action.meta.requestId;
+        },
+      );
+
+      builder.addCase(
         initializeMenu
           .fulfilled,
         (
           state,
           action,
         ) => {
+          if (
+            state.pendingRequestId !== undefined &&
+            action.meta?.requestId !==
+              state.pendingRequestId
+          ) {
+            return;
+          }
+
+          state.pendingRequestId = null;
+
           const {
             dynamicMenu,
             staticMenu,
@@ -787,9 +825,37 @@ export const menuSlice =
 
       builder.addCase(
         internalSetLanguage,
-        () => {
-          // No reducer change required.
-          // Menu initialization is handled separately.
+        (state) => {
+          invalidateDynamicMenu(state);
+        },
+      );
+
+      const invalidateActions = new Set([
+        "groupRoles/selectGroupRole",
+        "groupRoles/selectPublicGroupView",
+        "groupRoles/groupRolesRequested",
+        "groupRoles/groupRolesReceived",
+        "groupRoles/groupRolesFailed",
+        "groupRoles/resetGroupRoles",
+        "backendRoles/backendRolesRequested",
+        "backendRoles/backendRolesReceived",
+        "backendRoles/backendRolesFailed",
+        "backendRoles/backendRolesReset",
+        "api/initialize/pending",
+        "api/setIpAsync/pending",
+        "api/switchServer/pending",
+        "api/login/pending",
+        "api/setConnectionLocal",
+        "api/setJwtLocal",
+        "api/logoutLocal",
+        "api/logoutAsync/pending",
+        "api/resetAuthAfterConfigurationChange/pending",
+      ]);
+
+      builder.addMatcher(
+        (action) => invalidateActions.has(action.type),
+        (state) => {
+          invalidateDynamicMenu(state);
         },
       );
     },

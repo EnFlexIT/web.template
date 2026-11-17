@@ -13,10 +13,11 @@ import { StyleSheet } from "react-native-unistyles";
 
 interface BarProps {
     editor: TipTapEditorType
+    compact?: boolean
 }
-export function Bar({ editor }: BarProps) {
+export function Bar({ editor, compact = false }: BarProps) {
 
-    return <ThemedView style={[barStyles.container]}>
+    return <ThemedView style={[barStyles.container, compact && { padding: 6, gap: 8, flexWrap: "wrap" }]}>
         <HeadingExpandButton editor={editor} />
         {/* <H_Icon />
         <HeadingButton editor={editor} level={1} />
@@ -33,12 +34,15 @@ export function Bar({ editor }: BarProps) {
 const barStyles = StyleSheet.create(theme => ({
     container: {
         padding: 10,
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
         gap: 20,
         borderBottomColor: theme.colors.border,
         borderBottomWidth: 1,
+        position: "relative",
+        zIndex: 100,
+        overflow: "visible",
         // backgroundColor: "lightgreen",
     }
 }))

@@ -82,6 +82,9 @@ import {
   DerbyNetworkServerTab,
 } from "@/template/screens/agent-workbench/database/DerbyNetworkServerTab";
 
+import {
+  ContentMenuEditorEntryScreen,
+} from "@/template/editor/screens/ContentMenuEditorEntryScreen";
 export const templateScreenRegistry:
   ScreenRegistry = {
   "settings":
@@ -92,6 +95,9 @@ export const templateScreenRegistry:
 
   "menu-hub":
     MenuHubScreen,
+
+  "content-menu-editor":
+    ContentMenuEditorEntryScreen,
 
   "unauthenticated-settings":
     UnauthenticatedSettings,

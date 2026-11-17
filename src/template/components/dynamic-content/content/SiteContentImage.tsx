@@ -4,16 +4,17 @@ import { Image as ImageJSX, Pressable } from "react-native";
 
 interface SiteContentImageProps {
     content: SiteContentImageType,
+    canEdit: boolean,
     setChangerVisible: Dispatch<React.SetStateAction<boolean>>,
 }
-export function SiteContentImage({ content, setChangerVisible }: SiteContentImageProps) {
+export function SiteContentImage({ content, canEdit, setChangerVisible }: SiteContentImageProps) {
 
     const [node, setNode] = useState<ReactNode>(undefined)
 
     useEffect(() => {
         const image = new Image()
         image.onload = function () {
-            if (content.editable) {
+            if (content.editable && canEdit) {
                 setNode(
                     <Pressable onPress={() => setChangerVisible(true)}>
                         <ImageJSX
@@ -32,7 +33,7 @@ export function SiteContentImage({ content, setChangerVisible }: SiteContentImag
             }
         }
         image.src = `data:${content.mimeType};base64,${content.dataInB64}`
-    }, [content])
+    }, [content, canEdit])
 
 
     return node

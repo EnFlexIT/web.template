@@ -7,10 +7,11 @@ import { Text } from "@/template/components/design-system/stylistic/Text";
 import { Table } from "@design-system";
 type SiteContentPropertiesProps = {
     content: SiteContentPropertiesType,
+    canEdit: boolean,
     setChangerVisible: Dispatch<React.SetStateAction<boolean>>,
 }
-export function SiteContentProperties({ content, setChangerVisible }: SiteContentPropertiesProps) {
-    if (content.editable) {
+export function SiteContentProperties({ content, canEdit, setChangerVisible }: SiteContentPropertiesProps) {
+    if (content.editable && canEdit) {
         return (
             <Pressable
                 onPress={() => setChangerVisible(true)}

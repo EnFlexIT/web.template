@@ -4,7 +4,7 @@ import Feather_ from "@expo/vector-icons/Feather";
 import { Buffer } from "buffer";
 import { useTranslation } from "react-i18next";
 import { isMobileShellRuntime } from "@/template/runtime/runtime";
-import { selectDeveloperConsole,toggleDeveloperConsole,} from "@/template/state/developer-tools/developerConsoleSlice";
+import { selectDeveloperConsole,} from "@/template/state/developer-tools/developerConsoleSlice";
 
 import {selectLiveConsole,} from "@/template/state/developer-tools/liveConsoleSlice";
 import { ThemedText } from "@/template/components/design-system/themed/ThemedText";
@@ -51,6 +51,9 @@ import {
 
 import { ServerLoginModal } from "@/template/screens/login/ServerLoginModal";
 
+import { selectCanEditInUiPreview } from "@/template/state/authorization/selectUiPreviewMode";
+
+import { useLocalContentEditorPanel } from "@/template/editor/context/LocalContentEditorPanelContext";
 const Feather = withUnistyles(Feather_);
 
 function toBase64(str: string) {
@@ -69,6 +72,13 @@ function extractBearerToken(value: unknown): string | null {
 
 export function Footer() {
   const dispatch = useAppDispatch();
+  const canUseContentEditor = useAppSelector(selectCanEditInUiPreview);
+  const {
+    request: editorRequest,
+    openPanel,
+    closePanel,
+    toggleConsoleFromFooter,
+  } = useLocalContentEditorPanel();
   const { t } = useTranslation(["Login"]);
   const { width } =useWindowDimensions();
   const isSwitchingServer = useAppSelector(selectIsSwitchingServer);
@@ -98,6 +108,9 @@ export function Footer() {
   const showNotificationButton = !isLoginPage && isLoggedIn;
   const showDeveloperConsoleButton =!isLoginPage &&isLoggedIn &&
   Platform.OS === "web" && width >= 1024 &&!isMobileShellRuntime();
+  const showContentEditorButton =
+    showDeveloperConsoleButton &&
+    canUseContentEditor;
 
   useEffect(() => {
     async function loadReleaseType() {
@@ -311,6 +324,22 @@ export function Footer() {
 
     dispatch(toggleNotificationPopup());
   }
+  function handleContentEditorButtonPress() {
+    if (loginLoading || !showContentEditorButton) return;
+
+    dispatch(closeNotificationPopup());
+
+    if (editorRequest) {
+      closePanel();
+    } else {
+      openPanel({
+        kind: "create",
+        parentId: "static:3900",
+        mode: "folder",
+      });
+    }
+  }
+
   function handleDeveloperConsoleButtonPress() {
   if (
     loginLoading ||
@@ -321,9 +350,7 @@ export function Footer() {
 
   dispatch(closeNotificationPopup());
 
-  dispatch(
-    toggleDeveloperConsole(),
-  );
+  toggleConsoleFromFooter();
 }
 
   return (
@@ -395,6 +422,26 @@ export function Footer() {
       </View>
     ) : null}
   </Pressable>
+
+  {showContentEditorButton ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Content-Editor"
+      accessibilityState={{ selected: editorRequest !== null }}
+      onPress={handleContentEditorButtonPress}
+      disabled={loginLoading}
+      style={[
+        styles.footerToolButton,
+        editorRequest !== null && styles.footerToolButtonActive,
+      ]}
+    >
+      <Feather
+        name="edit-3"
+        size={16}
+        style={styles.color}
+      />
+    </Pressable>
+  ) : null}
 
   {showDeveloperConsoleButton ? (
     <Pressable

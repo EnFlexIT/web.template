@@ -1479,6 +1479,74 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
             };
         },
         /**
+         *
+         * @summary Get backend roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getBackendUserRoles: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user/backendRoles`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary Get group roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getGroupRoles: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user/groupRoles`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Returns the remaining session time as well as the expiration time
          * @summary Enables to read the remaining and the expiration time of the current user session
          * @param {*} [options] Override http request option.
@@ -1486,6 +1554,40 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
          */
         getSessionTime: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/user/sessionTime`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary Get all roles the client is associated with
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserRoles: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/user/roles`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -1616,6 +1718,30 @@ export const UserApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         *
+         * @summary Get backend roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getBackendUserRoles(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getBackendUserRoles(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.getBackendUserRoles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary Get group roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getGroupRoles(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getGroupRoles(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.getGroupRoles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Returns the remaining session time as well as the expiration time
          * @summary Enables to read the remaining and the expiration time of the current user session
          * @param {*} [options] Override http request option.
@@ -1625,6 +1751,18 @@ export const UserApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getSessionTime(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserApi.getSessionTime']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary Get all roles the client is associated with
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getUserRoles(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserRoles(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.getUserRoles']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -1681,6 +1819,24 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
             return localVarFp.extendSessionTime(options).then((request) => request(axios, basePath));
         },
         /**
+         *
+         * @summary Get backend roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getBackendUserRoles(options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+            return localVarFp.getBackendUserRoles(options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary Get group roles assigned to the authenticated user
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getGroupRoles(options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+            return localVarFp.getGroupRoles(options).then((request) => request(axios, basePath));
+        },
+        /**
          * Returns the remaining session time as well as the expiration time
          * @summary Enables to read the remaining and the expiration time of the current user session
          * @param {*} [options] Override http request option.
@@ -1688,6 +1844,15 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
          */
         getSessionTime(options?: RawAxiosRequestConfig): AxiosPromise<SessionTimes> {
             return localVarFp.getSessionTime(options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary Get all roles the client is associated with
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserRoles(options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+            return localVarFp.getUserRoles(options).then((request) => request(axios, basePath));
         },
         /**
          * Does NOT use Bearer Auth like whole other application. Only Endpoint that uses Basic Authentication. Expects previously configured Credentials and returns appropriate Bearer Token
@@ -1741,6 +1906,28 @@ export class UserApi extends BaseAPI {
     }
 
     /**
+     *
+     * @summary Get backend roles assigned to the authenticated user
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getBackendUserRoles(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).getBackendUserRoles(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary Get group roles assigned to the authenticated user
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getGroupRoles(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).getGroupRoles(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Returns the remaining session time as well as the expiration time
      * @summary Enables to read the remaining and the expiration time of the current user session
      * @param {*} [options] Override http request option.
@@ -1749,6 +1936,17 @@ export class UserApi extends BaseAPI {
      */
     public getSessionTime(options?: RawAxiosRequestConfig) {
         return UserApiFp(this.configuration).getSessionTime(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary Get all roles the client is associated with
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UserApi
+     */
+    public getUserRoles(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).getUserRoles(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

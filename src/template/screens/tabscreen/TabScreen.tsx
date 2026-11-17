@@ -29,9 +29,7 @@ import {
   useAppSelector,
 } from "@/template/state/store/useAppSelector";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 import {
   selectMenu,

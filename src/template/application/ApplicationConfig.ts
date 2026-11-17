@@ -173,6 +173,16 @@ export type ApplicationConfig<
 
 
   navigation: {
+    /**
+     * Optional Application-owned content editor placement.
+     *
+     * Resolved by the config generator from semantic
+     * Application menu keys. This is not authorization.
+     */
+    editor?: {
+      allowedContentParentIds: readonly string[];
+    };
+
     menu: {
       /**
        * Controls whether menu icons are shown.

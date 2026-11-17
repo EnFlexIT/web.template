@@ -10,6 +10,23 @@ import {
 
 import * as Linking from "expo-linking";
 
+import {
+  LocalContentPreviewProvider,
+} from "@/template/editor/context/LocalContentPreviewContext";
+
+import {
+  LocalContentPagePreviewScreen,
+} from "@/template/editor/screens/LocalContentPagePreviewScreen";
+
+import {
+  isLocalContentPreviewEnabled,
+} from "@/template/editor/config/localContentPreviewConfig";
+
+import {
+  LocalContentEditorPanelProvider,
+} from "@/template/editor/context/LocalContentEditorPanelContext";
+import { ResponsiveBackendEditorWorkspace } from "@/template/editor/components/ResponsiveBackendEditorWorkspace";
+import { BackendContentLivePreviewProvider } from "@/template/editor/context/BackendContentLivePreviewContext";
 import React, {
   useCallback,
   useEffect,
@@ -79,15 +96,17 @@ import {
   useIsWide,
 } from "@template";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 import {
   initializeApi,
   selectAuthenticationMethod,
   selectIsLoggedIn,
 } from "@/template/state/api/apiSlice";
+
+import { useBackendRolesSync } from "@/template/state/authorization/useBackendRolesSync";
+import { useGroupRolesSync } from "@/template/state/authorization/useGroupRolesSync";
+import { selectBackendMenuPreviewRole } from "@/template/state/authorization/selectBackendMenuPreviewRole";
 
 import type {
   TemplateStore,
@@ -261,6 +280,53 @@ function RootStack<
         "oidc",
   });
 
+  /*
+   * Fetch authenticated backend roles after application boot.
+   * Backend roles do not control frontend permissions yet.
+   */
+  useBackendRolesSync({
+    enabled: !isLoading,
+  });
+
+  useGroupRolesSync({
+    enabled: !isLoading,
+  });
+
+  /**
+   * Load the dynamic menu for the selected,
+   * backend-verified role.
+   *
+   * This selection changes only menu presentation,
+   * never the user's actual permissions.
+   */
+  const backendMenuPreviewRole = useAppSelector(
+    selectBackendMenuPreviewRole,
+  );
+
+  const backendRolesStatus = useAppSelector(
+    state => state.backendRoles.status,
+  );
+
+  const groupRolesStatus = useAppSelector(
+    state => state.groupRoles.status,
+  );
+
+  useEffect(() => {
+    // A null group role is the valid public menu view.
+    // Reload after login, role synchronization or group changes.
+    if (isLoading || !isLoggedIn) {
+      return;
+    }
+
+    void dispatch(initializeMenu());
+  }, [
+    dispatch,
+    isLoading,
+    isLoggedIn,
+    backendMenuPreviewRole,
+    backendRolesStatus,
+    groupRolesStatus,
+  ]);
   const isWide =
     useIsWide();
 
@@ -955,6 +1021,8 @@ function RootStack<
           screens: {
             ...screensConfig,
 
+            "3027": "content-menu-editor",
+
             Login:
               "/login",
 
@@ -1031,6 +1099,9 @@ function RootStack<
               menu={
                 navigationMenu
               }
+              rootMenus={
+                menu
+              }
             />
           );
         }}
@@ -1057,7 +1128,9 @@ function RootStack<
                 isLoggedIn
               }
             >
-              {children}
+              <ResponsiveBackendEditorWorkspace>
+                {children}
+              </ResponsiveBackendEditorWorkspace>
             </DeveloperConsole>
           </View>
         )}
@@ -1120,6 +1193,26 @@ function RootStack<
               ),
             )}
 
+            {isLocalContentPreviewEnabled() && (
+              <Drawer.Screen
+                name="LocalContentPreview"
+                component={LocalContentPagePreviewScreen}
+                options={{
+                  title: config.displayName,
+                }}
+              />
+            )}
+            {/* Route independent of dynamically loaded backend menus. */}
+            {!rawMenu.some(item => item.menuID === 3027) && (
+              <Drawer.Screen
+                name="3027"
+                component={ContentMenuEditorEntryScreen}
+                options={{
+                  title: config.displayName,
+                  drawerItemStyle: { display: "none" },
+                }}
+              />
+            )}
             <Drawer.Screen
               name="NotFound"
               component={
@@ -1160,6 +1253,11 @@ function RootStack<
 }
 
 
+import { RegularLocalEditorDraftProvider } from "@/template/editor/context/RegularLocalEditorDraftProvider";
+import {
+  ContentMenuEditorEntryScreen,
+} from "@/template/editor/screens/ContentMenuEditorEntryScreen";
+
 export default function TemplateApp<
   TState = unknown,
 >({
@@ -1179,25 +1277,33 @@ export default function TemplateApp<
       >
         <DeveloperConsoleConnection />
 
-        <View
-          style={{
-            flex: 1,
-          }}
-        >
+        <LocalContentEditorPanelProvider>
           <View
             style={{
               flex: 1,
             }}
           >
-            <RootStack
-              config={
-                config
-              }
-            />
+            <View
+            style={{
+              flex: 1,
+            }}
+          >
+            <LocalContentPreviewProvider>
+              <BackendContentLivePreviewProvider>
+              <RegularLocalEditorDraftProvider>
+                <RootStack
+                  config={
+                    config
+                  }
+                />
+              </RegularLocalEditorDraftProvider>
+              </BackendContentLivePreviewProvider>
+            </LocalContentPreviewProvider>
           </View>
 
           <Footer />
         </View>
+        </LocalContentEditorPanelProvider>
       </Provider>
     </ApplicationConfigProvider>
   );

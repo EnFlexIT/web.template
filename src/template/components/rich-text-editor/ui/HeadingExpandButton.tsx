@@ -10,99 +10,106 @@ import { Level } from "@tiptap/extension-heading";
 import { HeadingIcon } from "@design-system";
 import { StyleSheet } from "react-native-unistyles";
 
-interface MenuEntryProps {
-    editor: TipTapEditorType,
-    level: Level,
-    setMenuVisible: Dispatch<SetStateAction<boolean>>
-}
-function MenuEntry({ editor, level, setMenuVisible }: MenuEntryProps) {
-
-    const [over, setOver] = useState(false)
-
-    return (
-        <Pressable
-            onHoverIn={() => setOver(true)}
-            onHoverOut={() => setOver(false)}
-            onPress={e => {
-                editor.chain().focus().toggleHeading({ level: level }).run()
-                setMenuVisible(false)
-            }}
-        >
-            <ThemedView style={[over ? styles.over : styles.notOver, styles.container1]}>
-                <HeadingIcon
-                    level={level}
-                    style={[over ? styles.over : styles.notOver]}
-                />
-                <ThemedText>Heading {level}</ThemedText>
-            </ThemedView>
-        </Pressable>
-    )
+interface HeadingExpandButtonProps {
+    editor: TipTapEditorType;
 }
 
-const styles = StyleSheet.create((theme) => ({
-    over: {
-        backgroundColor: theme.colors.highlight
-    },
-    notOver: {
-
-    },
-    container1: {
-        width: 120,
-        paddingLeft: 10,
-        borderRadius: 10,
-        margin: 3,
-        flexDirection: "row",
-        gap: 10,
-        alignItems: "center"
-    },
-    container2: {
-        borderRadius: 5,
-    },
-    containerOver: {
-        backgroundColor: theme.colors.highlight
-    },
-    containerNotOver: {
-
+const dropdownStyles = StyleSheet.create(theme => ({
+    hover: {
+        backgroundColor: theme.colors.highlight,
     },
     menu: {
         position: "absolute",
-        top: 24,
+        top: 32,
+        left: 0,
+        width: 128,
         backgroundColor: theme.colors.background,
         borderWidth: 1,
-        borderRadius: 10,
-    }
-}))
+        borderColor: theme.colors.border,
+        borderRadius: 6,
+        padding: 4,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 4,
+        zIndex: 1000,
+        elevation: 10,
+    },
+}));
 
+export function HeadingExpandButton({
+    editor,
+}: HeadingExpandButtonProps) {
+    const [open, setOpen] = useState(false);
+    const [hoveredLevel, setHoveredLevel] = useState<Level | null>(null);
 
-interface HeadingExpandButtonProps {
-    editor: TipTapEditorType
-}
-export function HeadingExpandButton({ editor }: HeadingExpandButtonProps) {
-
-    const [open, setOpen] = useState(false)
-    const [over, setOver] = useState(false)
+    const applyHeading = (level: Level) => {
+        editor.chain().focus().toggleHeading({ level }).run();
+        setOpen(false);
+    };
 
     return (
-        <Pressable
-            onPress={() => setOpen(!open)}
-            onHoverIn={() => setOver(true)}
-            onHoverOut={() => setOver(false)}
+        <ThemedView
+            style={{
+                position: "relative",
+                zIndex: open ? 1000 : 1,
+                overflow: "visible",
+            }}
         >
-            <ThemedView>
-                <HIcon style={[styles.container2, over ? styles.containerOver : styles.containerNotOver]} />
-                {
-                    open &&
-                    <ThemedView style={[styles.menu]}>
-                        {
-                            Array<Level>(1, 2, 3, 4, 5, 6).map((val, idx, array) => {
-                                return (
-                                    <MenuEntry key={idx} editor={editor} level={val} setMenuVisible={setOpen} />
-                                )
-                            })
-                        }
-                    </ThemedView>
-                }
-            </ThemedView>
-        </Pressable>
-    )
+            <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ueberschriften auswaehlen"
+                accessibilityState={{ expanded: open }}
+                onPress={() => setOpen(current => !current)}
+                style={{
+                    minWidth: 30,
+                    minHeight: 30,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "row",
+                    gap: 2,
+                }}
+            >
+                <ThemedText
+                    style={{
+                        fontSize: 22,
+                        fontWeight: "600",
+                    }}
+                >
+                    H
+                </ThemedText>
+                <ThemedText style={{ fontSize: 11 }}>
+                    {open ? "▴" : "▾"}
+                </ThemedText>
+            </Pressable>
+
+            {open && (
+                <ThemedView style={dropdownStyles.menu}>
+                    {([1, 2, 3, 4, 5, 6] as Level[]).map(level => (
+                        <Pressable
+                            key={level}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Heading ${level}`}
+                            onPress={() => applyHeading(level)}
+                            onHoverIn={() => setHoveredLevel(level)}
+                            onHoverOut={() => setHoveredLevel(null)}
+                            style={[
+                                {
+                                    width: 56,
+                                    minHeight: 30,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: 4,
+                                },
+                                hoveredLevel === level && dropdownStyles.hover,
+                            ]}
+                        >
+                            <ThemedText style={{ fontSize: 13 }}>
+                                {`H${level}`}
+                            </ThemedText>
+                        </Pressable>
+                    ))}
+                </ThemedView>
+            )}
+        </ThemedView>
+    );
 }

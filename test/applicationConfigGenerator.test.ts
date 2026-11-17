@@ -76,12 +76,29 @@ describe(
     );
 
     it(
+      "does not generate a standalone content editor menu",
+      () => {
+        expect(generatedConfig).not.toMatch(
+          /menuID:\s*3027\b/,
+        );
+
+        expect(generatedConfig).not.toMatch(
+          /3027:\s*\{/,
+        );
+
+        expect(generatedConfig).not.toContain(
+          'caption: "Content- und Menü-Editor"',
+        );
+      },
+    );
+
+    it(
       "uses EDITOR and ADMIN for system settings access",
       () => {
         expect(
           accessConfig,
         ).toContain(
-          "access.systemSettings.roles=EDITOR,ADMIN",
+          "access.settings.systemSettings.roles=EDITOR,ADMIN",
         );
 
         expect(

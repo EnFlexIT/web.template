@@ -35,6 +35,7 @@ export function createTemplateApp<
   options: CreateTemplateAppOptions,
 ): React.ComponentType {
   const navigation = {
+    editor: config.navigation.editor,
     menu: {
       ...config.navigation.menu,
 

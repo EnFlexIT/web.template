@@ -64,9 +64,7 @@ import {
   selectAuthenticationMethod,
 } from "@/template/state/api/apiSlice";
 
-import {
-  selectEffectiveRoles,
-} from "@/template/state/authorization/authorizationSlice";
+import { selectUiPreviewRoles as selectEffectiveRoles } from "@/template/state/authorization/selectUiPreviewMode";
 
 import {
   useMenuNavigation,

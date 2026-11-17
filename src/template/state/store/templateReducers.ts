@@ -1,4 +1,4 @@
-﻿import languageReducer from "@/template/state/localization/languageSlice";
+import languageReducer from "@/template/state/localization/languageSlice";
 import themeReducer from "@/template/state/theme/themeSlice";
 import apiReducer from "@/template/state/api/apiSlice";
 import dataPermissionsReducer from "@/template/state/privacy/dataPermissionsSlice";
@@ -27,6 +27,9 @@ import dataAnalysisReducer from "@/template/state/agent-workbench/dataAnalysisSl
 import execSettingsReducer from "@/template/state/agent-workbench/execSettingsSlice";
 import dbSettingsReducer from "@/template/state/agent-workbench/dbSettingsSlice";
 import authorizationReducer from "@/template/state/authorization/authorizationSlice";
+import backendRolesReducer from "@/template/state/authorization/backendRolesSlice";
+import groupRolesReducer from "@/template/state/authorization/groupRolesSlice";
+import templateRolePreviewReducer from "@/template/state/authorization/templateRolePreviewSlice";
 /**
  * Reducers owned by the reusable Base Template.
  *
@@ -60,6 +63,9 @@ export const templateReducers = {
   execSettings: execSettingsReducer,
   dbSettings: dbSettingsReducer,
   authorization: authorizationReducer,
+  backendRoles: backendRolesReducer,
+  groupRoles: groupRolesReducer,
+  templateRolePreview: templateRolePreviewReducer,
 };
 
 /**

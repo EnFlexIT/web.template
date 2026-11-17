@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  resolveContentEditorAllowedParents,
+} from "./resolveContentEditorAllowedParents.mjs";
+
+import {
   templateMenuCatalog,
   templateMenuRuntimeRules,
   templateTabCatalog,
@@ -298,7 +302,7 @@ function parseTemplateFeatureConfiguration(
     new Map();
 
   const pattern =
-    /^feature\.(.+)\.enabled$/;
+    /^(.+)\.enabled$/;
 
   for (
     const [
@@ -344,8 +348,8 @@ function parseTemplateFeatureConfiguration(
    *
    * Example:
    *
-   * feature.personalSettings.enabled=true
-   * feature.personalSettings.appearance.enabled=true
+   * settings.personalSettings.enabled=true
+   * settings.personalSettings.appearance.enabled=true
    */
   for (
     const featureName of
@@ -371,9 +375,9 @@ function parseTemplateFeatureConfiguration(
       throw new Error(
         [
           `Feature "${featureName}" is missing its parent configuration.`,
-          `Add "feature.${parentFeatureName}.enabled=true" or`,
+          `Add "${parentFeatureName}.enabled=true" or`,
           `explicitly disable that parent with`,
-          `"feature.${parentFeatureName}.enabled=false".`,
+          `"${parentFeatureName}.enabled=false".`,
         ].join(" "),
       );
     }
@@ -981,6 +985,15 @@ delete applicationNavigationProperties[
 delete applicationNavigationProperties[
   "NavigationDefaultMenu"
 ];
+
+  const contentEditorAllowedParentsRaw =
+    navigationProperties[
+      "contentEditor.allowedParents"
+    ]?.trim() || "";
+
+  delete applicationNavigationProperties[
+    "contentEditor.allowedParents"
+  ];
 
 const applicationId =
   requireProperty(
@@ -1797,6 +1810,14 @@ for (
       item.screen,
   });
 }
+  const contentEditorAllowedParentIds =
+    resolveContentEditorAllowedParents({
+      rawValue: contentEditorAllowedParentsRaw,
+      enabledApplicationMenus,
+      selectedMenuKeys,
+      menuItems,
+      getMenuId,
+    });
 
 let navigationDefaultMenuID;
 
@@ -2433,6 +2454,11 @@ export const applicationConfig:
     applicationBuildInfo,
 ${renderedApplicationBranding}
   navigation: {
+      editor: {
+        allowedContentParentIds:
+          ${JSON.stringify(contentEditorAllowedParentIds)},
+      },
+
     menu: {
       defaultMenuID:
         ${navigationDefaultMenuID === undefined
