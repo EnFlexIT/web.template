@@ -50,6 +50,9 @@ import {
 import {
   renameBackendMenuV2,
 } from "../adapters/renameBackendMenuV2";
+import {
+  moveBackendMenuV2,
+} from "../adapters/moveBackendMenuV2";
 
 export interface BackendMenuContextActionsV2Props {
   menuId: number;
@@ -79,6 +82,15 @@ export function BackendMenuContextActionsV2({
       context.server.trim().length > 0
     );
   });
+
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveLoading, setMoveLoading] = useState(false);
+  const [moveBusy, setMoveBusy] = useState(false);
+  const [moveError, setMoveError] = useState("");
+  const [moveTargets, setMoveTargets] = useState<
+    Array<{ menuId: number; caption: string }>
+  >([]);
+  const [moveTargetId, setMoveTargetId] = useState<number | null>(null);
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
@@ -157,6 +169,124 @@ export function BackendMenuContextActionsV2({
     }
   }
 
+  async function openMoveDialog() {
+    setMoveError("");
+    setMoveTargets([]);
+    setMoveTargetId(null);
+    setMoveOpen(true);
+    setMoveLoading(true);
+
+    try {
+      const before = { ...getRenameContext() };
+
+      if (
+        !before.isLoggedIn ||
+        !before.canEdit ||
+        before.isLoggingOut ||
+        before.isSwitchingServer
+      ) {
+        throw new Error("Keine Bearbeitungsberechtigung");
+      }
+
+      const response = await before.client.getMenus(language);
+      const after = getRenameContext();
+
+      if (
+        after.client !== before.client ||
+        after.server !== before.server ||
+        after.authGeneration !== before.authGeneration ||
+        !after.isLoggedIn ||
+        after.isLoggingOut ||
+        after.isSwitchingServer
+      ) {
+        throw new Error("Die Sitzung hat sich geändert");
+      }
+
+      const items = response.data?.menuList;
+
+      if (!Array.isArray(items)) {
+        throw new Error("Menüstruktur konnte nicht geladen werden");
+      }
+
+      const source = items.find(item => item.menuId === menuId);
+
+      if (!source) {
+        throw new Error("Ausgewähltes Menü nicht gefunden");
+      }
+
+      const parentIds = new Set(
+        items
+          .map(item => item.parentId)
+          .filter((id): id is number => typeof id === "number"),
+      );
+
+      const candidates = items.filter(item =>
+        parentIds.has(item.menuId) &&
+        item.menuId !== menuId &&
+        item.menuId !== source.parentId,
+      );
+
+      const validTargets = candidates.filter(candidate => {
+        const seen = new Set<number>();
+        let current: number | undefined = candidate.menuId;
+
+        while (current !== undefined) {
+          if (current === menuId || seen.has(current)) {
+            return false;
+          }
+
+          seen.add(current);
+          current = items.find(item => item.menuId === current)?.parentId;
+        }
+
+        return true;
+      });
+
+      setMoveTargets(
+        validTargets.map(item => ({
+          menuId: item.menuId,
+          caption: item.caption,
+        })),
+      );
+    } catch (error) {
+      setMoveError(
+        error instanceof Error
+          ? error.message
+          : "Zielordner konnten nicht geladen werden",
+      );
+    } finally {
+      setMoveLoading(false);
+    }
+  }
+  async function saveMove() {
+    if (moveBusy || moveLoading || moveTargetId === null) return;
+
+    setMoveBusy(true);
+    setMoveError("");
+
+    try {
+      await moveBackendMenuV2({
+        menuId,
+        targetParentId: moveTargetId,
+        allowedParentIds: moveTargets.map(target => target.menuId),
+        language,
+        getContext: getRenameContext,
+      });
+
+      await dispatch(initializeMenu()).unwrap();
+
+      setMoveOpen(false);
+    } catch (error) {
+      setMoveError(
+        error instanceof Error
+          ? error.message
+          : "Verschieben fehlgeschlagen",
+      );
+    } finally {
+      setMoveBusy(false);
+    }
+  }
+
   async function saveRename() {
     if (renameBusy || renameLoading) return;
 
@@ -196,10 +326,12 @@ export function BackendMenuContextActionsV2({
         options={{
           open: "Bearbeiten",
           rename: "Umbenennen",
+          move: "Verschieben",
         }}
         optionIcons={{
           open: "edit-2",
           rename: "edit-2",
+          move: "folder",
         }}
         triggerLabel="⋯"
         minimalMenu
@@ -219,9 +351,97 @@ export function BackendMenuContextActionsV2({
           if (action === "rename") {
             void openRenameDialog();
           }
+
+          if (action === "move") {
+            void openMoveDialog();
+          }
         }}
       />
 
+      <BaseModal
+        visible={moveOpen}
+        onClose={() => { if (!moveBusy) setMoveOpen(false); }}
+        width={520}
+      >
+        <View style={{ gap: 16 }}>
+          <Text style={{ fontSize: 19, fontWeight: "600" }}>
+            Menü verschieben
+          </Text>
+
+          <Text>Neuen übergeordneten Ordner auswählen:</Text>
+
+          {moveLoading && (
+            <Text>Menüstruktur wird geladen ...</Text>
+          )}
+
+          {!moveLoading && moveTargets.length === 0 && moveError === "" && (
+            <Text>Keine verfügbaren Zielordner gefunden.</Text>
+          )}
+
+          {moveTargets.map(target => (
+            <Pressable
+              key={target.menuId}
+              onPress={() => setMoveTargetId(target.menuId)}
+              style={{
+                padding: 12,
+                borderWidth: 1,
+                borderColor:
+                  moveTargetId === target.menuId
+                    ? "#2463eb"
+                    : "#cccccc",
+                backgroundColor:
+                  moveTargetId === target.menuId
+                    ? "#e8efff"
+                    : "transparent",
+              }}
+            >
+              <Text>
+                {moveTargetId === target.menuId ? "✓ " : ""}
+                {target.caption}
+              </Text>
+            </Pressable>
+          ))}
+
+          {moveError !== "" && (
+            <Text style={{ color: "#b42318" }}>
+              {moveError}
+            </Text>
+          )}
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 12,
+            }}
+          >
+            <Pressable
+              onPress={() => { if (!moveBusy) setMoveOpen(false); }}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+              }}
+            >
+              <Text>Abbrechen</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => void saveMove()}
+              disabled={moveBusy || moveLoading || moveTargetId === null}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                backgroundColor: "#2463eb",
+                opacity: moveBusy || moveLoading || moveTargetId === null ? 0.4 : 1,
+              }}
+            >
+              <Text style={{ color: "#ffffff" }}>
+                Verschieben
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </BaseModal>
       <BaseModal
         visible={renameOpen}
         onClose={() => {
