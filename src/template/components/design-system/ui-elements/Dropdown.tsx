@@ -36,6 +36,7 @@ interface DropdownProps<T extends string> {
   optionMeta?: Partial<Record<T, DropdownOptionMeta>>;
   optionIcons?: Partial<Record<T, React.ComponentProps<typeof Feather>["name"]>>;
   destructiveOptions?: readonly T[];
+  disabledOptions?: readonly T[];
   showSelectedToneDot?: boolean;
   showOptionToneDot?: boolean;
   menuOffsetY?: number;
@@ -67,6 +68,7 @@ export function Dropdown<T extends string>({
   optionMeta,
   optionIcons,
   destructiveOptions,
+  disabledOptions,
   showSelectedToneDot = false,
   showOptionToneDot = false,
   menuOffsetY,
@@ -263,11 +265,14 @@ if (top + menuH > screenH - 8) {
                 const active = key === value;
                 const meta = optionMeta?.[key];
                 const destructive = destructiveOptions?.includes(key) ?? false;
+                const optionDisabled = disabledOptions?.includes(key) ?? false;
                 const isLast = index === keys.length - 1;
 
                 return (
                   <Pressable
                     key={key}
+                    disabled={optionDisabled}
+                    accessibilityState={{ disabled: optionDisabled }}
                     onHoverIn={() => {
                       if (minimalMenu) setHoveredOption(key);
                     }}
@@ -275,6 +280,7 @@ if (top + menuH > screenH - 8) {
                       if (minimalMenu) setHoveredOption(null);
                     }}
                     onPress={() => {
+                      if (optionDisabled) return;
                       onChange(key);
                       handleClose();
                     }}
@@ -287,7 +293,8 @@ if (top + menuH > screenH - 8) {
                           borderTopWidth: minimalMenu && destructive ? 1 : 0,
                           borderTopColor: theme.colors.border,
                       },
-                      minimalMenu && hoveredOption === key && {
+                      optionDisabled && { opacity: 0.4 },
+                       minimalMenu && !optionDisabled && hoveredOption === key && {
                         backgroundColor: theme.colors.background,
                       },
                       active && !minimalMenu && {

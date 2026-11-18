@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import { BackendMenuCreateDialogV2 } from "./BackendMenuCreateDialogV2";
+import { useTranslation } from "react-i18next";
+import {
+  planBackendMenuDeletionV2,
+  type BackendMenuDeletionPlan,
+} from "../adapters/planBackendMenuDeletionV2";
 import {
   Pressable,
   Text,
@@ -56,10 +62,12 @@ import {
 
 export interface BackendMenuContextActionsV2Props {
   menuId: number;
+  canAddSubmenu?: boolean;
 }
 
 export function BackendMenuContextActionsV2({
   menuId,
+  canAddSubmenu = false,
 }: BackendMenuContextActionsV2Props) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const dispatch = useAppDispatch();
@@ -83,6 +91,14 @@ export function BackendMenuContextActionsV2({
     );
   });
 
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deletePlan, setDeletePlan] =
+    useState<BackendMenuDeletionPlan | null>(null);
+
+  const { t } = useTranslation(["Editor"]);
+
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
   const [moveBusy, setMoveBusy] = useState(false);
@@ -91,6 +107,9 @@ export function BackendMenuContextActionsV2({
     Array<{ menuId: number; caption: string }>
   >([]);
   const [moveTargetId, setMoveTargetId] = useState<number | null>(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createParentCaption, setCreateParentCaption] = useState("");
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
@@ -112,6 +131,59 @@ export function BackendMenuContextActionsV2({
     };
   }
 
+  async function openCreateDialog() {
+    setCreateOpen(true);
+    setCreateParentCaption("");
+
+    try {
+      const before = { ...getRenameContext() };
+
+      if (
+        !before.isLoggedIn ||
+        !before.canEdit ||
+        before.isLoggingOut ||
+        before.isSwitchingServer
+      ) {
+        throw new Error("Editing is not permitted");
+      }
+
+      const response = await before.client.getMenus(language);
+
+      const after = getRenameContext();
+
+      if (
+        after.client !== before.client ||
+        after.server !== before.server ||
+        after.authGeneration !== before.authGeneration ||
+        !after.isLoggedIn ||
+        !after.canEdit ||
+        after.isLoggingOut ||
+        after.isSwitchingServer
+      ) {
+        throw new Error("Session changed");
+      }
+
+      const items = response.data?.menuList;
+
+      if (!Array.isArray(items)) {
+        throw new Error("Menu list unavailable");
+      }
+
+      const matches = items.filter(item => item.menuId === menuId);
+
+      if (
+        matches.length !== 1 ||
+        typeof matches[0].caption !== "string"
+      ) {
+        throw new Error("Parent menu not found");
+      }
+
+      setCreateParentCaption(matches[0].caption);
+    } catch {
+      setCreateParentCaption(t("create.loadError"));
+    }
+  }
+
   async function openRenameDialog() {
     setRenameTitle("");
     setRenameError("");
@@ -127,7 +199,7 @@ export function BackendMenuContextActionsV2({
         before.isLoggingOut ||
         before.isSwitchingServer
       ) {
-        throw new Error("Keine Bearbeitungsberechtigung");
+        throw new Error(t("menuErrors.permissionDenied"));
       }
 
       const response = await before.client.getMenus(language);
@@ -142,19 +214,19 @@ export function BackendMenuContextActionsV2({
         after.isLoggingOut ||
         after.isSwitchingServer
       ) {
-        throw new Error("Die Sitzung hat sich geändert");
+        throw new Error(t("menuErrors.sessionChanged"));
       }
 
       const items = response.data?.menuList;
 
       if (!Array.isArray(items)) {
-        throw new Error("Menüliste konnte nicht geladen werden");
+        throw new Error(t("menuErrors.menuListUnavailable"));
       }
 
       const matches = items.filter(item => item.menuId === menuId);
 
       if (matches.length !== 1) {
-        throw new Error("Menü wurde nicht eindeutig gefunden");
+        throw new Error(t("menuErrors.menuNotUnique"));
       }
 
       setRenameTitle(matches[0].caption);
@@ -162,10 +234,75 @@ export function BackendMenuContextActionsV2({
       setRenameError(
         error instanceof Error
           ? error.message
-          : "Menü konnte nicht geladen werden",
+          : t("menuErrors.menuLoadFailed"),
       );
     } finally {
       setRenameLoading(false);
+    }
+  }
+
+  async function openDeleteDialog() {
+    setDeleteOpen(true);
+    setDeleteLoading(true);
+    setDeleteError("");
+    setDeletePlan(null);
+
+    try {
+      const before = { ...getRenameContext() };
+
+      if (
+        !before.isLoggedIn ||
+        !before.canEdit ||
+        before.isLoggingOut ||
+        before.isSwitchingServer
+      ) {
+        throw new Error("Editing is not permitted");
+      }
+
+      const response = await before.client.getMenus(language);
+
+      const after = getRenameContext();
+
+      if (
+        after.client !== before.client ||
+        after.server !== before.server ||
+        after.authGeneration !== before.authGeneration ||
+        !after.isLoggedIn ||
+        !after.canEdit ||
+        after.isLoggingOut ||
+        after.isSwitchingServer
+      ) {
+        throw new Error("Session changed");
+      }
+
+      const items = response.data?.menuList;
+
+      if (!Array.isArray(items)) {
+        throw new Error("Menu list unavailable");
+      }
+
+      const menus = items.map(item => {
+        if (
+          typeof item.menuId !== "number" ||
+          typeof item.caption !== "string"
+        ) {
+          throw new Error("Invalid menu data");
+        }
+
+        return {
+          menuId: item.menuId,
+          parentId: item.parentId,
+          caption: item.caption,
+        };
+      });
+
+      const plan = planBackendMenuDeletionV2(menus, menuId);
+
+      setDeletePlan(plan);
+    } catch {
+      setDeleteError(t("delete.loadError"));
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -185,7 +322,7 @@ export function BackendMenuContextActionsV2({
         before.isLoggingOut ||
         before.isSwitchingServer
       ) {
-        throw new Error("Keine Bearbeitungsberechtigung");
+        throw new Error(t("menuErrors.permissionDenied"));
       }
 
       const response = await before.client.getMenus(language);
@@ -199,19 +336,19 @@ export function BackendMenuContextActionsV2({
         after.isLoggingOut ||
         after.isSwitchingServer
       ) {
-        throw new Error("Die Sitzung hat sich geändert");
+        throw new Error(t("menuErrors.sessionChanged"));
       }
 
       const items = response.data?.menuList;
 
       if (!Array.isArray(items)) {
-        throw new Error("Menüstruktur konnte nicht geladen werden");
+        throw new Error(t("menuErrors.menuStructureUnavailable"));
       }
 
       const source = items.find(item => item.menuId === menuId);
 
       if (!source) {
-        throw new Error("Ausgewähltes Menü nicht gefunden");
+        throw new Error(t("menuErrors.selectedMenuMissing"));
       }
 
       const parentIds = new Set(
@@ -252,7 +389,7 @@ export function BackendMenuContextActionsV2({
       setMoveError(
         error instanceof Error
           ? error.message
-          : "Zielordner konnten nicht geladen werden",
+          : t("menuErrors.moveTargetsUnavailable"),
       );
     } finally {
       setMoveLoading(false);
@@ -280,7 +417,7 @@ export function BackendMenuContextActionsV2({
       setMoveError(
         error instanceof Error
           ? error.message
-          : "Verschieben fehlgeschlagen",
+          : t("menuErrors.moveFailed"),
       );
     } finally {
       setMoveBusy(false);
@@ -308,7 +445,7 @@ export function BackendMenuContextActionsV2({
       setRenameError(
         error instanceof Error
           ? error.message
-          : "Umbenennen fehlgeschlagen",
+          : t("menuErrors.renameFailed"),
       );
     } finally {
       setRenameBusy(false);
@@ -322,16 +459,21 @@ export function BackendMenuContextActionsV2({
   return (
     <>
       <Dropdown<string>
+        disabledOptions={canAddSubmenu ? [] : ["create"]}
         value="open"
         options={{
-          open: "Bearbeiten",
-          rename: "Umbenennen",
-          move: "Verschieben",
+          open: t("menuActions.open"),
+          rename: t("menuActions.rename"),
+          move: t("menuActions.move"),
+          create: t("create.action"),
+          delete: t("delete.action"),
         }}
         optionIcons={{
           open: "edit-2",
           rename: "edit-2",
           move: "folder",
+          create: "folder-plus",
+          delete: "trash-2",
         }}
         triggerLabel="⋯"
         minimalMenu
@@ -355,9 +497,100 @@ export function BackendMenuContextActionsV2({
           if (action === "move") {
             void openMoveDialog();
           }
+
+          if (action === "create" && canAddSubmenu) {
+            void openCreateDialog();
+          }
+
+          if (action === "delete") {
+            void openDeleteDialog();
+          }
         }}
       />
 
+      <BackendMenuCreateDialogV2
+        visible={createOpen}
+        parentId={menuId}
+        parentCaption={createParentCaption}
+        onClose={() => setCreateOpen(false)}
+      />
+      <BaseModal
+        visible={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        width={520}
+      >
+        <View style={{ gap: 16 }}>
+          <Text style={{ fontSize: 19, fontWeight: "600" }}>
+            {t("delete.title")}
+          </Text>
+
+          {deleteLoading && (
+            <Text>{t("delete.loading")}</Text>
+          )}
+
+          {deleteError !== "" && (
+            <Text style={{ color: "#b42318" }}>
+              {deleteError}
+            </Text>
+          )}
+
+          {!deleteLoading && deletePlan !== null && (
+            <>
+              <Text>
+                {t("delete.warning", {
+                  name: deletePlan.caption,
+                })}
+              </Text>
+
+              <Text>
+                {t("delete.submenus", {
+                  count: deletePlan.descendantCount,
+                })}
+              </Text>
+
+              <Text style={{ color: "#b42318" }}>
+                {t("delete.contentWarning")}
+              </Text>
+
+              <Text>{t("delete.disabled")}</Text>
+            </>
+          )}
+
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 12,
+            }}
+          >
+            <Pressable
+              onPress={() => setDeleteOpen(false)}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+              }}
+            >
+              <Text>{t("delete.cancel")}</Text>
+            </Pressable>
+
+            <Pressable
+              disabled
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                backgroundColor: "#b42318",
+                opacity: 0.4,
+              }}
+            >
+              <Text style={{ color: "#ffffff" }}>
+                {t("delete.confirm", {
+                  count: deletePlan?.totalCount ?? 0,
+                })}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </BaseModal>
       <BaseModal
         visible={moveOpen}
         onClose={() => { if (!moveBusy) setMoveOpen(false); }}
@@ -365,17 +598,17 @@ export function BackendMenuContextActionsV2({
       >
         <View style={{ gap: 16 }}>
           <Text style={{ fontSize: 19, fontWeight: "600" }}>
-            Menü verschieben
+            {t("menuActions.moveTitle")}
           </Text>
 
-          <Text>Neuen übergeordneten Ordner auswählen:</Text>
+          <Text>{t("menuActions.moveParent")}</Text>
 
           {moveLoading && (
-            <Text>Menüstruktur wird geladen ...</Text>
+            <Text>{t("menuActions.moveLoading")}</Text>
           )}
 
           {!moveLoading && moveTargets.length === 0 && moveError === "" && (
-            <Text>Keine verfügbaren Zielordner gefunden.</Text>
+            <Text>{t("menuActions.moveEmpty")}</Text>
           )}
 
           {moveTargets.map(target => (
@@ -422,7 +655,7 @@ export function BackendMenuContextActionsV2({
                 paddingVertical: 10,
               }}
             >
-              <Text>Abbrechen</Text>
+              <Text>{t("menuActions.cancel")}</Text>
             </Pressable>
 
             <Pressable
@@ -436,7 +669,7 @@ export function BackendMenuContextActionsV2({
               }}
             >
               <Text style={{ color: "#ffffff" }}>
-                Verschieben
+                {t("menuActions.move")}
               </Text>
             </Pressable>
           </View>
@@ -451,18 +684,18 @@ export function BackendMenuContextActionsV2({
       >
         <View style={{ gap: 16 }}>
           <Text style={{ fontSize: 19, fontWeight: "600" }}>
-            Menü umbenennen
+            {t("menuActions.renameTitle")}
           </Text>
 
           <TextInput
-            label="Neuer Menüname"
+            label={t("menuActions.renameLabel")}
             value={renameTitle}
             onChangeText={setRenameTitle}
-            placeholder="Menüname eingeben"
+            placeholder={t("menuActions.renamePlaceholder")}
           />
 
           {renameLoading && (
-            <Text>Menü wird geladen ...</Text>
+            <Text>{t("menuActions.renameLoading")}</Text>
           )}
 
           {renameError !== "" && (
@@ -486,7 +719,7 @@ export function BackendMenuContextActionsV2({
                 paddingVertical: 10,
               }}
             >
-              <Text>Abbrechen</Text>
+              <Text>{t("menuActions.cancel")}</Text>
             </Pressable>
 
             <Pressable
@@ -512,7 +745,7 @@ export function BackendMenuContextActionsV2({
               }}
             >
               <Text style={{ color: "#ffffff" }}>
-                {renameBusy ? "Speichert ..." : "Speichern"}
+                {renameBusy ? t("menuErrors.saving") : t("menuErrors.save")}
               </Text>
             </Pressable>
           </View>

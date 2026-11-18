@@ -92,6 +92,10 @@ import {
   BackendMenuContextActionsV2,
 } from "@/template/editor/components/BackendMenuContextActionsV2";
 
+import {
+  BackendRootMenuCreateActionV2,
+} from "@/template/editor/components/BackendRootMenuCreateActionV2";
+
 import type {
   LocalContentPreviewNode,
 } from "@/template/editor/adapters/buildLocalContentPreview";
@@ -382,7 +386,12 @@ function DrawerItem({
       </Pressable>
         </View>
         {isDynamicMenuItem(node.val) && (
-          <BackendMenuContextActionsV2 menuId={id} />
+          <BackendMenuContextActionsV2
+            menuId={id}
+            canAddSubmenu={node.children.some(child =>
+              isDynamicMenuItem(child.val)
+            )}
+          />
         )}
       </View>
 
@@ -674,32 +683,8 @@ export function Navigation({
         </View>
       </View>
 
-      {canUseContentEditor &&
-        navigation.editor?.allowedContentParentIds?.includes("static:3900") && (
-          <View
-            style={{
-              borderTopWidth: 1,
-              borderTopColor: "#d9d9d9",
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-            }}
-          >
-            <Dropdown<"folder" | "page">
-              value="folder"
-              options={{
-                folder: "Neuer Menüordner",
-                page: "Neue Inhaltsseite",
-              }}
-              triggerLabel="+ Hinzufügen"
-              minimalMenu
-              menuPlacement="above"
-              onChange={mode => onLocalCreate(mode, "static:3900")}
-              appearance="menu"
-              size="sm"
-              menuWidth={180}
-            />
-          </View>
-        )}
+      <BackendRootMenuCreateActionV2 />
+
       {!isWide && (
         <View
           style={

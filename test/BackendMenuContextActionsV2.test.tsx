@@ -19,6 +19,30 @@ import {
   BackendMenuContextActionsV2,
 } from "../src/template/editor/components/BackendMenuContextActionsV2";
 
+jest.mock(
+  "../src/template/components/design-system/ui-elements/BaseModal",
+  () => ({
+    BaseModal: () => null,
+  }),
+);
+jest.mock("react-redux", () => ({
+  useStore: jest.fn(() => ({
+    getState: jest.fn(() => ({})),
+  })),
+  useDispatch: Object.assign(
+    jest.fn(() => jest.fn()),
+    {
+      withTypes: jest.fn(() => jest.fn()),
+    },
+  ),
+  useSelector: jest.fn(),
+}));
+jest.mock(
+  "../src/template/components/design-system/ui-elements/TextInput",
+  () => ({
+    TextInput: () => null,
+  }),
+);
 jest.mock("@react-navigation/native", () => ({
   useNavigation: jest.fn(),
 }));
@@ -73,7 +97,10 @@ const validContext = {
 
 function mount(status = "ready", menuId = 42) {
   mockSelector.mockImplementation(
-    selector => selector({ backendRoles: { status } }),
+    selector => selector({
+      backendRoles: { status },
+      language: { language: "de" },
+    }),
   );
 
   return render(<BackendMenuContextActionsV2 menuId={menuId} />);
