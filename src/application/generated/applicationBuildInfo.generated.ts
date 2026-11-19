@@ -6,21 +6,35 @@ export const applicationBuildInfo =
   "application": {},
   "template": {
     "packageName": "enflex.it-template",
-    "version": "0.0.10"
+    "version": "0.0.11"
   },
   "release": {
     "templateNotes": [
-      "Rollenbasierte Zugriffssteuerung für Menüs, Tabs und Routen wurde ergänzt.",
-      "Die Base-Template-Rollen USER, EDITOR und ADMIN unterstützen jetzt unterschiedliche sichtbare Bereiche.",
-      "ADMIN kann mit der Role Preview die Anwendung aus Sicht von USER oder EDITOR prüfen.",
-      "Zugriffsregeln können über access.properties hierarchisch für Template-Features definiert werden.",
-      "Untergeordnete Features können strengere Zugriffsregeln als ihr übergeordnetes Feature erhalten.",
-      "Als Beispiel ist Data Analyzing nur für ADMIN sichtbar, während EDITOR weiterhin auf die übrigen System Settings zugreifen kann.",
-      "Bei einem Rollenwechsel wird automatisch auf einen weiterhin erlaubten Bereich weitergeleitet.",
-      "Authorization-Logik und Generatorverhalten sind durch automatisierte Tests abgesichert.",
-      "Die Architektur ist für eine spätere Rollen- und Permission-Übernahme aus dem Backend vorbereitet."
+      "Backend- und Gruppenrollen werden in einem gemeinsamen Dropdown angezeigt.",
+      "Die aktive Rollen- und Gruppenauswahl ist direkt in der oberen Leiste sichtbar.",
+      "Die Rollenauswahl bleibt nach einem Seitenrefresh erhalten.",
+      "Gespeicherte Rollenauswahlen werden beim Abmelden entfernt.",
+      "Bei der Wiederherstellung werden nur vom Backend bestätigte Rollen berücksichtigt.",
+      "Menüfunktionen und Zugriffsregeln werden gemeinsam in menu.properties konfiguriert.",
+      "Backend-Rollennamen werden einheitlich verarbeitet.",
+      "Die Rollenverwaltung und Konfiguration wurden durch zusätzliche automatisierte Tests abgesichert.",
+      "Technischer Hinweis: Bestehende Konfigurationen mit features.properties und access.properties müssen auf menu.properties umgestellt werden."
     ],
     "templateHistory": [
+      {
+        "version": "0.0.10",
+        "notes": [
+          "Rollenbasierte Zugriffssteuerung für Menüs, Tabs und Routen wurde ergänzt.",
+          "Die Base-Template-Rollen USER, EDITOR und ADMIN unterstützen jetzt unterschiedliche sichtbare Bereiche.",
+          "ADMIN kann mit der Role Preview die Anwendung aus Sicht von USER oder EDITOR prüfen.",
+          "Zugriffsregeln können über access.properties hierarchisch für Template-Features definiert werden.",
+          "Untergeordnete Features können strengere Zugriffsregeln als ihr übergeordnetes Feature erhalten.",
+          "Als Beispiel ist Data Analyzing nur für ADMIN sichtbar, während EDITOR weiterhin auf die übrigen System Settings zugreifen kann.",
+          "Bei einem Rollenwechsel wird automatisch auf einen weiterhin erlaubten Bereich weitergeleitet.",
+          "Authorization-Logik und Generatorverhalten sind durch automatisierte Tests abgesichert.",
+          "Die Architektur ist für eine spätere Rollen- und Permission-Übernahme aus dem Backend vorbereitet."
+        ]
+      },
       {
         "version": "0.0.9",
         "notes": [
