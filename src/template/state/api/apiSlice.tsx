@@ -1,6 +1,10 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
+
+import {
+  clearRoleSelection,
+} from "@/template/state/authorization/roleSelectionStorage";
 import type { AuthMethod } from "@/core/authentication/types";
 import { resolveRuntimeBaseUrl } from "@/core/server/runtimeBaseUrl";
 import {
@@ -824,6 +828,7 @@ export const logoutAsync = createAsyncThunk(
         );
       }
 
+      clearRoleSelection();
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());
     } finally {
@@ -870,6 +875,7 @@ export const resetAuthAfterConfigurationChange = createAsyncThunk(
         }
       }
 
+      clearRoleSelection();
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());
       thunkAPI.dispatch(setIsLogoutDialogOpen(false));
@@ -880,6 +886,7 @@ export const resetAuthAfterConfigurationChange = createAsyncThunk(
         error,
       );
 
+      clearRoleSelection();
       thunkAPI.dispatch(logoutLocal());
       thunkAPI.dispatch(clearMenu());
       thunkAPI.dispatch(setIsLogoutDialogOpen(false));

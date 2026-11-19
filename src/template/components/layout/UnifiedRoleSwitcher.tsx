@@ -1,4 +1,13 @@
+import { useEffect } from "react";
+
 import { Dropdown } from "@design-system";
+
+import {
+  getRoleSelectionIdentity,
+  readRoleSelection,
+  saveRoleSelection,
+  type StoredBackendRole,
+} from "@/template/state/authorization/roleSelectionStorage";
 
 import {
   useAppDispatch,
@@ -43,6 +52,30 @@ import {
 export function UnifiedRoleSwitcher() {
   const dispatch = useAppDispatch();
 
+  const isLoggedIn = useAppSelector(
+    state => state.api.isLoggedIn,
+  );
+
+  const server = useAppSelector(
+    state => state.api.ip,
+  );
+
+  const authenticationMethod = useAppSelector(
+    state => state.api.authenticationMethod,
+  );
+
+  const jwt = useAppSelector(
+    state => state.api.jwt,
+  );
+
+  const identity = isLoggedIn
+    ? getRoleSelectionIdentity({
+        server,
+        authenticationMethod,
+        jwt,
+      })
+    : null;
+
   const backendRoles = useAppSelector(
     selectVerifiedBackendRoles,
   );
@@ -66,6 +99,81 @@ export function UnifiedRoleSwitcher() {
   const groupRole = useAppSelector(
     selectGroupMenuRole,
   );
+
+  const groupStatus = useAppSelector(
+    state => state.groupRoles.status,
+  );
+
+  /**
+   * Restore the backend preview only after roles
+   * have been confirmed by the backend.
+   */
+  useEffect(() => {
+    if (!identity || backendStatus !== "ready") {
+      return;
+    }
+
+    const saved = readRoleSelection(identity);
+
+    if (!saved) {
+      return;
+    }
+
+    const role = saved.backendRole;
+
+    const allowed =
+      role === "USER" ||
+      backendRoles.includes(role);
+
+    if (allowed && backendRole !== role) {
+      dispatch(setBackendPreviewRole(role));
+    }
+  }, [
+    identity,
+    backendStatus,
+    backendRoles,
+    backendRole,
+    dispatch,
+  ]);
+
+  /**
+   * Restore the group preview only after the
+   * confirmed group roles have been received.
+   */
+  useEffect(() => {
+    if (!identity || groupStatus !== "ready") {
+      return;
+    }
+
+    const saved = readRoleSelection(identity);
+
+    if (!saved) {
+      return;
+    }
+
+    const role = saved.groupRole;
+
+    if (role === null) {
+      if (groupRole !== null) {
+        dispatch(selectPublicGroupView());
+      }
+
+      return;
+    }
+
+    if (
+      groupRoles.includes(role) &&
+      groupRole !== role
+    ) {
+      dispatch(selectGroupRole(role));
+    }
+  }, [
+    identity,
+    groupStatus,
+    groupRoles,
+    groupRole,
+    dispatch,
+  ]);
 
   const options: Record<string, string> = {};
   const disabledOptions: string[] = [];
@@ -155,6 +263,10 @@ export function UnifiedRoleSwitcher() {
               backendRoles.includes(role)
             )
           ) {
+            saveRoleSelection(identity, {
+              backendRole: role as StoredBackendRole,
+            });
+
             dispatch(setBackendPreviewRole(role));
           }
 
@@ -163,6 +275,10 @@ export function UnifiedRoleSwitcher() {
 
         if (key === "group:public") {
           if (groupRoles.length > 0) {
+            saveRoleSelection(identity, {
+              groupRole: null,
+            });
+
             dispatch(selectPublicGroupView());
           }
           return;
@@ -176,6 +292,10 @@ export function UnifiedRoleSwitcher() {
             index >= 0 &&
             index < groupRoles.length
           ) {
+            saveRoleSelection(identity, {
+              groupRole: groupRoles[index],
+            });
+
             dispatch(selectGroupRole(groupRoles[index]));
           }
         }
