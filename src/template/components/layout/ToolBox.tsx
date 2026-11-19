@@ -30,8 +30,7 @@ import {
   useAppSelector,
 } from "@/template/state/store/useAppSelector";
 
-import { BackendRoleSwitcher } from "./BackendRoleSwitcher";
-import { GroupRoleSwitcher } from "./GroupRoleSwitcher";
+import { UnifiedRoleSwitcher } from "./UnifiedRoleSwitcher";
 
 import {
   logoutAsync,
@@ -848,8 +847,7 @@ const inUpdate =
               },
             ]}
           >
-            <BackendRoleSwitcher />
-            <GroupRoleSwitcher />
+            <UnifiedRoleSwitcher />
           </View>
         ) : null}
 

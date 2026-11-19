@@ -18,13 +18,13 @@ const generatorPath =
     "generateApplicationConfig.mjs",
   );
 
-const accessConfigPath =
+const menuConfigPath =
   path.join(
     rootDirectory,
     "src",
     "application",
     "config",
-    "access.properties",
+    "menu.properties",
   );
 
 const generatedConfigPath =
@@ -39,7 +39,7 @@ const generatedConfigPath =
 describe(
   "application configuration generator access integration",
   () => {
-    let accessConfig:
+    let menuConfig:
       string;
 
     let generatedConfig:
@@ -61,9 +61,9 @@ describe(
           },
         );
 
-        accessConfig =
+        menuConfig =
           fs.readFileSync(
-            accessConfigPath,
+            menuConfigPath,
             "utf8",
           );
 
@@ -96,7 +96,7 @@ describe(
       "uses EDITOR and ADMIN for system settings access",
       () => {
         expect(
-          accessConfig,
+          menuConfig,
         ).toContain(
           "access.settings.systemSettings.roles=EDITOR,ADMIN",
         );

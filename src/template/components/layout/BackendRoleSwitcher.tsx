@@ -21,6 +21,10 @@ import {
   selectVerifiedBackendRoles,
 } from "@/template/state/authorization/selectVerifiedBackendRoles";
 
+import {
+  ROLE_LABELS,
+} from "@/template/authorization/roles";
+
 export function BackendRoleSwitcher() {
   const dispatch = useAppDispatch();
   const roles = useAppSelector(selectVerifiedBackendRoles);
@@ -53,15 +57,15 @@ export function BackendRoleSwitcher() {
   }
 
   const options: Record<string, string> = {
-    USER: "USER",
+    USER: ROLE_LABELS.USER,
   };
 
   if (roles.includes("EDITOR")) {
-    options.EDITOR = "EDITOR";
+    options.EDITOR = ROLE_LABELS.EDITOR;
   }
 
   if (roles.includes("ADMIN")) {
-    options.ADMIN = "ADMIN";
+    options.ADMIN = ROLE_LABELS.ADMIN;
   }
 
   return (

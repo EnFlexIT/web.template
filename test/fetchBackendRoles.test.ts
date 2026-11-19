@@ -111,6 +111,22 @@ describe("fetchBackendRoles", () => {
     ]);
   });
 
+  it("normalizes known backend roles case-insensitively", async () => {
+    const getUserRoles = jest.fn().mockResolvedValue({
+      data: ["Admin", "editor", "user", "CUSTOM_ROLE"],
+    });
+
+    const store = createTestStore(getUserRoles);
+
+    await store.dispatch(fetchBackendRoles());
+
+    expect(store.getState().backendRoles.roles).toEqual([
+      "ADMIN",
+      "EDITOR",
+      "USER",
+      "CUSTOM_ROLE",
+    ]);
+  });
   it("rejects invalid backend responses", async () => {
     const getUserRoles = jest.fn().mockResolvedValue({
       data: ["USER", 123],

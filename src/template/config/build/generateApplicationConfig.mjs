@@ -41,14 +41,9 @@ const applicationPropertiesPath = path.join(
   "application.properties",
 );
 
-const featuresPropertiesPath = path.join(
+const menuPropertiesPath = path.join(
   configDirectory,
-  "features.properties",
-);
-
-const accessPropertiesPath = path.join(
-  configDirectory,
-  "access.properties",
+  "menu.properties",
 );
 
 const navigationPropertiesPath = path.join(
@@ -919,14 +914,23 @@ const applicationProperties =
     applicationPropertiesPath,
   );
 
-const featureProperties =
+const menuProperties =
   readPropertiesFile(
-    featuresPropertiesPath,
+    menuPropertiesPath,
+  );
+
+const featureProperties =
+  Object.fromEntries(
+    Object.entries(menuProperties).filter(
+      ([key]) => !key.startsWith("access."),
+    ),
   );
 
 const accessProperties =
-  readOptionalPropertiesFile(
-    accessPropertiesPath,
+  Object.fromEntries(
+    Object.entries(menuProperties).filter(
+      ([key]) => key.startsWith("access."),
+    ),
   );
 
 const navigationProperties =

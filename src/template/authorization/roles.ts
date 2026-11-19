@@ -29,3 +29,22 @@ export const ROLE_LABELS:
     USER: "User",
     EDITOR: "Editor",
   };
+
+/**
+ * Normalizes known backend roles without granting permissions
+ * to unknown role names.
+ */
+export function normalizeBackendRole(role: string): string {
+  const trimmed = role.trim();
+  const normalized = trimmed.toUpperCase();
+
+  if (
+    normalized === "USER" ||
+    normalized === "EDITOR" ||
+    normalized === "ADMIN"
+  ) {
+    return normalized;
+  }
+
+  return role;
+}

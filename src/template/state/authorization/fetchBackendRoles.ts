@@ -11,6 +11,10 @@ import {
   backendRolesReset,
 } from "./backendRolesSlice";
 
+import {
+  normalizeBackendRole,
+} from "@/template/authorization/roles";
+
 let nextRequestId = 0;
 
 export const fetchBackendRoles = createAsyncThunk(
@@ -66,7 +70,7 @@ export const fetchBackendRoles = createAsyncThunk(
         backendRolesReceived({
           requestId,
           sessionKey,
-          roles: response.data,
+          roles: response.data.map(normalizeBackendRole),
         }),
       );
     } catch (error) {
