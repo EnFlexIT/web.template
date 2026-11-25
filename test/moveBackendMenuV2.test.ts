@@ -72,7 +72,23 @@ describe("moveBackendMenuV2", () => {
   it("moves a menu using the V2 API", async () => {
     const state = setup();
 
+    state.getMenus
+      .mockResolvedValueOnce({
+        data: { menuList: menus },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          menuList: menus.map(item =>
+            item.menuId === 4
+              ? { ...item, parentId: 3, position: 1 }
+              : { ...item },
+          ),
+        },
+      });
+
     await moveBackendMenuV2(state.params);
+
+    expect(state.getMenus).toHaveBeenCalledTimes(2);
 
     expect(state.getMenus).toHaveBeenCalledWith("de");
 
@@ -85,6 +101,102 @@ describe("moveBackendMenuV2", () => {
         position: 1,
       },
     );
+  });
+
+  it("rejects a move not persisted by the backend", async () => {
+    const state = setup();
+
+    await expect(
+      moveBackendMenuV2(state.params),
+    ).rejects.toThrow(
+      "Saved menu move could not be verified",
+    );
+
+    expect(state.updateMenu).toHaveBeenCalledTimes(1);
+    expect(state.getMenus).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects a changed source parent before updating", async () => {
+    const state = setup();
+
+    await expect(
+      moveBackendMenuV2({
+        ...state.params,
+        expectedParentId: 999,
+      }),
+    ).rejects.toThrow("Menu parent changed");
+
+    expect(state.updateMenu).not.toHaveBeenCalled();
+  });
+
+  it("blocks moves with duplicate source positions", async () => {
+    const state = setup();
+
+    state.getMenus.mockResolvedValue({
+      data: {
+        menuList: [
+          ...menus,
+          {
+            menuId: 5,
+            parentId: 2,
+            isHeadMenu: false,
+            position: 0,
+            caption: "Duplicate",
+          },
+        ],
+      },
+    });
+
+    await expect(
+      moveBackendMenuV2(state.params),
+    ).rejects.toThrow("Duplicate menu positions detected");
+
+    expect(state.updateMenu).not.toHaveBeenCalled();
+  });
+
+  it("reports the actual parent after a failed move", async () => {
+    const state = setup();
+
+    await expect(
+      moveBackendMenuV2(state.params),
+    ).rejects.toThrow(
+      "Parent ID: expected 3, actual 2",
+    );
+
+    expect(state.updateMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it("detects duplicate positions after saving", async () => {
+    const state = setup();
+
+    state.getMenus
+      .mockResolvedValueOnce({
+        data: { menuList: menus },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          menuList: [
+            ...menus.map(item =>
+              item.menuId === 4
+                ? { ...item, parentId: 3, position: 1 }
+                : { ...item },
+            ),
+            {
+              menuId: 5,
+              parentId: 3,
+              isHeadMenu: false,
+              position: 1,
+              caption: "Duplicate",
+            },
+          ],
+        },
+      });
+
+    await expect(
+      moveBackendMenuV2(state.params),
+    ).rejects.toThrow("Duplicate menu positions");
+
+    expect(state.updateMenu).toHaveBeenCalledTimes(1);
   });
 
   it("rejects missing permission", async () => {
