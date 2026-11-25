@@ -69,11 +69,25 @@ describe("createBackendMenuV2", () => {
       },
     }));
 
-    createMenu = jest.fn(async () => ({
-      data: {
-        menuId: 20001,
-      },
-    }));
+    createMenu = jest.fn(async (request: CreateMenuRequest) => {
+      getMenus.mockResolvedValueOnce({
+        data: {
+          menuList: [
+            ...menus,
+            {
+              ...request.content,
+              menuId: 20001,
+            },
+          ],
+        },
+      });
+
+      return {
+        data: {
+          menuId: 20001,
+        },
+      };
+    });
 
     const client: BackendMenuCreateClient = {
       getMenus,
@@ -141,6 +155,172 @@ describe("createBackendMenuV2", () => {
     const request = createMenu.mock.calls[0][0] as CreateMenuRequest;
 
     expect(request.allowedRoles).toEqual(["TEAM_TEST"]);
+  });
+
+  it("verifies persisted menu using a second inventory request", async () => {
+    await expect(
+      createBackendMenuV2(params()),
+    ).resolves.toBe(20001);
+
+    expect(getMenus).toHaveBeenCalledTimes(2);
+    expect(createMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates a nested submenu under Software", async () => {
+    await expect(
+      createBackendMenuV2(
+        params({
+          parentId: 10021,
+          caption: "Documentation",
+        }),
+      ),
+    ).resolves.toBe(20001);
+
+    expect(createMenu).toHaveBeenCalledWith({
+      allowedRoles: [],
+      content: {
+        menuId: 0,
+        parentId: 10021,
+        isHeadMenu: false,
+        position: 1,
+        caption: "Documentation",
+      },
+    });
+  });
+
+  it("blocks creation when sibling positions are duplicated", async () => {
+    getMenus.mockResolvedValueOnce({
+      data: {
+        menuList: menus.map(item =>
+          item.menuId === 10022
+            ? { ...item, position: 1 }
+            : item,
+        ),
+      },
+    });
+
+    await expect(
+      createBackendMenuV2(
+        params({ parentId: 10002 }),
+      ),
+    ).rejects.toThrow("Invalid existing menu positions");
+
+    expect(createMenu).not.toHaveBeenCalled();
+  });
+
+  it("blocks creation when sibling positions contain gaps", async () => {
+    getMenus.mockResolvedValueOnce({
+      data: {
+        menuList: menus.map(item =>
+          item.menuId === 10022
+            ? { ...item, position: 3 }
+            : item,
+        ),
+      },
+    });
+
+    await expect(
+      createBackendMenuV2(
+        params({ parentId: 10002 }),
+      ),
+    ).rejects.toThrow("Invalid existing menu positions");
+
+    expect(createMenu).not.toHaveBeenCalled();
+  });
+
+  it("rejects a returned ID that already exists", async () => {
+    createMenu.mockResolvedValueOnce({
+      data: { menuId: 10001 },
+    });
+
+    await expect(
+      createBackendMenuV2(params()),
+    ).rejects.toThrow("existing menu ID");
+
+    expect(createMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects creation that was not persisted", async () => {
+    createMenu.mockResolvedValueOnce({
+      data: { menuId: 20001 },
+    });
+
+    await expect(
+      createBackendMenuV2(params()),
+    ).rejects.toThrow("Created menu could not be verified");
+
+    expect(createMenu).toHaveBeenCalledTimes(1);
+    expect(getMenus).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects creation under an incorrect parent", async () => {
+    createMenu.mockImplementationOnce(async () => {
+      getMenus.mockResolvedValueOnce({
+        data: {
+          menuList: [
+            ...menus,
+            {
+              menuId: 20001,
+              parentId: 10021,
+              isHeadMenu: false,
+              position: 1,
+              caption: "Documentation",
+            },
+          ],
+        },
+      });
+
+      return {
+        data: { menuId: 20001 },
+      };
+    });
+
+    await expect(
+      createBackendMenuV2(
+        params({
+          parentId: 10002,
+          caption: "Documentation",
+        }),
+      ),
+    ).rejects.toThrow(
+      "Parent ID: expected 10002, actual 10021",
+    );
+
+    expect(createMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects captions longer than 120 characters", async () => {
+    await expect(
+      createBackendMenuV2(
+        params({ caption: "a".repeat(121) }),
+      ),
+    ).rejects.toThrow("Backend menu caption is too long");
+
+    expect(createMenu).not.toHaveBeenCalled();
+  });
+
+  it("rejects a session change during creation verification", async () => {
+    createMenu.mockImplementationOnce(async () => {
+      getMenus.mockImplementationOnce(async () => {
+        context.authGeneration += 1;
+
+        return {
+          data: { menuList: menus },
+        };
+      });
+
+      return {
+        data: { menuId: 20001 },
+      };
+    });
+
+    await expect(
+      createBackendMenuV2(params()),
+    ).rejects.toThrow(
+      "Menu creation verification returned for a stale session",
+    );
+
+    expect(createMenu).toHaveBeenCalledTimes(1);
   });
 
   it("rejects an empty caption", async () => {

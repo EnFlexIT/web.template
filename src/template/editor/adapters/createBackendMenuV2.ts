@@ -4,6 +4,10 @@ import type {
   MenuList,
 } from "@/api/implementation/Dynamic-Content-Api-V2";
 
+import {
+  buildBackendMenuTreeV2,
+} from "./buildBackendMenuTreeV2";
+
 export interface BackendMenuCreateClient {
   getMenus(
     lang?: string,
@@ -71,6 +75,10 @@ export async function createBackendMenuV2({
     throw new Error("Backend menu caption is required");
   }
 
+  if (name.length > 120) {
+    throw new Error("Backend menu caption is too long");
+  }
+
   if (!language.trim()) {
     throw new Error("Backend menu language is required");
   }
@@ -127,6 +135,8 @@ export async function createBackendMenuV2({
     throw new Error("Parent menu not found");
   }
 
+  buildBackendMenuTreeV2(items);
+
   const siblings = items.filter(
     item => (item.parentId ?? null) === parentId,
   );
@@ -138,6 +148,20 @@ export async function createBackendMenuV2({
     ) {
       throw new Error("Invalid sibling menu position");
     }
+  }
+
+  const positions = siblings
+    .map(item => item.position)
+    .sort((a, b) => a - b);
+
+  if (
+    positions.some(
+      (position, index) => position !== index + 1,
+    )
+  ) {
+    throw new Error(
+      "Invalid existing menu positions. Creation blocked.",
+    );
   }
 
   const position = siblings.length + 1;
@@ -173,6 +197,95 @@ export async function createBackendMenuV2({
     createdId <= 0
   ) {
     throw new Error("Backend did not return a valid menu ID");
+  }
+
+  if (ids.has(createdId)) {
+    throw new Error(
+      "Backend returned an existing menu ID. Reload before retrying.",
+    );
+  }
+
+  const verification =
+    await before.client.getMenus(language);
+
+  if (!isSameSession(before, getContext())) {
+    throw new Error(
+      "Menu creation verification returned for a stale session",
+    );
+  }
+
+  const savedItems = verification.data?.menuList;
+
+  if (!Array.isArray(savedItems)) {
+    throw new Error(
+      "Unable to verify created menu. Reload before retrying.",
+    );
+  }
+
+  buildBackendMenuTreeV2(savedItems);
+
+  const savedMenu = savedItems.find(
+    item => item.menuId === createdId,
+  );
+
+  const problems: string[] = [];
+
+  if (!savedMenu) {
+    problems.push("Created menu is missing");
+  } else {
+    if ((savedMenu.parentId ?? null) !== parentId) {
+      problems.push(
+        `Parent ID: expected ${parentId ?? "root"}, ` +
+        `actual ${savedMenu.parentId ?? "root"}`,
+      );
+    }
+
+    if (savedMenu.position !== position) {
+      problems.push(
+        `Position: expected ${position}, ` +
+        `actual ${savedMenu.position}`,
+      );
+    }
+
+    if (savedMenu.caption !== name) {
+      problems.push("Saved caption differs from requested caption");
+    }
+
+    if (savedMenu.isHeadMenu !== (parentId === null)) {
+      problems.push("Incorrect head menu flag");
+    }
+  }
+
+  const savedSiblings = savedItems
+    .filter(item => (item.parentId ?? null) === parentId)
+    .sort((a, b) => a.position - b.position);
+
+  const expectedSiblingIds = [
+    ...siblings
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map(item => item.menuId),
+    createdId,
+  ];
+
+  if (
+    savedSiblings.length !== expectedSiblingIds.length ||
+    savedSiblings.some(
+      (item, index) =>
+        item.menuId !== expectedSiblingIds[index] ||
+        item.position !== index + 1,
+    )
+  ) {
+    problems.push("Unexpected sibling order or positions");
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      "Created menu could not be verified. " +
+      `Menu ID: ${createdId}. ` +
+      problems.join(". ") +
+      ". Reload before retrying.",
+    );
   }
 
   return createdId;

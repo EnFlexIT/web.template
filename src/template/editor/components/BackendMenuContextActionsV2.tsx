@@ -76,6 +76,14 @@ import {
   useRef as useMenuReorderRef,
 } from "react";
 
+import {
+  selectAvailableGroupRoles,
+} from "@/template/state/authorization/selectGroupMenuRole";
+
+// P02_CREATE_LOCALIZED_ERRORS
+
+const EMPTY_CREATE_GROUP_ROLES: readonly string[] = [];
+
 export interface BackendMenuContextActionsV2Props {
   menuId: number;
   canAddSubmenu?: boolean;
@@ -147,7 +155,17 @@ export function BackendMenuContextActionsV2({
 
   const moveActionLock = useMenuReorderRef(false);
 
+  const createAvailableRoles = useAppSelector(state =>
+    state.api && state.groupRoles
+      ? selectAvailableGroupRoles(state)
+      : EMPTY_CREATE_GROUP_ROLES,
+  );
+
   const [createOpen, setCreateOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createParentError, setCreateParentError] = useState("");
+
+  const createRequestVersion = useMenuReorderRef(0);
   const [createParentCaption, setCreateParentCaption] = useState("");
 
   const [renameOpen, setRenameOpen] = useState(false);
@@ -170,56 +188,134 @@ export function BackendMenuContextActionsV2({
     };
   }
 
+  function closeCreateDialog() {
+    createRequestVersion.current += 1;
+
+    setCreateOpen(false);
+    setCreateLoading(false);
+    setCreateParentError("");
+    setCreateParentCaption("");
+  }
+
   async function openCreateDialog() {
+    const requestVersion = ++createRequestVersion.current;
+
+    const isCurrentRequest = () =>
+      createRequestVersion.current === requestVersion;
+
     setCreateOpen(true);
+    setCreateLoading(true);
+    setCreateParentError("");
     setCreateParentCaption("");
 
     try {
       const before = { ...getRenameContext() };
+      const stateBefore = getState();
 
       if (
+        !canAddSubmenu ||
+        stateBefore.backendRoles.status !== "ready" ||
+        !selectCanEditInUiPreview(stateBefore) ||
         !before.isLoggedIn ||
         !before.canEdit ||
         before.isLoggingOut ||
-        before.isSwitchingServer
+        before.isSwitchingServer ||
+        !before.server.trim() ||
+        !Number.isSafeInteger(before.authGeneration)
       ) {
-        throw new Error("Editing is not permitted");
+        throw new Error("create.permissionDenied");
       }
 
-      const response = await before.client.getMenus(language);
+      const response =
+        await before.client.getMenus(language);
+
+      if (!isCurrentRequest()) return;
 
       const after = getRenameContext();
+      const stateAfter = getState();
 
       if (
         after.client !== before.client ||
         after.server !== before.server ||
         after.authGeneration !== before.authGeneration ||
+        stateAfter.language.language !== language ||
+        stateAfter.backendRoles.status !== "ready" ||
+        !selectCanEditInUiPreview(stateAfter) ||
         !after.isLoggedIn ||
         !after.canEdit ||
         after.isLoggingOut ||
         after.isSwitchingServer
       ) {
-        throw new Error("Session changed");
+        throw new Error("create.sessionChanged");
       }
 
       const items = response.data?.menuList;
 
       if (!Array.isArray(items)) {
-        throw new Error("Menu list unavailable");
+        throw new Error("create.inventoryUnavailable");
       }
 
-      const matches = items.filter(item => item.menuId === menuId);
+      const matches = items.filter(
+        item => item.menuId === menuId,
+      );
 
       if (
         matches.length !== 1 ||
-        typeof matches[0].caption !== "string"
+        typeof matches[0].caption !== "string" ||
+        !matches[0].caption.trim()
       ) {
-        throw new Error("Parent menu not found");
+        throw new Error("create.parentNotFound");
       }
 
-      setCreateParentCaption(matches[0].caption);
-    } catch {
-      setCreateParentCaption(t("create.loadError"));
+      const children = items.filter(
+        item => item.parentId === menuId,
+      );
+
+      if (children.length === 0) {
+        throw new Error(
+          "create.invalidParent",
+        );
+      }
+
+      const positions = children
+        .map(item => item.position)
+        .sort((a, b) => a - b);
+
+      if (
+        positions.some(
+          (position, index) => position !== index + 1,
+        )
+      ) {
+        throw new Error(
+          "create.invalidPositions",
+        );
+      }
+
+      setCreateParentCaption(
+        matches[0].pathCaption || matches[0].caption,
+      );
+    } catch (error) {
+      if (!isCurrentRequest()) return;
+
+      setCreateParentCaption("");
+
+      setCreateParentError(
+        error instanceof Error &&
+        [
+          "create.permissionDenied",
+          "create.sessionChanged",
+          "create.inventoryUnavailable",
+          "create.parentNotFound",
+          "create.invalidParent",
+          "create.invalidPositions",
+        ].includes(error.message)
+          ? error.message
+          : "create.loadError",
+      );
+    } finally {
+      if (isCurrentRequest()) {
+        setCreateLoading(false);
+      }
     }
   }
 
@@ -732,7 +828,10 @@ export function BackendMenuContextActionsV2({
         visible={createOpen}
         parentId={menuId}
         parentCaption={createParentCaption}
-        onClose={() => setCreateOpen(false)}
+        loading={createLoading}
+        parentError={createParentError ? t(createParentError) : ""}
+        availableRoles={createAvailableRoles}
+        onClose={closeCreateDialog}
       />
       <BaseModal
         visible={deleteOpen}
