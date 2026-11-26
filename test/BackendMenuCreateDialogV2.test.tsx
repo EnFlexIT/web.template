@@ -85,6 +85,83 @@ describe("BackendMenuCreateDialogV2", () => {
     jest.clearAllMocks();
   });
 
+  it("submits an explicitly public menu", async () => {
+    mount({ availableRoles: [] });
+
+    fireEvent.changeText(
+      screen.getByTestId("create-menu-caption"),
+      "Public documentation",
+    );
+
+    fireEvent.press(
+      screen.getByTestId("create-access-public"),
+    );
+
+    expect(
+      screen.getByTestId("create-public-warning"),
+    ).toBeTruthy();
+
+    confirm();
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        "Public documentation",
+        [],
+        "public",
+      );
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("clears role selection when switching access mode", () => {
+    mount();
+    enterValidValues();
+
+    fireEvent.press(
+      screen.getByTestId("create-access-public"),
+    );
+
+    fireEvent.press(
+      screen.getByTestId("create-access-restricted"),
+    );
+
+    expect(
+      screen.getByTestId("create-role-TEAM_TEST")
+        .props.accessibilityState.checked,
+    ).toBe(false);
+
+    confirm();
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("keeps public submission disabled without a handler", () => {
+    mount({ onSubmit: undefined });
+
+    fireEvent.changeText(
+      screen.getByTestId("create-menu-caption"),
+      "Public documentation",
+    );
+
+    fireEvent.press(
+      screen.getByTestId("create-access-public"),
+    );
+
+    expect(
+      screen.getByTestId("create-menu-submit-unavailable"),
+    ).toBeTruthy();
+
+    expect(
+      screen.getByTestId("create-menu-confirm")
+        .props.accessibilityState.disabled,
+    ).toBe(true);
+
+    confirm();
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("blocks an empty form", () => {
     mount();
     confirm();

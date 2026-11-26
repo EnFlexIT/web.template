@@ -85,6 +85,86 @@ describe("planBackendMenuDeletionV2", () => {
     ).toThrow("Cyclic menu structure");
   });
 
+  it("rejects an orphan outside the selected subtree", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        {
+          menuId: 999,
+          parentId: 888,
+          caption: "Orphan",
+        },
+      ], 10001),
+    ).toThrow("Missing parent menu");
+  });
+
+  it("rejects invalid parent IDs", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        {
+          menuId: 999,
+          parentId: 0,
+          caption: "Invalid parent",
+        },
+      ], 10001),
+    ).toThrow("Invalid parent menu ID");
+  });
+
+  it("rejects a cycle outside the selected subtree", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        { menuId: 901, parentId: 902, caption: "A" },
+        { menuId: 902, parentId: 901, caption: "B" },
+      ], 10001),
+    ).toThrow("Cyclic menu structure");
+  });
+
+  it("rejects self-referencing menus", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        { menuId: 901, parentId: 901, caption: "Self" },
+      ], 10001),
+    ).toThrow("Cyclic menu structure");
+  });
+
+  it("rejects missing inventory", () => {
+    expect(() =>
+      planBackendMenuDeletionV2(
+        null as unknown as BackendMenuDeletionItem[],
+        10001,
+      ),
+    ).toThrow("Invalid menu inventory");
+  });
+
+  it("rejects malformed menu entries", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        null as unknown as BackendMenuDeletionItem,
+      ], 10001),
+    ).toThrow("Invalid menu structure");
+  });
+
+  it("rejects blank menu captions", () => {
+    expect(() =>
+      planBackendMenuDeletionV2([
+        ...menus,
+        { menuId: 999, parentId: null, caption: " " },
+      ], 10001),
+    ).toThrow("Invalid menu structure");
+  });
+
+  it("never includes unrelated roots in a deletion plan", () => {
+    const result = planBackendMenuDeletionV2(menus, 10002);
+
+    expect(result.affectedMenuIds).not.toContain(10001);
+    expect(new Set(result.affectedMenuIds).size)
+      .toBe(result.totalCount);
+  });
+
   it("does not modify the original menu data", () => {
     const original = JSON.stringify(menus);
 

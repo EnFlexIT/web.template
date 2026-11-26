@@ -388,9 +388,7 @@ function DrawerItem({
         {isDynamicMenuItem(node.val) && (
           <BackendMenuContextActionsV2
             menuId={id}
-            canAddSubmenu={node.children.some(child =>
-              isDynamicMenuItem(child.val)
-            )}
+            canAddSubmenu={true}
           />
         )}
       </View>

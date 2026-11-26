@@ -6,6 +6,11 @@ import {
   buildBackendMenuTreeV2,
 } from "./buildBackendMenuTreeV2";
 
+import {
+  buildBackendMenuPolicyV2,
+  canMoveBackendMenuToParentV2,
+} from "./backendMenuPolicyV2";
+
 export interface PlanBackendMenuMoveParams {
   items: readonly MenuItem[];
   menuId: number;
@@ -33,8 +38,8 @@ export function planBackendMenuMoveV2({
     throw new Error("Invalid backend menu move IDs");
   }
 
-  // Validate the complete starting hierarchy.
-  buildBackendMenuTreeV2(items);
+  // Validate hierarchy and calculate subtree dimensions.
+  const policy = buildBackendMenuPolicyV2(items);
 
   const source = items.find(item => item.menuId === menuId);
   const target = items.find(item => item.menuId === targetParentId);
@@ -71,6 +76,14 @@ export function planBackendMenuMoveV2({
 
     visited.add(parentId);
     parentId = byId.get(parentId)?.parentId;
+  }
+
+  if (!canMoveBackendMenuToParentV2(
+    policy,
+    menuId,
+    targetParentId,
+  )) {
+    throw new Error("menuErrors.movePolicyDenied");
   }
 
   const siblings = items.filter(

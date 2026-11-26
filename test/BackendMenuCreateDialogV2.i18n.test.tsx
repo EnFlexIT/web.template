@@ -82,6 +82,49 @@ function enterValues() {
 }
 
 describe("Create dialog language switching", () => {
+  it("translates public access without resetting the mode", async () => {
+    const instance = await mount();
+
+    fireEvent.changeText(
+      screen.getByTestId("create-menu-caption"),
+      "Documentation",
+    );
+
+    fireEvent.press(
+      screen.getByTestId("create-access-public"),
+    );
+
+    expect(
+      screen.getByText(de.create.publicWarning),
+    ).toBeTruthy();
+
+    await act(async () => {
+      await instance.changeLanguage("en");
+    });
+
+    expect(
+      screen.getByText(en.create.publicWarning),
+    ).toBeTruthy();
+
+    expect(
+      screen.getByTestId("create-access-public")
+        .props.accessibilityState.checked,
+    ).toBe(true);
+
+    expect(
+      screen.getByTestId("create-menu-caption")
+        .props.value,
+    ).toBe("Documentation");
+
+    await act(async () => {
+      await instance.changeLanguage("de");
+    });
+
+    expect(
+      screen.getByText(de.create.publicWarning),
+    ).toBeTruthy();
+  });
+
   it("switches DE and EN without losing form values", async () => {
     const instance = await mount();
 

@@ -14,6 +14,11 @@ import {
 import { useTranslation } from "react-i18next";
 
 import {
+  isValidBackendMenuAccessV2,
+  type BackendMenuAccessMode,
+} from "../adapters/backendMenuAccessPolicyV2";
+
+import {
   BaseModal,
 } from "@/template/components/design-system/ui-elements/BaseModal";
 
@@ -30,6 +35,7 @@ export interface BackendMenuCreateDialogV2Props {
   onSubmit?: (
     caption: string,
     allowedRoles: readonly string[],
+    accessMode?: BackendMenuAccessMode,
   ) => Promise<void>;
 }
 
@@ -46,6 +52,9 @@ export function BackendMenuCreateDialogV2({
   const { t } = useTranslation(["Editor"]);
 
   const [caption, setCaption] = useState("");
+
+  const [accessMode, setAccessMode] =
+    useState<BackendMenuAccessMode>("restricted");
   const [selectedRoles, setSelectedRoles] =
     useState<string[]>([]);
 
@@ -59,6 +68,7 @@ export function BackendMenuCreateDialogV2({
     if (!visible && !actionLock.current) {
       setCaption("");
       setSelectedRoles([]);
+      setAccessMode("restricted");
       setError("");
       setAttempted(false);
     }
@@ -85,8 +95,11 @@ export function BackendMenuCreateDialogV2({
   );
 
   const validRoles =
-    selectedRoles.length > 0 &&
-    selectedRoles.every(role => roles.includes(role));
+    isValidBackendMenuAccessV2(
+      accessMode,
+      selectedRoles,
+      roles,
+    );
 
   const validCaption =
     caption.trim().length > 0 &&
@@ -109,7 +122,18 @@ export function BackendMenuCreateDialogV2({
     onClose();
   }
 
+  function changeAccessMode(
+    mode: BackendMenuAccessMode,
+  ) {
+    if (actionLock.current || inputDisabled) return;
+    if (mode === accessMode) return;
+
+    setSelectedRoles([]);
+    setAccessMode(mode);
+  }
+
   function toggleRole(role: string) {
+    if (accessMode !== "restricted") return;
     if (actionLock.current || inputDisabled) return;
     if (!roles.includes(role)) return;
 
@@ -134,10 +158,18 @@ export function BackendMenuCreateDialogV2({
     setError("");
 
     try {
-      await onSubmit(
-        caption.trim(),
-        [...selectedRoles],
-      );
+      if (accessMode === "public") {
+        await onSubmit(
+          caption.trim(),
+          [],
+          "public",
+        );
+      } else {
+        await onSubmit(
+          caption.trim(),
+          [...selectedRoles],
+        );
+      }
 
       onClose();
     } catch (cause) {
@@ -150,6 +182,7 @@ export function BackendMenuCreateDialogV2({
         "create.invalidRoles",
         "create.invalidParent",
         "create.invalidPositions",
+        "create.maxDepthReached",
         "create.refreshFailed",
         "create.verificationFailed",
       ];
@@ -250,7 +283,61 @@ export function BackendMenuCreateDialogV2({
             {t("create.accessRoles")}
           </Text>
 
-          {roles.length === 0 ? (
+          <View
+            accessibilityRole="radiogroup"
+            style={{ gap: 8 }}
+          >
+            {(["restricted", "public"] as const).map(mode => {
+              const checked = accessMode === mode;
+
+              return (
+                <Pressable
+                  key={mode}
+                  testID={`create-access-${mode}`}
+                  accessibilityRole="radio"
+                  accessibilityState={{
+                    checked,
+                    disabled: inputDisabled,
+                  }}
+                  disabled={inputDisabled}
+                  onPress={() => changeAccessMode(mode)}
+                  style={{
+                    padding: 12,
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    borderColor: checked
+                      ? "#2463eb"
+                      : "#d0d0d0",
+                    backgroundColor: checked
+                      ? "#2463eb18"
+                      : "transparent",
+                  }}
+                >
+                  <Text style={{ fontWeight: "600" }}>
+                    {checked ? "(*) " : "( ) "}
+                    {t(
+                      mode === "public"
+                        ? "create.accessPublic"
+                        : "create.accessRestricted",
+                    )}
+                  </Text>
+                  <Text>
+                    {t(
+                      mode === "public"
+                        ? "create.accessPublicHint"
+                        : "create.accessRestrictedHint",
+                    )}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {accessMode === "public" ? (
+            <Text testID="create-public-warning">
+              {t("create.publicWarning")}
+            </Text>
+          ) : roles.length === 0 ? (
             <Text>
               {t("create.rolesUnavailable")}
             </Text>
@@ -289,12 +376,19 @@ export function BackendMenuCreateDialogV2({
             })
           )}
 
-          {roles.length > 0 && !validRoles && (
+          {accessMode === "restricted" &&
+            roles.length > 0 && !validRoles && (
             <Text>
               {t("create.selectRole")}
             </Text>
           )}
         </View>
+
+        {typeof onSubmit !== "function" && (
+          <Text testID="create-menu-submit-unavailable">
+            {t("menuErrors.fullInventoryRequired")}
+          </Text>
+        )}
 
         {(parentError || error) !== "" && (
           <Text

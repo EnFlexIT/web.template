@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { useStore } from "react-redux";
@@ -55,6 +56,7 @@ export function BackendTextBlockEditorV2({
   desktopCompact = false,
   desktopEditRequest = 0,
 }: BackendTextBlockEditorV2Props) {
+  const { t } = useTranslation(["Editor"]);
   const store = useStore();
 
   const canWrite = useAppSelector(state => {
@@ -154,24 +156,20 @@ export function BackendTextBlockEditorV2({
       if (onSaved) {
         try {
           await onSaved();
-          setMessage("Backend-Speicherung erfolgreich. Inhalt neu geladen.");
+          setMessage("backendContent.textSavedReloaded");
         } catch {
           setMessage(
-            "Backend-Speicherung erfolgreich, aber das erneute " +
-            "Laden ist fehlgeschlagen. Nicht erneut speichern. " +
-            "Bitte den Serverinhalt zuerst neu laden.",
+            "backendContent.textSavedReloadFailed",
           );
         }
       } else {
         setMessage(
-          "Backend-Speicherung erfolgreich. " +
-          "Der Serverinhalt wurde noch nicht erneut geladen.",
+          "backendContent.textSaved",
         );
       }
     } catch {
       setMessage(
-        "Backend-Speicherung fehlgeschlagen oder nicht bestaetigt. " +
-        "Bitte den Serverstand pruefen, bevor du erneut speicherst.",
+        "backendContent.textSaveUncertain",
       );
     } finally {
       setSaving(false);
@@ -182,22 +180,20 @@ export function BackendTextBlockEditorV2({
     <View style={{ gap: 12 }}>
       {!desktopCompact && (
         <ThemedText style={{ fontWeight: "600" }}>
-          Backend-Textblock #{block.backendContentId}
+          {t("backendContent.textBlockTitle", { id: block.backendContentId })}
         </ThemedText>
       )}
 
       {!allowed && (
-        <ThemedText>
-          Bearbeitung nicht freigegeben oder kein HTML-Textinhalt.
-        </ThemedText>
+        <ThemedText>{t("backendContent.editDenied")}</ThemedText>
       )}
 
       {allowed && !editing && !desktopCompact && (
         <ActionButton
-          label={desktopCompact ? undefined : "Backend-Text bearbeiten"}
+          label={desktopCompact ? undefined : t("backendContent.editText")}
           icon={desktopCompact ? "edit" : undefined}
           iconSize={18}
-          tooltip={desktopCompact ? "Ausgewählten Text bearbeiten" : undefined}
+          tooltip={desktopCompact ? t("backendContent.editSelectedText") : undefined}
           onPress={() => {
             setHtml(block.html);
             setMessage("");
@@ -220,13 +216,13 @@ export function BackendTextBlockEditorV2({
 
           <View style={{ flexDirection: "row", gap: 12 }}>
             <ActionButton
-              label={saving ? "Speichert..." : "Im Backend speichern"}
+              label={saving ? t("backendContent.saving") : t("backendContent.saveBackend")}
               onPress={save}
             />
 
             {!saving && (
               <ActionButton
-                label="Verwerfen"
+                label={t("backendContent.discard")}
                 variant="secondary"
                 onPress={() => {
                   setHtml(block.html);
@@ -241,7 +237,7 @@ export function BackendTextBlockEditorV2({
       )}
 
       {!!message && (
-        <ThemedText>{message}</ThemedText>
+        <ThemedText>{t(message)}</ThemedText>
       )}
     </View>
   );

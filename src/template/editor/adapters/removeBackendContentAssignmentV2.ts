@@ -56,7 +56,7 @@ export async function removeBackendContentAssignmentV2({
     throw new Error("Invalid backend menu or content ID");
   }
 
-  const before = getContext();
+  const before = { ...getContext() };
 
   if (!isWritable(before)) {
     throw new Error("Backend content removal is not authorized");

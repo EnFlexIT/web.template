@@ -25,10 +25,20 @@ export function planBackendMenuDeletionV2(
     throw new Error("Invalid menu ID");
   }
 
+  if (!Array.isArray(menus)) {
+    throw new Error("Invalid menu inventory");
+  }
+
   const byId = new Map<number, BackendMenuDeletionItem>();
 
   for (const menu of menus) {
-    if (!Number.isSafeInteger(menu.menuId) || menu.menuId <= 0) {
+    if (
+      !menu ||
+      !Number.isSafeInteger(menu.menuId) ||
+      menu.menuId <= 0 ||
+      typeof menu.caption !== "string" ||
+      menu.caption.trim().length === 0
+    ) {
       throw new Error("Invalid menu structure");
     }
 
@@ -43,6 +53,47 @@ export function planBackendMenuDeletionV2(
 
   if (!selected) {
     throw new Error("Menu not found");
+  }
+
+  for (const menu of menus) {
+    if (menu.parentId == null) continue;
+
+    if (
+      !Number.isSafeInteger(menu.parentId) ||
+      menu.parentId <= 0
+    ) {
+      throw new Error("Invalid parent menu ID");
+    }
+
+    if (!byId.has(menu.parentId)) {
+      throw new Error("Missing parent menu");
+    }
+  }
+
+  // Validate the complete supplied hierarchy.
+  // Do not assume the supplied inventory is complete
+  // or authorized for backend deletion.
+  const validated = new Set<number>();
+
+  for (const menu of menus) {
+    const activePath = new Set<number>();
+    let current: BackendMenuDeletionItem | undefined = menu;
+
+    while (current && !validated.has(current.menuId)) {
+      if (activePath.has(current.menuId)) {
+        throw new Error("Cyclic menu structure");
+      }
+
+      activePath.add(current.menuId);
+
+      current = current.parentId == null
+        ? undefined
+        : byId.get(current.parentId);
+    }
+
+    for (const id of activePath) {
+      validated.add(id);
+    }
   }
 
   const children = new Map<number, number[]>();

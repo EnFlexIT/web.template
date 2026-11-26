@@ -57,6 +57,88 @@ beforeEach(() => {
 });
 
 describe("submitBackendMenuCreateV2", () => {
+  it("supports explicitly public menus", async () => {
+    const { params } = setup();
+
+    await submitBackendMenuCreateV2({
+      ...params,
+      accessMode: "public",
+      allowedRoles: [],
+    });
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedRoles: [],
+      }),
+    );
+
+    expect(params.refreshMenus)
+      .toHaveBeenCalledTimes(1);
+  });
+
+  it("supports root menu creation", async () => {
+    const { params } = setup();
+
+    await submitBackendMenuCreateV2({
+      ...params,
+      parentId: null,
+    });
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parentId: null,
+        allowedRoles: ["Vermieter"],
+      }),
+    );
+
+    expect(params.refreshMenus)
+      .toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects public mode with selected roles", async () => {
+    const { params } = setup();
+
+    await expect(
+      submitBackendMenuCreateV2({
+        ...params,
+        accessMode: "public",
+        allowedRoles: ["Vermieter"],
+      }),
+    ).rejects.toThrow("create.invalidRoles");
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("requires assignment permission for public menus", async () => {
+    const { params } = setup();
+
+    params.canAssignRoles.mockReturnValue(false);
+
+    await expect(
+      submitBackendMenuCreateV2({
+        ...params,
+        accessMode: "public",
+        allowedRoles: [],
+      }),
+    ).rejects.toThrow("create.permissionDenied");
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed role collections", async () => {
+    const { params } = setup();
+
+    await expect(
+      submitBackendMenuCreateV2({
+        ...params,
+        accessMode: "public",
+        allowedRoles: undefined as unknown as string[],
+      }),
+    ).rejects.toThrow("create.invalidRoles");
+
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it("creates and refreshes exactly once", async () => {
     const { params } = setup();
 

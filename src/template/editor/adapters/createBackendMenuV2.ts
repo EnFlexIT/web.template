@@ -8,6 +8,11 @@ import {
   buildBackendMenuTreeV2,
 } from "./buildBackendMenuTreeV2";
 
+import {
+  buildBackendMenuPolicyV2,
+  canCreateBackendSubmenuV2,
+} from "./backendMenuPolicyV2";
+
 export interface BackendMenuCreateClient {
   getMenus(
     lang?: string,
@@ -135,7 +140,14 @@ export async function createBackendMenuV2({
     throw new Error("Parent menu not found");
   }
 
-  buildBackendMenuTreeV2(items);
+  const policy = buildBackendMenuPolicyV2(items);
+
+  if (
+    parentId !== null &&
+    !canCreateBackendSubmenuV2(policy, parentId)
+  ) {
+    throw new Error("create.maxDepthReached");
+  }
 
   const siblings = items.filter(
     item => (item.parentId ?? null) === parentId,

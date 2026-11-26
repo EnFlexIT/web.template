@@ -2,6 +2,11 @@ import {
   createBackendMenuV2,
 } from "./createBackendMenuV2";
 
+import {
+  isValidBackendMenuAccessV2,
+  type BackendMenuAccessMode,
+} from "./backendMenuAccessPolicyV2";
+
 type CreateParams =
   Parameters<typeof createBackendMenuV2>[0];
 
@@ -10,9 +15,10 @@ type CreateContext =
 
 export interface BackendMenuCreateSubmitParams {
   caption: string;
-  parentId: number;
+  parentId: number | null;
   language: string;
   allowedRoles: readonly string[];
+  accessMode?: BackendMenuAccessMode;
   expectedContext: CreateContext;
 
   getContext: CreateParams["getContext"];
@@ -29,7 +35,16 @@ export async function submitBackendMenuCreateV2(
   params: BackendMenuCreateSubmitParams,
 ): Promise<void> {
   const expected = { ...params.expectedContext };
+  if (!Array.isArray(params.allowedRoles)) {
+    throw new Error("create.invalidRoles");
+  }
+
   const roles = [...new Set(params.allowedRoles)];
+
+  // Missing mode preserves the restricted default.
+  const accessMode = params.accessMode === undefined
+    ? "restricted"
+    : params.accessMode;
 
   function assertCurrent(): CreateContext {
     const current = params.getContext();
@@ -56,14 +71,11 @@ export async function submitBackendMenuCreateV2(
 
     const available = params.getAvailableRoles();
 
-    if (
-      roles.length === 0 ||
-      roles.some(role =>
-        typeof role !== "string" ||
-        !role.trim() ||
-        !available.includes(role),
-      )
-    ) {
+    if (!isValidBackendMenuAccessV2(
+      accessMode,
+      roles,
+      available,
+    )) {
       throw new Error("create.invalidRoles");
     }
 
@@ -71,8 +83,11 @@ export async function submitBackendMenuCreateV2(
   }
 
   if (
-    !Number.isSafeInteger(params.parentId) ||
-    params.parentId <= 0
+    params.parentId !== null &&
+    (
+      !Number.isSafeInteger(params.parentId) ||
+      params.parentId <= 0
+    )
   ) {
     throw new Error("create.invalidParent");
   }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import type { TemplateRootState } from "@/template/state/store/templateStoreTypes";
@@ -27,6 +28,8 @@ export function BackendNewTextDraftV2({
   getState,
   onSaved,
 }: Props) {
+  const { t } = useTranslation(["Editor"]);
+  const [messageId, setMessageId] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveLocked, setSaveLocked] = useState(false);
@@ -79,17 +82,19 @@ export function BackendNewTextDraftV2({
       setLiveNewHtml(menuId, null);
       setOpen(false);
       setHtml("<p></p>");
-      setMessage(`Online gespeichert: Textinhalt #${createdId}`);
+      setMessageId(createdId);
+      setMessage("backendContent.textCreated");
     } catch {
       if (!mountedRef.current) return;
 
       // Keine automatische Wiederholung bei unklarem POST-Ergebnis.
       setSaveLocked(true);
 
+      setMessageId(createdId);
       setMessage(
         createdId !== null
-          ? `Textinhalt #${createdId} wurde angelegt, aber das Menü konnte nicht neu geladen werden.`
-          : "Speicherung nicht eindeutig bestätigt. Bitte Backend-Inhalte neu laden und prüfen, bevor du einen weiteren Inhalt erstellst.",
+          ? "backendContent.textCreatedReloadFailed"
+          : "backendContent.createUncertain",
       );
     } finally {
       busyRef.current = false;
@@ -101,7 +106,7 @@ export function BackendNewTextDraftV2({
     <View style={{ gap: 12 }}>
       {!open ? (
         <ActionButton
-          label="Neuen Textinhalt hinzufuegen"
+          label={t("backendContent.addText")}
           onPress={() => {
             setSaveLocked(false);
             setMessage("");
@@ -111,12 +116,9 @@ export function BackendNewTextDraftV2({
       ) : (
         <View style={{ gap: 12 }}>
           <ThemedText style={{ fontWeight: "600" }}>
-            Neuer Textinhalt fuer Menue #{menuId}
+            {t("backendContent.newTextTitle", { id: menuId })}
           </ThemedText>
-          <ThemedText>
-            Lokaler Entwurf. Jede Textaenderung erscheint sofort links.
-            Noch nicht im Backend gespeichert.
-          </ThemedText>
+          <ThemedText>{t("backendContent.draftHint")}</ThemedText>
           <ContentTextBlockEditor
             compactToolbar
             blockId={`backend-new-${menuId}`}
@@ -129,20 +131,20 @@ export function BackendNewTextDraftV2({
           />
           {!saveLocked && (
             <ActionButton
-              label={saving ? "Online-Speicherung laeuft ..." : "Online speichern"}
+              label={saving ? t("backendContent.savingOnline") : t("backendContent.saveOnline")}
               onPress={() => void save()}
             />
           )}
           {!saving && (
             <ActionButton
-              label="Entwurf verwerfen"
+              label={t("backendContent.discardDraft")}
               variant="secondary"
               onPress={discard}
             />
           )}
         </View>
       )}
-      {!!message && <ThemedText>{message}</ThemedText>}
+      {!!message && <ThemedText>{t(message, { id: messageId })}</ThemedText>}
     </View>
   );
 }

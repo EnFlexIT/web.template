@@ -24,10 +24,22 @@ import {
   BackendMenuCreateDialogV2,
 } from "./BackendMenuCreateDialogV2";
 
+import {
+  selectAvailableGroupRoles,
+} from "@/template/state/authorization/selectGroupMenuRole";
+
+const EMPTY_ROOT_GROUP_ROLES: readonly string[] = [];
+
 export function BackendRootMenuCreateActionV2() {
   const { t } = useTranslation(["Editor"]);
 
   const [open, setOpen] = useState(false);
+
+  const availableRoles = useAppSelector(state =>
+    state.api && state.groupRoles
+      ? selectAvailableGroupRoles(state)
+      : EMPTY_ROOT_GROUP_ROLES,
+  );
 
   const allowed = useAppSelector(state => {
     const context = selectBackendContentWriteContext(state);
@@ -76,6 +88,7 @@ export function BackendRootMenuCreateActionV2() {
         visible={open}
         parentId={null}
         parentCaption=""
+        availableRoles={availableRoles}
         onClose={() => setOpen(false)}
       />
     </>

@@ -134,6 +134,25 @@ describe("moveBackendContentElementV2", () => {
     await expect(operation).rejects.toThrow(/stale session/);
   });
 
+  it("detects an in-place authentication change", async () => {
+    const context = createContext();
+
+    const update = jest.fn(async () => {
+      context.authGeneration += 1;
+    });
+
+    context.client.updateAssignmentAndPosition = update;
+
+    await expect(
+      moveBackendContentElementV2({
+        request,
+        getContext: () => context,
+      }),
+    ).rejects.toThrow(/stale session/);
+
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
   it("propagates backend errors", async () => {
     const update = jest.fn().mockRejectedValue(
       new Error("Backend rejected move"),

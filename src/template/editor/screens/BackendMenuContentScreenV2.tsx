@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import React, {
   useCallback,
   useEffect,
@@ -34,6 +35,11 @@ import {
 import {
   removeBackendContentAssignmentFromStoreV2,
 } from "../adapters/removeBackendContentAssignmentV2";
+
+import {
+  executeBackendContentRemovalV2,
+  BackendContentRemovalError,
+} from "../adapters/executeBackendContentRemovalV2";
 
 import type {
   TemplateRootState,
@@ -84,6 +90,7 @@ export function BackendMenuContentScreenV2({
   menuId,
   mode = "viewer",
 }: BackendMenuContentScreenV2Props) {
+  const { t } = useTranslation(["Editor"]);
   const editorMode = mode === "editor";
   const { width: windowWidth } = useWindowDimensions();
   const desktopSelectionEnabled = windowWidth >= 900;
@@ -146,15 +153,16 @@ export function BackendMenuContentScreenV2({
   const [moveMessage, setMoveMessage] = useState("");
   const moveBusyRef = useRef(false);
 
-  const moveMessageSuccess =
-    moveMessage.startsWith("Reihenfolge erfolgreich") ||
-    moveMessage.startsWith("Sortierung gespeichert");
+  const moveMessageSuccess = [
+    "backendContent.orderSaved",
+    "backendContent.orderReloaded",
+  ].includes(moveMessage);
 
-  const moveMessageWarning =
-    moveMessage.includes("Möglicherweise") ||
-    moveMessage.includes("nicht sicher") ||
-    moveMessage.includes("nicht sicher bestaetigt") ||
-    moveMessage.includes("erneutes Laden fehlgeschlagen");
+  const moveMessageWarning = [
+    "backendContent.orderPartial",
+    "backendContent.orderUncertain",
+    "backendContent.orderReloadFailed",
+  ].includes(moveMessage);
 
   useEffect(() => {
     if (!moveMessageSuccess) {
@@ -228,8 +236,7 @@ export function BackendMenuContentScreenV2({
       setBlocks([]);
       setLoadedScope(null);
       setError(
-        "Backend-Inhalte konnten nicht geladen werden. " +
-        "Bitte Anmeldung und Serververbindung pruefen.",
+        "backendContent.loadFailed",
       );
 
       throw new Error("Backend content reload failed");
@@ -252,6 +259,30 @@ export function BackendMenuContentScreenV2({
 
   const ready = loadedScope === scopeKey;
 
+  const createOperationGuard = () => {
+    const initial = {
+      ...selectBackendContentWriteContext(getState()),
+    };
+
+    const initialScope = currentMoveScopeRef.current;
+
+    return () => {
+      const current =
+        selectBackendContentWriteContext(getState());
+
+      return (
+        currentMoveScopeRef.current === initialScope &&
+        current.client === initial.client &&
+        current.server === initial.server &&
+        current.authGeneration === initial.authGeneration &&
+        current.isLoggedIn &&
+        current.canEdit &&
+        !current.isLoggingOut &&
+        !current.isSwitchingServer
+      );
+    };
+  };
+
   const liveOrder = desktopSelectionEnabled
     ? getLiveOrder(menuId)
     : null;
@@ -269,6 +300,7 @@ export function BackendMenuContentScreenV2({
   const validLiveOrder =
     liveOrder !== null &&
     liveOrder.length === blocks.length &&
+    new Set(liveOrder).size === liveOrder.length &&
     liveOrder.every(id =>
       blocks.some(block => block.backendContentId === id),
     );
@@ -353,7 +385,7 @@ export function BackendMenuContentScreenV2({
     } catch {
       setPendingMove(null);
       setMoveMessage(
-        "Sortierung nicht eindeutig. Bitte Backend-Inhalte neu laden.",
+        "backendContent.orderAmbiguous",
       );
     }
   };
@@ -392,9 +424,37 @@ export function BackendMenuContentScreenV2({
         return;
       }
 
-      await moveBackendContentElementFromStoreV2({
-        request,
-        getState,
+      const ordered = sortBackendContentV2(blocks);
+      const desiredIds = ordered.map(
+        block => block.backendContentId,
+      );
+
+      const sourceIndex = desiredIds.indexOf(
+        request.elementId,
+      );
+
+      desiredIds.splice(sourceIndex, 1);
+      desiredIds.splice(
+        request.position - 1,
+        0,
+        request.elementId,
+      );
+
+      await executeBackendContentOrderSaveV2({
+        menuId,
+        original: ordered,
+        desiredIds,
+        load: () =>
+          loadBackendMenuContentFromStore({
+            menuId,
+            getState,
+          }),
+        move: request =>
+          moveBackendContentElementFromStoreV2({
+            request,
+            getState,
+          }),
+        isCurrent: createOperationGuard(),
       });
 
       // A response from an old menu/session must not update this view.
@@ -410,7 +470,7 @@ export function BackendMenuContentScreenV2({
         }
 
         setMoveMessage(
-          "Sortierung gespeichert und Backend-Inhalte neu geladen.",
+          "backendContent.orderReloaded",
         );
       } catch {
         if (currentMoveScopeRef.current !== moveScope) {
@@ -418,8 +478,7 @@ export function BackendMenuContentScreenV2({
         }
 
         setMoveMessage(
-          "Speicherung bestaetigt, aber erneutes Laden fehlgeschlagen. " +
-          "Bitte Serverinhalt vor einer weiteren Aenderung pruefen.",
+          "backendContent.orderReloadFailed",
         );
       }
     } catch {
@@ -428,8 +487,7 @@ export function BackendMenuContentScreenV2({
       }
 
       setMoveMessage(
-        "Sortierung fehlgeschlagen oder Ergebnis nicht sicher bestaetigt. " +
-        "Bitte Serverinhalt pruefen, bevor du erneut sortierst.",
+        "backendContent.orderUncertain",
       );
 
       try {
@@ -473,13 +531,15 @@ export function BackendMenuContentScreenV2({
 
     if (hasUnsavedPreview()) {
       setMoveMessage(
-        "Bitte zuerst ungespeicherte Textänderungen speichern oder verwerfen.",
+        "backendContent.unsavedText",
       );
       return;
     }
 
     const saveScope = currentMoveScopeRef.current;
     const desiredIds = [...liveOrder];
+    const isCurrent = createOperationGuard();
+    let backendVerified = false;
 
     moveBusyRef.current = true;
     setMoving(true);
@@ -501,9 +561,10 @@ export function BackendMenuContentScreenV2({
             request,
             getState,
           }),
-        isCurrent: () =>
-          currentMoveScopeRef.current === saveScope,
+        isCurrent,
       });
+
+      backendVerified = true;
 
       if (currentMoveScopeRef.current !== saveScope) {
         return;
@@ -520,7 +581,7 @@ export function BackendMenuContentScreenV2({
       requestRefresh(menuId);
 
       setMoveMessage(
-        "Reihenfolge erfolgreich gespeichert und vom Backend bestätigt.",
+        "backendContent.orderSaved",
       );
     } catch (error) {
       if (currentMoveScopeRef.current !== saveScope) {
@@ -532,11 +593,17 @@ export function BackendMenuContentScreenV2({
           ? error.attemptedWrites
           : 0;
 
-      if (attemptedWrites > 0) {
+      if (backendVerified) {
+        setLiveOrder(menuId, null);
+
         setMoveMessage(
-          "Die Reihenfolge konnte nicht sicher gespeichert werden. " +
-          "Möglicherweise wurden einzelne Änderungen bereits übernommen. " +
-          "Bitte den Backend-Zustand prüfen, bevor du erneut speicherst.",
+          "backendContent.orderReloadFailed",
+        );
+
+        requestRefresh(menuId);
+      } else if (attemptedWrites > 0) {
+        setMoveMessage(
+          "backendContent.orderPartial",
         );
 
         // Nach einem möglichen Schreibzugriff den tatsächlichen
@@ -548,8 +615,7 @@ export function BackendMenuContentScreenV2({
         }
       } else {
         setMoveMessage(
-          "Speichern abgebrochen. Es wurde keine Schreibanfrage gestartet. " +
-          "Bitte Berechtigungen und Backend-Reihenfolge überprüfen.",
+          "backendContent.orderAborted",
         );
       }
     } finally {
@@ -560,7 +626,7 @@ export function BackendMenuContentScreenV2({
   const requestRemoval = (elementId: number) => {
     if (desktopEditorMode && hasLocalReorder) {
       setRemoveMessage(
-        "Bitte zuerst die geänderte Reihenfolge speichern oder verwerfen.",
+        "backendContent.unsavedOrder",
       );
       return;
     }
@@ -591,8 +657,7 @@ export function BackendMenuContentScreenV2({
 
     if (hasUnsavedPreview()) {
       setRemoveMessage(
-        "Ungespeicherte Aenderungen vorhanden. " +
-        "Bitte zuerst speichern oder den Entwurf verwerfen.",
+        "backendContent.removeUnsaved",
       );
 
       return;
@@ -604,6 +669,16 @@ export function BackendMenuContentScreenV2({
   };
 
   const confirmRemoval = async () => {
+    if (hasLocalReorder) {
+      setPendingRemoval(null);
+
+      setRemoveMessage(
+        "backendContent.unsavedOrder",
+      );
+
+      return;
+    }
+
     const pending = pendingRemoval;
 
     if (
@@ -637,7 +712,7 @@ export function BackendMenuContentScreenV2({
       setPendingRemoval(null);
 
       setRemoveMessage(
-        "Entfernen abgebrochen: Ungespeicherte Aenderungen vorhanden.",
+        "backendContent.removeAbortedDraft",
       );
 
       return;
@@ -651,10 +726,21 @@ export function BackendMenuContentScreenV2({
     setRemoveMessage("");
 
     try {
-      await removeBackendContentAssignmentFromStoreV2({
-        menuId,
+      await executeBackendContentRemovalV2({
         elementId: pending.elementId,
-        getState,
+        original: blocks,
+        load: () =>
+          loadBackendMenuContentFromStore({
+            menuId,
+            getState,
+          }),
+        remove: () =>
+          removeBackendContentAssignmentFromStoreV2({
+            menuId,
+            elementId: pending.elementId,
+            getState,
+          }),
+        isCurrent: createOperationGuard(),
       });
 
       if (currentMoveScopeRef.current !== removalScope) {
@@ -668,39 +754,28 @@ export function BackendMenuContentScreenV2({
       requestRefresh(menuId);
 
       setRemoveMessage(
-        `Inhalt #${pending.elementId} wurde aus dem Menue entfernt. ` +
-        "Die Backend-Ansichten werden aktualisiert.",
+        "backendContent.removeSuccess",
       );
     } catch (error: unknown) {
       if (currentMoveScopeRef.current !== removalScope) {
         return;
       }
 
-      // Never expose authorization headers, tokens or response bodies.
-      const responseStatus =
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof error.response === "object" &&
-        error.response !== null &&
-        "status" in error.response &&
-        typeof error.response.status === "number"
-          ? error.response.status
-          : null;
+      if (
+        error instanceof BackendContentRemovalError &&
+        !error.attemptedWrite
+      ) {
+        setRemoveMessage(
+          "backendContent.removeAborted",
+        );
 
-      const statusText =
-        responseStatus !== null
-          ? `HTTP ${responseStatus}`
-          : "Kein HTTP-Status verfuegbar";
+        requestRefresh(menuId);
+        return;
+      }
 
-      // A failed response does not guarantee that the server
-      // left the assignment unchanged. Never retry automatically.
       requestRefresh(menuId);
+      setRemoveMessage("backendContent.removeUncertain");
 
-      setRemoveMessage(
-        `Entfernen nicht bestaetigt (${statusText}). ` +
-        "Bitte Backend-Inhalte pruefen und nicht automatisch erneut entfernen.",
-      );
     } finally {
       removeBusyRef.current = false;
       setRemoving(false);
@@ -719,10 +794,10 @@ export function BackendMenuContentScreenV2({
       <View style={{ flexDirection: "row", gap: compact ? 4 : 8, flexWrap: compact ? "nowrap" : "wrap" }}>
         {(desktopEditorMode || index > 0) && (
           <ActionButton
-            label={compact ? undefined : "Nach oben"}
+            label={compact ? undefined : t("backendContent.moveUp")}
             icon={compact ? "arrow-up" : undefined}
             iconSize={18}
-            tooltip={compact ? "Nach oben verschieben" : undefined}
+            tooltip={compact ? t("backendContent.moveUpHint") : undefined}
             variant="secondary"
             disabled={desktopEditorMode && index === 0}
             onPress={() => requestMove(elementId, "up")}
@@ -730,10 +805,10 @@ export function BackendMenuContentScreenV2({
         )}
         {(desktopEditorMode || index < blocks.length - 1) && (
           <ActionButton
-            label={compact ? undefined : "Nach unten"}
+            label={compact ? undefined : t("backendContent.moveDown")}
             icon={compact ? "arrow-down" : undefined}
             iconSize={18}
-            tooltip={compact ? "Nach unten verschieben" : undefined}
+            tooltip={compact ? t("backendContent.moveDownHint") : undefined}
             variant="secondary"
             disabled={desktopEditorMode && index === blocks.length - 1}
             onPress={() => requestMove(elementId, "down")}
@@ -747,11 +822,17 @@ export function BackendMenuContentScreenV2({
     <ScrollView style={{ flex: 1, minHeight: 0 }} contentContainerStyle={{ padding: 16 }}>
       <View style={{ gap: 16 }}>
         <ThemedText style={{ fontSize: 20, fontWeight: "600" }}>
-          {editorMode ? "Backend bearbeiten" : "Backend-Inhalte"}: Menue #{menuId}
+          {editorMode ? t("backendContent.editTitle") : t("backendContent.viewTitle")}: {t("backendContent.menu")} #{menuId}
         </ThemedText>
 
 
-        {editorMode && canMove && !hasLocalReorder && (
+        {editorMode &&
+          canMove &&
+          ready &&
+          !loading &&
+          !moving &&
+          !removing &&
+          !hasLocalReorder && (
           <BackendNewTextDraftV2
             key={scopeKey}
             menuId={menuId}
@@ -762,13 +843,11 @@ export function BackendMenuContentScreenV2({
         )}
 
         {loading && (
-          <ThemedText>
-            Backend-Inhalte werden geladen ...
-          </ThemedText>
+          <ThemedText>{t("backendContent.loading")}</ThemedText>
         )}
 
         {!!error && (
-          <ThemedText>{error}</ThemedText>
+          <ThemedText>{t(error)}</ThemedText>
         )}
 
         {!!moveMessage && (
@@ -803,10 +882,10 @@ export function BackendMenuContentScreenV2({
               }}
             >
               {moveMessageSuccess
-                ? "✓ Reihenfolge gespeichert"
+                ? t("backendContent.orderSuccessTitle")
                 : moveMessageWarning
-                  ? "⚠ Speicherung nicht vollständig bestätigt"
-                  : "✕ Speichern fehlgeschlagen"}
+                  ? t("backendContent.orderWarningTitle")
+                  : t("backendContent.orderErrorTitle")}
             </ThemedText>
 
             <ThemedText
@@ -818,19 +897,17 @@ export function BackendMenuContentScreenV2({
                     : "#b71c1c",
               }}
             >
-              {moveMessage}
+              {t(moveMessage)}
             </ThemedText>
           </View>
         )}
 
         {!!removeMessage && (
-          <ThemedText>{removeMessage}</ThemedText>
+          <ThemedText>{t(removeMessage)}</ThemedText>
         )}
 
         {removing && (
-          <ThemedText>
-            Inhalt wird entfernt. Bitte warten.
-          </ThemedText>
+          <ThemedText>{t("backendContent.removing")}</ThemedText>
         )}
 
         {editorMode &&
@@ -847,15 +924,10 @@ export function BackendMenuContentScreenV2({
             }}
           >
             <ThemedText style={{ fontWeight: "600" }}>
-              Inhalt #{pendingRemoval.elementId} wirklich aus diesem Menue entfernen?
+              {t("backendContent.confirmRemoval", { id: pendingRemoval.elementId })}
             </ThemedText>
 
-            <ThemedText>
-              Achtung: Falls dieser Inhalt keinem weiteren Menue
-              zugeordnet ist, kann das Backend ihn vollstaendig
-              loeschen. Diese Aktion laesst sich nicht automatisch
-              rueckgaengig machen.
-            </ThemedText>
+            <ThemedText>{t("backendContent.removeWarning")}</ThemedText>
 
             <View
               style={{
@@ -865,12 +937,12 @@ export function BackendMenuContentScreenV2({
               }}
             >
               <ActionButton
-                label="Entfernen bestaetigen"
+                label={t("backendContent.confirmRemove")}
                 onPress={() => void confirmRemoval()}
               />
 
               <ActionButton
-                label="Abbrechen"
+                label={t("backendContent.cancel")}
                 variant="secondary"
                 onPress={() => setPendingRemoval(null)}
               />
@@ -880,17 +952,13 @@ export function BackendMenuContentScreenV2({
 
         {desktopEditorMode && hasLocalReorder && !moving && !removing && (
           <View style={{ gap: 8 }}>
-            <ThemedText>
-              Die Reihenfolge wurde nur in der Vorschau geändert.
-              Die Änderungen sind noch nicht gespeichert.
-              Hinzufügen und Entfernen sind bis zum Speichern oder Verwerfen gesperrt.
-            </ThemedText>
+            <ThemedText>{t("backendContent.orderPreview")}</ThemedText>
             <ActionButton
-              label="Reihenfolge speichern"
+              label={t("backendContent.saveOrder")}
               onPress={() => void saveLiveOrder()}
             />
             <ActionButton
-              label="Reihenfolge verwerfen"
+              label={t("backendContent.discardOrder")}
               variant="secondary"
               onPress={() => {
                 setLiveOrder(menuId, null);
@@ -902,26 +970,26 @@ export function BackendMenuContentScreenV2({
         )}
 
         {moving && (
-          <ThemedText>
-            Sortierung wird gespeichert. Bitte keine weitere Aktion starten.
-          </ThemedText>
+          <ThemedText>{t("backendContent.orderSaving")}</ThemedText>
         )}
 
         {editorMode && pendingMove && !moving && ready && (
           <View style={{ gap: 8 }}>
             <ThemedText>
-              Inhalt #{pendingMove.elementId} wirklich
-              {pendingMove.direction === "up"
-                ? " nach oben"
-                : " nach unten"} verschieben?
+              {t(
+                pendingMove.direction === "up"
+                  ? "backendContent.confirmMoveUp"
+                  : "backendContent.confirmMoveDown",
+                { id: pendingMove.elementId },
+              )}
             </ThemedText>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <ActionButton
-                label="Verschieben bestaetigen"
+                label={t("backendContent.confirmMove")}
                 onPress={() => void confirmMove()}
               />
               <ActionButton
-                label="Abbrechen"
+                label={t("backendContent.cancel")}
                 variant="secondary"
                 onPress={() => setPendingMove(null)}
               />
@@ -930,9 +998,7 @@ export function BackendMenuContentScreenV2({
         )}
 
         {!loading && ready && blocks.length === 0 && (
-          <ThemedText>
-            Fuer dieses Menue sind keine Inhalte vorhanden.
-          </ThemedText>
+          <ThemedText>{t("backendContent.empty")}</ThemedText>
         )}
 
         {desktopEditorMode &&
@@ -960,15 +1026,13 @@ export function BackendMenuContentScreenV2({
                 gap: 8,
               }}
             >
-              <ThemedText style={{ fontWeight: "600" }}>
-                Ausgewählter Text
-              </ThemedText>
+              <ThemedText style={{ fontWeight: "600" }}>{t("backendContent.selectedText")}</ThemedText>
 
               <View style={{ flexDirection: "row", gap: 4 }}>
                 <ActionButton
                   icon="edit"
                   iconSize={18}
-                  tooltip="Bitte zuerst einen Text auswählen"
+                  tooltip={t("backendContent.selectTextFirst")}
                   variant="secondary"
                   disabled
                   onPress={() => {}}
@@ -976,7 +1040,7 @@ export function BackendMenuContentScreenV2({
                 <ActionButton
                   icon="arrow-up"
                   iconSize={18}
-                  tooltip="Bitte zuerst einen Text auswählen"
+                  tooltip={t("backendContent.selectTextFirst")}
                   variant="secondary"
                   disabled
                   onPress={() => {}}
@@ -984,7 +1048,7 @@ export function BackendMenuContentScreenV2({
                 <ActionButton
                   icon="arrow-down"
                   iconSize={18}
-                  tooltip="Bitte zuerst einen Text auswählen"
+                  tooltip={t("backendContent.selectTextFirst")}
                   variant="secondary"
                   disabled
                   onPress={() => {}}
@@ -992,7 +1056,7 @@ export function BackendMenuContentScreenV2({
                 <ActionButton
                   icon="delete"
                   iconSize={18}
-                  tooltip="Bitte zuerst einen Text auswählen"
+                  tooltip={t("backendContent.selectTextFirst")}
                   variant="secondary"
                   disabled
                   onPress={() => {}}
@@ -1000,9 +1064,7 @@ export function BackendMenuContentScreenV2({
               </View>
             </View>
 
-            <ThemedText>
-              Bitte links einen Text auswählen, um ihn zu bearbeiten.
-            </ThemedText>
+            <ThemedText>{t("backendContent.selectTextHint")}</ThemedText>
           </View>
         )}
 
@@ -1020,8 +1082,8 @@ export function BackendMenuContentScreenV2({
             return (
               <View key={key} style={{ gap: 8 }}>
                 <ThemedText>
-                  Inhalt #{block.backendContentId}:
-                  Dieser Inhaltstyp wird hier nicht bearbeitet.
+                  {t("backendContent.contentId", { id: block.backendContentId })}:{" "}
+                  {t("backendContent.unsupportedType")}
                 </ThemedText>
                 {editorMode && renderMoveActions(block.backendContentId, index)}
               </View>
@@ -1063,7 +1125,7 @@ export function BackendMenuContentScreenV2({
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Textinhalt ${block.backendContentId} ${expanded ? "schliessen" : "oeffnen"}`}
+                  accessibilityLabel={t(expanded ? "backendContent.closeText" : "backendContent.openText", { id: block.backendContentId })}
                   accessibilityState={{ expanded }}
                   testID={`backend-accordion-${block.backendContentId}`}
                   onPress={() => {
@@ -1089,10 +1151,10 @@ export function BackendMenuContentScreenV2({
                   }}
                 >
                   <ThemedText style={{ fontWeight: "600" }}>
-                    {desktopEditorMode ? "Ausgewählter Text" : `Textinhalt #${block.backendContentId}`}
+                    {desktopEditorMode ? t("backendContent.selectedText") : t("backendContent.textContent", { id: block.backendContentId })}
                   </ThemedText>
                   <ThemedText>
-                    {!block.editable ? "Gesperrt  " : ""}
+                    {!block.editable ? t("backendContent.locked") + "  " : ""}
                     {!desktopEditorMode && (expanded ? "▲" : "▼")}
                   </ThemedText>
                 </Pressable>
@@ -1100,7 +1162,7 @@ export function BackendMenuContentScreenV2({
                   <ActionButton
                     icon="edit"
                     iconSize={18}
-                    tooltip="Ausgewählten Text bearbeiten"
+                    tooltip={t("backendContent.editSelectedText")}
                     variant="secondary"
                     disabled={!block.editable || !isHtml}
                     onPress={() =>
@@ -1121,8 +1183,8 @@ export function BackendMenuContentScreenV2({
                     icon="delete"
                     iconSize={18}
                     tooltip={!block.editable
-                       ? "Entfernen derzeit vom Backend gesperrt"
-                       : "Inhalt entfernen"}
+                       ? t("backendContent.removeLocked")
+                       : t("backendContent.remove")}
                     disabled={desktopEditorMode && (!block.editable || hasLocalReorder)}
                     variant="secondary"
                     onPress={() => requestRemoval(block.backendContentId)}
@@ -1132,7 +1194,7 @@ export function BackendMenuContentScreenV2({
               ) : (
                 !desktopSelectionEnabled && (
                   <ThemedText style={{ fontWeight: "600" }}>
-                    Textinhalt #{block.backendContentId}
+                    {t("backendContent.textContent", { id: block.backendContentId })}
                   </ThemedText>
                 )
               )}
@@ -1141,7 +1203,7 @@ export function BackendMenuContentScreenV2({
                 <Pressable
                   disabled={!desktopSelectionEnabled}
                   accessibilityRole="button"
-                  accessibilityLabel={`Textinhalt ${block.backendContentId} auswaehlen`}
+                  accessibilityLabel={t("backendContent.selectText", { id: block.backendContentId })}
                   accessibilityState={{
                     selected: selectedBlockId === block.backendContentId,
                     disabled: !desktopSelectionEnabled,
@@ -1190,8 +1252,8 @@ export function BackendMenuContentScreenV2({
                   ) : (
                     <ThemedText>
                       {!block.editable
-                        ? "Dieser Inhalt ist vom Backend nicht zur Bearbeitung freigegeben."
-                        : "Dieser Inhalt ist kein HTML-Text und wird hier nur angezeigt."}
+                        ? t("backendContent.notEditable")
+                        : t("backendContent.notHtml")}
                     </ThemedText>
                   )}
                 </View>
@@ -1201,9 +1263,7 @@ export function BackendMenuContentScreenV2({
         })}
         {!editorMode && !loading && ready && liveNewHtml !== null && (
           <View style={{ gap: 10 }}>
-            <ThemedText style={{ fontWeight: "600" }}>
-              Neuer Textinhalt (lokaler Entwurf – nicht gespeichert)
-            </ThemedText>
+            <ThemedText style={{ fontWeight: "600" }}>{t("backendContent.newDraftPreview")}</ThemedText>
             <ContentTextBlockViewer html={liveNewHtml} />
           </View>
         )}

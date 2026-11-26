@@ -1,3 +1,25 @@
+import { createInstance as createContentTestI18n } from "i18next";
+import { initReactI18next as contentTestReactI18n } from "react-i18next";
+import deContentEditor from "../assets/locales/de/Editor.json";
+import enContentEditor from "../assets/locales/en/Editor.json";
+
+const contentTestI18n = createContentTestI18n();
+
+beforeAll(async () => {
+  await contentTestI18n.use(contentTestReactI18n).init({
+    lng: "de",
+    fallbackLng: false,
+    defaultNS: "Editor",
+    ns: ["Editor"],
+    resources: {
+      de: { Editor: deContentEditor },
+      en: { Editor: enContentEditor },
+    },
+    interpolation: { escapeValue: false },
+    react: { useSuspense: false },
+  });
+});
+
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { useStore } from "react-redux";

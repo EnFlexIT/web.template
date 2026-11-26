@@ -81,7 +81,7 @@ export async function moveBackendContentElementV2({
 }: MoveBackendContentElementParams): Promise<void> {
   validateRequest(request);
 
-  const before = getContext();
+  const before = { ...getContext() };
 
   if (!isWritable(before)) {
     throw new Error("Backend content move is not authorized");

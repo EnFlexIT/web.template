@@ -1,4 +1,9 @@
 import React, { useState } from "react";
+import {
+  buildBackendMenuPolicyV2,
+  canCreateBackendSubmenuV2,
+  canMoveBackendMenuToParentV2,
+} from "../adapters/backendMenuPolicyV2";
 import { BackendMenuCreateDialogV2 } from "./BackendMenuCreateDialogV2";
 import { useTranslation } from "react-i18next";
 import {
@@ -83,6 +88,10 @@ import {
 // P02_CREATE_LOCALIZED_ERRORS
 
 const EMPTY_CREATE_GROUP_ROLES: readonly string[] = [];
+
+// Enable only after the authorized full menu inventory
+// and backend structural operations have been verified.
+const STRUCTURAL_MENU_WRITES_ENABLED: boolean = false;
 
 export interface BackendMenuContextActionsV2Props {
   menuId: number;
@@ -271,10 +280,10 @@ export function BackendMenuContextActionsV2({
         item => item.parentId === menuId,
       );
 
-      if (children.length === 0) {
-        throw new Error(
-          "create.invalidParent",
-        );
+      const policy = buildBackendMenuPolicyV2(items);
+
+      if (!canCreateBackendSubmenuV2(policy, menuId)) {
+        throw new Error("create.maxDepthReached");
       }
 
       const positions = children
@@ -307,6 +316,7 @@ export function BackendMenuContextActionsV2({
           "create.inventoryUnavailable",
           "create.parentNotFound",
           "create.invalidParent",
+          "create.maxDepthReached",
           "create.invalidPositions",
         ].includes(error.message)
           ? error.message
@@ -435,7 +445,7 @@ export function BackendMenuContextActionsV2({
 
       setDeletePlan(plan);
     } catch {
-      setDeleteError(t("delete.loadError"));
+      setDeleteError("delete.loadError");
     } finally {
       setDeleteLoading(false);
     }
@@ -495,33 +505,7 @@ export function BackendMenuContextActionsV2({
         throw new Error("Backend menu not found.");
       }
 
-      console.log("[MENU-REORDER-DEBUG]", {
-        selectedMenuId: menuId,
-        selectedParentId: source.parentId ?? null,
-        siblings: items
-          .filter(item =>
-            (item.parentId ?? null) ===
-            (source.parentId ?? null)
-          )
-          .map(item => ({
-            menuId: item.menuId,
-            parentId: item.parentId,
-            caption: item.caption,
-            position: item.position,
-            isHeadMenu: item.isHeadMenu,
-          })),
-        totalMenus: items.length,
-      });
 
-      console.table(
-        items.map(item => ({
-          menuId: item.menuId,
-          parentId: item.parentId ?? null,
-          caption: item.caption,
-          position: item.position,
-          isHeadMenu: item.isHeadMenu,
-        }))
-      );
 
 // Validate the current hierarchy and position inventory.
       planBackendMenuReorderV2({
@@ -541,21 +525,15 @@ export function BackendMenuContextActionsV2({
           position: item.position,
         }));
 
-      const existingParentIds = new Set(
-        items
-          .map(item => item.parentId)
-          .filter(
-            (id): id is number =>
-              typeof id === "number" && id > 0,
-          ),
-      );
+      const policy = buildBackendMenuPolicyV2(items);
 
       const candidateIds = items
         .filter(item =>
-          !source.isHeadMenu &&
-          existingParentIds.has(item.menuId) &&
-          item.menuId !== menuId &&
-          item.menuId !== parentId,
+          canMoveBackendMenuToParentV2(
+            policy,
+            menuId,
+            item.menuId,
+          ),
         )
         .map(item => item.menuId);
 
@@ -607,6 +585,8 @@ export function BackendMenuContextActionsV2({
   }
 
   async function saveMove() {
+    if (!STRUCTURAL_MENU_WRITES_ENABLED) return;
+
     if (
       moveActionLock.current ||
       moveBusy ||
@@ -726,6 +706,7 @@ export function BackendMenuContextActionsV2({
   })();
 
   const moveDisabled =
+    !STRUCTURAL_MENU_WRITES_ENABLED ||
     moveBusy ||
     moveLoading ||
     !moveSnapshot ||
@@ -849,9 +830,16 @@ export function BackendMenuContextActionsV2({
 
           {deleteError !== "" && (
             <Text style={{ color: "#b42318" }}>
-              {deleteError}
+              {t(deleteError)}
             </Text>
           )}
+
+          <Text
+            testID="backend-delete-inventory-warning"
+            style={{ color: "#b42318" }}
+          >
+            {t("delete.inventoryIncomplete")}
+          </Text>
 
           {!deleteLoading && deletePlan !== null && (
             <>
@@ -862,7 +850,7 @@ export function BackendMenuContextActionsV2({
               </Text>
 
               <Text>
-                {t("delete.submenus", {
+                {t("delete.visibleSubmenus", {
                   count: deletePlan.descendantCount,
                 })}
               </Text>
@@ -1131,6 +1119,12 @@ export function BackendMenuContextActionsV2({
                 </Text>
               )}
             </View>
+          )}
+
+          {!STRUCTURAL_MENU_WRITES_ENABLED && (
+            <Text>
+              {t("menuErrors.fullInventoryRequired")}
+            </Text>
           )}
 
           {moveError !== "" && (
