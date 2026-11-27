@@ -1,3 +1,4 @@
+import { BackendMenuTreeV2 } from "../components/BackendMenuTreeV2";
 import { useTranslation } from "react-i18next";
 import React, {
   useCallback,
@@ -824,6 +825,13 @@ export function BackendMenuContentScreenV2({
         <ThemedText style={{ fontSize: 20, fontWeight: "600" }}>
           {editorMode ? t("backendContent.editTitle") : t("backendContent.viewTitle")}: {t("backendContent.menu")} #{menuId}
         </ThemedText>
+
+        {editorMode && canMove && (
+          <BackendMenuTreeV2
+            selectedMenuId={menuId}
+            selectionDisabled
+          />
+        )}
 
 
         {editorMode &&

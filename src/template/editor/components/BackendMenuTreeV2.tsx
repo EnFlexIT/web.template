@@ -1,3 +1,10 @@
+import { useTranslation } from "react-i18next";
+import {
+  selectVerifiedBackendRoles,
+} from "@/template/state/authorization/selectVerifiedBackendRoles";
+import {
+  canEditLocalContent,
+} from "@/template/editor/authorization/canEditLocalContent";
 import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import {
@@ -25,11 +32,22 @@ import {
   type BackendMenuTreeNodeV2,
 } from "../adapters/buildBackendMenuTreeV2";
 
+function getInventorySessionKey(state: TemplateRootState): string {
+  return JSON.stringify([
+    state.api.ip,
+    state.api.authGeneration,
+    state.api.isLoggedIn,
+    state.api.isLoggingOut,
+    state.api.isSwitchingServer,
+  ]);
+}
+
 interface TreeItemProps {
   node: BackendMenuTreeNodeV2;
   depth: number;
   selectedMenuId: number;
   onSelect: (menuId: number) => void;
+  selectionDisabled: boolean;
 }
 
 function TreeItem({
@@ -37,9 +55,11 @@ function TreeItem({
   depth,
   selectedMenuId,
   onSelect,
+  selectionDisabled,
 }: TreeItemProps) {
   const { theme } = useUnistyles();
   const [expanded, setExpanded] = useState(true);
+  const { t } = useTranslation(["Editor"]);
 
   const hasChildren = node.children.length > 0;
   const selected = node.menuId === selectedMenuId;
@@ -62,7 +82,7 @@ function TreeItem({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              expanded ? "Menü zuklappen" : "Menü aufklappen"
+              expanded ? t("backendTree.collapse") : t("backendTree.expand")
             }
             accessibilityState={{ expanded }}
             onPress={() => setExpanded(value => !value)}
@@ -79,8 +99,12 @@ function TreeItem({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={node.caption}
-          accessibilityState={{ selected }}
-          onPress={() => onSelect(node.menuId)}
+          accessibilityState={{
+            selected,
+            disabled: selectionDisabled,
+          }}
+          disabled={selectionDisabled}
+          onPress={() => !selectionDisabled && onSelect(node.menuId)}
           style={{
             flex: 1,
             paddingVertical: 10,
@@ -104,6 +128,7 @@ function TreeItem({
           depth={depth + 1}
           selectedMenuId={selectedMenuId}
           onSelect={onSelect}
+          selectionDisabled={selectionDisabled}
         />
       ))}
     </View>
@@ -117,10 +142,25 @@ function TreeItem({
  */
 export function BackendMenuTreeV2({
   selectedMenuId,
+  selectionDisabled = false,
 }: {
   selectedMenuId: number;
+  selectionDisabled?: boolean;
 }) {
   const store = useStore();
+  const { t } = useTranslation(["Editor"]);
+
+  const canRead = useAppSelector(state =>
+    canEditLocalContent(selectVerifiedBackendRoles(state)),
+  );
+
+  const language = useAppSelector(
+    state => state.language.language,
+  );
+
+  const apiClient = useAppSelector(
+    state => state.api.dynamic_content_api_v2?.defaultApi,
+  );
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { theme } = useUnistyles();
 
@@ -128,14 +168,24 @@ export function BackendMenuTreeV2({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [loadedScope, setLoadedScope] = useState<{
+    key: string;
+    client: unknown;
+  } | null>(null);
 
-  const sessionKey = useAppSelector(state => [
-    state.api.ip,
-    state.api.authGeneration,
-    state.api.isLoggedIn,
-    state.api.isLoggingOut,
-    state.api.isSwitchingServer,
-  ].join("|"));
+  const sessionKey = useAppSelector(getInventorySessionKey);
+
+  const scopeKey = JSON.stringify([
+    sessionKey,
+    canRead,
+    language,
+    reloadVersion,
+  ]);
+
+  const ready =
+    canRead &&
+    loadedScope?.key === scopeKey &&
+    loadedScope?.client === apiClient;
 
   const getState = useCallback(
     () => store.getState() as TemplateRootState,
@@ -148,6 +198,12 @@ export function BackendMenuTreeV2({
     setLoading(true);
     setError("");
     setRoots([]);
+    setLoadedScope(null);
+
+    if (!canRead) {
+      setLoading(false);
+      return;
+    }
 
     async function load() {
       try {
@@ -160,11 +216,15 @@ export function BackendMenuTreeV2({
         if (!active) return;
 
         setRoots(tree);
+        setLoadedScope({
+          key: scopeKey,
+          client: apiClient,
+        });
       } catch {
         if (!active) return;
 
         setRoots([]);
-        setError("Backend-Menüs konnten nicht geladen werden.");
+        setError("backendTree.loadError");
       } finally {
         if (active) {
           setLoading(false);
@@ -177,7 +237,11 @@ export function BackendMenuTreeV2({
     return () => {
       active = false;
     };
-  }, [getState, sessionKey, reloadVersion]);
+  }, [getState, scopeKey, canRead, apiClient]);
+
+  if (!canRead) {
+    return null;
+  }
 
   return (
     <View
@@ -198,11 +262,11 @@ export function BackendMenuTreeV2({
         }}
       >
         <ThemedText style={{ fontSize: 16, fontWeight: "700" }}>
-          Backend-Menüstruktur
+          {t("backendTree.title")}
         </ThemedText>
 
         <ActionButton
-          label="Neu laden"
+          label={t("backendTree.reload")}
           variant="secondary"
           disabled={loading}
           onPress={() => setReloadVersion(value => value + 1)}
@@ -210,26 +274,39 @@ export function BackendMenuTreeV2({
       </View>
 
       {loading && (
-        <ThemedText>Menüs werden geladen...</ThemedText>
+        <ThemedText>{t("backendTree.loading")}</ThemedText>
       )}
 
       {error.length > 0 && (
-        <ThemedText>{error}</ThemedText>
+        <ThemedText>{t(error)}</ThemedText>
       )}
 
-      {!loading && !error && roots.length === 0 && (
-        <ThemedText>Keine Backend-Menüs vorhanden.</ThemedText>
+      {ready && !loading && !error && roots.length === 0 && (
+        <ThemedText>{t("backendTree.empty")}</ThemedText>
       )}
 
       <ScrollView style={{ flexGrow: 0 }} nestedScrollEnabled>
-        {roots.map(node => (
+        {ready && roots.map(node => (
           <TreeItem
             key={node.menuId}
             node={node}
             depth={0}
             selectedMenuId={selectedMenuId}
+            selectionDisabled={selectionDisabled}
             onSelect={menuId => {
-              if (menuId !== selectedMenuId) {
+              const current = getState();
+
+              if (
+                ready &&
+                !selectionDisabled &&
+                getInventorySessionKey(current) === sessionKey &&
+                canEditLocalContent(
+                  selectVerifiedBackendRoles(current),
+                ) &&
+                current.api.dynamic_content_api_v2?.defaultApi === apiClient &&
+                current.language.language === language &&
+                menuId !== selectedMenuId
+              ) {
                 navigation.navigate("3027", {
                   backendMenuId: menuId,
                 });

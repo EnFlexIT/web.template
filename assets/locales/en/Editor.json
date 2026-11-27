@@ -167,5 +167,14 @@
     "confirm_other": "Delete all {{count}} menus",
     "disabled": "The delete function is currently disabled.",
     "loadError": "The menu structure could not be loaded."
+  },
+  "backendTree": {
+    "title": "Backend menu structure",
+    "reload": "Reload",
+    "loading": "Loading menus...",
+    "loadError": "Backend menus could not be loaded.",
+    "empty": "No backend menus available.",
+    "expand": "Expand menu",
+    "collapse": "Collapse menu"
   }
 }

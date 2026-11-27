@@ -23,7 +23,7 @@ type Context =
 function setup() {
   const context = {
     client: {
-      getMenus: jest.fn(),
+      getAllMenus: jest.fn(),
       createMenu: jest.fn(),
     },
     server: "test-server",

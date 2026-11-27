@@ -1,6 +1,7 @@
-import type {
-  BackendMenuRenameContext,
-} from "./renameBackendMenuV2";
+import {
+  verifyBackendMenuStructureV2,
+  type BackendMenuStructureContextV2,
+} from "./backendMenuStructureContextV2";
 
 import {
   planBackendMenuReorderV2,
@@ -12,11 +13,11 @@ export interface ReorderBackendMenuParams {
   expectedParentId: number | null;
   expectedSiblingIds: readonly number[];
   language: string;
-  getContext: () => BackendMenuRenameContext;
+  getContext: () => BackendMenuStructureContextV2;
 }
 
 function isWritable(
-  context: BackendMenuRenameContext,
+  context: BackendMenuStructureContextV2,
 ): boolean {
   return (
     context.isLoggedIn &&
@@ -30,8 +31,8 @@ function isWritable(
 }
 
 function isSameSession(
-  before: BackendMenuRenameContext,
-  after: BackendMenuRenameContext,
+  before: BackendMenuStructureContextV2,
+  after: BackendMenuStructureContextV2,
 ): boolean {
   return (
     before.client === after.client &&
@@ -59,7 +60,7 @@ export async function reorderBackendMenuV2({
     throw new Error("Backend menu reordering is not authorized");
   }
 
-  const response = await before.client.getMenus(language);
+  const response = await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error("Backend menu inventory belongs to a stale session");
@@ -120,7 +121,7 @@ export async function reorderBackendMenuV2({
     throw new Error("Backend menu update returned for a stale session");
   }
 
-  const verification = await before.client.getMenus(language);
+  const verification = await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error("Menu verification returned for a stale session");
@@ -151,6 +152,18 @@ export async function reorderBackendMenuV2({
       item.position !== expected[index].position,
     )
   ) {
+    throw new Error(
+      "Saved menu order could not be verified. Reload before retrying.",
+    );
+  }
+
+  try {
+    verifyBackendMenuStructureV2(
+      plan.updatedInventory,
+      savedItems,
+      [expectedParentId],
+    );
+  } catch {
     throw new Error(
       "Saved menu order could not be verified. Reload before retrying.",
     );

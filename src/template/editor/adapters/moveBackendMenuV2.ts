@@ -1,6 +1,7 @@
-import type {
-  BackendMenuRenameContext,
-} from "./renameBackendMenuV2";
+import {
+  verifyBackendMenuStructureV2,
+  type BackendMenuStructureContextV2,
+} from "./backendMenuStructureContextV2";
 
 import {
   planBackendMenuMoveV2,
@@ -20,11 +21,11 @@ export interface MoveBackendMenuParams {
   expectedParentId?: number | null;
   allowedParentIds: readonly number[];
   language: string;
-  getContext: () => BackendMenuRenameContext;
+  getContext: () => BackendMenuStructureContextV2;
 }
 
 function isWritable(
-  context: BackendMenuRenameContext,
+  context: BackendMenuStructureContextV2,
 ): boolean {
   return (
     context.isLoggedIn &&
@@ -38,8 +39,8 @@ function isWritable(
 }
 
 function isSameSession(
-  before: BackendMenuRenameContext,
-  after: BackendMenuRenameContext,
+  before: BackendMenuStructureContextV2,
+  after: BackendMenuStructureContextV2,
 ): boolean {
   return (
     before.client === after.client &&
@@ -95,7 +96,7 @@ export async function moveBackendMenuV2({
     throw new Error("Backend menu moving is not authorized");
   }
 
-  const response = await before.client.getMenus(language);
+  const response = await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error("Backend menu inventory belongs to a stale session");
@@ -162,7 +163,7 @@ export async function moveBackendMenuV2({
   }
 
   const verification =
-    await before.client.getMenus(language);
+    await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error(
@@ -223,6 +224,16 @@ export async function moveBackendMenuV2({
     buildBackendMenuTreeV2(savedItems);
   } catch {
     problems.push("Invalid saved menu hierarchy");
+  }
+
+  try {
+    verifyBackendMenuStructureV2(
+      plan.updatedInventory,
+      savedItems,
+      affectedParents,
+    );
+  } catch {
+    problems.push("Invalid saved sibling structure");
   }
 
   if (problems.length > 0) {

@@ -1,3 +1,7 @@
+import {
+  validateBackendMenuSiblingPositionsV2,
+} from "./backendMenuPositionValidatorV2";
+
 import type {
   MenuItem,
 } from "@/api/implementation/Dynamic-Content-Api-V2";
@@ -86,6 +90,18 @@ export function planBackendMenuMoveV2({
     throw new Error("menuErrors.movePolicyDenied");
   }
 
+  const sourceParentId = source.parentId ?? null;
+
+  validateBackendMenuSiblingPositionsV2(
+    items,
+    sourceParentId,
+  );
+
+  validateBackendMenuSiblingPositionsV2(
+    items,
+    targetParentId,
+  );
+
   const siblings = items.filter(
     item => item.parentId === targetParentId,
   );
@@ -105,10 +121,32 @@ export function planBackendMenuMoveV2({
     position: lastPosition + 1,
   };
 
-  const updatedInventory = items.map(item =>
-    item.menuId === menuId
-      ? { ...updatedMenu }
-      : { ...item },
+  const updatedInventory = items.map(item => {
+    if (item.menuId === menuId) {
+      return { ...updatedMenu };
+    }
+
+    if (
+      (item.parentId ?? null) === sourceParentId &&
+      item.position > source.position
+    ) {
+      return {
+        ...item,
+        position: item.position - 1,
+      };
+    }
+
+    return { ...item };
+  });
+
+  validateBackendMenuSiblingPositionsV2(
+    updatedInventory,
+    sourceParentId,
+  );
+
+  validateBackendMenuSiblingPositionsV2(
+    updatedInventory,
+    targetParentId,
   );
 
   // Reject any cycle or broken hierarchy introduced by the move.

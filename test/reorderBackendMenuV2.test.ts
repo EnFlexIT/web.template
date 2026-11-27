@@ -3,8 +3,8 @@ import type {
 } from "@/api/implementation/Dynamic-Content-Api-V2";
 
 import type {
-  BackendMenuRenameContext,
-} from "../src/template/editor/adapters/renameBackendMenuV2";
+  BackendMenuStructureContextV2,
+} from "../src/template/editor/adapters/backendMenuStructureContextV2";
 
 import {
   reorderBackendMenuV2,
@@ -27,21 +27,21 @@ function setup() {
     })),
   ];
 
-  const getMenus = jest.fn().mockResolvedValue({
+  const getAllMenus = jest.fn().mockResolvedValue({
     data: { menuList: items },
   });
 
   const updateMenu = jest.fn().mockResolvedValue({});
 
   const context = {
-    client: { getMenus, updateMenu },
+    client: { getAllMenus, updateMenu },
     isLoggedIn: true,
     canEdit: true,
     isSwitchingServer: false,
     isLoggingOut: false,
     server: "test-server",
     authGeneration: 1,
-  } as unknown as BackendMenuRenameContext;
+  } as unknown as BackendMenuStructureContextV2;
 
   const params = {
     menuId: 12,
@@ -52,14 +52,14 @@ function setup() {
     getContext: () => context,
   };
 
-  return { items, getMenus, updateMenu, context, params };
+  return { items, getAllMenus, updateMenu, context, params };
 }
 
 describe("reorderBackendMenuV2", () => {
   it("uses one update and verifies the saved order", async () => {
     const s = setup();
 
-    s.getMenus.mockResolvedValueOnce({
+    s.getAllMenus.mockResolvedValueOnce({
       data: { menuList: s.items },
     }).mockResolvedValueOnce({
       data: {
@@ -88,7 +88,7 @@ describe("reorderBackendMenuV2", () => {
       }),
     );
 
-    expect(s.getMenus).toHaveBeenCalledTimes(2);
+    expect(s.getAllMenus).toHaveBeenCalledTimes(2);
   });
 
   it("does not write unchanged positions", async () => {
@@ -143,7 +143,7 @@ describe("reorderBackendMenuV2", () => {
 
     let generation = 1;
 
-    s.getMenus.mockImplementation(async () => {
+    s.getAllMenus.mockImplementation(async () => {
       generation = 2;
       return { data: { menuList: s.items } };
     });

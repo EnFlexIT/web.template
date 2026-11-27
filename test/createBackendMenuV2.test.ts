@@ -41,7 +41,7 @@ describe("createBackendMenuV2", () => {
 
   let context: BackendMenuCreateContext;
 
-  let getMenus: jest.Mock;
+  let getAllMenus: jest.Mock;
   let createMenu: jest.Mock;
 
   function params(
@@ -63,14 +63,14 @@ describe("createBackendMenuV2", () => {
   }
 
   beforeEach(() => {
-    getMenus = jest.fn(async () => ({
+    getAllMenus = jest.fn(async () => ({
       data: {
         menuList: menus,
       },
     }));
 
     createMenu = jest.fn(async (request: CreateMenuRequest) => {
-      getMenus.mockResolvedValueOnce({
+      getAllMenus.mockResolvedValueOnce({
         data: {
           menuList: [
             ...menus,
@@ -90,7 +90,7 @@ describe("createBackendMenuV2", () => {
     });
 
     const client: BackendMenuCreateClient = {
-      getMenus,
+      getAllMenus,
       createMenu,
     };
 
@@ -162,7 +162,7 @@ describe("createBackendMenuV2", () => {
       createBackendMenuV2(params()),
     ).resolves.toBe(20001);
 
-    expect(getMenus).toHaveBeenCalledTimes(2);
+    expect(getAllMenus).toHaveBeenCalledTimes(2);
     expect(createMenu).toHaveBeenCalledTimes(1);
   });
 
@@ -189,7 +189,7 @@ describe("createBackendMenuV2", () => {
   });
 
   it("blocks creation when sibling positions are duplicated", async () => {
-    getMenus.mockResolvedValueOnce({
+    getAllMenus.mockResolvedValueOnce({
       data: {
         menuList: menus.map(item =>
           item.menuId === 10022
@@ -209,7 +209,7 @@ describe("createBackendMenuV2", () => {
   });
 
   it("blocks creation when sibling positions contain gaps", async () => {
-    getMenus.mockResolvedValueOnce({
+    getAllMenus.mockResolvedValueOnce({
       data: {
         menuList: menus.map(item =>
           item.menuId === 10022
@@ -250,12 +250,12 @@ describe("createBackendMenuV2", () => {
     ).rejects.toThrow("Created menu could not be verified");
 
     expect(createMenu).toHaveBeenCalledTimes(1);
-    expect(getMenus).toHaveBeenCalledTimes(2);
+    expect(getAllMenus).toHaveBeenCalledTimes(2);
   });
 
   it("rejects creation under an incorrect parent", async () => {
     createMenu.mockImplementationOnce(async () => {
-      getMenus.mockResolvedValueOnce({
+      getAllMenus.mockResolvedValueOnce({
         data: {
           menuList: [
             ...menus,
@@ -301,7 +301,7 @@ describe("createBackendMenuV2", () => {
 
   it("rejects a session change during creation verification", async () => {
     createMenu.mockImplementationOnce(async () => {
-      getMenus.mockImplementationOnce(async () => {
+      getAllMenus.mockImplementationOnce(async () => {
         context.authGeneration += 1;
 
         return {
@@ -366,12 +366,12 @@ describe("createBackendMenuV2", () => {
       createBackendMenuV2(params()),
     ).rejects.toThrow("Backend menu creation is not authorized");
 
-    expect(getMenus).not.toHaveBeenCalled();
+    expect(getAllMenus).not.toHaveBeenCalled();
     expect(createMenu).not.toHaveBeenCalled();
   });
 
   it("rejects a session change while loading", async () => {
-    getMenus.mockImplementationOnce(async () => {
+    getAllMenus.mockImplementationOnce(async () => {
       context.authGeneration += 1;
 
       return {
@@ -405,7 +405,7 @@ describe("createBackendMenuV2", () => {
   });
 
   it("rejects duplicate menu IDs in the inventory", async () => {
-    getMenus.mockResolvedValueOnce({
+    getAllMenus.mockResolvedValueOnce({
       data: {
         menuList: [...menus, menus[0]],
       },
@@ -416,5 +416,173 @@ describe("createBackendMenuV2", () => {
     ).rejects.toThrow("Invalid backend menu inventory");
 
     expect(createMenu).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Create with complete editor inventory", () => {
+  function setupInventory() {
+    const existing = [
+      {
+        menuId: 10001,
+        isHeadMenu: true,
+        position: 1,
+        caption: "Visible root",
+        pathId: "10001",
+        pathCaption: "Visible root",
+        pathPosition: "01",
+      },
+      {
+        menuId: 10002,
+        isHeadMenu: true,
+        position: 2,
+        caption: "Restricted root",
+        pathId: "10002",
+        pathCaption: "Restricted root",
+        pathPosition: "02",
+      },
+    ];
+
+    const getMenus = jest.fn().mockResolvedValue({
+      data: { menuList: [existing[0]] },
+    });
+
+    const getAllMenus = jest.fn().mockResolvedValue({
+      data: { menuList: existing },
+    });
+
+    const createMenu = jest.fn().mockResolvedValue({
+      data: { menuId: 20001 },
+    });
+
+    const client = {
+      getMenus,
+      getAllMenus,
+      createMenu,
+    };
+
+    const context: BackendMenuCreateContext = {
+      client,
+      server: "https://example.invalid",
+      authGeneration: 1,
+      isLoggedIn: true,
+      canEdit: true,
+      isSwitchingServer: false,
+      isLoggingOut: false,
+    };
+
+    const create = () => createBackendMenuV2({
+      caption: "New root",
+      parentId: null,
+      language: "de",
+      allowedRoles: ["Vermieter"],
+      getContext: () => context,
+    });
+
+    return {
+      existing,
+      getMenus,
+      getAllMenus,
+      createMenu,
+      create,
+    };
+  }
+
+  it("includes hidden siblings when calculating the position", async () => {
+    const env = setupInventory();
+
+    env.getAllMenus.mockResolvedValueOnce({
+      data: { menuList: env.existing },
+    });
+
+    env.getAllMenus.mockResolvedValueOnce({
+      data: {
+        menuList: [
+          ...env.existing,
+          {
+            menuId: 20001,
+            isHeadMenu: true,
+            position: 3,
+            caption: "New root",
+          },
+        ],
+      },
+    });
+
+    await expect(env.create()).resolves.toBe(20001);
+
+    expect(env.createMenu).toHaveBeenCalledTimes(1);
+
+    expect(env.createMenu).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedRoles: ["Vermieter"],
+        content: expect.objectContaining({
+          position: 3,
+          isHeadMenu: true,
+          caption: "New root",
+        }),
+      }),
+    );
+
+    expect(env.getAllMenus).toHaveBeenCalledTimes(2);
+    expect(env.getAllMenus).toHaveBeenNthCalledWith(1, "de");
+    expect(env.getAllMenus).toHaveBeenNthCalledWith(2, "de");
+    expect(env.getMenus).not.toHaveBeenCalled();
+  });
+
+  it("blocks creation when the full inventory is unavailable", async () => {
+    const env = setupInventory();
+
+    env.getAllMenus.mockRejectedValueOnce(
+      new Error("HTTP 503"),
+    );
+
+    await expect(env.create()).rejects.toThrow("HTTP 503");
+
+    expect(env.createMenu).not.toHaveBeenCalled();
+    expect(env.getMenus).not.toHaveBeenCalled();
+  });
+
+  it("does not retry creation after verification failure", async () => {
+    const env = setupInventory();
+
+    env.getAllMenus.mockResolvedValueOnce({
+      data: { menuList: env.existing },
+    });
+
+    env.getAllMenus.mockRejectedValueOnce(
+      new Error("Verification unavailable"),
+    );
+
+    await expect(env.create()).rejects.toThrow(
+      "Verification unavailable",
+    );
+
+    expect(env.createMenu).toHaveBeenCalledTimes(1);
+    expect(env.getAllMenus).toHaveBeenCalledTimes(2);
+    expect(env.getMenus).not.toHaveBeenCalled();
+  });
+
+  it("blocks creation when hidden siblings have duplicate positions", async () => {
+    const env = setupInventory();
+
+    env.getAllMenus.mockResolvedValueOnce({
+      data: {
+        menuList: [
+          env.existing[0],
+          {
+            ...env.existing[1],
+            position: 1,
+          },
+        ],
+      },
+    });
+
+    await expect(env.create()).rejects.toThrow(
+      "Invalid existing menu positions",
+    );
+
+    expect(env.createMenu).not.toHaveBeenCalled();
+    expect(env.getMenus).not.toHaveBeenCalled();
   });
 });

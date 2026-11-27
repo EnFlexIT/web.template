@@ -7,8 +7,33 @@ import type {
   TemplateRootState,
 } from "@/template/state/store/templateStoreTypes";
 
+import {
+  selectVerifiedBackendRoles,
+} from "@/template/state/authorization/selectVerifiedBackendRoles";
+
+import {
+  canEditLocalContent,
+} from "@/template/editor/authorization/canEditLocalContent";
+
+import {
+  buildBackendMenuTreeV2,
+} from "./buildBackendMenuTreeV2";
+
 export interface LoadBackendMenusForEditorParams {
   getState: () => TemplateRootState;
+}
+
+function canReadInventory(state: TemplateRootState): boolean {
+  const api = state.api;
+
+  return (
+    api.isLoggedIn &&
+    !api.isLoggingOut &&
+    !api.isSwitchingServer &&
+    Boolean(api.ip?.trim()) &&
+    Number.isSafeInteger(api.authGeneration) &&
+    canEditLocalContent(selectVerifiedBackendRoles(state))
+  );
 }
 
 function validateMenuItems(items: MenuItem[]): MenuItem[] {
@@ -16,6 +41,7 @@ function validateMenuItems(items: MenuItem[]): MenuItem[] {
 
   for (const item of items) {
     if (
+      !item ||
       !Number.isSafeInteger(item.menuId) ||
       item.menuId <= 0 ||
       !Number.isSafeInteger(item.position) ||
@@ -41,66 +67,62 @@ function validateMenuItems(items: MenuItem[]): MenuItem[] {
     ids.add(item.menuId);
   }
 
-  return items.map(item => ({ ...item }));
+  const result = items.map(item => ({ ...item }));
+
+  // A complete inventory must contain a valid hierarchy.
+  buildBackendMenuTreeV2(result);
+
+  return result;
 }
 
 /**
- * Loads the real backend menu inventory for the menu editor.
+ * Loads the complete editor-only backend menu inventory.
  *
- * Does not use the merged runtime navigation.
- * Does not write to the backend or modify Redux.
+ * Never falls back to role-filtered runtime navigation.
+ * Does not modify Redux or write backend data.
  */
 export async function loadBackendMenusForEditorV2({
   getState,
 }: LoadBackendMenusForEditorParams): Promise<MenuItem[]> {
-  const before = getState().api;
+  const state = getState();
+  const before = state.api;
 
-  if (
-    !before.isLoggedIn ||
-    before.isLoggingOut ||
-    before.isSwitchingServer ||
-    !before.ip?.trim() ||
-    !Number.isSafeInteger(before.authGeneration)
-  ) {
+  if (!canReadInventory(state)) {
     throw new Error("Backend menu loading is not authorized");
   }
 
   const client = before.dynamic_content_api_v2?.defaultApi;
 
-  if (!client || typeof client.getMenus !== "function") {
-    throw new Error("Backend menu API is unavailable");
+  if (!client || typeof client.getAllMenus !== "function") {
+    throw new Error("Complete backend menu API is unavailable");
   }
 
   const server = before.ip;
   const generation = before.authGeneration;
-
-  const language = getState().language?.language;
+  const language = state.language?.language;
 
   if (typeof language !== "string" || !language.trim()) {
     throw new Error("Backend menu language is unavailable");
   }
 
-  const response = await client.getMenus(language);
+  const response = await client.getAllMenus(language);
 
-  const after = getState().api;
+  const current = getState();
+  const after = current.api;
 
   if (
-    !after.isLoggedIn ||
-    after.isLoggingOut ||
-    after.isSwitchingServer ||
+    !canReadInventory(current) ||
     after.ip !== server ||
     after.authGeneration !== generation ||
-    after.dynamic_content_api_v2?.defaultApi !== client
+    after.dynamic_content_api_v2?.defaultApi !== client ||
+    current.language?.language !== language
   ) {
     throw new Error("Backend menu response belongs to a stale session");
   }
 
   const data: MenuList = response.data;
 
-  if (
-    !data ||
-    !Array.isArray(data.menuList)
-  ) {
+  if (!data || !Array.isArray(data.menuList)) {
     throw new Error("Invalid backend menu response");
   }
 

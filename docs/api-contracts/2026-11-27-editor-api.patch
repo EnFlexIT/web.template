@@ -1,0 +1,100 @@
+diff --git a/AWB-RestAPI.yaml b/AWB-RestAPI.yaml
+index 9c8c1e6..ffb21a3 100644
+--- a/AWB-RestAPI.yaml
++++ b/AWB-RestAPI.yaml
+@@ -156,6 +156,38 @@ paths:
+                   type: string  
+ 
+ 
++  /user/backendRoles:
++    get:
++      tags:
++        - user
++      summary: Get backend roles assigned to the authenticated user
++      operationId: getBackendUserRoles
++      responses:
++        '200':
++          description: Backend user roles
++          content:
++            application/json:
++              schema:
++                type: array
++                items:
++                  type: string
++
++  /user/groupRoles:
++    get:
++      tags:
++        - user
++      summary: Get group roles assigned to the authenticated user
++      operationId: getGroupRoles
++      responses:
++        '200':
++          description: Assigned group roles
++          content:
++            application/json:
++              schema:
++                type: array
++                items:
++                  type: string
++
+   /app/settings/get:
+     get:
+       tags:
+diff --git a/Dynamic-Content-Api.yaml b/Dynamic-Content-Api.yaml
+index e1e589a..aa724f3 100644
+--- a/Dynamic-Content-Api.yaml
++++ b/Dynamic-Content-Api.yaml
+@@ -39,10 +39,12 @@ paths:
+       responses: 
+         "200":
+           $ref: '#/components/responses/MenuArray'
++        "400":
++          description: Invalid request
+         "401":
+-            description: Unauthorized
++          description: Unauthorized
+         "503":
+-            description: Service unavailable
++          description: Service unavailable
+ 
+     post:
+       operationId: createMenu
+@@ -73,6 +75,28 @@ paths:
+         "503":
+           description: Service unavailable  
+ 
++  /menu/all:
++    get:
++      operationId: getAllMenus
++      summary: Get all menus.
++      description: Returns all menus, regardless of associated group roles (Editors only).
++      parameters:
++        - name: lang
++          in: query
++          description: the language locale to use
++          style: simple
++          schema:
++            type: string
++      responses:
++        "200":
++          $ref: '#/components/responses/MenuArray'
++        "400":
++          description: Invalid request
++        "401":
++          description: Unauthorized
++        "503":
++          description: Service unavailable
++
+   /menu/{menuId}:  
+     put:
+       operationId: updateMenu
+@@ -560,6 +584,8 @@ components:
+           type: boolean
+         updatePeriodInSeconds:
+           type: integer
++        abstractSiteContentType:
++          type: string
+ 
+ 
+     SiteContentMedia:

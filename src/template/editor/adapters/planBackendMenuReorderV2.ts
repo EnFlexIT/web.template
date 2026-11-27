@@ -1,3 +1,7 @@
+import {
+  validateBackendMenuSiblingPositionsV2,
+} from "./backendMenuPositionValidatorV2";
+
 import type {
   MenuItem,
 } from "@/api/implementation/Dynamic-Content-Api-V2";
@@ -49,9 +53,7 @@ export function planBackendMenuReorderV2({
     throw new Error("Target menu position is out of range");
   }
 
-  if (siblings.some((item, index) => item.position !== index + 1)) {
-    throw new Error("Invalid existing menu positions");
-  }
+  validateBackendMenuSiblingPositionsV2(items, parentId);
 
   const changed = source.position !== targetPosition;
 
@@ -78,6 +80,11 @@ export function planBackendMenuReorderV2({
     ...item,
     position: positions.get(item.menuId) ?? item.position,
   }));
+
+  validateBackendMenuSiblingPositionsV2(
+    updatedInventory,
+    parentId,
+  );
 
   buildBackendMenuTreeV2(updatedInventory);
 

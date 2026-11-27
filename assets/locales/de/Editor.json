@@ -167,5 +167,14 @@
     "confirm_other": "Alle {{count}} Menüs löschen",
     "disabled": "Die Löschfunktion ist derzeit deaktiviert.",
     "loadError": "Die Menüstruktur konnte nicht geladen werden."
+  },
+  "backendTree": {
+    "title": "Backend-Menüstruktur",
+    "reload": "Neu laden",
+    "loading": "Menüs werden geladen...",
+    "loadError": "Backend-Menüs konnten nicht geladen werden.",
+    "empty": "Keine Backend-Menüs vorhanden.",
+    "expand": "Menü aufklappen",
+    "collapse": "Menü zuklappen"
   }
 }

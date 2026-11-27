@@ -3,41 +3,41 @@ import {
 } from "../src/template/editor/adapters/moveBackendMenuV2";
 
 import type {
-  BackendMenuRenameContext,
-} from "../src/template/editor/adapters/renameBackendMenuV2";
+  BackendMenuStructureContextV2,
+} from "../src/template/editor/adapters/backendMenuStructureContextV2";
 
 const menus = [
   {
     menuId: 1,
     isHeadMenu: true,
-    position: 0,
+    position: 1,
     caption: "Produkte",
   },
   {
     menuId: 2,
     parentId: 1,
     isHeadMenu: false,
-    position: 0,
+    position: 1,
     caption: "Software",
   },
   {
     menuId: 3,
     parentId: 1,
     isHeadMenu: false,
-    position: 1,
+    position: 2,
     caption: "Hardware",
   },
   {
     menuId: 4,
     parentId: 2,
     isHeadMenu: false,
-    position: 0,
+    position: 1,
     caption: "Dokumentation",
   },
 ];
 
 function setup() {
-  const getMenus = jest.fn().mockResolvedValue({
+  const getAllMenus = jest.fn().mockResolvedValue({
     data: {
       menuList: menus.map(item => ({ ...item })),
     },
@@ -47,8 +47,8 @@ function setup() {
     data: {},
   });
 
-  const context: BackendMenuRenameContext = {
-    client: { getMenus, updateMenu },
+  const context: BackendMenuStructureContextV2 = {
+    client: { getAllMenus, updateMenu },
     server: "http://localhost:8080",
     authGeneration: 1,
     isLoggedIn: true,
@@ -65,14 +65,14 @@ function setup() {
     getContext: () => context,
   };
 
-  return { context, getMenus, updateMenu, params };
+  return { context, getAllMenus, updateMenu, params };
 }
 
 describe("moveBackendMenuV2", () => {
   it("moves a menu using the V2 API", async () => {
     const state = setup();
 
-    state.getMenus
+    state.getAllMenus
       .mockResolvedValueOnce({
         data: { menuList: menus },
       })
@@ -88,9 +88,9 @@ describe("moveBackendMenuV2", () => {
 
     await moveBackendMenuV2(state.params);
 
-    expect(state.getMenus).toHaveBeenCalledTimes(2);
+    expect(state.getAllMenus).toHaveBeenCalledTimes(2);
 
-    expect(state.getMenus).toHaveBeenCalledWith("de");
+    expect(state.getAllMenus).toHaveBeenCalledWith("de");
 
     expect(state.updateMenu).toHaveBeenCalledTimes(1);
     expect(state.updateMenu).toHaveBeenCalledWith(
@@ -113,7 +113,7 @@ describe("moveBackendMenuV2", () => {
     );
 
     expect(state.updateMenu).toHaveBeenCalledTimes(1);
-    expect(state.getMenus).toHaveBeenCalledTimes(2);
+    expect(state.getAllMenus).toHaveBeenCalledTimes(2);
   });
 
   it("rejects a changed source parent before updating", async () => {
@@ -132,7 +132,7 @@ describe("moveBackendMenuV2", () => {
   it("blocks moves with duplicate source positions", async () => {
     const state = setup();
 
-    state.getMenus.mockResolvedValue({
+    state.getAllMenus.mockResolvedValue({
       data: {
         menuList: [
           ...menus,
@@ -140,7 +140,7 @@ describe("moveBackendMenuV2", () => {
             menuId: 5,
             parentId: 2,
             isHeadMenu: false,
-            position: 0,
+            position: 1,
             caption: "Duplicate",
           },
         ],
@@ -169,7 +169,7 @@ describe("moveBackendMenuV2", () => {
   it("detects duplicate positions after saving", async () => {
     const state = setup();
 
-    state.getMenus
+    state.getAllMenus
       .mockResolvedValueOnce({
         data: { menuList: menus },
       })
@@ -207,7 +207,7 @@ describe("moveBackendMenuV2", () => {
       moveBackendMenuV2(state.params),
     ).rejects.toThrow("not authorized");
 
-    expect(state.getMenus).not.toHaveBeenCalled();
+    expect(state.getAllMenus).not.toHaveBeenCalled();
     expect(state.updateMenu).not.toHaveBeenCalled();
   });
 
@@ -227,7 +227,7 @@ describe("moveBackendMenuV2", () => {
   it("rejects a session change during loading", async () => {
     const state = setup();
 
-    state.getMenus.mockImplementation(async () => {
+    state.getAllMenus.mockImplementation(async () => {
       state.context.authGeneration = 2;
 
       return {
@@ -262,7 +262,7 @@ describe("moveBackendMenuV2", () => {
   it("rejects an invalid backend inventory", async () => {
     const state = setup();
 
-    state.getMenus.mockResolvedValue({
+    state.getAllMenus.mockResolvedValue({
       data: {
         menuList: null,
       },

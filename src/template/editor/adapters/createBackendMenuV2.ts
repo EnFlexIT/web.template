@@ -1,3 +1,7 @@
+import {
+  validateBackendMenuSiblingPositionsV2,
+} from "./backendMenuPositionValidatorV2";
+
 import type {
   CreateMenuRequest,
   CreateMenu201Response,
@@ -14,7 +18,7 @@ import {
 } from "./backendMenuPolicyV2";
 
 export interface BackendMenuCreateClient {
-  getMenus(
+  getAllMenus(
     lang?: string,
   ): Promise<{ data: MenuList }>;
 
@@ -110,7 +114,7 @@ export async function createBackendMenuV2({
     throw new Error("Backend menu creation is not authorized");
   }
 
-  const response = await before.client.getMenus(language);
+  const response = await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error("Backend menu inventory belongs to a stale session");
@@ -153,28 +157,7 @@ export async function createBackendMenuV2({
     item => (item.parentId ?? null) === parentId,
   );
 
-  for (const sibling of siblings) {
-    if (
-      !Number.isSafeInteger(sibling.position) ||
-      sibling.position < 0
-    ) {
-      throw new Error("Invalid sibling menu position");
-    }
-  }
-
-  const positions = siblings
-    .map(item => item.position)
-    .sort((a, b) => a - b);
-
-  if (
-    positions.some(
-      (position, index) => position !== index + 1,
-    )
-  ) {
-    throw new Error(
-      "Invalid existing menu positions. Creation blocked.",
-    );
-  }
+  validateBackendMenuSiblingPositionsV2(items, parentId);
 
   const position = siblings.length + 1;
 
@@ -218,7 +201,7 @@ export async function createBackendMenuV2({
   }
 
   const verification =
-    await before.client.getMenus(language);
+    await before.client.getAllMenus(language);
 
   if (!isSameSession(before, getContext())) {
     throw new Error(

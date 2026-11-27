@@ -826,6 +826,41 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
+         * Returns all menus, regardless of associated group roles (Editors only).
+         * @summary Get all menus.
+         * @param {string} [lang] the language locale to use
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllMenus: async (lang?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/menu/all`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (lang !== undefined) {
+                localVarQueryParameter['lang'] = lang;
+            }
+
+
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Returns a single content element corresponding to the specified ID.
          * @summary Get a content element
          * @param {number} elementId unique Id of the content element
@@ -1205,6 +1240,19 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Returns all menus, regardless of associated group roles (Editors only).
+         * @summary Get all menus.
+         * @param {string} [lang] the language locale to use
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAllMenus(lang?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<MenuList>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAllMenus(lang, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DefaultApi.getAllMenus']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Returns a single content element corresponding to the specified ID.
          * @summary Get a content element
          * @param {number} elementId unique Id of the content element
@@ -1376,6 +1424,16 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.deleteMenu(menuId, options).then((request) => request(axios, basePath));
         },
         /**
+         * Returns all menus, regardless of associated group roles (Editors only).
+         * @summary Get all menus.
+         * @param {string} [lang] the language locale to use
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAllMenus(lang?: string, options?: RawAxiosRequestConfig): AxiosPromise<MenuList> {
+            return localVarFp.getAllMenus(lang, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Returns a single content element corresponding to the specified ID.
          * @summary Get a content element
          * @param {number} elementId unique Id of the content element
@@ -1530,6 +1588,18 @@ export class DefaultApi extends BaseAPI {
      */
     public deleteMenu(menuId: number, options?: RawAxiosRequestConfig) {
         return DefaultApiFp(this.configuration).deleteMenu(menuId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns all menus, regardless of associated group roles (Editors only).
+     * @summary Get all menus.
+     * @param {string} [lang] the language locale to use
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof DefaultApi
+     */
+    public getAllMenus(lang?: string, options?: RawAxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getAllMenus(lang, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

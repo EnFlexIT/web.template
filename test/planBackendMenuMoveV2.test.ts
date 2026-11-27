@@ -6,28 +6,28 @@ const menus = [
   {
     menuId: 1,
     isHeadMenu: true,
-    position: 0,
+    position: 1,
     caption: "Produkte",
   },
   {
     menuId: 2,
     parentId: 1,
     isHeadMenu: false,
-    position: 0,
+    position: 1,
     caption: "Software",
   },
   {
     menuId: 3,
     parentId: 1,
     isHeadMenu: false,
-    position: 1,
+    position: 2,
     caption: "Hardware",
   },
   {
     menuId: 4,
     parentId: 2,
     isHeadMenu: false,
-    position: 0,
+    position: 1,
     caption: "DynSiteAPI Docs",
     pathId: "1/2/4",
   },
@@ -35,7 +35,7 @@ const menus = [
     menuId: 5,
     parentId: 3,
     isHeadMenu: false,
-    position: 0,
+    position: 1,
     caption: "Hardware Infos",
   },
 ];
@@ -52,7 +52,7 @@ describe("planBackendMenuMoveV2", () => {
     expect(result.updatedMenu).toEqual({
       ...menus[3],
       parentId: 3,
-      position: 1,
+      position: 2,
     });
 
     expect(

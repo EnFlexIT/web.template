@@ -21,7 +21,7 @@ function menu(
 }
 
 function setup(items: MenuItem[]) {
-  const getMenus = jest.fn().mockResolvedValue({
+  const getAllMenus = jest.fn().mockResolvedValue({
     data: { menuList: items },
   });
 
@@ -30,7 +30,7 @@ function setup(items: MenuItem[]) {
   });
 
   const context: BackendMenuCreateContext = {
-    client: { getMenus, createMenu },
+    client: { getAllMenus, createMenu },
     server: "https://example.invalid",
     authGeneration: 1,
     isLoggedIn: true,
@@ -48,7 +48,7 @@ function setup(items: MenuItem[]) {
       getContext: () => context,
     });
 
-  return { getMenus, createMenu, create };
+  return { getAllMenus, createMenu, create };
 }
 
 describe("createBackendMenuDepthV2", () => {
@@ -77,14 +77,14 @@ describe("createBackendMenuDepthV2", () => {
         ),
       );
 
-      const { create, createMenu, getMenus } =
+      const { create, createMenu, getAllMenus } =
         setup(items);
 
-      getMenus.mockResolvedValueOnce({
+      getAllMenus.mockResolvedValueOnce({
         data: { menuList: items },
       });
 
-      getMenus.mockResolvedValueOnce({
+      getAllMenus.mockResolvedValueOnce({
         data: {
           menuList: [
             ...items,
